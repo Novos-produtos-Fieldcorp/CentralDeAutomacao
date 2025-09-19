@@ -37,6 +37,7 @@ interface AgregadosListaProps {
 export interface ViewContratado {
   motorista_id?: number;
   nome_motorista?: string;
+  nome?: string;
   cpf?: string;
   dt_nascimento?: string;
   genero?: string;
@@ -87,20 +88,50 @@ export interface ViewContratado {
 }
 
 const checkVehicleTypeMatch = (motorista: ViewContratado, filters: string[]): boolean => {
-  // Check direct properties first (tipologia and tipo)
+  // Função auxiliar de normalização (igual à usada no filtro)
+  const normalizeType = (type: string | undefined | null): string | null => {
+    if (!type || typeof type !== 'string') return null;
+    
+    let normalized = type.trim().toUpperCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    
+    const typeMapping: Record<string, string> = {
+      'CAMINHAO': 'CAMINHÃO',
+      'CAMINHAO 3/4': 'CAMINHÃO 3/4',
+      'FURGAO': 'FURGÃO',
+      'MOTOCICLETA': 'MOTO',
+      'MOTORCYCLE': 'MOTO',
+      'TRACTOR': 'TRATOR',
+      'AUTOMOVEL': 'AUTOMOVEL',
+      'UTILITARIO': 'UTILITARIO'
+    };
+    
+    return typeMapping[normalized] || normalized;
+  };
+
+  // Check direct properties first (tipologia and tipo) - usando normalização
+  const normalizedMotorTipologia = normalizeType(motorista.tipologia);
+  const normalizedMotorTipo = normalizeType(motorista.tipo);
+  
   if (
-    (motorista.tipologia && filters.includes(motorista.tipologia)) ||
-    (motorista.tipo && filters.includes(motorista.tipo))
+    (normalizedMotorTipologia && filters.includes(normalizedMotorTipologia)) ||
+    (normalizedMotorTipo && filters.includes(normalizedMotorTipo))
   ) {
     return true;
   }
   
-  // Check veiculo array if it exists (tipologia and tipo fields)
+  // Check veiculo array if it exists (tipologia and tipo fields) - usando normalização
   if (motorista.veiculo && motorista.veiculo.length > 0) {
-    return motorista.veiculo.some((veiculo: { tipologia?: string; tipo?: string }) => 
-      (veiculo.tipologia && filters.includes(veiculo.tipologia)) ||
-      (veiculo.tipo && filters.includes(veiculo.tipo))
-    );
+    return motorista.veiculo.some((veiculo: { tipologia?: string; tipo?: string }) => {
+      const normalizedVeiculoTipologia = normalizeType(veiculo.tipologia);
+      const normalizedVeiculoTipo = normalizeType(veiculo.tipo);
+      
+      return (
+        (normalizedVeiculoTipologia && filters.includes(normalizedVeiculoTipologia)) ||
+        (normalizedVeiculoTipo && filters.includes(normalizedVeiculoTipo))
+      );
+    });
   }
 
   return false;
@@ -280,7 +311,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const chunkSize = 50; // Limite seguro para evitar URLs muito longas com associacao_tags
       const associations = [];
       
-      console.log(`Buscando tags para ${motoristaIds.length} motoristas em chunks de ${chunkSize}`);
+      // Fetching tags for motoristas in chunks
       
       for (let i = 0; i < motoristaIds.length; i += chunkSize) {
         const chunk = motoristaIds.slice(i, i + chunkSize);
@@ -303,7 +334,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             .in('motorista_id', chunk);
           
           if (chunkError) {
-            console.warn(`Erro ao buscar chunk ${i}-${i + chunkSize}:`, chunkError);
+            // Error fetching chunk, continuing with next
             continue; // Continue com próximo chunk
           }
           
@@ -311,7 +342,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             associations.push(...chunkAssociations);
           }
         } catch (chunkError) {
-          console.warn(`Erro no chunk ${i}-${i + chunkSize}:`, chunkError);
+          // Error in chunk processing
         }
       }
       
@@ -403,7 +434,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       } catch (error: any) {
         // Ignorar erros RLS (406/PGRST301) - continuar com a operação
         if (error?.code === 'PGRST301' || error?.status === 406) {
-          console.log('RLS error ignored, continuing with tag association');
+          // RLS error ignored, continuing with tag association
         } else {
           console.warn('Error checking existing association (non-critical):', error);
         }
@@ -487,7 +518,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (error && error.code !== 'PGRST301') {
         throw error;
       } else if (error) {
-        console.log('RLS error ignored during tag removal');
+        // RLS error ignored during tag removal
       }
 
       // Atualizar estado local
@@ -906,6 +937,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     useEffect(() => {
       fetchContratados();
       fetchClientes();
+      fetchTiposVeiculoFromTable();
     }, [dateFilter, customDateRange]);
 
     // Carregar tags dos agregados automaticamente quando a lista de contratados mudar
@@ -1049,11 +1081,16 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const fetchContratados = async () => {
       try {
         setLoading(true);
-        // Buscar os agregados da view específica
+        // Buscar os agregados diretamente da tabela motorista com joins necessários
         let query = supabase
-          .from('vw_agregados_completo')
-          .select('*')
-          .eq('company_id', companyId);
+          .from('motorista')
+          .select(`
+            *,
+            cliente(nome),
+            veiculo(*)
+          `)
+          .eq('company_id', companyId)
+          .eq('funcao', 'Agregado');
 
         // Apply date filter
         if (dateFilter !== 'all') {
@@ -1092,12 +1129,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         if (error) throw error;
 
         // Log para debug dos valores de funcao
-        console.log('Valores de funcao encontrados:', Array.from(new Set(data?.map(item => item.funcao))));
-        console.log('Dados completos:', data);
+        // Processing function values from data
+        // Data processing completed
 
         // Extract unique cities from contratados - only include non-null/undefined city names
         const uniqueCities = new Set<string>();
-        const uniqueVehicleTypes = new Set<string>();
         
         // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
         const motoristaIds = data?.map(m => m.motorista_id) || [];
@@ -1157,17 +1193,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         // Agrupar ajudantes por motorista_id
         const agregadosAgrupadosMap = new Map();
         processedData.forEach(agregado => {
-          // Extract cities and vehicle types while processing data
+          // Extract cities while processing data
           if (agregado.nome_cidade && typeof agregado.nome_cidade === 'string') {
             uniqueCities.add(agregado.nome_cidade);
-          }
-          
-          // Extract vehicle types from tipologia and tipo fields
-          if (agregado.tipologia && typeof agregado.tipologia === 'string') {
-            uniqueVehicleTypes.add(agregado.tipologia);
-          }
-          if (agregado.tipo && typeof agregado.tipo === 'string') {
-            uniqueVehicleTypes.add(agregado.tipo);
           }
           
           if (!agregadosAgrupadosMap.has(agregado.motorista_id)) {
@@ -1186,11 +1214,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         // Filter out null or undefined values before setting the state
         const cidadesFiltradas = Array.from(uniqueCities).filter((c): c is string => c != null).sort();
-        const tipologiasFiltradas = Array.from(uniqueVehicleTypes).sort();
-        
         
         setCidades(cidadesFiltradas);
-        setTiposVeiculo(tipologiasFiltradas);
 
         setContratados(agregadosAgrupados);
         
@@ -1201,6 +1226,97 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         toast.error('Erro ao carregar contratados');
       } finally {
         setLoading(false);
+      }
+    };
+
+    // Função para buscar tipos únicos de veículos diretamente da tabela veiculo
+    const fetchTiposVeiculoFromTable = async () => {
+      try {
+        // Usar companyId do hook useCompanyData
+        if (!companyId) {
+          // Company ID not found - cannot filter vehicle types
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('veiculo')
+          .select('tipo, tipologia')
+          .eq('status_veiculo', true) // Apenas veículos ativos
+          .eq('company_id', companyId); // Filtrar pela empresa atual
+
+        if (error) {
+          console.error('Erro ao buscar tipos de veículos:', error);
+          return;
+        }
+
+        // Processing vehicle data for company
+        // Vehicle records retrieved
+
+        // Lista canônica de tipos válidos - apenas categorias gerais de veículos
+        const VALID_VEHICLE_TYPES = [
+          'FIORINO', 'VAN', 'CAMINHÃO', 'CAMINHÃO 3/4', 'HR', 'CAVALO', 'PASSEIO', 
+          'FURGÃO', 'OUTROS', 'DUCATO', 'DOBLO', 'H100', 'BESTA', 'BOXER',
+          'CAMINHONETE', 'CARRETA', 'MOTO', 'VUC', 'AUTOMOVEL', 'UTILITARIO',
+          'KOMBI', 'TRACTOR', 'PICKUP', 'MOTORCYCLE'
+        ];
+        
+        // Função para normalizar tipo de veículo
+        const normalizeVehicleType = (type: string): string | null => {
+          if (!type || typeof type !== 'string') return null;
+          
+          const normalized = type.trim().toUpperCase();
+          
+          // Mapear algumas variações comuns
+          const typeMapping: Record<string, string> = {
+            'CAMINHAO': 'CAMINHÃO',
+            'FURGAO': 'FURGÃO',
+            'MOTOCICLETA': 'MOTO',
+            'MOTORCYCLE': 'MOTO',
+            'TRACTOR': 'TRATOR',
+            'AUTOMÓVEL': 'AUTOMOVEL',
+            'UTILITÁRIO': 'UTILITARIO'
+          };
+          
+          const mappedType = typeMapping[normalized] || normalized;
+          
+          return VALID_VEHICLE_TYPES.includes(mappedType) ? mappedType : null;
+        };
+
+        const uniqueVehicleTypes = new Set<string>();
+        const debugInfo = { 
+          tipo: [] as string[], 
+          tipologia: [] as string[], 
+          rejeitados: [] as string[] 
+        };
+        
+        data?.forEach(veiculo => {
+          // Processar campo tipo
+          const normalizedTipo = normalizeVehicleType(veiculo.tipo);
+          if (normalizedTipo) {
+            uniqueVehicleTypes.add(normalizedTipo);
+            debugInfo.tipo.push(normalizedTipo);
+          } else if (veiculo.tipo) {
+            debugInfo.rejeitados.push(`tipo: ${veiculo.tipo}`);
+          }
+          
+          // Processar campo tipologia
+          const normalizedTipologia = normalizeVehicleType(veiculo.tipologia);
+          if (normalizedTipologia) {
+            uniqueVehicleTypes.add(normalizedTipologia);
+            debugInfo.tipologia.push(normalizedTipologia);
+          } else if (veiculo.tipologia) {
+            debugInfo.rejeitados.push(`tipologia: ${veiculo.tipologia}`);
+          }
+        });
+
+        const tipologiasFiltradas = Array.from(uniqueVehicleTypes).sort();
+        setTiposVeiculo(tipologiasFiltradas);
+        
+        // Vehicle types processing completed for company
+        // Debug info: rejected types processed
+        
+      } catch (error) {
+        console.error('Erro ao buscar tipos de veículos:', error);
       }
     };
 
@@ -2452,13 +2568,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             <div className="flex-shrink-0">
                               <WhatsAppAvatar 
                                 photoUrl={motorista.foto_whatsapp}
-                                name={motorista.nome_motorista}
+                                name={motorista.nome}
                                 size="md"
                               />
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {motorista.nome_motorista || ''}
+                                {motorista.nome || ''}
                                 {motorista.ajudantes && motorista.ajudantes.length > 0 && (
                                   <div className="text-xs text-gray-500 dark:text-gray-400">
                                     Ajudantes: {motorista.ajudantes.join(', ')}
@@ -2480,7 +2596,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             </div>
                             {motorista.telefone && (
                               <button
-                                onClick={() => startChat(motorista.telefone?.toString() || '', motorista.nome_motorista || '', motorista.motorista_id)}
+                                onClick={() => startChat(motorista.telefone?.toString() || '', motorista.nome || '', motorista.motorista_id)}
                                 className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
                                 title="Iniciar chat"
                               >

@@ -23,6 +23,7 @@ import {
 } from "./utils/api-retry";
 import { getBulkMotoristaTags } from "./bulk-tags-api";
 import { registerBulkContactTagsRoute } from "./bulk-contact-tags-sync";
+// CPF agora é consultado diretamente do frontend
 
 // Job tracking system for progress monitoring
 interface JobStatus {
@@ -71,12 +72,12 @@ function cleanupOldJobs() {
 setInterval(cleanupOldJobs, 30 * 60 * 1000);
 
 // Initialize Supabase client with bypass RLS for backend operations
-const supabaseBackendUrl =
-  process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabaseBackend.co";
-const supabaseBackendKey =
+const supabaseBackendBackendUrl =
+  process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co";
+const supabaseBackendBackendKey =
   process.env.VITE_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ";
-const supabaseBackendBackend = createClient(supabaseBackendUrl, supabaseBackendKey, {
+const supabaseBackendBackend = createClient(supabaseBackendBackendUrl, supabaseBackendBackendKey, {
   db: { schema: "public" },
   auth: {
     persistSession: false,
@@ -85,7 +86,7 @@ const supabaseBackendBackend = createClient(supabaseBackendUrl, supabaseBackendK
   },
   global: {
     headers: {
-      Authorization: `Bearer ${supabaseBackendKey}`,
+      Authorization: `Bearer ${supabaseBackendBackendKey}`,
     },
   },
 });
@@ -167,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar dados da empresa para validar accountId
-      const { data: companies, error: companyError } = await supabaseBackend
+      const { data: companies, error: companyError } = await supabaseBackendBackend
         .from("company")
         .select("id_conta_wiseapp")
         .eq("company_id", parseInt(companyId))
@@ -620,10 +621,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all related data in parallel
       const [clientesData, unidadesData, operacoesData, statusData] = await Promise.all([
-        supabaseBackend.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
-        supabaseBackend.from("unidade").select("id, unidade").eq("company_id", companyId),
-        supabaseBackend.from("operacao").select("id, operacao").eq("company_id", companyId),
-        supabaseBackend.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
+        supabaseBackendBackend.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
+        supabaseBackendBackend.from("unidade").select("id, unidade").eq("company_id", companyId),
+        supabaseBackendBackend.from("operacao").select("id, operacao").eq("company_id", companyId),
+        supabaseBackendBackend.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
       ]);
 
       // Create lookup maps
@@ -2043,7 +2044,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar token WiseApp para esta empresa de forma segura
-      const { data: tokenData, error: tokenError } = await supabaseBackend
+      const { data: tokenData, error: tokenError } = await supabaseBackendBackend
         .from('wiseapp_acesso')
         .select('access_token_wiseapp')
         .eq('company_id', parseInt(companyId))
@@ -2063,7 +2064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar dados do motorista
-      const { data: motorista, error: motoristaError } = await supabaseBackend
+      const { data: motorista, error: motoristaError } = await supabaseBackendBackend
         .from('motorista')
         .select('nome, telefone')
         .eq('motorista_id', parseInt(motoristaId))
@@ -2160,7 +2161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       } else if (operation === 'remove_tag') {
         // Buscar tags do motorista no banco local para determinar quais manter
-        const { data: motoristaTagsData } = await supabaseBackend
+        const { data: motoristaTagsData } = await supabaseBackendBackend
           .from('associacao_tags')
           .select(`
             tag:tag_id (nome)
@@ -2487,7 +2488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 1. Buscar token WiseApp diretamente
 
-      const { data: tokenDataArray, error: tokenError } = await supabaseBackend
+      const { data: tokenDataArray, error: tokenError } = await supabaseBackendBackend
         .from('wiseapp_acesso')
         .select('access_token_wiseapp')
         .eq('company_id', company_id)
@@ -2512,7 +2513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Token WiseApp encontrado, buscando motoristas...');
 
       // 2. Buscar todos os motoristas e agregados ativos
-      const { data: motoristas, error: motoristasError } = await supabaseBackend
+      const { data: motoristas, error: motoristasError } = await supabaseBackendBackend
         .from('motorista')
         .select('*')
         .eq('company_id', company_id)
@@ -2553,7 +2554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const errors: Array<{ motorista_id: number; nome: string; error: string }> = [];
 
       // 3. Buscar tags locais existentes
-      const { data: tagsLocais } = await supabaseBackend
+      const { data: tagsLocais } = await supabaseBackendBackend
         .from('tag')
         .select('*')
         .eq('company_id', company_id);
@@ -2564,7 +2565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // 4. Buscar associações de tags existentes
-      const { data: associacoesExistentes } = await supabaseBackend
+      const { data: associacoesExistentes } = await supabaseBackendBackend
         .from('associacao_tags')
         .select(`
           motorista_id,
@@ -2649,7 +2650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 // Criar tag local se não existir
                 if (!tagLocal) {
-                  const { data: novaTag } = await supabaseBackend
+                  const { data: novaTag } = await supabaseBackendBackend
                     .from('tag')
                     .insert({
                       nome: wiseLabel.title,
@@ -2673,7 +2674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   );
 
                   if (!associacaoExiste) {
-                    await supabaseBackend
+                    await supabaseBackendBackend
                       .from('associacao_tags')
                       .insert({
                         motorista_id: motorista.motorista_id,
@@ -3075,7 +3076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Fetching comments for motorista_id:", motoristaId);
 
-      const { data: comentarios, error } = await supabaseBackend
+      const { data: comentarios, error } = await supabaseBackendBackend
         .from("comentario")
         .select(`
           id,
@@ -3105,7 +3106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         if (userIds.length > 0) {
-          const { data: attendants } = await supabaseBackend
+          const { data: attendants } = await supabaseBackendBackend
             .from("wiseapp_acesso")
             .select("wiseapp_acesso_id, nome")
             .in("wiseapp_acesso_id", userIds);
@@ -3150,7 +3151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         comentario: commentData.comentario.trim()
       });
 
-      const { data: newComment, error } = await supabaseBackend
+      const { data: newComment, error } = await supabaseBackendBackend
         .from("comentario")
         .insert(validatedData)
         .select(`
@@ -3173,7 +3174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let commentWithName = newComment;
       if (newComment.id_atendente) {
-        const { data: attendant } = await supabaseBackend
+        const { data: attendant } = await supabaseBackendBackend
           .from("wiseapp_acesso")
           .select("nome")
           .eq("wiseapp_acesso_id", newComment.id_atendente)
@@ -3204,6 +3205,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register bulk contact tags sync route
   registerBulkContactTagsRoute(app);
+
+  // Register CPF API route
+  // CPF consultado diretamente no frontend
 
   const httpServer = createServer(app);
 

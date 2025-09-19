@@ -46,6 +46,7 @@ Preferred communication style: Simple, everyday language.
 - **Pagination System**: Added comprehensive pagination to HodometrosLista page with configurable page sizes (10, 25, 50, 100) using reusable pagination hooks and components for optimal data viewing.
 - **License Plate API Integration**: Real-time vehicle data consultation using FIPE API (placas.fipeapi.com.br) with automatic form filling for vehicle registration. Includes validation for both old and Mercosul license plate formats, proper error handling, and seamless integration in AddVeiculoModal and EditVeiculoModal components.
 - **Enhanced Routes System**: Comprehensive backend routes with real WiseApp API integration, multiple CEP APIs with intelligent fallback system (ViaCEP, BrasilAPI, PostMon, RepublicaVirtual), complete CRUD operations for all entities, job vacancy management, and proxy services for external APIs. Includes timeout handling and robust error management across all services.
+- **Performance Optimization**: Major performance improvements to the Contratados.tsx page, reducing loading time from 35+ seconds to under 5 seconds by implementing a two-step database approach: first fetching unique motorista_id with server-side pagination, then fetching detailed data only for paginated results. Fixed pagination vs grouping conflicts, implemented proper date filtering with full-day coverage, added global search functionality, and corrected total count calculations to maintain accuracy while achieving scalable performance.
 
 ## External Dependencies
 

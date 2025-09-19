@@ -58,7 +58,7 @@ export const useDateRange = (initialPeriod: PeriodType = '30days', debounceCusto
     setPeriodType(type);
     if (type !== 'custom') {
       const newRange = calculateDateRange(type);
-      console.log(`Setting new date range for ${type}:`, newRange);
+      // Setting new date range for period type
       setDateRange(newRange);
       setPendingDateRange(null);
     }

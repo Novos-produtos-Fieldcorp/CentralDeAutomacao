@@ -48,7 +48,7 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string, apiKey?: string, a
       return null;
     }
 
-    console.log('Searching contact for phone:', phoneNumber);
+    // Searching contact for phone number
 
     // Usar axios igual ao FloatingChat para manter consistência
     const axios = (await import('axios')).default;
@@ -78,7 +78,7 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string, apiKey?: string, a
       
       if (searchResponse.data?.payload?.[0]) {
         const contact = searchResponse.data.payload[0];
-        console.log('Found contact via search:', contact);
+        // Contact found via search
         
         // Buscar dados completos do contato igual ao FloatingChat
         const contactResponse = await apiClient.get(`/api/v1/accounts/${accountId}/contacts/${contact.id}`);
@@ -87,13 +87,13 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string, apiKey?: string, a
           const photoUrl = contactResponse.data.avatar_url || contactResponse.data.thumbnail;
           
           if (photoUrl && photoUrl.trim() !== '') {
-            console.log('Found contact photo URL:', photoUrl);
+            // Contact photo URL found
             return photoUrl;
           }
         }
       }
     } catch (error) {
-      console.log('Erro na busca específica, tentando busca geral:', error);
+      // Error in specific search, trying general search
     }
 
     // Se não encontrou, tentar busca geral como o FloatingChat
@@ -103,20 +103,20 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string, apiKey?: string, a
       
       if (response.data && response.data.payload && response.data.payload.length > 0) {
         const contact = response.data.payload[0];
-        console.log('Found contact via general search:', contact);
+        // Contact found via general search
         
         const photoUrl = contact.avatar_url || contact.thumbnail;
         
         if (photoUrl && photoUrl.trim() !== '') {
-          console.log('Found contact photo URL:', photoUrl);
+          // Contact photo URL found
           return photoUrl;
         }
       }
     } catch (error) {
-      console.log('Erro na busca geral:', error);
+      // Error in general search
     }
     
-    console.log('No contact or photo found for phone:', phoneNumber);
+    // No contact or photo found for phone number
     return null;
   } catch (error) {
     console.error('Erro ao buscar foto do WhatsApp:', error);

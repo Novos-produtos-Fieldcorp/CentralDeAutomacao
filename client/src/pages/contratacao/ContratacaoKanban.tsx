@@ -309,7 +309,7 @@ const ContratacaoKanban = () => {
     ));
     
     try {
-      console.log(`[FETCH] Buscando dados para status: ${status}, funcao: ${funcaoFilter}, page: ${page}`);
+      // Fetching data for status and function filter
       
       // Calculate pagination parameters
       const from = (page - 1) * itemsPerPage;
@@ -340,7 +340,7 @@ const ContratacaoKanban = () => {
       // Apply pagination
       query = query.range(from, to);
       
-      console.log(`[FETCH] Executando query na view vw_motoristas_completo...`);
+      // Executing query on motoristas view
       
       const { data: motoristasData1, error: error1 } = await query;
       
@@ -353,7 +353,7 @@ const ContratacaoKanban = () => {
       
       // Para agregados, também buscar na vw_agregados_completo
       if (funcaoFilter === 'Agregado' || funcaoFilter === 'todos') {
-        console.log(`[FETCH] Buscando também na view vw_agregados_completo...`);
+        // Also fetching from agregados view
         
         let agregadosQuery = supabase
           .from('vw_agregados_completo')
@@ -389,7 +389,7 @@ const ContratacaoKanban = () => {
         }
       }
       
-      console.log(`[FETCH] Total de registros obtidos das views:`, motoristasData.length);
+      // Records retrieved from views
       
       if (!motoristasData || motoristasData.length === 0) {
         console.warn(`[FETCH] Nenhum registro encontrado para o status: ${status}`);
@@ -408,7 +408,7 @@ const ContratacaoKanban = () => {
         primeiro_nome: motorista.nome_motorista ? motorista.nome_motorista.split(' ')[0] : ''
       }));
       
-      console.log(`[FETCH] Atualizando coluna ${status} com ${motoristasFormatted.length} registros`);
+      // Updating column with processed records
       
       // Update column with new data
       setColumns(prev => prev.map(col => 
@@ -518,7 +518,7 @@ const ContratacaoKanban = () => {
     if (!companyId) return;
     
     try {
-      console.log(`[STATUS UPDATE] Starting: motorista ${motorista_id} from ${oldStatus} to ${newStatus}`);
+      // Starting status update for motorista
       
       const { error } = await supabase
         .from('motorista')
@@ -527,14 +527,14 @@ const ContratacaoKanban = () => {
 
       if (error) throw error;
       
-      console.log(`[STATUS UPDATE] Database updated successfully`);
+      // Database update completed successfully
       
       // Show success immediately
       toast.success('Status atualizado com sucesso');
       
       // Simple approach: reload the entire page data
       const reloadAllData = async () => {
-        console.log(`[STATUS UPDATE] Starting complete data reload...`);
+        // Starting complete data reload
         
         // Set all columns to loading
         setColumns(prev => prev.map(col => ({
@@ -559,7 +559,7 @@ const ContratacaoKanban = () => {
           currentPage: col.id === newStatus ? 1 : col.currentPage
         })));
         
-        console.log(`[STATUS UPDATE] Complete reload finished`);
+        // Complete data reload finished
       };
       
       // Execute with slight delay

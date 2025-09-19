@@ -217,7 +217,7 @@ const HodometrosDashboard = () => {
 
       if (error) throw error;
 
-      console.log(`Fetched ${data?.length || 0} hodometro readings`);
+      // Processing hodometro readings data
 
       // Initialize maps for data processing
       const dailyMileageMap = new Map<string, { totalKm: number; formattedDate: string }>();
@@ -466,7 +466,7 @@ const HodometrosDashboard = () => {
       setAverageKmPerDay(avgKmPerDay);
       setTotalReadings(data?.length || 0);
       
-      console.log(`Processed data: ${driverReadingsArray.length} drivers with readings`);
+      // Data processing completed for drivers
       
     } catch (error) {
       handleSupabaseError(error, 'carregar dados de hodômetro');

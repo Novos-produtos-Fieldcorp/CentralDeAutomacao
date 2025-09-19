@@ -140,10 +140,29 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
         cep: data.cep || prev.cep
       }));
       
-      toast.success('Dados do CPF preenchidos!');
+      // Verifica se dados foram retornados
+      const hasData = Object.values(data).some(value => value !== undefined && value !== null && value !== '');
+      
+      if (hasData) {
+        toast.success('Dados do CPF preenchidos automaticamente!');
+      } else {
+        toast('CPF validado. Nenhum dado adicional encontrado.', {
+          duration: 3000,
+          icon: 'ℹ️'
+        });
+      }
     } catch (error) {
       console.error('Erro ao consultar CPF:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao consultar CPF');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao consultar CPF';
+      
+      // Se for erro de conectividade, mostra mensagem mais amigável
+      if (errorMessage.includes('temporariamente indisponível') || errorMessage.includes('conectividade')) {
+        toast.error('Consulta de CPF indisponível. Preencha os dados manualmente.', {
+          duration: 4000
+        });
+      } else {
+        toast.error(errorMessage);
+      }
     }
   };
 
