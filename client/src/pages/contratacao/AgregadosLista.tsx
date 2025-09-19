@@ -1198,7 +1198,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       try {
         const { data, error } = await supabase
           .from('veiculo')
-          .select('tipo, tipologia')
+          .select('tipologia')
           .eq('status_veiculo', true); // Apenas veículos ativos
 
         if (error) {
@@ -1208,16 +1208,36 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         const uniqueVehicleTypes = new Set<string>();
         
+        // Lista de tipos válidos de veículos (sem marcas)
+        const tiposValidos = [
+          'CAMINHÃO', 'CAMINHÃO 3/4', 'VAN', 'FURGÃO', 'HR', 'FIORINO', 
+          'PASSEIO', 'CAVALO', 'OUTROS', 'VUC', 'MOTO', 'Carreta',
+          'Sedan', 'Hatch', 'SUV', 'Pickup', 'Baú', 'Chassi'
+        ];
+        
         data?.forEach(veiculo => {
-          if (veiculo.tipo && typeof veiculo.tipo === 'string') {
-            uniqueVehicleTypes.add(veiculo.tipo);
-          }
-          if (veiculo.tipologia && typeof veiculo.tipologia === 'string') {
-            uniqueVehicleTypes.add(veiculo.tipologia);
+          // Usar apenas tipologia, que tem dados mais limpos
+          if (veiculo.tipologia && typeof veiculo.tipologia === 'string' && veiculo.tipologia.trim()) {
+            uniqueVehicleTypes.add(veiculo.tipologia.trim());
           }
         });
 
-        const tipologiasFiltradas = Array.from(uniqueVehicleTypes).sort();
+        // Filtrar apenas tipos válidos (sem marcas/modelos)
+        const tipologiasFiltradas = Array.from(uniqueVehicleTypes)
+          .filter(tipo => {
+            // Excluir se contém barra (indica marca/modelo)
+            if (tipo.includes('/')) return false;
+            
+            // Excluir se tem mais de 25 caracteres (provavelmente é descrição de modelo)
+            if (tipo.length > 25) return false;
+            
+            // Excluir se contém números no meio (indica modelo específico)
+            if (/\d/.test(tipo) && !tiposValidos.some(valido => valido === tipo)) return false;
+            
+            return true;
+          })
+          .sort();
+        
         setTiposVeiculo(tipologiasFiltradas);
         
       } catch (error) {
