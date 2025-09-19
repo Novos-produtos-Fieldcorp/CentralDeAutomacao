@@ -1196,10 +1196,17 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     // Função para buscar tipos únicos de veículos diretamente da tabela veiculo
     const fetchTiposVeiculoFromTable = async () => {
       try {
+        // Usar companyId do hook useCompanyData
+        if (!companyId) {
+          console.log('Company ID não encontrado - não é possível filtrar tipos de veículos');
+          return;
+        }
+
         const { data, error } = await supabase
           .from('veiculo')
           .select('tipo, tipologia')
-          .eq('status_veiculo', true); // Apenas veículos ativos
+          .eq('status_veiculo', true) // Apenas veículos ativos
+          .eq('company_id', companyId); // Filtrar pela empresa atual
 
         if (error) {
           console.error('Erro ao buscar tipos de veículos:', error);
@@ -1219,6 +1226,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         const tipologiasFiltradas = Array.from(uniqueVehicleTypes).sort();
         setTiposVeiculo(tipologiasFiltradas);
+        
+        console.log(`Tipos de veículos encontrados para empresa ${companyId}:`, tipologiasFiltradas);
         
       } catch (error) {
         console.error('Erro ao buscar tipos de veículos:', error);
