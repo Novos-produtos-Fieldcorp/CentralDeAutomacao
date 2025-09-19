@@ -42,10 +42,17 @@ const ContratacaoDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (companyId) {
+      fetchDashboardData();
+    }
+  }, [companyId]);
 
   const fetchDashboardData = async () => {
+    if (!companyId) {
+      console.warn('companyId não está disponível ainda');
+      return;
+    }
+
     try {
       setLoading(true);
 
