@@ -99,11 +99,14 @@ const Contratados = () => {
   const { token: wiseAppToken } = useWiseAppAccess();
   const queryClient = useQueryClient();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(100);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
@@ -319,7 +322,7 @@ const Contratados = () => {
   useEffect(() => {
     fetchContratados();
     fetchClientes();
-  }, [dateFilter, customDateRange]);
+  }, [dateFilter, customDateRange, currentPage, pageSize, searchTerm]);
 
   useEffect(() => {
     // Close context menu when clicking anywhere
@@ -338,107 +341,122 @@ const Contratados = () => {
   const fetchContratados = async () => {
     try {
       setLoading(true);
-      // Buscar apenas os contratados (st_cadastro = 'contratado')
-      let query = supabase
+      
+      // Função helper para construir filtros de data com timezone UTC
+      const buildDateFilters = (query: any) => {
+        if (dateFilter !== 'all') {
+          const today = new Date();
+          
+          if (dateFilter === 'today') {
+            // Para 'today', usar UTC timezone
+            const startOfToday = new Date(today);
+            startOfToday.setUTCHours(0, 0, 0, 0);
+            const endOfToday = new Date(today);
+            endOfToday.setUTCHours(23, 59, 59, 999);
+            
+            query = query.gte('data_cadastro', startOfToday.toISOString().split('T')[0]);
+            query = query.lt('data_cadastro', new Date(endOfToday.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+          } else if (dateFilter === '2days') {
+            // Last 2 days
+            const startDate = new Date(today);
+            startDate.setDate(today.getDate() - 2);
+            startDate.setUTCHours(0, 0, 0, 0);
+            query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+          } else if (dateFilter === '15days') {
+            // Last 15 days
+            const startDate = new Date(today);
+            startDate.setDate(today.getDate() - 15);
+            startDate.setUTCHours(0, 0, 0, 0);
+            query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+          } else if (dateFilter === '30days') {
+            // Last 30 days
+            const startDate = new Date(today);
+            startDate.setDate(today.getDate() - 30);
+            startDate.setUTCHours(0, 0, 0, 0);
+            query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+          } else if (dateFilter === 'custom' && customDateRange.startDate && customDateRange.endDate) {
+            // Custom date range - incluir o dia completo da data final com timezone UTC
+            const endDate = new Date(customDateRange.endDate + 'T23:59:59.999Z');
+            
+            query = query.gte('data_cadastro', customDateRange.startDate);
+            query = query.lte('data_cadastro', customDateRange.endDate);
+          }
+        }
+        return query;
+      };
+
+      // Função helper para aplicar busca global com escape de vírgulas
+      const buildSearchFilters = (query: any) => {
+        if (searchTerm) {
+          // Escapar vírgulas no searchTerm para evitar quebrar a query .or()
+          const escapedSearchTerm = searchTerm.replace(/,/g, '\\,');
+          // Remover telefone do ilike pois pode ser numérico - usar apenas campos de texto
+          query = query.or(`nome_motorista.ilike.%${escapedSearchTerm}%,cpf.ilike.%${escapedSearchTerm}%,email.ilike.%${escapedSearchTerm}%`);
+        }
+        return query;
+      };
+
+      // STEP 1: Buscar apenas motorista_id distintos com filtros e paginação no servidor
+      let countQuery = supabase
         .from('vw_contratados_completo')
-        .select('*')
+        .select('motorista_id', { count: 'exact', head: true })
         .eq('company_id', companyId)
         .eq('st_cadastro', 'contratado');
 
-      // Apply date filter
-      if (dateFilter !== 'all') {
-        const today = new Date();
-        let startDate = new Date();
-        
-        if (dateFilter === 'today') {
-          // Today only
-          startDate = new Date(today.setHours(0, 0, 0, 0));
-          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
-          query = query.lte('data_cadastro', new Date().toISOString().split('T')[0]);
-        } else if (dateFilter === '2days') {
-          // Last 2 days
-          startDate.setDate(today.getDate() - 2);
-          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
-        } else if (dateFilter === '15days') {
-          // Last 15 days
-          startDate.setDate(today.getDate() - 15);
-          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
-        } else if (dateFilter === '30days') {
-          // Last 30 days
-          startDate.setDate(today.getDate() - 30);
-          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
-        } else if (dateFilter === 'custom' && customDateRange.startDate && customDateRange.endDate) {
-          // Custom date range
-          query = query.gte('data_cadastro', customDateRange.startDate);
-          query = query.lte('data_cadastro', customDateRange.endDate);
-        }
+      // Aplicar filtros na query de contagem
+      countQuery = buildDateFilters(countQuery);
+      countQuery = buildSearchFilters(countQuery);
+
+      // Buscar IDs únicos com paginação
+      let idsQuery = supabase
+        .from('vw_contratados_completo')
+        .select('motorista_id')
+        .eq('company_id', companyId)
+        .eq('st_cadastro', 'contratado');
+
+      // Aplicar filtros
+      idsQuery = buildDateFilters(idsQuery);
+      idsQuery = buildSearchFilters(idsQuery);
+      
+      // Ordenar e aplicar paginação no servidor
+      idsQuery = idsQuery.order('data_cadastro', { ascending: false });
+      
+      // Implementar paginação usando range para motorista_id únicos
+      const from = (currentPage - 1) * pageSize;
+      const to = from + pageSize - 1;
+      
+      // Buscar IDs únicos agrupados manualmente
+      const { data: allIdsData, error: idsError } = await idsQuery;
+      if (idsError) throw idsError;
+      
+      // Extrair IDs únicos
+      const uniqueIds = [...new Set((allIdsData || []).map(item => item.motorista_id))];
+      setTotalCount(uniqueIds.length);
+      
+      // Aplicar paginação nos IDs únicos
+      const paginatedIds = uniqueIds.slice(from, from + pageSize);
+      
+      if (paginatedIds.length === 0) {
+        setContratados([]);
+        setCidades([]);
+        setTiposVeiculo([]);
+        setFuncoes([]);
+        return;
       }
 
-      // Order by data_cadastro (newest first)
-      query = query.order('data_cadastro', { ascending: false });
+      // STEP 2: Buscar detalhes completos apenas dos IDs paginados
+      const { data: detailedData, error: detailsError } = await supabase
+        .from('vw_contratados_completo')
+        .select('*')
+        .in('motorista_id', paginatedIds)
+        .eq('company_id', companyId)
+        .order('data_cadastro', { ascending: false });
 
-      const { data, error } = await query;
+      if (detailsError) throw detailsError;
 
-      if (error) throw error;
-
-      // Log the data to check the ativo field
-      console.log('Fetched contratados:', data);
-
-      // Extract unique cities, vehicle types, and functions from contratados
-      const uniqueCities = new Set<string>();
-      const uniqueVehicleTypes = new Set<string>();
-      const uniqueFunctions = new Set<string>();
-      
-      // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
-      const motoristaIds = data?.map(m => m.motorista_id) || [];
-      let ativosStatus: Record<number, boolean> = {};
-      let fotosWhatsApp: Record<number, string | null> = {};
-      
-      if (motoristaIds.length > 0) {
-        // Break into chunks to avoid URL length limits
-        const chunkSize = 100;
-        const chunks = [];
-        for (let i = 0; i < motoristaIds.length; i += chunkSize) {
-          chunks.push(motoristaIds.slice(i, i + chunkSize));
-        }
-
-        // Process each chunk and collect results
-        for (const chunk of chunks) {
-          try {
-            const { data: motoristas, error: motoristasError } = await supabase
-              .from('motorista')
-              .select('motorista_id, ativo, foto_whatsapp')
-              .in('motorista_id', chunk);
-              
-            if (motoristasError) {
-              console.error('Erro ao buscar status dos motoristas:', motoristasError);
-            } else {
-              // Criar um mapa de motorista_id para status ativo e fotos
-              motoristas?.forEach(m => {
-                ativosStatus[m.motorista_id] = m.ativo === true;
-                fotosWhatsApp[m.motorista_id] = m.foto_whatsapp || null;
-              });
-            }
-          } catch (chunkError) {
-            console.error('Erro ao processar chunk de motoristas:', chunkError);
-          }
-        }
-      }
-      
-      // Processar os dados com os status ativos e fotos
-      const processedData = data?.map(motorista => {
-        const ativo = ativosStatus[motorista.motorista_id] === true;
-        const foto_whatsapp = fotosWhatsApp[motorista.motorista_id] || null;
-        return {
-          ...motorista,
-          ativo: ativo,
-          foto_whatsapp: foto_whatsapp
-        };
-      }) || [];
-
-      // Agrupar ajudantes por motorista_id
+      // Agrupar ajudantes por motorista_id após buscar detalhes
       const contratadosAgrupadosMap = new Map();
-      processedData.forEach(contratado => {
+      (detailedData || []).forEach(contratado => {
         if (!contratadosAgrupadosMap.has(contratado.motorista_id)) {
           contratadosAgrupadosMap.set(contratado.motorista_id, {
             ...contratado,
@@ -451,37 +469,38 @@ const Contratados = () => {
           }
         }
       });
-      const contratadosAgrupados = Array.from(contratadosAgrupadosMap.values());
+      
+      // Converter para array mantendo ordem
+      const contratadosAgrupados = paginatedIds
+        .map(id => contratadosAgrupadosMap.get(id))
+        .filter(Boolean);
 
-      console.log('Dados processados:', JSON.parse(JSON.stringify(contratadosAgrupados)));
-      
-      processedData.forEach(motorista => {
-        if (motorista.nome_cidade) {
-          uniqueCities.add(motorista.nome_cidade);
-        }
+      // Buscar dados para filtros de forma eficiente (só quando necessário)
+      const { data: filtersData, error: filtersError } = await supabase
+        .from('vw_contratados_completo')
+        .select('nome_cidade, tipologia, funcao')
+        .eq('company_id', companyId)
+        .eq('st_cadastro', 'contratado');
+
+      if (!filtersError) {
+        const uniqueCities = new Set<string>();
+        const uniqueVehicleTypes = new Set<string>();
+        const uniqueFunctions = new Set<string>();
+
+        (filtersData || []).forEach(item => {
+          if (item.nome_cidade) uniqueCities.add(item.nome_cidade);
+          if (item.tipologia) uniqueVehicleTypes.add(item.tipologia);
+          if (item.funcao) uniqueFunctions.add(item.funcao);
+        });
         
-        // Extract vehicle types
-        if (motorista.veiculo && motorista.veiculo.length > 0) {
-          motorista.veiculo.forEach((veiculo: { tipologia?: string }) => {
-            if (veiculo.tipologia) {
-              uniqueVehicleTypes.add(veiculo.tipologia);
-            }
-          });
-        }
-        
-        // Extract functions
-        if (motorista.funcao) {
-          uniqueFunctions.add(motorista.funcao);
-        }
-      });
-      
-      setCidades(Array.from(uniqueCities).sort());
-      setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
-      setFuncoes(Array.from(uniqueFunctions).sort());
+        setCidades(Array.from(uniqueCities).sort());
+        setTiposVeiculo(Array.from(uniqueVehicleTypes).sort());
+        setFuncoes(Array.from(uniqueFunctions).sort());
+      }
 
       setContratados(contratadosAgrupados);
     } catch (error) {
-      console.error('Error fetching contratados:', error);
+      console.error('Erro ao carregar contratados:', error);
       toast.error('Erro ao carregar contratados');
     } finally {
       setLoading(false);
@@ -518,7 +537,6 @@ const Contratados = () => {
 
       setClientes(clientesComCor);
     } catch (error) {
-      console.error('Error fetching clientes:', error);
       toast.error('Erro ao carregar clientes');
     }
   };
@@ -528,7 +546,6 @@ const Contratados = () => {
       setSelectedMotorista(motorista);
       setIsUnifiedModalOpen(true);
     } catch (error) {
-      console.error('Error fetching document details:', error);
       toast.error('Erro ao carregar detalhes do documento');
     }
   };
@@ -559,7 +576,6 @@ const Contratados = () => {
       toast.success('Motorista excluído com sucesso');
       setIsDeleteModalOpen(false);
     } catch (error) {
-      console.error('Error deleting motorista:', error);
       toast.error('Erro ao excluir motorista');
     }
   };
@@ -574,7 +590,7 @@ const Contratados = () => {
     setSelectedItems(newSelectedItems);
     
     // Update selectAll state
-    setSelectAll(newSelectedItems.size === filteredContratados.length);
+    setSelectAll(newSelectedItems.size === contratados.length);
   };
   
   // Funções para manipular filtros de múltipla seleção
@@ -683,7 +699,7 @@ const Contratados = () => {
     if (selectAll) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(filteredContratados.map(m => m.motorista_id || 0)));
+      setSelectedItems(new Set(contratados.map(m => m.motorista_id || 0)));
     }
     setSelectAll(!selectAll);
   };
@@ -1181,102 +1197,21 @@ const Contratados = () => {
   };
 
 
-  const filteredContratados = contratados.filter((motorista): boolean => {
-    const searchLower = searchTerm.toLowerCase();
-    
-    // Lógica para filtro de status (multiseleção)
-    const statusMatch = statusFilter.length === 0 || 
-      (motorista.st_cadastro && statusFilter.includes(motorista.st_cadastro));
-    
-    // Lógica para filtro de cliente (multiseleção)
-    let clienteMatch = true;
-    if (clienteFilter.length > 0) {
-      if (clienteFilter.includes('sem_cliente')) {
-        // Se 'sem_cliente' está selecionado, inclui registros sem cliente
-        clienteMatch = motorista.cliente_id === null || motorista.cliente_id === undefined;
-      } else {
-        // Verifica se o cliente do motorista está na lista de clientes selecionados
-        clienteMatch = motorista.cliente_id !== null && 
-          motorista.cliente_id !== undefined &&
-          clienteFilter.includes(motorista.cliente_id.toString());
-      }
-      
-      // Se 'sem_cliente' está selecionado junto com outros clientes, combina os resultados
-      if (clienteFilter.includes('sem_cliente') && clienteFilter.length > 1) {
-        clienteMatch = clienteMatch || (motorista.cliente_id === null || motorista.cliente_id === undefined);
-      }
-    }
-    
-    // Lógica para filtro de cidade (multiseleção)
-    const cidadeMatch = cidadeFilter.length === 0 || 
-      (motorista.nome_cidade && cidadeFilter.includes(motorista.nome_cidade));
-    
-    // Lógica para filtro de tipo de veículo (multiseleção)
-    let tipoVeiculoMatch = true;
-    if (tipoVeiculoFilter.length > 0) {
-      if (tipoVeiculoFilter.includes('sem_veiculo')) {
-        tipoVeiculoMatch = !motorista.veiculo || motorista.veiculo.length === 0;
-      } else {
-        tipoVeiculoMatch = !!(motorista.veiculo && motorista.veiculo.some(v => 
-          v.tipologia && tipoVeiculoFilter.includes(v.tipologia)
-        ));
-      }
-      
-      // Se 'sem_veiculo' está selecionado junto com outros tipos, combina os resultados
-      if (tipoVeiculoFilter.includes('sem_veiculo') && tipoVeiculoFilter.length > 1) {
-        tipoVeiculoMatch = tipoVeiculoMatch || (!motorista.veiculo || motorista.veiculo.length === 0);
-      }
-    }
-    
-    // Lógica para filtro de função (multiseleção)
-    let funcaoMatch = true;
-    if (funcaoFilter.length > 0) {
-      if (funcaoFilter.includes('sem_funcao')) {
-        funcaoMatch = !motorista.funcao || motorista.funcao.trim() === '';
-      } else {
-        funcaoMatch = !!(motorista.funcao && funcaoFilter.includes(motorista.funcao));
-      }
-      
-      // Se 'sem_funcao' está selecionado junto com outras funções, combina os resultados
-      if (funcaoFilter.includes('sem_funcao') && funcaoFilter.length > 1) {
-        funcaoMatch = funcaoMatch || (!motorista.funcao || motorista.funcao.trim() === '');
-      }
-    }
-    
-    const ativoMatch = ativoFilter === '' ? true : 
-                      ativoFilter === 'active' ? motorista.ativo === true : 
-                      ativoFilter === 'inactive' ? motorista.ativo === false : true;
-    
-    const searchMatch = Boolean(
-      (motorista.nome_motorista && motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
-      (motorista.cpf && motorista.cpf.includes(searchLower)) ||
-      (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
-      (motorista.telefone && motorista.telefone.toString().includes(searchLower))
-    );
-    
-    return Boolean(
-      statusMatch &&
-      clienteMatch &&
-      cidadeMatch &&
-      tipoVeiculoMatch &&
-      funcaoMatch &&
-      ativoMatch &&
-      searchMatch
-    );
-  });
 
-  const {
-    currentPage,
-    pageSize,
-    totalPages,
-    totalItems,
-    paginatedData,
-    handlePageChange,
-    handlePageSizeChange
-  } = usePagination({
-    data: filteredContratados,
-    initialPageSize: 10
-  });
+  // Calculate total pages for pagination controls
+  const totalPages = Math.ceil(totalCount / pageSize);
+  
+  // Dados já paginados e filtrados vem diretamente do servidor
+  const paginatedData = contratados;
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   if (loading) {
     return <LoadingSpinner />;
@@ -2293,7 +2228,7 @@ const Contratados = () => {
           </div>
         </div>
         
-        {filteredContratados.length === 0 ? (
+        {paginatedData.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400">
               Nenhum contratado encontrado
@@ -2304,7 +2239,7 @@ const Contratados = () => {
             currentPage={currentPage}
             totalPages={totalPages}
             pageSize={pageSize}
-            totalItems={totalItems}
+            totalItems={totalCount}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
           />
