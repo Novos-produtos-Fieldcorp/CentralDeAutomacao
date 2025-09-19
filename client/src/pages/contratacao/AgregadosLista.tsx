@@ -906,6 +906,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     useEffect(() => {
       fetchContratados();
       fetchClientes();
+      fetchTiposVeiculoFromTable();
     }, [dateFilter, customDateRange]);
 
     // Carregar tags dos agregados automaticamente quando a lista de contratados mudar
@@ -1097,7 +1098,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         // Extract unique cities from contratados - only include non-null/undefined city names
         const uniqueCities = new Set<string>();
-        const uniqueVehicleTypes = new Set<string>();
         
         // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
         const motoristaIds = data?.map(m => m.motorista_id) || [];
@@ -1157,17 +1157,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         // Agrupar ajudantes por motorista_id
         const agregadosAgrupadosMap = new Map();
         processedData.forEach(agregado => {
-          // Extract cities and vehicle types while processing data
+          // Extract cities while processing data
           if (agregado.nome_cidade && typeof agregado.nome_cidade === 'string') {
             uniqueCities.add(agregado.nome_cidade);
-          }
-          
-          // Extract vehicle types from tipologia and tipo fields
-          if (agregado.tipologia && typeof agregado.tipologia === 'string') {
-            uniqueVehicleTypes.add(agregado.tipologia);
-          }
-          if (agregado.tipo && typeof agregado.tipo === 'string') {
-            uniqueVehicleTypes.add(agregado.tipo);
           }
           
           if (!agregadosAgrupadosMap.has(agregado.motorista_id)) {
@@ -1186,11 +1178,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         // Filter out null or undefined values before setting the state
         const cidadesFiltradas = Array.from(uniqueCities).filter((c): c is string => c != null).sort();
-        const tipologiasFiltradas = Array.from(uniqueVehicleTypes).sort();
-        
         
         setCidades(cidadesFiltradas);
-        setTiposVeiculo(tipologiasFiltradas);
 
         setContratados(agregadosAgrupados);
         
@@ -1201,6 +1190,38 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         toast.error('Erro ao carregar contratados');
       } finally {
         setLoading(false);
+      }
+    };
+
+    // Função para buscar tipos únicos de veículos diretamente da tabela veiculo
+    const fetchTiposVeiculoFromTable = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('veiculo')
+          .select('tipo, tipologia')
+          .eq('status_veiculo', true); // Apenas veículos ativos
+
+        if (error) {
+          console.error('Erro ao buscar tipos de veículos:', error);
+          return;
+        }
+
+        const uniqueVehicleTypes = new Set<string>();
+        
+        data?.forEach(veiculo => {
+          if (veiculo.tipo && typeof veiculo.tipo === 'string') {
+            uniqueVehicleTypes.add(veiculo.tipo);
+          }
+          if (veiculo.tipologia && typeof veiculo.tipologia === 'string') {
+            uniqueVehicleTypes.add(veiculo.tipologia);
+          }
+        });
+
+        const tipologiasFiltradas = Array.from(uniqueVehicleTypes).sort();
+        setTiposVeiculo(tipologiasFiltradas);
+        
+      } catch (error) {
+        console.error('Erro ao buscar tipos de veículos:', error);
       }
     };
 
