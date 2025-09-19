@@ -88,7 +88,7 @@ export interface ViewContratado {
 
 const checkVehicleTypeMatch = (motorista: ViewContratado, filters: string[]): boolean => {
   // Função auxiliar de normalização (igual à usada no filtro)
-  const normalizeType = (type: string): string | null => {
+  const normalizeType = (type: string | undefined | null): string | null => {
     if (!type || typeof type !== 'string') return null;
     
     let normalized = type.trim().toUpperCase()
