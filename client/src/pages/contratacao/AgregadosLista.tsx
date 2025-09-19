@@ -1213,25 +1213,50 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           return;
         }
 
-        console.log(`Dados brutos da tabela veiculo para empresa ${companyId}:`, data);
+        console.log(`Dados brutos da tabela veiculo para empresa ${companyId} (primeiros 5):`, data?.slice(0, 5));
         console.log(`Total de registros encontrados:`, data?.length);
 
+        // Lista de tipos válidos - apenas categorias gerais de veículos
+        const tiposValidos = [
+          'FIORINO', 'VAN', 'CAMINHÃO', 'CAMINHÃO 3/4', 'HR', 'CAVALO', 'PASSEIO', 
+          'FURGÃO', 'OUTROS', 'DUCATO', 'DOBLO', 'H100', 'BESTA', 'BOXER',
+          'CAMINHONETE', 'CARRETA', 'MOTO', 'VUC', 'AUTOMOVEL', 'UTILITARIO'
+        ];
+
         const uniqueVehicleTypes = new Set<string>();
-        const debugInfo = { tipo: [], tipologia: [] };
+        const debugInfo = { 
+          tipo: [] as string[], 
+          tipologia: [] as string[], 
+          rejeitados: [] as string[] 
+        };
         
         data?.forEach(veiculo => {
-          if (veiculo.tipo && typeof veiculo.tipo === 'string' && veiculo.tipo.trim() !== '') {
-            uniqueVehicleTypes.add(veiculo.tipo.trim());
-            debugInfo.tipo.push(veiculo.tipo);
+          // Processar campo tipo
+          if (veiculo.tipo && typeof veiculo.tipo === 'string') {
+            const tipoLimpo = veiculo.tipo.trim().toUpperCase();
+            if (tipoLimpo !== '' && tiposValidos.includes(tipoLimpo)) {
+              uniqueVehicleTypes.add(tipoLimpo);
+              debugInfo.tipo.push(tipoLimpo);
+            } else if (tipoLimpo !== '') {
+              debugInfo.rejeitados.push(`tipo: ${tipoLimpo}`);
+            }
           }
-          if (veiculo.tipologia && typeof veiculo.tipologia === 'string' && veiculo.tipologia.trim() !== '') {
-            uniqueVehicleTypes.add(veiculo.tipologia.trim());
-            debugInfo.tipologia.push(veiculo.tipologia);
+          
+          // Processar campo tipologia
+          if (veiculo.tipologia && typeof veiculo.tipologia === 'string') {
+            const tipologiaLimpa = veiculo.tipologia.trim().toUpperCase();
+            if (tipologiaLimpa !== '' && tiposValidos.includes(tipologiaLimpa)) {
+              uniqueVehicleTypes.add(tipologiaLimpa);
+              debugInfo.tipologia.push(tipologiaLimpa);
+            } else if (tipologiaLimpa !== '') {
+              debugInfo.rejeitados.push(`tipologia: ${tipologiaLimpa}`);
+            }
           }
         });
 
-        console.log(`Debug - campos tipo encontrados:`, debugInfo.tipo);
-        console.log(`Debug - campos tipologia encontrados:`, debugInfo.tipologia);
+        console.log(`Debug - tipos válidos encontrados:`, debugInfo.tipo);
+        console.log(`Debug - tipologias válidas encontradas:`, debugInfo.tipologia);
+        console.log(`Debug - tipos rejeitados (primeiros 10):`, debugInfo.rejeitados.slice(0, 10));
 
         const tipologiasFiltradas = Array.from(uniqueVehicleTypes).sort();
         setTiposVeiculo(tipologiasFiltradas);
