@@ -1213,21 +1213,30 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           return;
         }
 
+        console.log(`Dados brutos da tabela veiculo para empresa ${companyId}:`, data);
+        console.log(`Total de registros encontrados:`, data?.length);
+
         const uniqueVehicleTypes = new Set<string>();
+        const debugInfo = { tipo: [], tipologia: [] };
         
         data?.forEach(veiculo => {
-          if (veiculo.tipo && typeof veiculo.tipo === 'string') {
-            uniqueVehicleTypes.add(veiculo.tipo);
+          if (veiculo.tipo && typeof veiculo.tipo === 'string' && veiculo.tipo.trim() !== '') {
+            uniqueVehicleTypes.add(veiculo.tipo.trim());
+            debugInfo.tipo.push(veiculo.tipo);
           }
-          if (veiculo.tipologia && typeof veiculo.tipologia === 'string') {
-            uniqueVehicleTypes.add(veiculo.tipologia);
+          if (veiculo.tipologia && typeof veiculo.tipologia === 'string' && veiculo.tipologia.trim() !== '') {
+            uniqueVehicleTypes.add(veiculo.tipologia.trim());
+            debugInfo.tipologia.push(veiculo.tipologia);
           }
         });
+
+        console.log(`Debug - campos tipo encontrados:`, debugInfo.tipo);
+        console.log(`Debug - campos tipologia encontrados:`, debugInfo.tipologia);
 
         const tipologiasFiltradas = Array.from(uniqueVehicleTypes).sort();
         setTiposVeiculo(tipologiasFiltradas);
         
-        console.log(`Tipos de veículos encontrados para empresa ${companyId}:`, tipologiasFiltradas);
+        console.log(`Tipos de veículos finais para empresa ${companyId}:`, tipologiasFiltradas);
         
       } catch (error) {
         console.error('Erro ao buscar tipos de veículos:', error);
