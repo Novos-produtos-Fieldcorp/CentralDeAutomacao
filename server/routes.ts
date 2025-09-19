@@ -96,7 +96,7 @@ async function getCompanyIdFromAccount(
   accountId: string,
 ): Promise<number | null> {
   try {
-    const { data: companies, error } = await supabaseBackendBackendBackend
+    const { data: companies, error } = await supabaseBackendBackend
       .from("company")
       .select("company_id")
       .eq("id_conta_wiseapp", accountId)
@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar dados da empresa para validar accountId
-      const { data: companies, error: companyError } = await supabaseBackendBackendBackend
+      const { data: companies, error: companyError } = await supabaseBackendBackend
         .from("company")
         .select("id_conta_wiseapp")
         .eq("company_id", parseInt(companyId))
@@ -244,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { accountId } = req.params;
       console.log("Fetching company for accountId:", accountId);
 
-      const { data: companies, error } = await supabaseBackendBackendBackend
+      const { data: companies, error } = await supabaseBackendBackend
         .from("company")
         .select("*")
         .eq("id_conta_wiseapp", accountId)
@@ -521,7 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/clientes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: clientes, error } = await supabaseBackendBackendBackend
+      const { data: clientes, error } = await supabaseBackendBackend
         .from("cliente")
         .select("*")
         .eq("company_id", companyId);
@@ -541,7 +541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/unidades/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: unidades, error } = await supabaseBackendBackendBackend
+      const { data: unidades, error } = await supabaseBackendBackend
         .from("unidade")
         .select("*")
         .eq("company_id", companyId);
@@ -561,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/operacoes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: operacoes, error } = await supabaseBackendBackendBackend
+      const { data: operacoes, error } = await supabaseBackendBackend
         .from("operacao")
         .select("*")
         .eq("company_id", companyId);
@@ -581,7 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/status-vagas/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: statusVagas, error } = await supabaseBackendBackendBackend
+      const { data: statusVagas, error } = await supabaseBackendBackend
         .from("st_vaga")
         .select("*")
         .eq("company_id", companyId);
@@ -604,7 +604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       
       // Fetch vagas
-      const { data: vagas, error: vagasError } = await supabaseBackendBackendBackend
+      const { data: vagas, error: vagasError } = await supabaseBackendBackend
         .from("vaga")
         .select("*")
         .eq("company_id", companyId)
@@ -621,10 +621,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all related data in parallel
       const [clientesData, unidadesData, operacoesData, statusData] = await Promise.all([
-        supabaseBackendBackendBackend.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
-        supabaseBackendBackendBackend.from("unidade").select("id, unidade").eq("company_id", companyId),
-        supabaseBackendBackendBackend.from("operacao").select("id, operacao").eq("company_id", companyId),
-        supabaseBackendBackendBackend.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
+        supabaseBackendBackend.from("cliente").select("cliente_id, nome").eq("company_id", companyId),
+        supabaseBackendBackend.from("unidade").select("id, unidade").eq("company_id", companyId),
+        supabaseBackendBackend.from("operacao").select("id, operacao").eq("company_id", companyId),
+        supabaseBackendBackend.from("st_vaga").select("id, status_vaga").eq("company_id", companyId)
       ]);
 
       // Create lookup maps
@@ -660,7 +660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/vagas/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { data: vagas, error } = await supabaseBackendBackendBackend
+      const { data: vagas, error } = await supabaseBackendBackend
         .from("vaga")
         .select("*")
         .eq("company_id", companyId);
@@ -682,13 +682,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { companyId } = req.params;
       
       // Fetch all vagas for the company
-      const { data: vagas, error } = await supabaseBackendBackendBackend
+      const { data: vagas, error } = await supabaseBackendBackend
         .from("vaga")
         .select("*")
         .eq("company_id", companyId);
 
       // Get status information separately
-      const { data: statusData } = await supabaseBackendBackendBackend
+      const { data: statusData } = await supabaseBackendBackend
         .from("st_vaga")
         .select("id, status_vaga")
         .eq("company_id", companyId);
@@ -757,7 +757,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
       }
 
-      const { data: newVaga, error } = await supabaseBackendBackendBackend
+      const { data: newVaga, error } = await supabaseBackendBackend
         .from("vaga")
         .insert({
           nome: vagaData.nome,
@@ -814,7 +814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
       }
 
-      const { data: updatedVaga, error } = await supabaseBackendBackendBackend
+      const { data: updatedVaga, error } = await supabaseBackendBackend
         .from("vaga")
         .update({
           nome: vagaData.nome,
@@ -861,7 +861,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Updating vaga status:", { vagaId, st_vaga_id });
 
-      const { data: updatedVaga, error } = await supabaseBackendBackendBackend
+      const { data: updatedVaga, error } = await supabaseBackendBackend
         .from("vaga")
         .update({ 
           st_vaga_id: Number(st_vaga_id),
@@ -897,7 +897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Deleting vaga:", vagaId);
 
-      const { error } = await supabaseBackendBackendBackend
+      const { error } = await supabaseBackendBackend
         .from("vaga")
         .delete()
         .eq("id", Number(vagaId));
@@ -926,7 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { unidade: unidadeNome, company_id } = req.body;
       
-      const { data: newUnidade, error } = await supabaseBackendBackendBackend
+      const { data: newUnidade, error } = await supabaseBackendBackend
         .from("unidade")
         .insert({
           unidade: unidadeNome,
@@ -951,7 +951,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { operacao: operacaoNome, company_id } = req.body;
       
-      const { data: newOperacao, error } = await supabaseBackendBackendBackend
+      const { data: newOperacao, error } = await supabaseBackendBackend
         .from("operacao")
         .insert({
           operacao: operacaoNome,
@@ -976,7 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { status_vaga, company_id } = req.body;
       
-      const { data: newStatus, error } = await supabaseBackendBackendBackend
+      const { data: newStatus, error } = await supabaseBackendBackend
         .from("st_vaga")
         .insert({
           status_vaga,
@@ -1006,7 +1006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar tags diretamente do Supabase
-      const { data: tags, error } = await supabaseBackendBackendBackend
+      const { data: tags, error } = await supabaseBackendBackend
         .from('tag')
         .select('*')
         .eq('company_id', companyId)
@@ -1199,7 +1199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar diretamente usando Supabase
-      const { data: result, error } = await supabaseBackendBackendBackend
+      const { data: result, error } = await supabaseBackendBackend
         .from('motorista')
         .select('motorista_id, nome, telefone')
         .eq('company_id', companyId)
@@ -1225,7 +1225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`❌ Nenhum motorista encontrado com telefone ${cleanPhone} na empresa ${companyId}`);
         
         // Debug: mostrar alguns motoristas da empresa
-        const { data: allMotoristas } = await supabaseBackendBackendBackend
+        const { data: allMotoristas } = await supabaseBackendBackend
           .from('motorista')
           .select('nome, telefone')
           .eq('company_id', companyId)
@@ -1252,7 +1252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "foto_whatsapp is required" });
       }
 
-      const { data, error } = await supabaseBackendBackendBackend
+      const { data, error } = await supabaseBackendBackend
         .from('motorista')
         .update({ foto_whatsapp })
         .eq('motorista_id', id)
@@ -1278,7 +1278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const companyId = req.headers['company-id'] || '1';
       
       // Buscar dados do motorista
-      const { data: motorista, error: motoristaError } = await supabaseBackendBackendBackend
+      const { data: motorista, error: motoristaError } = await supabaseBackendBackend
         .from('motorista')
         .select('motorista_id, nome, telefone, foto_whatsapp')
         .eq('motorista_id', id)
@@ -1315,7 +1315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Se tem foto e é diferente da atual, atualizar
         if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
-          const { error: updateError } = await supabaseBackendBackendBackend
+          const { error: updateError } = await supabaseBackendBackend
             .from('motorista')
             .update({ foto_whatsapp: contact.thumbnail })
             .eq('motorista_id', id);
@@ -1353,7 +1353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const companyId = req.headers['company-id'] || '1';
       
       // Buscar todos os motoristas ativos com telefone
-      const { data: motoristas, error: motoristasError } = await supabaseBackendBackendBackend
+      const { data: motoristas, error: motoristasError } = await supabaseBackendBackend
         .from('motorista')
         .select('motorista_id, nome, telefone, foto_whatsapp')
         .eq('company_id', companyId)
@@ -1396,7 +1396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Se tem foto e é diferente da atual, atualizar
               if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
-                const { error: updateError } = await supabaseBackendBackendBackend
+                const { error: updateError } = await supabaseBackendBackend
                   .from('motorista')
                   .update({ foto_whatsapp: contact.thumbnail })
                   .eq('motorista_id', motorista.motorista_id);
