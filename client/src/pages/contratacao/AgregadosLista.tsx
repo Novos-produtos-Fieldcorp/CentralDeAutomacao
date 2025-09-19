@@ -37,6 +37,7 @@ interface AgregadosListaProps {
 export interface ViewContratado {
   motorista_id?: number;
   nome_motorista?: string;
+  nome?: string;
   cpf?: string;
   dt_nascimento?: string;
   genero?: string;
@@ -2567,13 +2568,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             <div className="flex-shrink-0">
                               <WhatsAppAvatar 
                                 photoUrl={motorista.foto_whatsapp}
-                                name={motorista.nome_motorista}
+                                name={motorista.nome}
                                 size="md"
                               />
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {motorista.nome_motorista || ''}
+                                {motorista.nome || ''}
                                 {motorista.ajudantes && motorista.ajudantes.length > 0 && (
                                   <div className="text-xs text-gray-500 dark:text-gray-400">
                                     Ajudantes: {motorista.ajudantes.join(', ')}
@@ -2595,7 +2596,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             </div>
                             {motorista.telefone && (
                               <button
-                                onClick={() => startChat(motorista.telefone?.toString() || '', motorista.nome_motorista || '', motorista.motorista_id)}
+                                onClick={() => startChat(motorista.telefone?.toString() || '', motorista.nome || '', motorista.motorista_id)}
                                 className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
                                 title="Iniciar chat"
                               >
