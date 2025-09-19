@@ -19,6 +19,7 @@ interface EditVeiculoModalProps {
 const EditVeiculoModal = ({ isOpen, onClose, veiculo, onUpdate, isEmpresa = false, motoristas = [] }: EditVeiculoModalProps) => {
   const [submitting, setSubmitting] = useState(false);
   const [consultingPlaca, setConsultingPlaca] = useState(false);
+  const [tiposVeiculo, setTiposVeiculo] = useState<Array<{ value: string; label: string }>>([]);
   const { companyId } = useAuth();
   const [formData, setFormData] = useState({
     placa: '',
@@ -34,6 +35,99 @@ const EditVeiculoModal = ({ isOpen, onClose, veiculo, onUpdate, isEmpresa = fals
     marca_rastreador: '',
     motorista_id: ''
   });
+
+  // Função para buscar tipos de veículos únicos do banco
+  const fetchTiposVeiculoFromTable = async () => {
+    try {
+      if (!companyId) {
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('veiculo')
+        .select('tipo, tipologia')
+        .eq('status_veiculo', true) // Apenas veículos ativos
+        .eq('company_id', companyId); // Filtrar pela empresa atual
+
+      if (error) {
+        return;
+      }
+
+      // Lista canônica de tipos válidos - baseada no VEHICLE_TYPES existente
+      const VALID_VEHICLE_TYPES = [
+        'UTILITÁRIO', 'CAMINHÃO LEVE', 'CAMINHÃO MÉDIO', 'CAMINHÃO PESADO', 
+        'VAN', 'FURGÃO', 'PICK-UP', 'SUV', 'OUTRO', 'CAMINHÃO', 'CAMINHÃO 3/4', 
+        'FIORINO', 'HR', 'CAVALO', 'PASSEIO', 'DUCATO', 'DOBLO', 'H100', 
+        'BESTA', 'BOXER', 'CAMINHONETE', 'CARRETA', 'MOTO', 'VUC', 'AUTOMOVEL', 
+        'UTILITARIO', 'KOMBI', 'TRATOR', 'PICKUP'
+      ];
+      
+      // Função para normalizar tipo de veículo
+      const normalizeVehicleType = (type: string): string | null => {
+        if (!type || typeof type !== 'string') return null;
+        
+        let normalized = type.trim().toUpperCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '');
+        
+        // Mapear algumas variações comuns
+        const typeMapping: Record<string, string> = {
+          'CAMINHAO': 'CAMINHÃO',
+          'CAMINHAO LEVE': 'CAMINHÃO LEVE',
+          'CAMINHAO MEDIO': 'CAMINHÃO MÉDIO', 
+          'CAMINHAO PESADO': 'CAMINHÃO PESADO',
+          'FURGAO': 'FURGÃO',
+          'MOTOCICLETA': 'MOTO',
+          'MOTORCYCLE': 'MOTO',
+          'TRACTOR': 'TRATOR',
+          'AUTOMÓVEL': 'AUTOMOVEL',
+          'UTILITARIO': 'UTILITÁRIO',
+          'PICK UP': 'PICK-UP',
+          'PICKUP': 'PICK-UP'
+        };
+        
+        const mappedType = typeMapping[normalized] || normalized;
+        
+        return VALID_VEHICLE_TYPES.includes(mappedType) ? mappedType : null;
+      };
+
+      const uniqueVehicleTypes = new Set<string>();
+      
+      data?.forEach(veiculo => {
+        // Processar campo tipo
+        const normalizedTipo = normalizeVehicleType(veiculo.tipo);
+        if (normalizedTipo) {
+          uniqueVehicleTypes.add(normalizedTipo);
+        }
+        
+        // Processar campo tipologia
+        const normalizedTipologia = normalizeVehicleType(veiculo.tipologia);
+        if (normalizedTipologia) {
+          uniqueVehicleTypes.add(normalizedTipologia);
+        }
+      });
+
+      // Converter para array de objetos ordenado
+      const tiposArray = Array.from(uniqueVehicleTypes)
+        .sort()
+        .map(tipo => ({ value: tipo, label: tipo }));
+
+      // Adicionar tipos do VEHICLE_TYPES que não estão na base
+      VEHICLE_TYPES.forEach(type => {
+        if (!uniqueVehicleTypes.has(type.value)) {
+          tiposArray.push({ value: type.value, label: type.label });
+        }
+      });
+
+      // Ordenar novamente
+      tiposArray.sort((a, b) => a.label.localeCompare(b.label));
+
+      setTiposVeiculo(tiposArray);
+    } catch (error) {
+      // Fallback para VEHICLE_TYPES estático em caso de erro
+      setTiposVeiculo(VEHICLE_TYPES.map(type => ({ value: type.value, label: type.label })));
+    }
+  };
 
   useEffect(() => {
     if (veiculo) {
@@ -53,6 +147,12 @@ const EditVeiculoModal = ({ isOpen, onClose, veiculo, onUpdate, isEmpresa = fals
       });
     }
   }, [veiculo]);
+
+  useEffect(() => {
+    if (isOpen && companyId) {
+      fetchTiposVeiculoFromTable();
+    }
+  }, [isOpen, companyId]);
 
   const consultarPlacaLocal = async (placa: string) => {
     if (!placa || placa.length < 7) return;
@@ -244,7 +344,7 @@ const EditVeiculoModal = ({ isOpen, onClose, veiculo, onUpdate, isEmpresa = fals
                 required
               >
                 <option value="">Selecione um tipo</option>
-                {VEHICLE_TYPES.map(type => (
+                {tiposVeiculo.map(type => (
                   <option key={type.value} value={type.value}>
                     {type.label}
                   </option>
