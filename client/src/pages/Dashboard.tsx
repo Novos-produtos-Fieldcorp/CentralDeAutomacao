@@ -19,7 +19,7 @@ import {
   Lock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useWiseAppAccess } from "../context/WiseAppAccessContext";
+import { useAuth } from "../context/AuthContext";
 import { useModuleAccess } from "../hooks/useModuleAccess";
 import LoadingSpinner from "../components/LoadingSpinner";
 import {
@@ -790,7 +790,7 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
 
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
-  const { companyId } = useWiseAppAccess();
+  const { companyId } = useAuth();
   const { loading: moduleAccessLoading, moduleAccess } = useModuleAccess();
   const [stats, setStats] = useState<DashboardStats>({
     agregados: 0,

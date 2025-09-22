@@ -36,19 +36,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return localStorage.getItem('account_id') || undefined;
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Extract account_id once and use it consistently
+  const urlAccountId = searchParams.get('account_id')?.trim();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Skip if already checked auth or on unauthorized page to prevent loops
+        if (hasCheckedAuth || window.location.pathname === '/unauthorized') {
+          setIsLoading(false);
+          return;
+        }
+        
         // Skip auth check for admin route
         if (window.location.pathname === '/admin') {
           setIsLoading(false);
           return;
         }
         
-        let currentAccountId = searchParams.get('account_id')?.trim();
+        let currentAccountId = urlAccountId;
 
         // If no account_id in URL, try localStorage
         if (!currentAccountId) {
@@ -124,11 +134,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         navigate('/unauthorized');
       } finally {
         setIsLoading(false);
+        setHasCheckedAuth(true);
       }
     };
 
     checkAuth();
-  }, [navigate, searchParams]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, companyId, isLoading, accountId }}>

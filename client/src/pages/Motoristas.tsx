@@ -96,22 +96,14 @@ const Motoristas = () => {
     };
   }, []);
 
-  const allTabs = [
+  const tabs = [
     { path: '/motoristas/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/motoristas/lista', icon: Users, label: 'Motoristas' },
     { path: '/motoristas/agregados', icon: TruckIcon, label: 'Agregados' },
     { path: '/motoristas/contratados', icon: CheckCircle2, label: 'Contratados' },
-    { path: '/motoristas/vagas', icon: Building, label: 'Vagas', count: dashboardData.totalVagas, requiresAccess: 'vagas' },
     { path: '/motoristas/kanban', icon: Kanban, label: 'Kanban' },
+    { path: '/motoristas/vagas', icon: Building, label: 'Vagas', count: dashboardData.totalVagas },
   ];
-
-  // Filter tabs based on module access
-  const tabs = allTabs.filter(tab => {
-    if (tab.requiresAccess === 'vagas') {
-      return moduleAccess.vagas;
-    }
-    return true;
-  });
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -177,25 +169,12 @@ const Motoristas = () => {
             <Route path="agregados" element={<AgregadosLista />} />
             <Route path="contratados" element={<Contratados />} />
             <Route path="vagas" element={
-              moduleAccess.vagas ? (
-                <VagasList 
-                  onRefresh={fetchVagasDashboardData} 
-                  onAddClick={() => setShowAddVagaModal(true)}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-center">
-                    <AccessTooltip module="vagas">
-                      <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    </AccessTooltip>
-                    <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">Acesso Restrito</h3>
-                    <p className="text-sm text-gray-400 dark:text-gray-500">Você não tem permissão para acessar a funcionalidade de Vagas.</p>
-                  </div>
-                </div>
-              )
+              <VagasList 
+                onRefresh={fetchVagasDashboardData} 
+                onAddClick={() => setShowAddVagaModal(true)}
+              />
             } />
             <Route path="vagas/dashboard" element={
-              moduleAccess.vagas ? (
                 <div className="space-y-6">
                   <DashboardStats stats={[
                   {
@@ -232,34 +211,22 @@ const Motoristas = () => {
                   },
                   ]} />
                 </div>
-              ) : (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-center">
-                    <AccessTooltip module="vagas">
-                      <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    </AccessTooltip>
-                    <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">Acesso Restrito</h3>
-                    <p className="text-sm text-gray-400 dark:text-gray-500">Você não tem permissão para acessar o dashboard de Vagas.</p>
-                  </div>
-                </div>
-              )
             } />
             <Route path="kanban" element={<ContratacaoKanban />} />
             <Route path="dashboard" element={<ContratacaoDashboard />} />
           </Routes>
         </div>
         
-        {/* Add Vaga Modal - Only render if has access */}
-        {moduleAccess.vagas && (
-          <AddVagaModal
-            isOpen={showAddVagaModal}
-            onClose={() => setShowAddVagaModal(false)}
-            onSuccess={() => {
-              setShowAddVagaModal(false);
-              fetchVagasDashboardData();
-            }}
-          />
-        )}</>) : (
+        {/* Add Vaga Modal */}
+        <AddVagaModal
+          isOpen={showAddVagaModal}
+          onClose={() => setShowAddVagaModal(false)}
+          onSuccess={() => {
+            setShowAddVagaModal(false);
+            fetchVagasDashboardData();
+          }}
+        />
+      </>) : (
           <div className="p-8 text-center">
             <Users className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
