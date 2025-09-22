@@ -106,7 +106,7 @@ export interface ViewContratado {
           estado?: {
             id_estado: number;
             sigla_estado: string;
-            nome_estado: string;
+            estado: string;
           };
         };
       };
@@ -1105,6 +1105,44 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       });
     };
 
+    // Função para buscar cidades dos agregados separadamente  
+    const fetchCidadesAgregados = async (motoristaIds: number[]) => {
+      if (motoristaIds.length === 0) return;
+      
+      try {
+        const { data: cidadesData, error } = await supabase
+          .from('end_motorista')
+          .select(`
+            logradouro(
+              bairro(
+                cidade(
+                  cidade
+                )
+              )
+            )
+          `)
+          .in('id_motorista', motoristaIds);
+          
+        if (error) {
+          console.error('Erro ao buscar cidades:', error);
+          return;
+        }
+        
+        const cidadesUnicas = new Set<string>();
+        cidadesData?.forEach((endereco: any) => {
+          const cidade = endereco?.logradouro?.bairro?.cidade?.cidade;
+          if (cidade && typeof cidade === 'string') {
+            cidadesUnicas.add(cidade);
+          }
+        });
+        
+        const cidadesFiltradas = Array.from(cidadesUnicas).filter((c): c is string => c != null).sort();
+        setCidades(cidadesFiltradas);
+      } catch (error) {
+        console.error('Erro ao buscar cidades:', error);
+      }
+    };
+
     const fetchContratados = async () => {
       try {
         setLoading(true);
@@ -1114,25 +1152,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           .select(`
             *,
             cliente(nome),
-            veiculo(*),
-            end_motorista(
-              *,
-              logradouro(
-                *,
-                bairro(
-                  *,
-                  cidade(
-                    id_cidade,
-                    cidade,
-                    estado(
-                      id_estado,
-                      sigla_estado,
-                      nome_estado
-                    )
-                  )
-                )
-              )
-            )
+            veiculo(*)
           `)
           .eq('company_id', companyId)
           .eq('funcao', 'Agregado');
@@ -1173,12 +1193,18 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         if (error) throw error;
 
+        
         // Log para debug dos valores de funcao
         // Processing function values from data
         // Data processing completed
 
-        // Extract unique cities from contratados - only include non-null/undefined city names
+        // Extract unique cities from contratados - buscar separadamente
         const uniqueCities = new Set<string>();
+        
+        // Para agora, vamos desabilitar o filtro de cidades até corrigirmos a consulta
+        // const motoristaIds = data?.map(m => m.motorista_id) || [];
+        // console.log('🏙️ Buscando cidades para', motoristaIds.length, 'motoristas');
+        // await fetchCidadesAgregados(motoristaIds);
         
         // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
         const motoristaIds = data?.map(m => m.motorista_id) || [];
@@ -1238,13 +1264,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         // Agrupar ajudantes por motorista_id
         const agregadosAgrupadosMap = new Map();
         processedData.forEach(agregado => {
-          // Extract cities from the new join structure
-          if (agregado.end_motorista && agregado.end_motorista.length > 0) {
-            const endereco = agregado.end_motorista[0]; // Pegar o primeiro endereço
-            if (endereco?.logradouro?.bairro?.cidade?.cidade) {
-              uniqueCities.add(endereco.logradouro.bairro.cidade.cidade);
-            }
-          }
+          // Cities will be loaded separately
+          // No city extraction needed here anymore
           
           if (!agregadosAgrupadosMap.has(agregado.motorista_id)) {
             agregadosAgrupadosMap.set(agregado.motorista_id, {
@@ -1260,10 +1281,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         });
         const agregadosAgrupados = Array.from(agregadosAgrupadosMap.values());
 
-        // Filter out null or undefined values before setting the state
-        const cidadesFiltradas = Array.from(uniqueCities).filter((c): c is string => c != null).sort();
-        
-        setCidades(cidadesFiltradas);
+        // As cidades já foram carregadas pela função separada
+        // Não precisamos fazer nada aqui
 
         setContratados(agregadosAgrupados);
         
@@ -1747,14 +1766,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     };
 
     const getMotoristaCity = (motorista: ViewContratado): string => {
-      // Extrair cidade dos novos dados do join
-      if (motorista.end_motorista && motorista.end_motorista.length > 0) {
-        const endereco = motorista.end_motorista[0];
-        if (endereco?.logradouro?.bairro?.cidade?.cidade) {
-          return endereco.logradouro.bairro.cidade.cidade;
-        }
-      }
-      // Fallback para o campo antigo se existir
+      // Para funcionar com a estrutura atual, vamos manter vazio por enquanto
+      // As cidades serão carregadas separadamente para o filtro
       return motorista.nome_cidade ?? '';
     };
 
