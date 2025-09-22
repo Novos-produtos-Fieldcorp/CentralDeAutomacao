@@ -43,7 +43,7 @@ app.use((req, res, next) => {
   // CORS ultra-permissivo para resolver problemas de acesso
   const origin = req.headers.origin;
 
-  console.log(`[CORS] Request from origin: ${origin}`);
+  // console.log(`[CORS] Request from origin: ${origin}`);
   
   const allowedOrigins = [
     'https://replit.com',
@@ -80,11 +80,11 @@ app.use((req, res, next) => {
   // Definir Access-Control-Allow-Origin
   if (isOriginAllowed(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    console.log(`[CORS] Origin allowed: ${origin || 'undefined'}`);
+    // console.log(`[CORS] Origin allowed: ${origin || 'undefined'}`);
   } else {
     // Para iframe embedding, permitir qualquer origem se não for uma requisição de API sensível
     res.setHeader('Access-Control-Allow-Origin', '*');
-    console.log(`[CORS] Origin not in allowed list, using wildcard: ${origin || 'undefined'}`);
+    // console.log(`[CORS] Origin not in allowed list, using wildcard: ${origin || 'undefined'}`);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
   res.setHeader('Access-Control-Allow-Headers', [
@@ -112,15 +112,15 @@ app.use((req, res, next) => {
 
   // Responder a requisições OPTIONS otimizado (preflight)
   if (req.method === 'OPTIONS') {
-    console.log(`[CORS] Handling OPTIONS preflight request from: ${origin}`);
+    // console.log(`[CORS] Handling OPTIONS preflight request from: ${origin}`);
     
     // Definir headers CORS para preflight
     if (isOriginAllowed(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin || '*');
-      console.log(`[CORS] Preflight - Origin allowed: ${origin || 'undefined'}`);
+      // console.log(`[CORS] Preflight - Origin allowed: ${origin || 'undefined'}`);
     } else {
       res.setHeader('Access-Control-Allow-Origin', '*');
-      console.log(`[CORS] Preflight - Using wildcard for: ${origin || 'undefined'}`);
+      // console.log(`[CORS] Preflight - Using wildcard for: ${origin || 'undefined'}`);
     }
     
     // Repetir headers essenciais para preflight

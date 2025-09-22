@@ -27,25 +27,24 @@ import ResumosGrupo from "./pages/ResumosGrupo";
 import TagsAdmin from "./pages/TagsAdmin";
 import Comprovantes from "./pages/Comprovantes";
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-600 dark:text-gray-400">Carregando...</div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/unauthorized" />;
-  }
-
-  return <>{children}</>;
-};
-
 const AppRoutes = () => {
+  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    const { isAuthenticated, isLoading } = useAuth();
+
+    if (isLoading) {
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="text-gray-600 dark:text-gray-400">Carregando...</div>
+        </div>
+      );
+    }
+
+    if (!isAuthenticated) {
+      return <Navigate to="/unauthorized" />;
+    }
+
+    return <>{children}</>;
+  };
   return (
     <Routes>
       <Route path="/unauthorized" element={<Unauthorized />} />
