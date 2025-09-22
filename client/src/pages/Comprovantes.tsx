@@ -1,11 +1,10 @@
 import React from 'react';
 import { Link, useLocation, Routes, Route, Navigate } from 'react-router-dom';
-import { FileText, LayoutDashboard, ChevronRight } from 'lucide-react';
+import { FileText, LayoutDashboard, ChevronRight, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCompanyData } from '../hooks/useCompanyData';
+import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
-import toast from 'react-hot-toast';
 import ComprovantesDashboard from './comprovantes/ComprovantesDashboard';
 import ComprovantesLista from './comprovantes/ComprovantesLista';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -13,25 +12,9 @@ import LoadingSpinner from '../components/LoadingSpinner';
 const Comprovantes = () => {
   const location = useLocation();
   const { query } = useCompanyData();
-  const [loading, setLoading] = useState(true);
-  const [hasAccess, setHasAccess] = useState(false);
+  const { moduleAccess, loading } = useModuleAccess();
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const checkAccess = async () => {
-      try {
-        setHasAccess(true); // Always allow access to Comprovantes module
-      } catch (error) {
-        console.error('Error checking access:', error);
-        toast.error('Erro ao verificar acesso ao módulo');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAccess();
-  }, []);
 
   // Check if scrolling is needed and update indicator visibility
   useEffect(() => {
@@ -72,9 +55,50 @@ const Comprovantes = () => {
     return location.pathname === path;
   };
 
+  // Show loading spinner while checking module access
   if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  // Show access denied state if user doesn't have comprovantes module access
+  if (!moduleAccess.comprovantes) {
     return (
-      <LoadingSpinner />
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
+        <div className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <Lock className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+              </div>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Acesso Restrito
+              </h1>
+            </div>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Módulo Comprovantes não está disponível
+            </p>
+          </div>
+          
+          <div className="p-6 space-y-4">
+            <p className="text-gray-600 dark:text-gray-400">
+              Sua empresa não possui acesso ao módulo de Comprovantes. Entre em contato com o administrador do sistema para mais informações sobre como habilitar este recurso.
+            </p>
+            
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+              <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Recursos do Módulo Comprovantes:
+              </h2>
+              <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400 list-disc list-inside">
+                <li>Dashboard de comprovantes por período</li>
+                <li>Relatórios de comprovantes por cliente</li>
+                <li>Análise de comprovantes por motorista</li>
+                <li>Histórico completo de entregas</li>
+                <li>Exportação de dados para Excel</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -85,7 +109,7 @@ const Comprovantes = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-        {hasAccess ? (<><div className="border-b border-gray-200 dark:border-gray-700 relative">
+        <div className="border-b border-gray-200 dark:border-gray-700 relative">
           <div 
             ref={navRef}
             className="flex space-x-8 px-6 overflow-x-auto scrollbar-hide relative" 
@@ -121,13 +145,7 @@ const Comprovantes = () => {
             <Route path="/dashboard" element={<ComprovantesDashboard />} />
             <Route path="/lista" element={<ComprovantesLista />} />
           </Routes>
-        </div></>) : (
-          <div className="p-6 text-center">
-            <div className="text-gray-500 dark:text-gray-400">
-              Você não tem acesso a esta seção.
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
