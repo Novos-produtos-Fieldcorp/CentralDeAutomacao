@@ -1127,53 +1127,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     };
 
-    // Função para buscar cidades específicas dos motoristas
-    const fetchCidadesDosMotorists = async (motoristaIds: number[]) => {
-      if (motoristaIds.length === 0) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('end_motorista')
-          .select(`
-            id_motorista,
-            logradouro!inner(
-              bairro!inner(
-                cidade!inner(cidade)
-              )
-            )
-          `)
-          .in('id_motorista', motoristaIds);
-          
-        if (error) {
-          console.error('Erro ao buscar cidades dos motoristas:', error);
-          return;
-        }
-        
-        const cidadesPorMotorista: { [key: number]: string } = {};
-        data?.forEach((endereco: any) => {
-          const cidade = endereco?.logradouro?.bairro?.cidade?.cidade;
-          if (cidade && endereco.id_motorista) {
-            cidadesPorMotorista[endereco.id_motorista] = cidade;
-          }
-        });
-        
-        setMotoristaCidades(cidadesPorMotorista);
-      } catch (error) {
-        console.error('Erro ao buscar cidades dos motoristas:', error);
-      }
-    };
 
     const fetchContratados = async () => {
       try {
         setLoading(true);
-        // Buscar os agregados diretamente da tabela motorista com joins necessários
+        // Buscar os agregados da view vw_agregados_completo que já inclui dados de endereço
         let query = supabase
-          .from('motorista')
-          .select(`
-            *,
-            cliente(nome),
-            veiculo(*)
-          `)
+          .from('vw_agregados_completo')
+          .select('*')
           .eq('company_id', companyId)
           .eq('funcao', 'Agregado');
 
@@ -1225,10 +1186,20 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         console.log('🏙️ Buscando cidades para filtro...');
         await fetchCidadesAgregados();
         
-        // Buscar cidades específicas dos motoristas
-        const motoristaIds = data?.map(m => m.motorista_id) || [];
-        console.log('🗺️ Buscando cidades específicas dos motoristas:', motoristaIds.length, 'IDs');
-        await fetchCidadesDosMotorists(motoristaIds);
+        // Extrair cidades únicas dos dados carregados da view
+        const cidadesUnicas = new Set<string>();
+        data?.forEach(motorista => {
+          if (motorista.nome_cidade) {
+            cidadesUnicas.add(motorista.nome_cidade);
+          }
+        });
+        
+        // Atualizar a lista de cidades com as cidades encontradas nos dados
+        const cidadesEncontradas = Array.from(cidadesUnicas).sort();
+        if (cidadesEncontradas.length > 0) {
+          setCidades(cidadesEncontradas);
+          console.log('✅ Cidades encontradas nos dados:', cidadesEncontradas);
+        }
         
         // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
         // motoristaIds já foi declarado acima
@@ -1790,16 +1761,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     };
 
     const getMotoristaCity = (motorista: ViewContratado): string => {
-      // Primeiro tentar do mapeamento de cidades buscado pelos endereços
-      if (motorista.motorista_id && motoristaCidades[motorista.motorista_id]) {
-        return motoristaCidades[motorista.motorista_id];
-      }
-      // Fallback para o campo direto se existir
+      // Usar diretamente o campo nome_cidade da view vw_agregados_completo
       return motorista.nome_cidade ?? '';
     };
 
-    // Função para buscar e armazenar cidades dos motoristas
-    const [motoristaCidades, setMotoristaCidades] = useState<{ [key: number]: string }>({});
 
     const filteredContratados = contratados.filter((motorista): boolean => {
       const searchLower = searchTerm.toLowerCase();
