@@ -101,8 +101,8 @@ const Motoristas = () => {
     { path: '/motoristas/lista', icon: Users, label: 'Motoristas' },
     { path: '/motoristas/agregados', icon: TruckIcon, label: 'Agregados' },
     { path: '/motoristas/contratados', icon: CheckCircle2, label: 'Contratados' },
-    { path: '/motoristas/vagas', icon: Building, label: 'Vagas', count: dashboardData.totalVagas },
     { path: '/motoristas/kanban', icon: Kanban, label: 'Kanban' },
+    { path: '/motoristas/vagas', icon: Building, label: 'Vagas', count: dashboardData.totalVagas },
   ];
 
   const isActive = (path: string) => {
