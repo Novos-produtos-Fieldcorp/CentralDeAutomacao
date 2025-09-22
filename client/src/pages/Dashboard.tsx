@@ -110,8 +110,8 @@ const processRealHodometroData = (hodometroData: any[]) => {
 interface DashboardStats {
   // Contratacao + Vagas data
   agregados: number;
-  contratados: number; // Now represents motoristas
-  outros: number; // Now represents contratados
+  contratados: number; // Representa contratados (função contratado)
+  outros: number; // Representa motoristas (função motorista)
   vagasAbertas: number;
   vagasPreenchidas: number;
   vagasVencidas: number;
@@ -275,7 +275,7 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
               </div>
               <div>
                 <div className="text-sm font-bold text-gray-900 dark:text-white">
-                  {stats.outros}
+                  {stats.contratados}
                 </div>
                 <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                   Contratados
@@ -1278,8 +1278,8 @@ const Dashboard: React.FC = () => {
 
       setStats({
         agregados,
-        contratados: motoristas, // Now represents motoristas
-        outros: contratados, // Now represents contratados
+        contratados: contratados, // Representa contratados (função contratado)
+        outros: motoristas, // Representa motoristas (função motorista)
         vagasAbertas,
         vagasPreenchidas,
         vagasVencidas,
