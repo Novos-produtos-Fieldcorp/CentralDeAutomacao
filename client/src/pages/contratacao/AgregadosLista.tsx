@@ -1202,7 +1202,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         }
         
         // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
-        // motoristaIds já foi declarado acima
+        const motoristaIds = data?.map(m => m.motorista_id).filter((id): id is number => id !== undefined && id !== null) || [];
         let ativosStatus: Record<number, boolean> = {};
         let fotosWhatsApp: Record<number, string | null> = {};
         
