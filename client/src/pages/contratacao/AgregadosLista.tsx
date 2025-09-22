@@ -85,6 +85,33 @@ export interface ViewContratado {
   tipo_veiculo?: string | null;
   tipo?: string | null;
   ajudantes?: string[];
+  // Campos de endereço do join com as tabelas de endereço
+  end_motorista?: Array<{
+    id_end_motorista: number;
+    id_motorista: number;
+    id_logradouro: number;
+    nr_end: number | null;
+    ds_complemento_end: string | null;
+    st_end: boolean | null;
+    logradouro?: {
+      id_logradouro: number;
+      nr_cep: string | null;
+      logradouro: string | null;
+      bairro?: {
+        id_bairro: number;
+        bairro: string | null;
+        cidade?: {
+          id_cidade: number;
+          cidade: string;
+          estado?: {
+            id_estado: number;
+            sigla_estado: string;
+            nome_estado: string;
+          };
+        };
+      };
+    };
+  }>;
 }
 
 const checkVehicleTypeMatch = (motorista: ViewContratado, filters: string[]): boolean => {
@@ -1087,7 +1114,25 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           .select(`
             *,
             cliente(nome),
-            veiculo(*)
+            veiculo(*),
+            end_motorista(
+              *,
+              logradouro(
+                *,
+                bairro(
+                  *,
+                  cidade(
+                    id_cidade,
+                    cidade,
+                    estado(
+                      id_estado,
+                      sigla_estado,
+                      nome_estado
+                    )
+                  )
+                )
+              )
+            )
           `)
           .eq('company_id', companyId)
           .eq('funcao', 'Agregado');
@@ -1193,9 +1238,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         // Agrupar ajudantes por motorista_id
         const agregadosAgrupadosMap = new Map();
         processedData.forEach(agregado => {
-          // Extract cities while processing data
-          if (agregado.nome_cidade && typeof agregado.nome_cidade === 'string') {
-            uniqueCities.add(agregado.nome_cidade);
+          // Extract cities from the new join structure
+          if (agregado.end_motorista && agregado.end_motorista.length > 0) {
+            const endereco = agregado.end_motorista[0]; // Pegar o primeiro endereço
+            if (endereco?.logradouro?.bairro?.cidade?.cidade) {
+              uniqueCities.add(endereco.logradouro.bairro.cidade.cidade);
+            }
           }
           
           if (!agregadosAgrupadosMap.has(agregado.motorista_id)) {
@@ -1699,6 +1747,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     };
 
     const getMotoristaCity = (motorista: ViewContratado): string => {
+      // Extrair cidade dos novos dados do join
+      if (motorista.end_motorista && motorista.end_motorista.length > 0) {
+        const endereco = motorista.end_motorista[0];
+        if (endereco?.logradouro?.bairro?.cidade?.cidade) {
+          return endereco.logradouro.bairro.cidade.cidade;
+        }
+      }
+      // Fallback para o campo antigo se existir
       return motorista.nome_cidade ?? '';
     };
 
@@ -1729,8 +1785,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
       
       // Lógica para filtro de cidade (multiseleção)
+      const motoristaCidade = getMotoristaCity(motorista);
       const cidadeMatch = cidadeFilter.length === 0 || 
-        (motorista.nome_cidade != null && cidadeFilter.includes(motorista.nome_cidade));
+        (motoristaCidade && cidadeFilter.includes(motoristaCidade));
       
       // Lógica para filtro de tipo de veículo (multiseleção)
       let tipoVeiculoMatch = true;
