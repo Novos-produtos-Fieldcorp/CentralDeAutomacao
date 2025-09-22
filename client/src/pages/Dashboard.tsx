@@ -718,7 +718,7 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       {/* Lock overlay for restricted access - CENTRALIZADO */}
       {!hasAccess && (
         <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-comprovantes">
-          <AccessTooltip module="resumo">
+          <AccessTooltip module="comprovantes">
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
               <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
             </div>

@@ -37,6 +37,11 @@ const getTooltipMessage = (module: string): { title: string; description: string
       title: 'Funcionalidade Bloqueada',
       description: 'Para liberar as Tags, é necessário contratar o módulo de Tags.',
       contact: 'Entre em contato com nossos atendentes para ativar essa funcionalidade.'
+    },
+    'comprovantes': {
+      title: 'Funcionalidade Bloqueada',
+      description: 'Para liberar os Comprovantes, é necessário contratar o módulo de Comprovantes.',
+      contact: 'Entre em contato com nossos atendentes para ativar essa funcionalidade.'
     }
   };
 
