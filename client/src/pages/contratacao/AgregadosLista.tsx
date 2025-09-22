@@ -85,6 +85,33 @@ export interface ViewContratado {
   tipo_veiculo?: string | null;
   tipo?: string | null;
   ajudantes?: string[];
+  // Campos de endereço do join com as tabelas de endereço
+  end_motorista?: Array<{
+    id_end_motorista: number;
+    id_motorista: number;
+    id_logradouro: number;
+    nr_end: number | null;
+    ds_complemento_end: string | null;
+    st_end: boolean | null;
+    logradouro?: {
+      id_logradouro: number;
+      nr_cep: string | null;
+      logradouro: string | null;
+      bairro?: {
+        id_bairro: number;
+        bairro: string | null;
+        cidade?: {
+          id_cidade: number;
+          cidade: string;
+          estado?: {
+            id_estado: number;
+            sigla_estado: string;
+            estado: string;
+          };
+        };
+      };
+    };
+  }>;
 }
 
 const checkVehicleTypeMatch = (motorista: ViewContratado, filters: string[]): boolean => {
@@ -1078,6 +1105,64 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       });
     };
 
+    // Função para buscar cidades dos agregados de forma mais simples
+    const fetchCidadesAgregados = async () => {
+      try {
+        // Buscar todas as cidades únicas diretamente da tabela cidade
+        const { data: cidadesData, error } = await supabase
+          .from('cidade')
+          .select('cidade')
+          .order('cidade');
+          
+        if (error) {
+          console.error('Erro ao buscar cidades:', error);
+          return;
+        }
+        
+        const cidadesUnicas = cidadesData?.map(c => c.cidade).filter(Boolean) || [];
+        console.log('✅ Cidades encontradas para filtro:', cidadesUnicas);
+        setCidades(cidadesUnicas);
+      } catch (error) {
+        console.error('Erro ao buscar cidades:', error);
+      }
+    };
+
+    // Função para buscar cidades específicas dos motoristas
+    const fetchCidadesDosMotorists = async (motoristaIds: number[]) => {
+      if (motoristaIds.length === 0) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('end_motorista')
+          .select(`
+            id_motorista,
+            logradouro!inner(
+              bairro!inner(
+                cidade!inner(cidade)
+              )
+            )
+          `)
+          .in('id_motorista', motoristaIds);
+          
+        if (error) {
+          console.error('Erro ao buscar cidades dos motoristas:', error);
+          return;
+        }
+        
+        const cidadesPorMotorista: { [key: number]: string } = {};
+        data?.forEach((endereco: any) => {
+          const cidade = endereco?.logradouro?.bairro?.cidade?.cidade;
+          if (cidade && endereco.id_motorista) {
+            cidadesPorMotorista[endereco.id_motorista] = cidade;
+          }
+        });
+        
+        setMotoristaCidades(cidadesPorMotorista);
+      } catch (error) {
+        console.error('Erro ao buscar cidades dos motoristas:', error);
+      }
+    };
+
     const fetchContratados = async () => {
       try {
         setLoading(true);
@@ -1128,15 +1213,25 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         if (error) throw error;
 
+        
         // Log para debug dos valores de funcao
         // Processing function values from data
         // Data processing completed
 
-        // Extract unique cities from contratados - only include non-null/undefined city names
+        // Extract unique cities from contratados - buscar separadamente
         const uniqueCities = new Set<string>();
         
-        // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
+        // Buscar cidades disponíveis para o filtro
+        console.log('🏙️ Buscando cidades para filtro...');
+        await fetchCidadesAgregados();
+        
+        // Buscar cidades específicas dos motoristas
         const motoristaIds = data?.map(m => m.motorista_id) || [];
+        console.log('🗺️ Buscando cidades específicas dos motoristas:', motoristaIds.length, 'IDs');
+        await fetchCidadesDosMotorists(motoristaIds);
+        
+        // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
+        // motoristaIds já foi declarado acima
         let ativosStatus: Record<number, boolean> = {};
         let fotosWhatsApp: Record<number, string | null> = {};
         
@@ -1193,10 +1288,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         // Agrupar ajudantes por motorista_id
         const agregadosAgrupadosMap = new Map();
         processedData.forEach(agregado => {
-          // Extract cities while processing data
-          if (agregado.nome_cidade && typeof agregado.nome_cidade === 'string') {
-            uniqueCities.add(agregado.nome_cidade);
-          }
+          // Cities will be loaded separately
+          // No city extraction needed here anymore
           
           if (!agregadosAgrupadosMap.has(agregado.motorista_id)) {
             agregadosAgrupadosMap.set(agregado.motorista_id, {
@@ -1212,10 +1305,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         });
         const agregadosAgrupados = Array.from(agregadosAgrupadosMap.values());
 
-        // Filter out null or undefined values before setting the state
-        const cidadesFiltradas = Array.from(uniqueCities).filter((c): c is string => c != null).sort();
-        
-        setCidades(cidadesFiltradas);
+        // As cidades já foram carregadas pela função separada
+        // Não precisamos fazer nada aqui
 
         setContratados(agregadosAgrupados);
         
@@ -1699,8 +1790,16 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     };
 
     const getMotoristaCity = (motorista: ViewContratado): string => {
+      // Primeiro tentar do mapeamento de cidades buscado pelos endereços
+      if (motorista.motorista_id && motoristaCidades[motorista.motorista_id]) {
+        return motoristaCidades[motorista.motorista_id];
+      }
+      // Fallback para o campo direto se existir
       return motorista.nome_cidade ?? '';
     };
+
+    // Função para buscar e armazenar cidades dos motoristas
+    const [motoristaCidades, setMotoristaCidades] = useState<{ [key: number]: string }>({});
 
     const filteredContratados = contratados.filter((motorista): boolean => {
       const searchLower = searchTerm.toLowerCase();
@@ -1729,8 +1828,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
       
       // Lógica para filtro de cidade (multiseleção)
+      const motoristaCidade = getMotoristaCity(motorista);
       const cidadeMatch = cidadeFilter.length === 0 || 
-        (motorista.nome_cidade != null && cidadeFilter.includes(motorista.nome_cidade));
+        (motoristaCidade && cidadeFilter.includes(motoristaCidade));
       
       // Lógica para filtro de tipo de veículo (multiseleção)
       let tipoVeiculoMatch = true;

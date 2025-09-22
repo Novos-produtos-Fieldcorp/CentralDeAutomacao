@@ -30,12 +30,17 @@ const getTooltipMessage = (module: string): { title: string; description: string
     },
     'resumo': {
       title: 'Funcionalidade Bloqueada',
-      description: 'Para liberar o Resumo, é necessário contratar o módulo de Dashboard/Resumo.',
+      description: 'Para liberar o Resumo, é necessário ter a página de Comprovantes configurada.',
       contact: 'Entre em contato com nossos atendentes para ativar essa funcionalidade.'
     },
     'tags': {
       title: 'Funcionalidade Bloqueada',
       description: 'Para liberar as Tags, é necessário contratar o módulo de Tags.',
+      contact: 'Entre em contato com nossos atendentes para ativar essa funcionalidade.'
+    },
+    'comprovantes': {
+      title: 'Funcionalidade Bloqueada',
+      description: 'Para liberar os Comprovantes, é necessário contratar o módulo de Comprovantes.',
       contact: 'Entre em contato com nossos atendentes para ativar essa funcionalidade.'
     }
   };
