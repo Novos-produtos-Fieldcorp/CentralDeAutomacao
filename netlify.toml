@@ -30,3 +30,7 @@
   for = "/*"
   [headers.values]
     Content-Security-Policy = "frame-ancestors *;"
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
+    Access-Control-Allow-Headers = "Content-Type, Authorization, wiseapp-token, wiseapp-account-id, X-Requested-With, Accept, Origin, Cache-Control, Pragma, Expires, apikey, x-client-info, api_access_token"
+    Access-Control-Allow-Credentials = "true"

@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { corsMiddleware } from "./cors-middleware";
 
 // Declaração para process global do Node.js
 declare const process: {
@@ -14,7 +15,10 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Configurar headers de segurança otimizados e CORS
+// Aplicar middleware CORS robusto
+app.use(corsMiddleware);
+
+// Configurar headers de segurança otimizados
 app.use((req, res, next) => {
   // Headers de segurança otimizados para iframe embedding
   res.removeHeader('X-Frame-Options');
@@ -40,117 +44,11 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   
-  // CORS ultra-permissivo para resolver problemas de acesso
-  const origin = req.headers.origin;
+  next();
+});
 
-  // console.log(`[CORS] Request from origin: ${origin}`);
-  
-  const allowedOrigins = [
-    'https://replit.com',
-    'https://centralautomacoes.netlify.app',
-    'https://feat-dashboard--centralautomacoes.netlify.app',
-    'http://localhost:3000',
-    'http://localhost:5000',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:5000'
-  ];
-  
-  // Função para verificar se origem é permitida
-  const isOriginAllowed = (requestOrigin: string | undefined): boolean => {
-    // Permitir origens undefined/null (pode ocorrer em certos contextos como Postman, apps desktop, etc)
-    if (!requestOrigin) return true;
-    
-    // Verificar origens específicas
-    if (allowedOrigins.includes(requestOrigin)) {
-      return true;
-    }
-    
-    // Verificar padrões dinâmicos
-    if (requestOrigin.includes('replit.dev') || 
-        requestOrigin.includes('replit.app') ||
-        requestOrigin.includes('netlify.app') ||
-        requestOrigin.includes('localhost') ||
-        requestOrigin.includes('127.0.0.1')) {
-      return true;
-    }
-    
-    return false;
-  };
-  
-  // Definir Access-Control-Allow-Origin
-  if (isOriginAllowed(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    // console.log(`[CORS] Origin allowed: ${origin || 'undefined'}`);
-  } else {
-    // Para iframe embedding, permitir qualquer origem se não for uma requisição de API sensível
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    // console.log(`[CORS] Origin not in allowed list, using wildcard: ${origin || 'undefined'}`);
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
-  res.setHeader('Access-Control-Allow-Headers', [
-    'Content-Type',
-    'Authorization', 
-    'api_access_token',
-    'Cache-Control',
-    'Pragma',
-    'Expires',
-    'wiseapp-token',
-    'company-id',
-    'wiseapp-account-id',
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'Referer',
-    'User-Agent',
-    'Sec-Fetch-Mode',
-    'Sec-Fetch-Dest',
-    'Sec-Fetch-Site'
-  ].join(', '));
-  res.setHeader('Access-Control-Allow-Credentials', 'false');
-  res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
-  
-
-  // Responder a requisições OPTIONS otimizado (preflight)
-  if (req.method === 'OPTIONS') {
-    // console.log(`[CORS] Handling OPTIONS preflight request from: ${origin}`);
-    
-    // Definir headers CORS para preflight
-    if (isOriginAllowed(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin || '*');
-      // console.log(`[CORS] Preflight - Origin allowed: ${origin || 'undefined'}`);
-    } else {
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      // console.log(`[CORS] Preflight - Using wildcard for: ${origin || 'undefined'}`);
-    }
-    
-    // Repetir headers essenciais para preflight
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
-    res.setHeader('Access-Control-Allow-Headers', [
-      'Content-Type',
-      'Authorization', 
-      'api_access_token',
-      'Cache-Control',
-      'Pragma',
-      'Expires',
-      'wiseapp-token',
-      'company-id',
-      'wiseapp-account-id',
-      'X-Requested-With',
-      'Accept',
-      'Origin',
-      'Referer',
-      'User-Agent',
-      'Sec-Fetch-Mode',
-      'Sec-Fetch-Dest',
-      'Sec-Fetch-Site'
-    ].join(', '));
-    res.setHeader('Access-Control-Max-Age', '86400');
-    
-    res.status(204).end();
-    return;
-  }
-  
-  // Cache strategy otimizado por tipo de rota
+// Cache strategy otimizado por tipo de rota
+app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
     if (req.path.includes('/wiseapp/') || req.path.includes('/inboxes')) {
       // APIs dinâmicas - força no-cache agressivo para resolver problemas de cache
