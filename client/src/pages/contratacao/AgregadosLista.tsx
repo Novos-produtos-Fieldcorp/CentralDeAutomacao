@@ -2592,7 +2592,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {selectedItems.size > 0 ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}` : 'Selecionar todos'}
+                  {selectedItems.size > 0 ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}` : `Selecionar todos (${filteredContratados.length} registro${filteredContratados.length !== 1 ? 's' : ''})`}
                 </span>
               </div>
             </div>
