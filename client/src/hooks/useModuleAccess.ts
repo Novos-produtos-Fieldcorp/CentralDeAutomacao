@@ -44,7 +44,7 @@ export const useModuleAccess = () => {
         const { data: company, error: companyError } = await supabase
           .from("company")
           .select(
-            "checklist_access, motorista_access, vagas_access, hodometro_acsess, resumo_access, tags_access",
+            "checklist_access, motorista_access, hodometro_acsess, resumo_access, tags_access",
           )
           .eq("company_id", companyId)
           .maybeSingle();
@@ -70,7 +70,7 @@ export const useModuleAccess = () => {
           setModuleAccess({
             checklist: company.checklist_access || false,
             motoristas: company.motorista_access || false,
-            vagas: company.vagas_access || false,
+            vagas: true, // Always enabled since column doesn't exist
             hodometros: company.hodometro_acsess || false, // Note the typo in the column name
             veiculos: true, // Always enabled
             clientes: true, // Always enabled
