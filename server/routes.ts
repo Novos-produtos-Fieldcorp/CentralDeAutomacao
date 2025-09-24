@@ -3196,7 +3196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         commentWithName = {
           ...newComment,
           atendente_nome: attendant?.nome || null
-        };
+        } as any;
       }
 
       console.log("Comment created successfully:", commentWithName);
