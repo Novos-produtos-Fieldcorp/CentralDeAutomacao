@@ -2639,7 +2639,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {motorista.nome || ''}
+                                {motorista.nome_motorista || motorista.nome || ''}
                                 {motorista.ajudantes && motorista.ajudantes.length > 0 && (
                                   <div className="text-xs text-gray-500 dark:text-gray-400">
                                     Ajudantes: {motorista.ajudantes.join(', ')}
