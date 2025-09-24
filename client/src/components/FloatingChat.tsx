@@ -328,8 +328,16 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           },
         });
         const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
+        
+        // Verificar se há erro de autenticação
+        if (response.data?.error === "WiseApp authentication failed") {
+          console.warn("WiseApp authentication failed:", response.data.message);
+          setAvailableInboxes([]);
+          return;
+        }
+        
         // O servidor retorna os dados diretamente, não em response.data.payload
-        const inboxesData = response.data?.payload || response.data;
+        const inboxesData = response.data?.payload || response.data?.inboxes || response.data;
         if (inboxesData && Array.isArray(inboxesData) && inboxesData.length > 0) {
           const allInboxes = inboxesData.map((inbox: any) => ({
             ...inbox,

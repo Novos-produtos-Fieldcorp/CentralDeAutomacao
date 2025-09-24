@@ -1774,9 +1774,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error("Erro ao buscar inboxes do WiseApp:", error);
-      res.status(500).json({
+      
+      // Se for erro de autenticação, retornar uma resposta mais amigável
+      if (error instanceof Error && error.message.includes('401')) {
+        res.status(200).json({
+          error: "WiseApp authentication failed",
+          message: "Token WiseApp expirado ou inválido",
+          inboxes: [], // Retorna array vazio ao invés de erro
+          authenticated: false
+        });
+        return;
+      }
+      
+      // Para outros erros, manter comportamento original mas com dados de fallback
+      res.status(200).json({
         error: "Erro ao buscar inboxes do WiseApp",
         details: error instanceof Error ? error.message : "Erro desconhecido",
+        inboxes: [], // Retorna array vazio ao invés de erro
+        authenticated: false
       });
     }
   });
