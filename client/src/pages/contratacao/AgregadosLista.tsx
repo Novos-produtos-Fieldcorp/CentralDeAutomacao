@@ -1119,7 +1119,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           return;
         }
         
-        const cidadesUnicas = cidadesData?.map(c => c.cidade).filter(Boolean) || [];
+        const cidadesTemp = cidadesData?.map(c => c.cidade).filter(Boolean) || [];
+        // Remover duplicatas e ordenar
+        const cidadesUnicas = [...new Set(cidadesTemp)].sort();
         console.log('✅ Cidades encontradas para filtro:', cidadesUnicas);
         setCidades(cidadesUnicas);
       } catch (error) {
@@ -1197,7 +1199,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         // Atualizar a lista de cidades com as cidades encontradas nos dados
         const cidadesEncontradas = Array.from(cidadesUnicas).sort();
         if (cidadesEncontradas.length > 0) {
-          setCidades(cidadesEncontradas);
+          // Mesclar com as cidades do filtro (sem duplicatas) mantendo ordem alfabética
+          setCidades(prev => {
+            const cidadesMescladas = [...new Set([...prev, ...cidadesEncontradas])].sort();
+            return cidadesMescladas;
+          });
           console.log('✅ Cidades encontradas nos dados:', cidadesEncontradas);
         }
         
