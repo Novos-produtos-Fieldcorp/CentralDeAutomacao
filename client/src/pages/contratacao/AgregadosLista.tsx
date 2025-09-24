@@ -1119,7 +1119,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           return;
         }
         
-        const cidadesUnicas = cidadesData?.map(c => c.cidade).filter(Boolean) || [];
+        const cidadesTemp = cidadesData?.map(c => c.cidade).filter(Boolean) || [];
+        // Remover duplicatas e ordenar
+        const cidadesUnicas = [...new Set(cidadesTemp)].sort();
         console.log('✅ Cidades encontradas para filtro:', cidadesUnicas);
         setCidades(cidadesUnicas);
       } catch (error) {
@@ -1197,7 +1199,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         // Atualizar a lista de cidades com as cidades encontradas nos dados
         const cidadesEncontradas = Array.from(cidadesUnicas).sort();
         if (cidadesEncontradas.length > 0) {
-          setCidades(cidadesEncontradas);
+          // Mesclar com as cidades do filtro (sem duplicatas) mantendo ordem alfabética
+          setCidades(prev => {
+            const cidadesMescladas = [...new Set([...prev, ...cidadesEncontradas])].sort();
+            return cidadesMescladas;
+          });
           console.log('✅ Cidades encontradas nos dados:', cidadesEncontradas);
         }
         
@@ -2586,7 +2592,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {selectedItems.size > 0 ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}` : 'Selecionar todos'}
+                  {selectedItems.size > 0 ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}` : `Selecionar todos (${filteredContratados.length} registro${filteredContratados.length !== 1 ? 's' : ''})`}
                 </span>
               </div>
             </div>
@@ -2639,7 +2645,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {motorista.nome || ''}
+                                {motorista.nome_motorista || motorista.nome || ''}
                                 {motorista.ajudantes && motorista.ajudantes.length > 0 && (
                                   <div className="text-xs text-gray-500 dark:text-gray-400">
                                     Ajudantes: {motorista.ajudantes.join(', ')}
