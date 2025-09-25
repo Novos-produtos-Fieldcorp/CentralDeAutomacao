@@ -994,6 +994,24 @@ const Dashboard: React.FC = () => {
       if (statusVagasResult.error)
         console.warn("Erro status vagas:", statusVagasResult.error.message);
 
+      // DEBUG: Check checklist data to understand structure
+      const checklistSimple = await supabase
+        .from("checklist")
+        .select("*")
+        .limit(10);
+      
+      console.log("Debug checklist:", {
+        error: checklistSimple.error?.message,
+        count: checklistSimple.data?.length,
+        firstItem: checklistSimple.data?.[0]
+      });
+      
+      // Count total checklists
+      const checklistCount = await supabase
+        .from("checklist")
+        .select("*", { count: "exact", head: true });
+      console.log("Total checklists na tabela:", checklistCount.count);
+
       // Process real vagas data
       const vagas = vagasResult.data || [];
       const statusVagasData = statusVagasResult.data || [];
