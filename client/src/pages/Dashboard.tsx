@@ -209,6 +209,43 @@ const SimpleTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+// Custom Tooltip for Checklist Stacked Bars
+const ChecklistTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const mensal = payload.find((p: any) => p.dataKey === 'mensal')?.value || 0;
+    const semanal = payload.find((p: any) => p.dataKey === 'semanal')?.value || 0;
+    const total = mensal + semanal;
+    
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-3">
+        <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+          {label}
+        </p>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Mensal: <span className="font-semibold">{mensal}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Semanal: <span className="font-semibold">{semanal}</span>
+            </p>
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-600 pt-1 mt-2">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              Total: <span className="font-semibold">{total}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 // Interface for HeroCard props
 interface HeroCardProps {
   stats: DashboardStats;
@@ -891,7 +928,7 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
           <BarChart data={stats.checklists.monthlyData}>
             <XAxis dataKey="month" tick={{ fontSize: 10 }} />
             <YAxis tick={{ fontSize: 10 }} />
-            <Tooltip content={<SimpleTooltip />} />
+            <Tooltip content={<ChecklistTooltip />} />
             <Bar
               dataKey="mensal"
               fill="#3b82f6"
