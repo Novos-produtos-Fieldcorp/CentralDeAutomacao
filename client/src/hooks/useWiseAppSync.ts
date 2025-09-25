@@ -87,16 +87,11 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      // Try to get user email from localStorage or prompt user
-      let userEmail = localStorage.getItem('userEmail');
-      
-      // If no email stored, prompt for it
-      if (!userEmail) {
-        userEmail = prompt('Por favor, digite seu email para buscar o token WiseApp correto:');
-        if (userEmail) {
-          localStorage.setItem('userEmail', userEmail);
-        }
-      }
+      // Try to get user email from cookies
+      const userEmail = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('userEmail='))
+        ?.split('=')[1] || null;
       
       console.log('🔄 Initiating WiseApp sync:', { companyId, userEmail: userEmail ? 'provided' : 'not provided' });
       

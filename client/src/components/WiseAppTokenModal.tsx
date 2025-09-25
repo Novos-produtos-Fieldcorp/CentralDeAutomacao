@@ -175,7 +175,13 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
           type="email"
           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:text-white"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            // Save email to cookies for WiseApp token lookup
+            if (e.target.value) {
+              document.cookie = `userEmail=${e.target.value}; path=/; max-age=31536000`; // 1 year
+            }
+          }}
           placeholder="seuemail@empresa.com"
         />
       </div>
