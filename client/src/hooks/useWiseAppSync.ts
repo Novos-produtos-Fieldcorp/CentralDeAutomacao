@@ -14,6 +14,8 @@ interface BulkSyncResult {
   totalProcessed: number;
   successful: number;
   failed: number;
+  created: number;
+  photoUpdated: number;
   errors: Array<{ motorista_id: number; nome: string; error: string }>;
 }
 
@@ -93,10 +95,28 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     onSuccess: (data) => {
       const result = data.data as BulkSyncResult;
       
+      // Create summary message with new fields
+      let message = `Sincronização concluída! (${result.totalProcessed} processados)\n`;
+      
       if (result.successful > 0) {
-        toast.success(
-          `Sincronização concluída!\n✓ ${result.successful} contatos sincronizados\n${result.failed > 0 ? `✗ ${result.failed} falharam` : ''}`
-        );
+        message += `✓ ${result.successful} já existentes sincronizados\n`;
+      }
+      
+      if (result.created > 0) {
+        message += `🆕 ${result.created} contatos criados no WiseApp\n`;
+      }
+      
+      if (result.photoUpdated > 0) {
+        message += `📸 ${result.photoUpdated} fotos atualizadas\n`;
+      }
+      
+      if (result.failed > 0) {
+        message += `✗ ${result.failed} falharam`;
+      }
+      
+      // Show success toast if any operation was successful
+      if (result.successful > 0 || result.created > 0 || result.photoUpdated > 0) {
+        toast.success(message.trim());
       }
 
       if (result.failed > 0) {
