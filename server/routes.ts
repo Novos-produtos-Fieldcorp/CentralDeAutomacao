@@ -1612,10 +1612,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const errorText = await searchResponse.text();
             console.error(`Search failed for ${motorista.nome}: ${searchResponse.status} - ${errorText}`);
             results.failed++;
+            
+            // Provide better error messages for common issues
+            let errorMessage = `Erro na busca do WiseApp: ${searchResponse.status}`;
+            if (searchResponse.status === 502 || searchResponse.status === 503) {
+              errorMessage = "Serviço WiseApp temporariamente indisponível";
+            } else if (searchResponse.status === 429) {
+              errorMessage = "Muitas requisições - tente novamente em alguns minutos";
+            } else if (searchResponse.status >= 500) {
+              errorMessage = "Erro interno do servidor WiseApp";
+            }
+            
             results.errors.push({
               motorista_id: motorista.motorista_id,
               nome: motorista.nome || 'N/A',
-              error: `Erro na busca do WiseApp: ${searchResponse.status}`
+              error: errorMessage
             });
             continue;
           }

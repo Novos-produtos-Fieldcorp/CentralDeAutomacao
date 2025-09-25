@@ -122,13 +122,27 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       if (result.failed > 0) {
         console.warn('Erros na sincronização:', result.errors);
         
-        // Show detailed errors for failed syncs
-        result.errors.slice(0, 3).forEach(error => {
-          toast.error(`${error.nome}: ${error.error}`, { duration: 5000 });
-        });
+        // Check if all or most errors are due to WiseApp service being unavailable
+        const serviceUnavailableErrors = result.errors.filter(error => 
+          error.error.includes('temporariamente indisponível') ||
+          error.error.includes('Erro interno do servidor WiseApp')
+        );
         
-        if (result.errors.length > 3) {
-          toast.error(`E mais ${result.errors.length - 3} erros...`);
+        // If most errors are service unavailability (80% threshold)
+        if (serviceUnavailableErrors.length >= result.errors.length * 0.8) {
+          toast.error(
+            `Serviço WiseApp está temporariamente indisponível. Tente novamente em alguns minutos.`, 
+            { duration: 6000 }
+          );
+        } else {
+          // Show detailed errors for individual contact failures
+          result.errors.slice(0, 3).forEach(error => {
+            toast.error(`${error.nome}: ${error.error}`, { duration: 5000 });
+          });
+          
+          if (result.errors.length > 3) {
+            toast.error(`E mais ${result.errors.length - 3} erros...`);
+          }
         }
       }
 
