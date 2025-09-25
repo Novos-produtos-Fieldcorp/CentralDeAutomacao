@@ -1421,28 +1421,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // 2. Buscar dados da empresa para obter account ID do WiseApp
-      const { data: companies, error: companyError } = await supabaseBackendBackend
-        .from("company")
-        .select("id_conta_wiseapp")
-        .eq("company_id", parseInt(companyId))
-        .limit(1);
-      
-      if (companyError || !companies || companies.length === 0) {
-        console.log(`Empresa não encontrada para company_id: ${companyId}`);
-        return res.status(404).json({ 
-          error: "Empresa não encontrada ou account ID não configurado" 
-        });
-      }
-      
-      const accountId = companies[0].id_conta_wiseapp;
-      
-      if (!accountId) {
-        return res.status(400).json({ 
-          error: "Account ID do WiseApp não configurado para esta empresa" 
-        });
-      }
-      
       console.log(`Using WiseApp account ID: ${accountId}`);
       
       // 3. Buscar todos os motoristas ativos com telefone
