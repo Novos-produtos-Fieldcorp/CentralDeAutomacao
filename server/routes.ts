@@ -1400,7 +1400,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Starting sync-all-motoristas for company ${companyId}`);
       
       // 1. Buscar token WiseApp para esta empresa
+      console.log(`[sync-all-motoristas] Tentando obter token para company_id: ${companyId}`);
+      console.log(`Fetching WiseApp token for company ${companyId}`);
       const token = await storage.getWiseappToken(parseInt(companyId));
+      console.log(`Token result: ${token ? 'Found' : 'Not found'} for company ${companyId}`);
       
       if (!token) {
         console.log(`Token WiseApp não encontrado para company_id: ${companyId}`);
