@@ -1265,6 +1265,22 @@ const Dashboard: React.FC = () => {
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
       );
 
+      // Debug logging para verificar dados
+      console.log("Dashboard data loaded:", {
+        agregados,
+        motoristas,
+        contratados,
+        totalVagas: vagas.length,
+        vagasAbertas,
+        vagasPreenchidas,
+        vagasVencidas,
+        clientes: clientes.length,
+        clientesAtivos,
+        veiculos: veiculos.length,
+        comprovantesThisMonth,
+        hodometroDataLength: hodometroArray.length
+      });
+
       setStats({
         agregados,
         contratados: contratados, // Representa contratados (função contratado)
