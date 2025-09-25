@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 // Removed direct API service - now using secure backend routes
 import { useAuth } from '@/context/AuthContext';
+import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 
 interface SyncResult {
   success: boolean;
@@ -33,6 +34,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
   const [configValid, setConfigValid] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
   const { companyId, accountId } = useAuth();
+  const { token: wiseAppToken, companyId: wiseAppCompanyId } = useWiseAppAccess();
 
   // Individual motorista sync mutation using secure backend
   const syncMotoristaMutation = useMutation({
@@ -70,20 +72,24 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
-  // Bulk sync mutation using secure backend - EXATAMENTE IGUAL AO SINCRONIZAR TAGS
+  // Bulk sync mutation using secure backend - EXATAMENTE IGUAL AO SINCRONIZAR TAGS (USANDO HEADERS)
   const bulkSyncMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
-      if (!accountId) throw new Error('Account ID not found');
+      
+      // EXATAMENTE como o sincronizar tags - usar headers
+      if (!wiseAppToken) throw new Error('Configure um token WiseApp válido antes de sincronizar contatos');
+      if (!wiseAppCompanyId) throw new Error('Account ID WiseApp não encontrado');
       
       const response = await fetch('/api/wiseapp/sync-all-motoristas', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'wiseapp-token': wiseAppToken,          // EXATAMENTE como o sincronizar tags
+          'wiseapp-account-id': wiseAppCompanyId.toString()  // EXATAMENTE como o sincronizar tags
         },
         body: JSON.stringify({
-          companyId: companyId,
-          accountId: accountId  // IGUAL ao sincronizar tags
+          companyId: companyId
         })
       });
       
