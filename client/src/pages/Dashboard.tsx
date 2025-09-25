@@ -993,6 +993,23 @@ const Dashboard: React.FC = () => {
         console.warn("Erro vagas:", vagasResult.error.message);
       if (statusVagasResult.error)
         console.warn("Erro status vagas:", statusVagasResult.error.message);
+        
+      // DEBUG HODOMETROS: Check for errors and data
+      if (hodometroResult.error)
+        console.warn("Erro hodometro data:", hodometroResult.error.message);
+      const hodometroDebugData = hodometroResult.data || [];
+      console.log("Debug hodometros:", {
+        hodometroCount: hodometroDebugData.length,
+        firstHodometro: hodometroDebugData[0],
+        sixMonthsAgoDate: sixMonthsAgo.toISOString().split("T")[0]
+      });
+      
+      // Check if there are ANY hodometros in the database (without date filter)
+      const totalHodometrosCheck = await supabase
+        .from("hodometro")
+        .select("*", { count: "exact", head: true })
+        .eq("company_id", companyId);
+      console.log("Total hodometros na tabela:", totalHodometrosCheck.count);
 
       // Process real vagas data with debug logging
       const vagas = vagasResult.data || [];
