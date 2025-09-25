@@ -28,6 +28,7 @@ import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
 import BulkContactTagsSync from '../../components/BulkContactTagsSync';
 import { useAuth } from '../../context/AuthContext';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
+import { useWiseAppSync } from '../../hooks/useWiseAppSync';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { API_BASE_URL } from '@/lib/api-config';
 import FilterTags from '../../components/FilterTags';
@@ -146,6 +147,7 @@ export interface ViewMotorista extends Omit<ViewMotoristaBase, 'nome_motorista'>
 const MotoristasLista = () => {
   const { companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
+  const { syncAllMotoristas, isBulkSyncing } = useWiseAppSync();
   const [motoristas, setMotoristas] = useState<ViewMotorista[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -2038,6 +2040,26 @@ const MotoristasLista = () => {
             </div>
 
           </div>
+
+          {/* Botão Sincronizar Contatos */}
+          <button
+            onClick={syncAllMotoristas}
+            disabled={isBulkSyncing}
+            className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg 
+              className={`w-4 h-4 ${isBulkSyncing ? 'animate-spin' : ''}`} 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2"
+            >
+              <path d="M1 4v6h6" />
+              <path d="M23 20v-6h-6" />
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+            </svg>
+            <span>{isBulkSyncing ? 'Sincronizando...' : 'Sincronizar Contatos'}</span>
+          </button>
 
           {/* Botão Novo Motorista */}
           <button
