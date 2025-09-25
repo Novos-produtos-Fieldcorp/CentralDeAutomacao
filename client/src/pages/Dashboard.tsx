@@ -43,6 +43,17 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "../lib/supabase";
 import AccessTooltip from "../components/AccessTooltip";
 
+// Checklist types
+const CHECKLIST_TYPES = {
+  MENSAL: 1,
+  SEMANAL: 2,
+} as const;
+
+const CHECKLIST_TYPE_NAMES = {
+  [CHECKLIST_TYPES.MENSAL]: "Mensal",
+  [CHECKLIST_TYPES.SEMANAL]: "Semanal",
+} as const;
+
 // Helper function to process hodometro data with correct field names
 const processRealHodometroData = (hodometroData: any[]) => {
   try {
@@ -164,6 +175,8 @@ interface DashboardStats {
     monthlyData: {
       month: string;
       value: number;
+      mensal: number;
+      semanal: number;
     }[];
     typeData: { name: string; value: number; color: string }[];
   };
@@ -872,7 +885,7 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
         )}
       </div>
 
-      {/* Monthly Chart */}
+      {/* Monthly Chart - Separated by Type */}
       <div className="h-32">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={stats.checklists.monthlyData}>
@@ -880,10 +893,18 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
             <YAxis tick={{ fontSize: 10 }} />
             <Tooltip content={<SimpleTooltip />} />
             <Bar
-              dataKey="value"
+              dataKey="mensal"
               fill="#3b82f6"
               radius={[2, 2, 0, 0]}
-              name="Checklists"
+              name="Mensal"
+              stackId="checklist"
+            />
+            <Bar
+              dataKey="semanal"
+              fill="#10b981"
+              radius={[2, 2, 0, 0]}
+              name="Semanal"
+              stackId="checklist"
             />
           </BarChart>
         </ResponsiveContainer>
@@ -922,6 +943,11 @@ const Dashboard: React.FC = () => {
     comprovantes: {
       totalMensal: 0,
       monthlyData: [],
+    },
+    checklists: {
+      totalMensal: 0,
+      monthlyData: [],
+      typeData: [],
     },
     recentActivity: [],
   });
@@ -1353,41 +1379,50 @@ const Dashboard: React.FC = () => {
       
       // Group checklists by type
       const checklistByType = checklistData.reduce((acc: any, checklist: any) => {
-        const tipo = checklist.id_tipo_checklist || 'Sem Tipo';
-        acc[tipo] = (acc[tipo] || 0) + 1;
+        const tipoId = checklist.id_tipo_checklist;
+        const tipoName = tipoId === CHECKLIST_TYPES.MENSAL ? 'Mensal' : 
+                        tipoId === CHECKLIST_TYPES.SEMANAL ? 'Semanal' : 'Sem Tipo';
+        acc[tipoName] = (acc[tipoName] || 0) + 1;
         return acc;
       }, {});
       
       // Create pie data for checklist types
-      const checklistPieData = Object.entries(checklistByType).map(([tipo, count]) => ({
-        name: `Tipo ${tipo}`,
+      const checklistPieData = Object.entries(checklistByType).map(([tipoName, count]) => ({
+        name: tipoName,
         value: count as number,
-        color: tipo === '1' ? '#3b82f6' : tipo === '2' ? '#10b981' : '#f59e0b'
+        color: tipoName === 'Mensal' ? '#3b82f6' : tipoName === 'Semanal' ? '#10b981' : '#f59e0b'
       }));
 
-      // Process monthly checklist data
-      const monthlyChecklists: { [key: string]: number } = {};
+      // Process monthly checklist data separated by type
+      const monthlyChecklistsMensal: { [key: string]: number } = {};
+      const monthlyChecklistsSemanal: { [key: string]: number } = {};
+      
       checklistData.forEach((checklist) => {
         if (checklist.data) {
           const monthKey = format(new Date(checklist.data), "MMM", {
             locale: ptBR,
           });
-          monthlyChecklists[monthKey] = (monthlyChecklists[monthKey] || 0) + 1;
+          
+          if (checklist.id_tipo_checklist === CHECKLIST_TYPES.MENSAL) {
+            monthlyChecklistsMensal[monthKey] = (monthlyChecklistsMensal[monthKey] || 0) + 1;
+          } else if (checklist.id_tipo_checklist === CHECKLIST_TYPES.SEMANAL) {
+            monthlyChecklistsSemanal[monthKey] = (monthlyChecklistsSemanal[monthKey] || 0) + 1;
+          }
         }
       });
 
-      const checklistArray = Object.entries(monthlyChecklists)
-        .map(([month, value]) => ({
-          month,
-          value,
-        }))
-        .sort((a, b) => {
-          const months = [
-            "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-            "Jul", "Ago", "Set", "Out", "Nov", "Dez",
-          ];
-          return months.indexOf(a.month) - months.indexOf(b.month);
-        });
+      // Create a combined array with both types
+      const months = [
+        "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+        "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+      ];
+
+      const checklistArray = months.map(month => ({
+        month,
+        mensal: monthlyChecklistsMensal[month] || 0,
+        semanal: monthlyChecklistsSemanal[month] || 0,
+        value: (monthlyChecklistsMensal[month] || 0) + (monthlyChecklistsSemanal[month] || 0), // Total for backward compatibility
+      })).filter(item => item.value > 0); // Only show months with data
 
       // Pie chart data for contratacao - 3 categorias específicas  
       const agregados = agregadosResult.count || 0;
