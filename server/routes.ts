@@ -1401,15 +1401,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 1. Buscar token WiseApp - primeiro por email, depois por company_id
       let token = null;
+      let tokenSource = 'none';
+      
       if (userEmail) {
-        console.log(`Attempting to fetch token by email: ${userEmail}`);
+        console.log(`🔍 Attempting to fetch token by email: ${userEmail} for company ${companyId}`);
         token = await storage.getWiseappTokenByEmail(userEmail, parseInt(companyId));
+        if (token) {
+          tokenSource = 'email';
+          console.log(`✅ Token found by email: ${userEmail}`);
+        } else {
+          console.log(`❌ No token found for email: ${userEmail}`);
+        }
       }
       
       // Fallback to company_id if email search didn't work
       if (!token) {
-        console.log(`Falling back to company_id search: ${companyId}`);
+        console.log(`🔍 Falling back to company_id search: ${companyId}`);
         token = await storage.getWiseappToken(parseInt(companyId));
+        if (token) {
+          tokenSource = 'company_id';
+          console.log(`✅ Token found by company_id: ${companyId}`);
+        } else {
+          console.log(`❌ No token found for company_id: ${companyId}`);
+        }
       }
       
       if (!token) {

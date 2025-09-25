@@ -93,6 +93,11 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
         .find(row => row.startsWith('userEmail='))
         ?.split('=')[1] || null;
       
+      // If no email in cookies, throw error to trigger modal opening
+      if (!userEmail) {
+        throw new Error('NEED_EMAIL_CONFIG');
+      }
+      
       console.log('🔄 Initiating WiseApp sync:', { companyId, userEmail: userEmail ? 'provided' : 'not provided' });
       
       const response = await fetch('/api/wiseapp/sync-all-motoristas', {
@@ -175,7 +180,12 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     onError: (error: Error) => {
       console.error('Bulk sync error:', error);
       
-      if (error.message.includes('Token WiseApp não configurado') || 
+      if (error.message === 'NEED_EMAIL_CONFIG') {
+        // Auto-open WiseApp configuration modal
+        const event = new CustomEvent('openWiseAppModal');
+        window.dispatchEvent(event);
+        return; // Don't show error toast since modal will handle it
+      } else if (error.message.includes('Token WiseApp não configurado') || 
           error.message.includes('Configure um token WiseApp válido')) {
         toast.error(
           'Token WiseApp não configurado. Configure o token de acesso nas configurações da empresa antes de sincronizar contatos.',
