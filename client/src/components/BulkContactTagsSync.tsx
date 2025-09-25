@@ -227,17 +227,6 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
 
   return (
     <>
-      {/* Botão principal */}
-      <button
-        onClick={startBulkSync}
-        disabled={isSyncing}
-        className={`bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
-        data-testid="bulk-contact-tags-sync-btn"
-      >
-        <Tag className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-        {isSyncing ? 'Sincronizando...' : 'Sincronizar Tags dos Contatos'}
-      </button>
-
       {/* Modal de progresso e resultado */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" data-testid="bulk-sync-modal">
