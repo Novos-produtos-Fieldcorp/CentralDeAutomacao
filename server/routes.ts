@@ -1399,37 +1399,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Starting sync-all-motoristas for company ${companyId}${userEmail ? ` with user email ${userEmail}` : ''}`);
       
-      // 1. Buscar token WiseApp - primeiro por email, depois por company_id
+      // 1. Buscar token WiseApp apenas por email (company_id não é mais usado)
       let token = null;
-      let tokenSource = 'none';
       
-      if (userEmail) {
-        console.log(`🔍 Attempting to fetch token by email: ${userEmail} for company ${companyId}`);
-        token = await storage.getWiseappTokenByEmail(userEmail, parseInt(companyId));
-        if (token) {
-          tokenSource = 'email';
-          console.log(`✅ Token found by email: ${userEmail}`);
-        } else {
-          console.log(`❌ No token found for email: ${userEmail}`);
-        }
+      if (!userEmail) {
+        console.log(`❌ No email provided - cannot search for WiseApp token`);
+        return res.status(400).json({ 
+          error: "Email é obrigatório para buscar token WiseApp" 
+        });
       }
+
+      console.log(`🔍 Fetching token by email: ${userEmail}`);
+      token = await storage.getWiseappTokenByEmail(userEmail);
       
-      // Fallback to company_id if email search didn't work
-      if (!token) {
-        console.log(`🔍 Falling back to company_id search: ${companyId}`);
-        token = await storage.getWiseappToken(parseInt(companyId));
-        if (token) {
-          tokenSource = 'company_id';
-          console.log(`✅ Token found by company_id: ${companyId}`);
-        } else {
-          console.log(`❌ No token found for company_id: ${companyId}`);
-        }
+      if (token) {
+        console.log(`✅ Token found for email: ${userEmail}`);
+      } else {
+        console.log(`❌ No token found for email: ${userEmail}`);
       }
       
       if (!token) {
-        console.log(`Token WiseApp não encontrado para company_id: ${companyId}`);
+        console.log(`❌ Token WiseApp não encontrado para email: ${userEmail}`);
         return res.status(401).json({ 
-          error: "Token WiseApp não configurado para esta empresa",
+          error: "Token WiseApp não configurado para este email",
           message: "Configure um token WiseApp válido antes de sincronizar contatos"
         });
       }
