@@ -87,8 +87,18 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      // Debug logging
-      console.log('🔍 DEBUG - Sync attempt:', { companyId });
+      // Try to get user email from localStorage or prompt user
+      let userEmail = localStorage.getItem('userEmail');
+      
+      // If no email stored, prompt for it
+      if (!userEmail) {
+        userEmail = prompt('Por favor, digite seu email para buscar o token WiseApp correto:');
+        if (userEmail) {
+          localStorage.setItem('userEmail', userEmail);
+        }
+      }
+      
+      console.log('🔄 Initiating WiseApp sync:', { companyId, userEmail: userEmail ? 'provided' : 'not provided' });
       
       const response = await fetch('/api/wiseapp/sync-all-motoristas', {
         method: 'POST',
@@ -96,7 +106,8 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          companyId: companyId
+          companyId: companyId,
+          userEmail: userEmail
         })
       });
       

@@ -1391,16 +1391,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/wiseapp/sync-all-motoristas", async (req, res) => {
     try {
-      const { companyId } = req.body;
+      const { companyId, userEmail } = req.body;
       
       if (!companyId) {
         return res.status(400).json({ error: 'Company ID é obrigatório' });
       }
       
-      console.log(`Starting sync-all-motoristas for company ${companyId}`);
+      console.log(`Starting sync-all-motoristas for company ${companyId}${userEmail ? ` with user email ${userEmail}` : ''}`);
       
-      // 1. Buscar token WiseApp para esta empresa
-      const token = await storage.getWiseappToken(parseInt(companyId));
+      // 1. Buscar token WiseApp - primeiro por email, depois por company_id
+      let token = null;
+      if (userEmail) {
+        console.log(`Attempting to fetch token by email: ${userEmail}`);
+        token = await storage.getWiseappTokenByEmail(userEmail, parseInt(companyId));
+      }
+      
+      // Fallback to company_id if email search didn't work
+      if (!token) {
+        console.log(`Falling back to company_id search: ${companyId}`);
+        token = await storage.getWiseappToken(parseInt(companyId));
+      }
       
       if (!token) {
         console.log(`Token WiseApp não encontrado para company_id: ${companyId}`);

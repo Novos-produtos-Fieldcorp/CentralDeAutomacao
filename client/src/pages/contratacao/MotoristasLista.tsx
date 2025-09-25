@@ -2040,25 +2040,6 @@ const MotoristasLista = () => {
 
           </div>
 
-          {/* Debug Info - temporarily show current context */}
-          <div className="flex items-center gap-2">
-            <div className="text-xs text-gray-600 dark:text-gray-400 px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 rounded border">
-              Company ID: {companyId || 'Não definido'} | Account: {localStorage.getItem('account_id') || 'Não definido'}
-            </div>
-            
-            {/* Quick fix button */}
-            <button
-              onClick={() => {
-                // Force company_id to 2 (where token is likely configured)
-                localStorage.setItem('companyId', '2');
-                window.location.reload();
-              }}
-              className="text-xs px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600"
-              title="Se o token está configurado para empresa 2, clique aqui"
-            >
-              Usar Empresa 2
-            </button>
-          </div>
 
           {/* Botão Sincronizar Contatos */}
           <button
