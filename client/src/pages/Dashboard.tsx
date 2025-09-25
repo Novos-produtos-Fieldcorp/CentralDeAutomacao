@@ -307,17 +307,6 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
         </div>
       </div>
 
-      {/* Vagas Section */}
-      <div className="flex gap-1 text-xs justify-end">
-        <Link
-          to="/vagas"
-          className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1"
-          data-testid="link-vagas"
-        >
-          Vagas
-          <ExternalLink className="w-2 h-2" />
-        </Link>
-      </div>
       <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
         <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
           Gestão de Vagas
