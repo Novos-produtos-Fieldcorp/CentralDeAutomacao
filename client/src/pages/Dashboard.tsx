@@ -865,12 +865,13 @@ const Dashboard: React.FC = () => {
           .eq("ativo", true)
           .ilike("funcao", "%motorista%"),
 
+        // Contratados - buscar registros com funcao NULL (são os contratados)
         supabase
           .from("motorista")
           .select("motorista_id", { count: "exact", head: true })
           .eq("company_id", companyId)
           .eq("ativo", true)
-          .ilike("funcao", "%contratado%"),
+          .is("funcao", null),
 
         // Real hodometro data with correct fields - last 6 months
         supabase
@@ -880,7 +881,7 @@ const Dashboard: React.FC = () => {
           .gte("data", sixMonthsAgo.toISOString().split("T")[0])
           .order("data", { ascending: true }),
 
-        // Count total clients (optimized)
+        // Count total clients (optimized) - using same query as clientesResult but for total
         supabase
           .from("cliente")
           .select("cliente_id", { count: "exact", head: true })
@@ -1053,10 +1054,10 @@ const Dashboard: React.FC = () => {
         hodometroData.length > 0 ? processRealHodometroData(hodometroData) : [];
       // Hodometro processing complete
 
-      // Process real clientes data
-      const clientes = clientesResult.data || [];
+      // Process real clientes data - corrigir inconsistência
+      const totalClientes = clientesResult.count || 0;
       const clientesAtivos = clientesAtivosResult.count || 0;
-      const clientesDesativos = clientes.length - clientesAtivos;
+      const clientesDesativos = totalClientes - clientesAtivos;
 
       // Calculate new clients this month - using fallback since created_at doesn't exist
       const clientesNoMes = 0; // Disabled due to schema limitation
@@ -1201,10 +1202,10 @@ const Dashboard: React.FC = () => {
           return months.indexOf(a.month) - months.indexOf(b.month);
         });
 
-      // Pie chart data for contratacao - 3 categorias específicas
+      // Pie chart data for contratacao - 3 categorias específicas  
       const agregados = agregadosResult.count || 0;
       const motoristas = motoristasResult.count || 0;
-      const contratados = contratadosResult.count || 0;
+      const contratados = contratadosResult.count || 0; // Agora funcao = null
 
       const contratacaoPieData = [
         { name: "Agregados", value: agregados, color: "#f97316" },
@@ -1274,7 +1275,7 @@ const Dashboard: React.FC = () => {
         vagasAbertas,
         vagasPreenchidas,
         vagasVencidas,
-        clientes: clientes.length,
+        clientes: totalClientes,
         clientesAtivos,
         veiculos: veiculos.length,
         comprovantesThisMonth,
@@ -1292,7 +1293,7 @@ const Dashboard: React.FC = () => {
         contratacaoPieData,
         hodometroData: hodometroArray,
         clientes: {
-          total: clientes.length,
+          total: totalClientes,
           ativos: clientesAtivos,
           desativos: clientesDesativos,
           novosNoMes: clientesNoMes,
