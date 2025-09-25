@@ -209,27 +209,22 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
-  // Config validation mutation using secure backend
+  // Config validation mutation - simplified for header-based auth
   const validateConfigMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      const response = await fetch('/api/wiseapp/validate-config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          companyId: companyId
-        })
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Config validation failed');
+      // Since we now use headers for auth, validate by checking if tokens are available
+      if (!wiseAppToken) {
+        throw new Error('Token WiseApp não fornecido');
       }
       
-      return response.json();
+      if (!accountId) {
+        throw new Error('Account ID não fornecido');
+      }
+      
+      // Return valid if both headers are present
+      return { valid: true, message: 'Configuração válida - usando headers' };
     },
     onSuccess: (data) => {
       setConfigValid(data.valid);
