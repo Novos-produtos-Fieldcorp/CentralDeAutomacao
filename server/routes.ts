@@ -1391,33 +1391,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/wiseapp/sync-all-motoristas", async (req, res) => {
     try {
-      const { companyId } = req.body;
+      const { companyId, accountId } = req.body;
       
       if (!companyId) {
         return res.status(400).json({ error: 'Company ID é obrigatório' });
       }
       
+      if (!accountId) {
+        return res.status(400).json({ error: 'Account ID é obrigatório' });
+      }
+      
       console.log(`Starting sync-all-motoristas for company ${companyId}`);
       
-      // IGUAL ao sincronizar tags - usar headers do frontend
-      const token = req.headers['wiseapp-token'] as string;
-      const accountId = req.headers['wiseapp-account-id'] as string;
-      
-      console.log(`Token from header: ${token ? 'Found' : 'Missing'}`);
-      console.log(`Account ID from header: ${accountId ? 'Found' : 'Missing'}`);
+      // EXATAMENTE IGUAL AO SINCRONIZAR TAGS - buscar token do banco
+      console.log(`[sync-all-motoristas] Tentando obter token para company_id: ${companyId}`);
+      console.log(`Fetching WiseApp token for company ${companyId}`);
+      const token = await storage.getWiseappToken(parseInt(companyId));
+      console.log(`Token result: ${token ? 'Found' : 'Not found'} for company ${companyId}`);
       
       if (!token) {
-        console.log(`Token WiseApp não encontrado nos headers`);
+        console.log(`Token WiseApp não encontrado para company_id: ${companyId}`);
         return res.status(401).json({ 
           error: "Token WiseApp não configurado para esta empresa",
           message: "Configure um token WiseApp válido antes de sincronizar contatos"
-        });
-      }
-      
-      if (!accountId) {
-        console.log(`Account ID não encontrado nos headers`);
-        return res.status(400).json({ 
-          error: "Account ID do WiseApp não configurado" 
         });
       }
       
