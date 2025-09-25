@@ -192,7 +192,7 @@ const ComprovantesDashboard = () => {
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-100 text-sm font-medium">Total de Comprovantes</p>
+              <p className="text-blue-100 text-sm font-medium">Total de Canhoto Digital</p>
               <p className="text-3xl font-bold">{stats.totalComprovantes}</p>
             </div>
             <div className="bg-blue-400 bg-opacity-30 rounded-lg p-3">
@@ -232,7 +232,7 @@ const ComprovantesDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <BarChart2 className="w-5 h-5 text-blue-500" />
-            Comprovantes por Mês
+            Canhoto Digital por Mês
           </h3>
           <div className="space-y-3">
             {stats.monthlyData.length > 0 ? (
@@ -298,7 +298,7 @@ const ComprovantesDashboard = () => {
               ))
             ) : (
               <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                Nenhum motorista com comprovantes
+                Nenhum motorista com canhoto digital
               </p>
             )}
           </div>
@@ -339,7 +339,7 @@ const ComprovantesDashboard = () => {
           ) : (
             <div className="col-span-full">
               <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                Nenhum cliente com comprovantes
+                Nenhum cliente com canhoto digital
               </p>
             </div>
           )}

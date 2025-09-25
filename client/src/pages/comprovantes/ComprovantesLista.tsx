@@ -213,7 +213,7 @@ const ComprovantesLista = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Lista de Comprovantes
+          Lista de Canhoto Digital
         </h2>
         <div className="flex gap-3">
           <button
@@ -424,7 +424,7 @@ const ComprovantesLista = () => {
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {filteredComprovantes.length} comprovante(s) encontrado(s)
+              {filteredComprovantes.length} canhoto(s) digital(is) encontrado(s)
             </p>
             <button
               onClick={() => {/* TODO: Implement export */}}
@@ -557,7 +557,7 @@ const ComprovantesLista = () => {
             <div className="text-center py-12">
               <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 dark:text-gray-400">
-                Nenhum comprovante encontrado
+                Nenhum canhoto digital encontrado
               </p>
             </div>
           )}

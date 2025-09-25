@@ -1,0 +1,28 @@
+Console.js:61  The above error occurred in the <AppRoutes> component:
+
+    at AppRoutes (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/src/App.tsx?v=euZ7jFK1i7UFMhPR5BDTX:260:179)
+    at ChatProvider (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/src/context/ChatContext.tsx:21:32)
+    at WiseAppAccessProvider (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/src/context/WiseAppAccessContext.tsx:29:41)
+    at AuthProvider (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/src/context/AuthContext.tsx:32:32)
+    at Router (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:6131:13)
+    at BrowserRouter (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=92ebfa38:9149:3)
+    at ChecklistProvider (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/src/context/ChecklistContext.tsx:68:37)
+    at ThemeProvider (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/src/context/ThemeContext.tsx:20:33)
+    at QueryClientProvider (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=92ebfa38:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+Mt.forEach.n.<computed> @ Console.js:61
+react-dom.development.js:26962  Uncaught ReferenceError: Vagas is not defined
+ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/company?select=checklist_access%2Cmotorista_access%2Cvagas_access%2Chodometro_acsess%2Cresumo_access%2Ctags_access&company_id=eq.2:1   Failed to load resource: the server responded with a status of 400 ()
+Console.js:61  Error fetching company: Objectcode: "42703"details: nullhint: "Perhaps you meant to reference the column \"company.tags_access\"."message: "column company.vagas_access does not exist"[[Prototype]]: Object
+Mt.forEach.n.<computed> @ Console.js:61
+ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/company?select=checklist_access%2Cmotorista_access%2Cvagas_access%2Chodometro_acsess%2Cresumo_access%2Ctags_access&company_id=eq.2:1   Failed to load resource: the server responded with a status of 400 ()
+Console.js:61  Error fetching company: Objectcode: "42703"details: nullhint: "Perhaps you meant to reference the column \"company.tags_access\"."message: "column company.vagas_access does not exist"[[Prototype]]: Object
+Mt.forEach.n.<computed> @ Console.js:61
+ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/veiculo?select=veiculo_id%2Cmarca_veiculo%2Cplaca&company_id=eq.5&order=veiculo_id.desc&limit=3:1   Failed to load resource: the server responded with a status of 400 ()
+da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/api/v1/accounts/20/inboxes:1   Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+Console.js:61  Error fetching inboxes: AxiosErrorcode: "ERR_BAD_RESPONSE"config: {transitional: {…}, adapter: Array(3), transformRequest: Array(1), transformResponse: Array(1), timeout: 0, …}message: "Request failed with status code 500"name: "AxiosError"request: XMLHttpRequest {chobitsuRequest: t, onreadystatechange: null, readyState: 4, timeout: 0, withCredentials: false, …}response: {data: {…}, status: 500, statusText: 'Internal Server Error', headers: AxiosHeaders, config: {…}, …}status: 500stack: "AxiosError: Request failed with status code 500\n    at settle (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/axios.js?v=92ebfa38:1232:12)\n    at XMLHttpRequest.onloadend (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/axios.js?v=92ebfa38:1564:7)\n    at Axios.request (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/axios.js?v=92ebfa38:2122:41)\n    at async fetchInboxes (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/src/components/FloatingChat.tsx?t=1758752963321:298:24)\n    at async userInChat (https://da9026f2-e07f-4511-8614-9fa1ec4fc8db-00-11bt9dtr4tpbc.riker.replit.dev/src/components/FloatingChat.tsx?t=1758752963321:696:7)"[[Prototype]]: Error
+Mt.forEach.n.<computed> @ Console.js:61
+inboxes:1   Failed to load resource: the server responded with a status of 500 (Internal Server Error)

@@ -28,7 +28,7 @@ localPort = 44853
 externalPort = 3002
 
 [[ports]]
-localPort = 46633
+localPort = 45705
 externalPort = 3003
 
 [workflows]
@@ -54,4 +54,3 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_supabase==1.0.0", "javascript_database==1.0.0"]
-expertMode = true
