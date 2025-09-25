@@ -50,8 +50,10 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Sync failed');
+        const errorData = await response.json();
+        // Extract the appropriate error message
+        const errorMessage = errorData.message || errorData.error || 'Sync failed';
+        throw new Error(errorMessage);
       }
       
       return response.json();
@@ -66,7 +68,17 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       }
     },
     onError: (error: Error) => {
-      toast.error(`Erro na sincronização: ${error.message}`);
+      console.error('Individual sync error:', error);
+      
+      if (error.message.includes('Token WiseApp não configurado') || 
+          error.message.includes('Configure um token WiseApp válido')) {
+        toast.error(
+          'Token WiseApp não configurado. Configure o token de acesso nas configurações da empresa.',
+          { duration: 6000 }
+        );
+      } else {
+        toast.error(`Erro na sincronização: ${error.message}`, { duration: 5000 });
+      }
     }
   });
 
@@ -86,8 +98,10 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Bulk sync failed');
+        const errorData = await response.json();
+        // Extract the appropriate error message
+        const errorMessage = errorData.message || errorData.error || 'Bulk sync failed';
+        throw new Error(errorMessage);
       }
       
       return response.json();
@@ -150,10 +164,21 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       queryClient.invalidateQueries({ queryKey: ['/api/motoristas'] });
     },
     onError: (error: Error) => {
-      if (error.message.includes('Token WiseApp não configurado')) {
-        toast.error('Para usar a sincronização com WiseApp, configure primeiro o token de acesso nas configurações da empresa.');
+      console.error('Bulk sync error:', error);
+      
+      if (error.message.includes('Token WiseApp não configurado') || 
+          error.message.includes('Configure um token WiseApp válido')) {
+        toast.error(
+          'Token WiseApp não configurado. Configure o token de acesso nas configurações da empresa antes de sincronizar contatos.',
+          { duration: 6000 }
+        );
+      } else if (error.message.includes('Account ID não configurado')) {
+        toast.error(
+          'Account ID do WiseApp não configurado. Verifique as configurações da empresa.',
+          { duration: 6000 }
+        );
       } else {
-        toast.error(`Erro na sincronização em lote: ${error.message}`);
+        toast.error(`Erro na sincronização: ${error.message}`, { duration: 5000 });
       }
     }
   });
