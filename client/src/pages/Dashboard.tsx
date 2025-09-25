@@ -17,6 +17,7 @@ import {
   Plus,
   Edit,
   Lock,
+  ClipboardList,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -34,11 +35,24 @@ import {
   Cell,
   AreaChart,
   Area,
+  BarChart,
+  Bar,
 } from "recharts";
 import { format, subMonths, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "../lib/supabase";
 import AccessTooltip from "../components/AccessTooltip";
+
+// Checklist types
+const CHECKLIST_TYPES = {
+  MENSAL: 1,
+  SEMANAL: 2,
+} as const;
+
+const CHECKLIST_TYPE_NAMES = {
+  [CHECKLIST_TYPES.MENSAL]: "Mensal",
+  [CHECKLIST_TYPES.SEMANAL]: "Semanal",
+} as const;
 
 // Helper function to process hodometro data with correct field names
 const processRealHodometroData = (hodometroData: any[]) => {
@@ -155,6 +169,18 @@ interface DashboardStats {
     }[];
   };
 
+  // Checklist data
+  checklists: {
+    totalMensal: number;
+    monthlyData: {
+      month: string;
+      value: number;
+      mensal: number;
+      semanal: number;
+    }[];
+    typeData: { name: string; value: number; color: string }[];
+  };
+
   // Recent Activity
   recentActivity: {
     id: string;
@@ -177,6 +203,43 @@ const SimpleTooltip = ({ active, payload, label }: any) => {
         <p className="text-sm text-gray-600 dark:text-gray-300">
           {data.name}: <span className="font-semibold">{data.value}</span>
         </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+// Custom Tooltip for Checklist Stacked Bars
+const ChecklistTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const mensal = payload.find((p: any) => p.dataKey === 'mensal')?.value || 0;
+    const semanal = payload.find((p: any) => p.dataKey === 'semanal')?.value || 0;
+    const total = mensal + semanal;
+    
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-3">
+        <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+          {label}
+        </p>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Mensal: <span className="font-semibold">{mensal}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Semanal: <span className="font-semibold">{semanal}</span>
+            </p>
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-600 pt-1 mt-2">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              Total: <span className="font-semibold">{total}</span>
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -307,17 +370,6 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
         </div>
       </div>
 
-      {/* Vagas Section */}
-      <div className="flex gap-1 text-xs justify-end">
-        <Link
-          to="/vagas"
-          className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1"
-          data-testid="link-vagas"
-        >
-          Vagas
-          <ExternalLink className="w-2 h-2" />
-        </Link>
-      </div>
       <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
         <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
           Gestão de Vagas
@@ -788,6 +840,116 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   );
 };
 
+const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
+  return (
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-checklist">
+          <AccessTooltip module="checklist">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
+      
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+            <ClipboardList className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Checklist
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Inspeções e verificações
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/checklist"
+          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1"
+          data-testid="link-checklist"
+        >
+          Ver todos
+          <ExternalLink className="w-2 h-2" />
+        </Link>
+      </div>
+
+      {/* Split Layout - KPI + Pie Chart */}
+      <div className="flex gap-3 mb-3">
+        {/* KPI Principal */}
+        <div className="flex items-center gap-2">
+          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+            <ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {stats.checklists.totalMensal}
+            </div>
+            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+              Este mês
+            </p>
+          </div>
+        </div>
+
+        {/* Mini Pie Chart */}
+        {stats.checklists.typeData.length > 0 && (
+          <div className="w-20 h-16">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={stats.checklists.typeData}
+                  dataKey="value"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={12}
+                  outerRadius={28}
+                >
+                  {stats.checklists.typeData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<SimpleTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      {/* Monthly Chart - Separated by Type */}
+      <div className="h-32">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={stats.checklists.monthlyData}>
+            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 10 }} />
+            <Tooltip content={<ChecklistTooltip />} />
+            <Bar
+              dataKey="mensal"
+              fill="#3b82f6"
+              radius={[2, 2, 0, 0]}
+              name="Mensal"
+              stackId="checklist"
+            />
+            <Bar
+              dataKey="semanal"
+              fill="#10b981"
+              radius={[2, 2, 0, 0]}
+              name="Semanal"
+              stackId="checklist"
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
   const { companyId } = useAuth();
@@ -818,6 +980,11 @@ const Dashboard: React.FC = () => {
     comprovantes: {
       totalMensal: 0,
       monthlyData: [],
+    },
+    checklists: {
+      totalMensal: 0,
+      monthlyData: [],
+      typeData: [],
     },
     recentActivity: [],
   });
@@ -860,6 +1027,8 @@ const Dashboard: React.FC = () => {
         recentVeiculoResult,
         recentVagaResult,
         recentComprovanteResult,
+        checklistResult,
+        checklistCurrentMonthResult,
       ] = await Promise.all([
         // Optimized count queries for motoristas - 3 categorias específicas
         supabase
@@ -876,12 +1045,13 @@ const Dashboard: React.FC = () => {
           .eq("ativo", true)
           .ilike("funcao", "%motorista%"),
 
+        // Contratados - buscar registros com funcao NULL (são os contratados)
         supabase
           .from("motorista")
           .select("motorista_id", { count: "exact", head: true })
           .eq("company_id", companyId)
           .eq("ativo", true)
-          .ilike("funcao", "%contratado%"),
+          .is("funcao", null),
 
         // Real hodometro data with correct fields - last 6 months
         supabase
@@ -891,7 +1061,7 @@ const Dashboard: React.FC = () => {
           .gte("data", sixMonthsAgo.toISOString().split("T")[0])
           .order("data", { ascending: true }),
 
-        // Count total clients (optimized)
+        // Count total clients (optimized) - using same query as clientesResult but for total
         supabase
           .from("cliente")
           .select("cliente_id", { count: "exact", head: true })
@@ -982,6 +1152,21 @@ const Dashboard: React.FC = () => {
           .eq("company_id", companyId)
           .order("created_at", { ascending: false })
           .limit(2),
+
+        // Checklist data queries
+        supabase
+          .from("checklist")
+          .select("*")
+          .eq("company_id", companyId)
+          .gte("data", sixMonthsAgo.toISOString().split("T")[0])
+          .order("data", { ascending: true }),
+
+        // Current month checklists count
+        supabase
+          .from("checklist")
+          .select("*", { count: "exact", head: true })
+          .eq("company_id", companyId)
+          .gte("data", startOfMonth.toISOString().split("T")[0]),
       ]);
 
       // Check for critical errors
@@ -997,10 +1182,23 @@ const Dashboard: React.FC = () => {
         console.warn("Erro clientes:", clientesResult.error.message);
       if (veiculosResult.error)
         console.warn("Erro veículos:", veiculosResult.error.message);
+      
+      // Check for vagas errors
+      if (vagasResult.error)
+        console.warn("Erro vagas:", vagasResult.error.message);
+      if (statusVagasResult.error)
+        console.warn("Erro status vagas:", statusVagasResult.error.message);
 
-      // Process real vagas data with debug logging
+      // Check for checklist errors
+      if (checklistResult.error)
+        console.warn("Erro checklist:", checklistResult.error.message);
+      if (checklistCurrentMonthResult.error)
+        console.warn("Erro checklist current month:", checklistCurrentMonthResult.error.message);
+
+      // Process real vagas data
       const vagas = vagasResult.data || [];
       const statusVagasData = statusVagasResult.data || [];
+      
       // Vagas processing optimized for performance
 
       const statusMap = statusVagasData.reduce(
@@ -1064,10 +1262,10 @@ const Dashboard: React.FC = () => {
         hodometroData.length > 0 ? processRealHodometroData(hodometroData) : [];
       // Hodometro processing complete
 
-      // Process real clientes data
-      const clientes = clientesResult.data || [];
+      // Process real clientes data - corrigir inconsistência
+      const totalClientes = clientesResult.count || 0;
       const clientesAtivos = clientesAtivosResult.count || 0;
-      const clientesDesativos = clientes.length - clientesAtivos;
+      const clientesDesativos = totalClientes - clientesAtivos;
 
       // Calculate new clients this month - using fallback since created_at doesn't exist
       const clientesNoMes = 0; // Disabled due to schema limitation
@@ -1212,10 +1410,64 @@ const Dashboard: React.FC = () => {
           return months.indexOf(a.month) - months.indexOf(b.month);
         });
 
-      // Pie chart data for contratacao - 3 categorias específicas
+      // Process checklist data
+      const checklistData = checklistResult.data || [];
+      const checklistThisMonth = checklistCurrentMonthResult.count || 0;
+      
+      // Group checklists by type
+      const checklistByType = checklistData.reduce((acc: any, checklist: any) => {
+        const tipoId = checklist.id_tipo_checklist;
+        const tipoName = tipoId === CHECKLIST_TYPES.MENSAL ? 'Mensal' : 
+                        tipoId === CHECKLIST_TYPES.SEMANAL ? 'Semanal' : 'Sem Tipo';
+        acc[tipoName] = (acc[tipoName] || 0) + 1;
+        return acc;
+      }, {});
+      
+      // Create pie data for checklist types
+      const checklistPieData = Object.entries(checklistByType).map(([tipoName, count]) => ({
+        name: tipoName,
+        value: count as number,
+        color: tipoName === 'Mensal' ? '#3b82f6' : tipoName === 'Semanal' ? '#10b981' : '#f59e0b'
+      }));
+
+      // Process monthly checklist data separated by type
+      const monthlyChecklistsMensal: { [key: string]: number } = {};
+      const monthlyChecklistsSemanal: { [key: string]: number } = {};
+      
+      checklistData.forEach((checklist) => {
+        if (checklist.data) {
+          const monthKey = format(new Date(checklist.data), "MMM", {
+            locale: ptBR,
+          });
+          
+          if (checklist.id_tipo_checklist === CHECKLIST_TYPES.MENSAL) {
+            monthlyChecklistsMensal[monthKey] = (monthlyChecklistsMensal[monthKey] || 0) + 1;
+          } else if (checklist.id_tipo_checklist === CHECKLIST_TYPES.SEMANAL) {
+            monthlyChecklistsSemanal[monthKey] = (monthlyChecklistsSemanal[monthKey] || 0) + 1;
+          }
+        }
+      });
+
+      // Create a combined array with both types
+      const months = [
+        "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+        "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+      ];
+
+      const checklistArray = months.map(month => {
+        const monthLower = month.toLowerCase();
+        return {
+          month,
+          mensal: monthlyChecklistsMensal[monthLower] || 0,
+          semanal: monthlyChecklistsSemanal[monthLower] || 0,
+          value: (monthlyChecklistsMensal[monthLower] || 0) + (monthlyChecklistsSemanal[monthLower] || 0),
+        };
+      }).filter(item => item.value > 0); // Only show months with data
+
+      // Pie chart data for contratacao - 3 categorias específicas  
       const agregados = agregadosResult.count || 0;
       const motoristas = motoristasResult.count || 0;
-      const contratados = contratadosResult.count || 0;
+      const contratados = contratadosResult.count || 0; // Agora funcao = null
 
       const contratacaoPieData = [
         { name: "Agregados", value: agregados, color: "#f97316" },
@@ -1276,6 +1528,24 @@ const Dashboard: React.FC = () => {
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
       );
 
+      // Debug logging para verificar dados
+      console.log("Dashboard data loaded:", {
+        agregados,
+        motoristas,
+        contratados,
+        totalVagas: vagas.length,
+        vagasAbertas,
+        vagasPreenchidas,
+        vagasVencidas,
+        clientes: totalClientes,
+        clientesAtivos,
+        veiculos: veiculos.length,
+        comprovantesThisMonth,
+        checklistThisMonth,
+        hodometroDataLength: hodometroArray.length,
+        checklistTypesCount: checklistPieData.length
+      });
+
       setStats({
         agregados,
         contratados: contratados, // Representa contratados (função contratado)
@@ -1287,7 +1557,7 @@ const Dashboard: React.FC = () => {
         contratacaoPieData,
         hodometroData: hodometroArray,
         clientes: {
-          total: clientes.length,
+          total: totalClientes,
           ativos: clientesAtivos,
           desativos: clientesDesativos,
           novosNoMes: clientesNoMes,
@@ -1302,6 +1572,11 @@ const Dashboard: React.FC = () => {
         comprovantes: {
           totalMensal: comprovantesThisMonth,
           monthlyData: comprovantesArray,
+        },
+        checklists: {
+          totalMensal: checklistThisMonth,
+          monthlyData: checklistArray,
+          typeData: checklistPieData,
         },
         recentActivity: recentActivity.slice(0, 10),
       });
@@ -1337,6 +1612,11 @@ const Dashboard: React.FC = () => {
         comprovantes: {
           totalMensal: 0,
           monthlyData: [],
+        },
+        checklists: {
+          totalMensal: 0,
+          monthlyData: [],
+          typeData: [],
         },
         recentActivity: [],
       });
@@ -1399,6 +1679,12 @@ const Dashboard: React.FC = () => {
         <ComprovantesHeroCard 
           stats={stats} 
           hasAccess={moduleAccess.comprovantes} 
+        />
+
+        {/* Checklist */}
+        <ChecklistHeroCard 
+          stats={stats} 
+          hasAccess={moduleAccess.checklist} 
         />
       </div>
 
