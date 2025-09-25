@@ -87,6 +87,9 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
+      // Debug logging
+      console.log('🔍 DEBUG - Sync attempt:', { companyId });
+      
       const response = await fetch('/api/wiseapp/sync-all-motoristas', {
         method: 'POST',
         headers: {
