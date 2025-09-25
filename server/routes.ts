@@ -1391,60 +1391,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/wiseapp/sync-all-motoristas", async (req, res) => {
     try {
-      const { companyId, userEmail } = req.body;
+      const { companyId } = req.body;
+      
+      // 1. Obter token e account_id dos headers (mesmo padrão das tags)
+      const token = req.headers['wiseapp-token'] as string;
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      
+      console.log(`🔄 Starting sync-all-motoristas for company ${companyId}`);
+      console.log(`📋 Headers - Token: ${token ? 'provided' : 'missing'}, Account ID: ${accountId ? 'provided' : 'missing'}`);
       
       if (!companyId) {
         return res.status(400).json({ error: 'Company ID é obrigatório' });
       }
       
-      console.log(`Starting sync-all-motoristas for company ${companyId}${userEmail ? ` with user email ${userEmail}` : ''}`);
-      
-      // 1. Buscar token WiseApp apenas por email (company_id não é mais usado)
-      let token = null;
-      
-      if (!userEmail) {
-        console.log(`❌ No email provided - cannot search for WiseApp token`);
-        return res.status(400).json({ 
-          error: "Email é obrigatório para buscar token WiseApp" 
-        });
-      }
-
-      console.log(`🔍 Fetching token by email: ${userEmail}`);
-      token = await storage.getWiseappTokenByEmail(userEmail);
-      
-      if (token) {
-        console.log(`✅ Token found for email: ${userEmail}`);
-      } else {
-        console.log(`❌ No token found for email: ${userEmail}`);
-      }
-      
       if (!token) {
-        console.log(`❌ Token WiseApp não encontrado para email: ${userEmail}`);
+        console.log(`❌ No WiseApp token provided in headers`);
         return res.status(401).json({ 
-          error: "Token WiseApp não configurado para este email",
+          error: "Token WiseApp não fornecido",
           message: "Configure um token WiseApp válido antes de sincronizar contatos"
         });
       }
       
-      // 2. Buscar dados da empresa para obter account ID do WiseApp
-      const { data: companies, error: companyError } = await supabaseBackendBackend
-        .from("company")
-        .select("id_conta_wiseapp")
-        .eq("company_id", parseInt(companyId))
-        .limit(1);
-      
-      if (companyError || !companies || companies.length === 0) {
-        console.log(`Empresa não encontrada para company_id: ${companyId}`);
-        return res.status(404).json({ 
-          error: "Empresa não encontrada ou account ID não configurado" 
+      if (!accountId) {
+        console.log(`❌ No WiseApp account ID provided in headers`);
+        return res.status(400).json({ 
+          error: "Account ID do WiseApp não fornecido" 
         });
       }
       
-      const accountId = companies[0].id_conta_wiseapp;
+      console.log(`✅ Using token and account ID from headers`);
       
-      if (!accountId) {
+      // Validar que accountId é numérico
+      const numericAccountId = parseInt(accountId);
+      if (isNaN(numericAccountId)) {
         return res.status(400).json({ 
-          error: "Account ID do WiseApp não configurado para esta empresa" 
+          error: "Account ID deve ser numérico" 
         });
       }
       

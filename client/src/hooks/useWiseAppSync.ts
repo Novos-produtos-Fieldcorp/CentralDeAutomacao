@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 // Removed direct API service - now using secure backend routes
 import { useAuth } from '@/context/AuthContext';
+import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 
 interface SyncResult {
   success: boolean;
@@ -82,32 +83,37 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
+  // Get WiseApp access context values (same logic as tags)
+  const { token: wiseAppToken, accountId } = useWiseAppAccess();
+
   // Bulk sync mutation using secure backend
   const bulkSyncMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      // Try to get user email from cookies
-      const userEmail = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('userEmail='))
-        ?.split('=')[1] || null;
-      
-      // If no email in cookies, throw error to trigger modal opening
-      if (!userEmail) {
-        throw new Error('NEED_EMAIL_CONFIG');
+      if (!wiseAppToken) {
+        throw new Error('NEED_WISEAPP_CONFIG');
       }
       
-      console.log('🔄 Initiating WiseApp sync:', { companyId, userEmail: userEmail ? 'provided' : 'not provided' });
+      if (!accountId) {
+        throw new Error('NEED_ACCOUNT_CONFIG');
+      }
+      
+      console.log('🔄 Initiating WiseApp sync:', { 
+        companyId, 
+        hasToken: !!wiseAppToken,
+        hasAccountId: !!accountId 
+      });
       
       const response = await fetch('/api/wiseapp/sync-all-motoristas', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'wiseapp-token': wiseAppToken,
+          'wiseapp-account-id': accountId
         },
         body: JSON.stringify({
-          companyId: companyId,
-          userEmail: userEmail
+          companyId: companyId
         })
       });
       
@@ -180,7 +186,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     onError: (error: Error) => {
       console.error('Bulk sync error:', error);
       
-      if (error.message === 'NEED_EMAIL_CONFIG') {
+      if (error.message === 'NEED_WISEAPP_CONFIG' || error.message === 'NEED_ACCOUNT_CONFIG') {
         // Auto-open WiseApp configuration modal
         const event = new CustomEvent('openWiseAppModal');
         window.dispatchEvent(event);
@@ -188,12 +194,12 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       } else if (error.message.includes('Token WiseApp não configurado') || 
           error.message.includes('Configure um token WiseApp válido')) {
         toast.error(
-          'Token WiseApp não configurado. Configure o token de acesso nas configurações da empresa antes de sincronizar contatos.',
+          'Token WiseApp não configurado. Configure o token de acesso antes de sincronizar contatos.',
           { duration: 6000 }
         );
       } else if (error.message.includes('Account ID não configurado')) {
         toast.error(
-          'Account ID do WiseApp não configurado. Verifique as configurações da empresa.',
+          'Account ID do WiseApp não configurado. Verifique as configurações.',
           { duration: 6000 }
         );
       } else {
