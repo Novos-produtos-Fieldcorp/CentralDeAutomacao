@@ -1417,12 +1417,15 @@ const Dashboard: React.FC = () => {
         "Jul", "Ago", "Set", "Out", "Nov", "Dez",
       ];
 
-      const checklistArray = months.map(month => ({
-        month,
-        mensal: monthlyChecklistsMensal[month] || 0,
-        semanal: monthlyChecklistsSemanal[month] || 0,
-        value: (monthlyChecklistsMensal[month] || 0) + (monthlyChecklistsSemanal[month] || 0), // Total for backward compatibility
-      })).filter(item => item.value > 0); // Only show months with data
+      const checklistArray = months.map(month => {
+        const monthLower = month.toLowerCase();
+        return {
+          month,
+          mensal: monthlyChecklistsMensal[monthLower] || 0,
+          semanal: monthlyChecklistsSemanal[monthLower] || 0,
+          value: (monthlyChecklistsMensal[monthLower] || 0) + (monthlyChecklistsSemanal[monthLower] || 0),
+        };
+      }).filter(item => item.value > 0); // Only show months with data
 
       // Pie chart data for contratacao - 3 categorias específicas  
       const agregados = agregadosResult.count || 0;
