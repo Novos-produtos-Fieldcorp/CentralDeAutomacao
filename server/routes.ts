@@ -1485,8 +1485,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Helper function to normalize phone number
-      const normalizePhone = (phone: string): { searchPhone: string, e164Phone: string } => {
+      const normalizePhone = (phone: any): { searchPhone: string, e164Phone: string } | null => {
+        // Check if phone is valid
+        if (!phone || typeof phone !== 'string' || phone.trim() === '') {
+          return null;
+        }
+        
         const digits = phone.replace(/\D/g, '');
+        
+        // Check if we have enough digits after cleaning
+        if (digits.length < 10) {
+          return null;
+        }
+        
         const searchPhone = digits.startsWith('55') ? digits : `55${digits}`;
         const e164Phone = `+${searchPhone}`;
         return { searchPhone, e164Phone };
@@ -1497,7 +1508,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log(`Processing motorista ${motorista.motorista_id}: ${motorista.nome}`);
           
-          const { searchPhone, e164Phone } = normalizePhone(motorista.telefone);
+          // Normalize phone number and skip if invalid
+          const phoneResult = normalizePhone(motorista.telefone);
+          if (!phoneResult) {
+            console.log(`Skipping motorista ${motorista.nome} - invalid phone number: ${motorista.telefone}`);
+            results.failed++;
+            results.errors.push({
+              motorista_id: motorista.motorista_id,
+              nome: motorista.nome || 'N/A',
+              error: 'Número de telefone inválido ou ausente'
+            });
+            continue;
+          }
+          
+          const { searchPhone, e164Phone } = phoneResult;
           const searchUrl = `${wiseappApiUrl}/api/v1/accounts/${accountId}/contacts/search?q=${searchPhone}`;
           
           // Search for existing contact
