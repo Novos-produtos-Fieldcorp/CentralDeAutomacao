@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 // Removed direct API service - now using secure backend routes
 import { useAuth } from '@/context/AuthContext';
+import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 
 interface SyncResult {
   success: boolean;
@@ -33,6 +34,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
   const [configValid, setConfigValid] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
   const { companyId } = useAuth();
+  const { token: wiseAppToken, companyId: wiseAppCompanyId } = useWiseAppAccess();
 
   // Individual motorista sync mutation using secure backend
   const syncMotoristaMutation = useMutation({
@@ -70,15 +72,21 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
-  // Bulk sync mutation using secure backend
+  // Bulk sync mutation using secure backend - MESMA LÓGICA DO SINCRONIZAR TAGS
   const bulkSyncMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
+      // IGUAL ao sincronizar tags - verificar se temos token e accountId
+      if (!wiseAppToken) throw new Error('Configure um token WiseApp válido antes de sincronizar contatos');
+      if (!wiseAppCompanyId) throw new Error('Account ID WiseApp não encontrado');
+      
       const response = await fetch('/api/wiseapp/sync-all-motoristas', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'wiseapp-token': wiseAppToken,          // IGUAL ao sincronizar tags
+          'wiseapp-account-id': wiseAppCompanyId.toString()  // IGUAL ao sincronizar tags
         },
         body: JSON.stringify({
           companyId: companyId

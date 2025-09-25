@@ -1399,17 +1399,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Starting sync-all-motoristas for company ${companyId}`);
       
-      // 1. Buscar token WiseApp para esta empresa
-      console.log(`[sync-all-motoristas] Tentando obter token para company_id: ${companyId}`);
-      console.log(`Fetching WiseApp token for company ${companyId}`);
-      const token = await storage.getWiseappToken(parseInt(companyId));
-      console.log(`Token result: ${token ? 'Found' : 'Not found'} for company ${companyId}`);
+      // IGUAL ao sincronizar tags - usar headers do frontend
+      const token = req.headers['wiseapp-token'] as string;
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      
+      console.log(`Token from header: ${token ? 'Found' : 'Missing'}`);
+      console.log(`Account ID from header: ${accountId ? 'Found' : 'Missing'}`);
       
       if (!token) {
-        console.log(`Token WiseApp não encontrado para company_id: ${companyId}`);
+        console.log(`Token WiseApp não encontrado nos headers`);
         return res.status(401).json({ 
           error: "Token WiseApp não configurado para esta empresa",
           message: "Configure um token WiseApp válido antes de sincronizar contatos"
+        });
+      }
+      
+      if (!accountId) {
+        console.log(`Account ID não encontrado nos headers`);
+        return res.status(400).json({ 
+          error: "Account ID do WiseApp não configurado" 
         });
       }
       
