@@ -16,11 +16,14 @@ import DashboardStats from '../components/DashboardStats';
 import VagasList from '../components/VagasList';
 import AddVagaModal from '../components/AddVagaModal';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useModuleAccess } from '../hooks/useModuleAccess';
+import AccessTooltip from '../components/AccessTooltip';
 
 const Motoristas = () => {
   const location = useLocation();
   const { query, companyId } = useCompanyData();
   const { accountId } = useAuth();
+  const { moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
@@ -98,8 +101,8 @@ const Motoristas = () => {
     { path: '/motoristas/lista', icon: Users, label: 'Motoristas' },
     { path: '/motoristas/agregados', icon: TruckIcon, label: 'Agregados' },
     { path: '/motoristas/contratados', icon: CheckCircle2, label: 'Contratados' },
-    { path: '/motoristas/vagas', icon: Building, label: 'Vagas', count: dashboardData.totalVagas },
     { path: '/motoristas/kanban', icon: Kanban, label: 'Kanban' },
+    { path: '/motoristas/vagas', icon: Building, label: 'Vagas', count: dashboardData.totalVagas },
   ];
 
   const isActive = (path: string) => {
@@ -172,8 +175,8 @@ const Motoristas = () => {
               />
             } />
             <Route path="vagas/dashboard" element={
-              <div className="space-y-6">
-                <DashboardStats stats={[
+                <div className="space-y-6">
+                  <DashboardStats stats={[
                   {
                     title: 'Total de Vagas',
                     value: dashboardData.totalVagas,
@@ -206,8 +209,8 @@ const Motoristas = () => {
                     change: '+0%',
                     changeType: 'warning' as const,
                   },
-                ]} />
-              </div>
+                  ]} />
+                </div>
             } />
             <Route path="kanban" element={<ContratacaoKanban />} />
             <Route path="dashboard" element={<ContratacaoDashboard />} />
@@ -222,7 +225,8 @@ const Motoristas = () => {
             setShowAddVagaModal(false);
             fetchVagasDashboardData();
           }}
-        /></>) : (
+        />
+      </>) : (
           <div className="p-8 text-center">
             <Users className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">

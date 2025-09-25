@@ -140,7 +140,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
   if (!open) return null;
 
   return (
-   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" role="dialog" data-modal="wiseapp-token">
      <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-xl max-w-2xl w-full space-y-5">
         <h2 className="text-xl font-semibold">
           {step === 'email' && 'Autenticação WiseApp'}

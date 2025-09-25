@@ -5,6 +5,7 @@ import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
+import { useSidebar } from '../context/SidebarContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -14,8 +15,20 @@ interface NavbarProps {
 
 const Navbar = ({ onToggle }: NavbarProps) => {
   const location = useLocation();
-  const [isExpanded, setIsExpanded] = useState(true);
+  // Fallback to local state if SidebarContext is not available
+  const [localExpanded, setLocalExpanded] = useState(true);
   const [, setIsManuallyExpanded] = useState(false);
+  
+  let isExpanded, setIsExpanded;
+  try {
+    const sidebarContext = useSidebar();
+    isExpanded = sidebarContext.isExpanded;
+    setIsExpanded = sidebarContext.setIsExpanded;
+  } catch {
+    // Use local state as fallback
+    isExpanded = localExpanded;
+    setIsExpanded = setLocalExpanded;
+  }
   const { moduleAccess } = useModuleAccess();
   const { companyId } = useAuth();
   const [companyName, setCompanyName] = useState('');
@@ -68,6 +81,18 @@ const Navbar = ({ onToggle }: NavbarProps) => {
       // Get the navbar element
       const navbar = document.querySelector('.navbar-container');
       
+      // Check if the click is on a modal or authentication element
+      const clickedElement = event.target as Element;
+      const isOnModal = clickedElement.closest('[role="dialog"]') || 
+                       clickedElement.closest('.fixed.inset-0') || 
+                       clickedElement.closest('[data-modal]') ||
+                       clickedElement.closest('[data-overlay]');
+      
+      // Don't close navbar if clicking on modals or authentication elements
+      if (isOnModal) {
+        return;
+      }
+      
       // If the navbar is expanded and the click is outside the navbar
       if (isExpanded && navbar && !navbar.contains(event.target as Node)) {
         setIsExpanded(false);
@@ -82,7 +107,7 @@ const Navbar = ({ onToggle }: NavbarProps) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isExpanded]);
+  }, [isExpanded, setIsExpanded]);
 
   const menuItems = [
     { path: '/', icon: Home, label: 'Menu', isTitle: false, enabled: true },
@@ -91,7 +116,7 @@ const Navbar = ({ onToggle }: NavbarProps) => {
     { path: '/veiculos', icon: Truck, label: 'Veículos', needsAccess: false, enabled: moduleAccess.veiculos },
     { path: '/hodometros', icon: Gauge, label: 'Hodômetros', needsAccess: true, enabled: moduleAccess.hodometros },
     { path: '/clientes', icon: Store, label: 'Clientes', needsAccess: false, enabled: moduleAccess.clientes },
-    { path: '/comprovantes', icon: FileText, label: 'Canhoto Digital', needsAccess: false, enabled: true },
+    { path: '/comprovantes', icon: FileText, label: 'Comprovantes', needsAccess: true, enabled: moduleAccess.comprovantes },
     { path: '/resumos-grupo', icon: MessagesSquare, label: 'Resumos em Grupo', needsAccess: true, enabled: moduleAccess.resumos },
     { path: '/tags-admin', icon: Tags, label: 'Marcadores', needsAccess: true, enabled: moduleAccess.tags },
   ];

@@ -1,12 +1,24 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { corsMiddleware } from "./cors-middleware";
+
+// Declaração para process global do Node.js
+declare const process: {
+  env: {
+    NODE_ENV?: string;
+    PORT?: string;
+  };
+};
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Configurar headers de segurança otimizados e CORS
+// Aplicar middleware CORS robusto
+app.use(corsMiddleware);
+
+// Configurar headers de segurança otimizados
 app.use((req, res, next) => {
   // Headers de segurança otimizados para iframe embedding
   res.removeHeader('X-Frame-Options');
@@ -32,55 +44,11 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   
-  // CORS otimizado com fallbacks
-  const origin = req.headers.origin;
-  const allowedOrigins = [
-    'https://replit.com',
-    'https://*.replit.dev',
-    'https://*.replit.app',
-    'https://centralautomacoes.netlify.app',
-    'https://*.netlify.app',
-    'http://localhost:3000',
-    'http://localhost:5000'
-  ];
-  
-  // Allow specific origins or all for iframe compatibility
-  if (origin && (origin.includes('netlify.app') || origin.includes('replit.dev') || origin.includes('localhost'))) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
-  res.setHeader('Access-Control-Allow-Headers', [
-    'Content-Type',
-    'Authorization', 
-    'api_access_token',
-    'Cache-Control',
-    'Pragma',
-    'Expires',
-    'wiseapp-token',
-    'company-id',
-    'wiseapp-account-id',
-    'X-Requested-With',
-    'Accept',
-    'Origin'
-  ].join(', '));
-  res.setHeader('Access-Control-Allow-Credentials', 'false');
-  res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24h
-  
-  // Responder a requisições OPTIONS otimizado
-  if (req.method === 'OPTIONS') {
-    // Set CORS headers again for OPTIONS requests
-    if (origin && (origin.includes('netlify.app') || origin.includes('replit.dev') || origin.includes('localhost'))) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    } else {
-      res.setHeader('Access-Control-Allow-Origin', '*');
-    }
-    res.status(204).end();
-    return;
-  }
-  
-  // Cache strategy otimizado por tipo de rota
+  next();
+});
+
+// Cache strategy otimizado por tipo de rota
+app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
     if (req.path.includes('/wiseapp/') || req.path.includes('/inboxes')) {
       // APIs dinâmicas - força no-cache agressivo para resolver problemas de cache
@@ -131,7 +99,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  console.log('🚀 Iniciando servidor...');
+  console.log('📋 Variáveis de ambiente:');
+  console.log('  NODE_ENV:', process.env.NODE_ENV);
+  console.log('  PORT:', process.env.PORT);
+  
   const server = await registerRoutes(app);
+  console.log('✅ Rotas registradas com sucesso');
 
   // Sistema de error handling robusto com fallbacks
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
@@ -211,15 +185,25 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Using port 5000 and bind to all interfaces for production compatibility
-  const port = 5000;
+  // Using port 5000 - configurado para aceitar conexões externas no Replit
+  const port = process.env.PORT || 5000;
   const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+  
+  console.log('🌐 Configuração do servidor:');
+  console.log('  Porta:', port);
+  console.log('  Host:', host);
+  console.log('  Ambiente:', process.env.NODE_ENV || 'development');
   
   server.listen({
     port,
     host,
     reusePort: false,
   }, () => {
-    log(`serving on port ${port} (host: ${host})`);
+    console.log('✅ Servidor iniciado com sucesso!');
+    log(`serving on ${host}:${port}`);
+  });
+  
+  server.on('error', (err) => {
+    console.error('❌ Erro ao iniciar servidor:', err);
   });
 })();

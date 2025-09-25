@@ -19,7 +19,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     
     // Agora a captura da foto será feita automaticamente pelo FloatingChat
     // quando ele carregar os dados do contato
-    console.log(`📱 Abrindo chat para telefone: ${phone}, motorista ID: ${motoristaId}`);
+    // Opening chat for phone and motorista ID
   };
 
   return (

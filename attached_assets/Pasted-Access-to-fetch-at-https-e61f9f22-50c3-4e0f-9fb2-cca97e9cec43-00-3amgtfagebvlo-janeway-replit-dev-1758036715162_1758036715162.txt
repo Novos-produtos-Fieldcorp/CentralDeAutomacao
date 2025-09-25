@@ -1,0 +1,51 @@
+Access to fetch at 'https://e61f9f22-50c3-4e0f-9fb2-cca97e9cec43-00-3amgtfagebvlo.janeway.replit.dev/api/wiseapp/2/labels' from origin 'https://feat-dashboard--centralautomacoes.netlify.app' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+index-fDwz2kFc.js:225   GET https://e61f9f22-50c3-4e0f-9fb2-cca97e9cec43-00-3amgtfagebvlo.janeway.replit.dev/api/wiseapp/2/labels net::ERR_FAILED
+G3 @ index-fDwz2kFc.js:225
+h @ index-fDwz2kFc.js:1962
+_oe @ index-fDwz2kFc.js:37
+joe @ index-fDwz2kFc.js:37
+Noe @ index-fDwz2kFc.js:37
+hD @ index-fDwz2kFc.js:37
+cK @ index-fDwz2kFc.js:37
+(anônimo) @ index-fDwz2kFc.js:37
+CT @ index-fDwz2kFc.js:40
+Pq @ index-fDwz2kFc.js:37
+P4 @ index-fDwz2kFc.js:37
+tT @ index-fDwz2kFc.js:37
+$oe @ index-fDwz2kFc.js:37
+index-fDwz2kFc.js:225  Erro na requisição via backend: TypeError: Failed to fetch
+    at G3 (index-fDwz2kFc.js:225:38046)
+    at h (index-fDwz2kFc.js:1962:44342)
+    at Object._oe (index-fDwz2kFc.js:37:9873)
+    at joe (index-fDwz2kFc.js:37:10030)
+    at Noe (index-fDwz2kFc.js:37:10090)
+    at hD (index-fDwz2kFc.js:37:31563)
+    at cK (index-fDwz2kFc.js:37:31981)
+    at index-fDwz2kFc.js:37:36914
+    at CT (index-fDwz2kFc.js:40:36984)
+    at Pq (index-fDwz2kFc.js:37:9007)
+G3 @ index-fDwz2kFc.js:225
+await in G3
+h @ index-fDwz2kFc.js:1962
+_oe @ index-fDwz2kFc.js:37
+joe @ index-fDwz2kFc.js:37
+Noe @ index-fDwz2kFc.js:37
+hD @ index-fDwz2kFc.js:37
+cK @ index-fDwz2kFc.js:37
+(anônimo) @ index-fDwz2kFc.js:37
+CT @ index-fDwz2kFc.js:40
+Pq @ index-fDwz2kFc.js:37
+P4 @ index-fDwz2kFc.js:37
+tT @ index-fDwz2kFc.js:37
+$oe @ index-fDwz2kFc.js:37
+index-fDwz2kFc.js:1962  Erro ao sincronizar tags do WiseApp: TypeError: Failed to fetch
+    at G3 (index-fDwz2kFc.js:225:38046)
+    at h (index-fDwz2kFc.js:1962:44342)
+    at Object._oe (index-fDwz2kFc.js:37:9873)
+    at joe (index-fDwz2kFc.js:37:10030)
+    at Noe (index-fDwz2kFc.js:37:10090)
+    at hD (index-fDwz2kFc.js:37:31563)
+    at cK (index-fDwz2kFc.js:37:31981)
+    at index-fDwz2kFc.js:37:36914
+    at CT (index-fDwz2kFc.js:40:36984)
+    at Pq (index-fDwz2kFc.js:37:9007)

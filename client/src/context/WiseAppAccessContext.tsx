@@ -32,7 +32,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
         }
       }
     } catch (error) {
-      console.log('Error loading cached token:', error);
+      // Error loading cached token
     }
     return null;
   });
@@ -48,7 +48,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
         }
       }
     } catch (error) {
-      console.log('Error loading cached company:', error);
+      // Error loading cached company
     }
     return null;
   });
@@ -64,7 +64,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
         }
       }
     } catch (error) {
-      console.log('Error loading cached attendant:', error);
+      // Error loading cached attendant
     }
     return null;
   });
@@ -80,7 +80,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
         }
       }
     } catch (error) {
-      console.log('Error loading cached attendant name:', error);
+      // Error loading cached attendant name
     }
     return null;
   });
@@ -159,7 +159,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
             const isAttendantValid = Date.now() < attendantData.expiresAt;
             
             if (isTokenValid && isCompanyValid && isAttendantValid) {
-              console.log('Using cached WiseApp token and data');
+              // Using cached WiseApp token and data
               setToken(tokenData.token);
               setCompanyId(companyData.companyId);
               setAttendantId(attendantData.attendantId);
@@ -167,12 +167,12 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
               useCache = true;
             }
           } catch (cacheError) {
-            console.log('Error reading cache, will fetch fresh data:', cacheError);
+            // Error reading cache, fetching fresh data
           }
         }
         
         if (!useCache) {
-          console.log('Fetching fresh WiseApp token from database');
+          // Fetching fresh WiseApp token from database
           
           // Get company ID from account ID
           const { data: company, error: companyError } = await supabase
@@ -206,7 +206,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
 
             if (access && access.access_token_wiseapp) {
               updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome);
-              console.log('WiseApp token fetched and cached successfully');
+              // WiseApp token fetched and cached successfully
             } else {
               // Check if we have a valid cached token that could be saved to database
               try {
@@ -216,7 +216,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
                   const isTokenValid = Date.now() < tokenData.expiresAt;
                   
                   if (isTokenValid && tokenData.token) {
-                    console.log('Found valid cached token, saving to database...');
+                    // Found valid cached token, saving to database
                     
                     // Try to save the cached token to database
                     const { error: insertError } = await supabase
@@ -240,7 +240,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
                       
                       if (newAccess) {
                         updateToken(newAccess.access_token_wiseapp, newAccess.wiseapp_acesso_id, newAccess.nome);
-                        console.log('Cached token successfully saved to database and loaded');
+                        // Cached token successfully saved to database
                         return; // Don't show modal, we're done
                       }
                     } else {
@@ -249,7 +249,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
                   }
                 }
               } catch (cacheError) {
-                console.log('Error processing cached token:', cacheError);
+                // Error processing cached token
               }
               
               // No token found and couldn't save cached token, show modal

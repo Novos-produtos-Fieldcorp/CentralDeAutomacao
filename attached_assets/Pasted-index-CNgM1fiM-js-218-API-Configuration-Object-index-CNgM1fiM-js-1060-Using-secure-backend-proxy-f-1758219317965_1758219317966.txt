@@ -1,0 +1,54 @@
+index-CNgM1fiM.js:218 API Configuration: Object
+index-CNgM1fiM.js:1060 Using secure backend proxy for WiseApp API
+index-CNgM1fiM.js:1060 Fetching fresh WiseApp token from database
+index-CNgM1fiM.js:225 Fetching company data for account_id: 20
+index-CNgM1fiM.js:1060 Using secure backend proxy for WiseApp API
+index-CNgM1fiM.js:1060 Using secure backend proxy for WiseApp API
+index-CNgM1fiM.js:225 Auth successful - account_id: 20 company_id: 5 company: Entrega já
+index-CNgM1fiM.js:1060 Using secure backend proxy for WiseApp API
+ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/veiculo?select=veiculo_id%2Cmarca_veiculo%2Cplaca&company_id=eq.5&order=veiculo_id.desc&limit=3:1  Failed to load resource: the server responded with a status of 400 ()
+index-CNgM1fiM.js:1156 Vagas raw data: 0 vagas
+index-CNgM1fiM.js:1156 Status vagas data: 0 status
+index-CNgM1fiM.js:1156 Hodometro raw data: 0 registros
+index-CNgM1fiM.js:1156 Processed hodometro data: Array(0)
+index-CNgM1fiM.js:1156 Veiculos raw data: 6290 veículos Array(6290)
+index-CNgM1fiM.js:1156 Vehicle types processed: Object
+index-CNgM1fiM.js:1156 Final vehicle type data: Array(73)
+index-CNgM1fiM.js:1060 Using secure backend proxy for WiseApp API
+index-CNgM1fiM.js:1060 Using secure backend proxy for WiseApp API
+index-CNgM1fiM.js:225 Using cached auth - account_id: 20 company_id: 5
+index-CNgM1fiM.js:1962 Sincronizando tags - Account ID: 20 Token disponível: true
+index-CNgM1fiM.js:225 Sincronizando tags - Account ID: 20 Token disponível: true
+index-CNgM1fiM.js:225 Fazendo requisição via backend para: https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels
+tags-admin:1 Access to fetch at 'https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels' from origin 'https://centralautomacoes.netlify.app' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels:1  Failed to load resource: net::ERR_FAILED
+index-CNgM1fiM.js:225 [RobustFetch] Erro na tentativa 1 para URL https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels: Failed to fetch
+ZAe @ index-CNgM1fiM.js:225
+index-CNgM1fiM.js:225 [RobustFetch] Tentativa 2 de 6 para URL: https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels
+index-CNgM1fiM.js:225 [WiseApp] Tentativa 1 falhou: Failed to fetch. Tentando novamente...
+index-CNgM1fiM.js:225 [WiseApp Labels] Tentativa 1 falhou para account 20: Failed to fetch
+tags-admin:1 Access to fetch at 'https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels' from origin 'https://centralautomacoes.netlify.app' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels:1  Failed to load resource: net::ERR_FAILED
+index-CNgM1fiM.js:225 [RobustFetch] Erro na tentativa 2 para URL https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels: Failed to fetch
+ZAe @ index-CNgM1fiM.js:225
+index-CNgM1fiM.js:225 [RobustFetch] Tentativa 3 de 6 para URL: https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels
+index-CNgM1fiM.js:225 [WiseApp] Tentativa 2 falhou: Failed to fetch. Tentando novamente...
+index-CNgM1fiM.js:225 [WiseApp Labels] Tentativa 2 falhou para account 20: Failed to fetch
+tags-admin:1 Access to fetch at 'https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels' from origin 'https://centralautomacoes.netlify.app' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+index-CNgM1fiM.js:225  GET https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels net::ERR_FAILED
+YAe @ index-CNgM1fiM.js:225
+ZAe @ index-CNgM1fiM.js:225
+index-CNgM1fiM.js:225 [RobustFetch] Erro na tentativa 3 para URL https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels: Failed to fetch
+ZAe @ index-CNgM1fiM.js:225
+index-CNgM1fiM.js:225 [RobustFetch] Tentativa 4 de 6 para URL: https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels
+index-CNgM1fiM.js:225 [WiseApp] Tentativa 3 falhou: Failed to fetch. Tentando novamente...
+index-CNgM1fiM.js:225 [WiseApp Labels] Tentativa 3 falhou para account 20: Failed to fetch
+tags-admin:1 Access to fetch at 'https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels' from origin 'https://centralautomacoes.netlify.app' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+index-CNgM1fiM.js:225  GET https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels net::ERR_FAILED
+YAe @ index-CNgM1fiM.js:225
+ZAe @ index-CNgM1fiM.js:225
+index-CNgM1fiM.js:225 [RobustFetch] Erro na tentativa 4 para URL https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels: Failed to fetch
+ZAe @ index-CNgM1fiM.js:225
+index-CNgM1fiM.js:225 [RobustFetch] Tentativa 5 de 6 para URL: https://7eb06766-a8ee-472f-9def-f1ec9df80316-00-19aitpsg3ksn5.spock.replit.dev/api/wiseapp/5/labels
+index-CNgM1fiM.js:225 [WiseApp] Tentativa 4 falhou: Failed to fetch. Tentando novamente...
+index-CNgM1fiM.js:225 [WiseApp Labels] Tentativa 4 falhou para account 20: Failed to fetch

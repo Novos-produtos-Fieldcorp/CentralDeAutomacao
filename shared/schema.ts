@@ -14,6 +14,7 @@ export const company = pgTable("company", {
   st_company: boolean("st_company").default(true),
   checklist_access: boolean("checklist_access").default(true),
   motorista_access: boolean("motorista_access").default(true),
+  vagas_access: boolean("vagas_access").default(true),
   hodometro_acsess: boolean("hodometro_acsess").default(true),
   resumo_access: boolean("resumo_access").default(false),
   tags_access: boolean("tags_access").default(true),
@@ -228,12 +229,16 @@ export const gestao_risco = pgTable("gestao_risco", {
   updated_at: timestamp("updated_at").defaultNow(),
 });
 
-// Checklist table
+// Checklist table (updated with real structure from database)
 export const checklist = pgTable("checklist", {
-  id: serial("id").primaryKey(),
+  checklist_id: serial("checklist_id").primaryKey(),
+  data: date("data"),
+  hora: text("hora"),
+  quilometragem: text("quilometragem"),
+  id_tipo_checklist: integer("id_tipo_checklist"), // 1=Mensal, 2=Semanal
+  veiculo_id: integer("veiculo_id").references(() => veiculo.veiculo_id),
   motorista_id: integer("motorista_id").references(() => motorista.motorista_id),
-  data_checklist: date("data_checklist"),
-  itens_checklist: jsonb("itens_checklist"),
+  company_id: integer("company_id").references(() => company.company_id),
   status: text("status").default("pendente"),
   created_at: timestamp("created_at").defaultNow(),
 });
@@ -278,6 +283,21 @@ export const motoristaRelations = relations(motorista, ({ one, many }) => ({
   tags: many(motorista_tags),
 }));
 
+export const checklistRelations = relations(checklist, ({ one }) => ({
+  motorista: one(motorista, {
+    fields: [checklist.motorista_id],
+    references: [motorista.motorista_id],
+  }),
+  veiculo: one(veiculo, {
+    fields: [checklist.veiculo_id],
+    references: [veiculo.veiculo_id],
+  }),
+  company: one(company, {
+    fields: [checklist.company_id],
+    references: [company.company_id],
+  }),
+}));
+
 export const tagsRelations = relations(tags, ({ one, many }) => ({
   company: one(company, {
     fields: [tags.company_id],
@@ -301,6 +321,7 @@ export const companyRelations = relations(company, ({ many }) => ({
   motoristas: many(motorista),
   clientes: many(cliente),
   tags: many(tags),
+  checklists: many(checklist),
 }));
 
 export const endMotoristaRelations = relations(end_motorista, ({ one }) => ({

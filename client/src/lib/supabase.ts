@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Try to get environment variables from multiple sources for Replit compatibility
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
+// Get environment variables from .env file
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase environment variables');
@@ -107,11 +107,11 @@ const applyRetryLogic = (queryBuilder: any, table: string) => {
         }
         
         // If it's a connection refused error, throw a user-friendly error
-        if (error.message && (
-            error.message.includes('ECONNREFUSED') || 
-            error.message.includes('connection refused') ||
-            error.message.includes('network error') ||
-            error.message.includes('supabase.co')
+        if ((error as any).message && (
+            (error as any).message.includes('ECONNREFUSED') || 
+            (error as any).message.includes('connection refused') ||
+            (error as any).message.includes('network error') ||
+            (error as any).message.includes('supabase.co')
         )) {
           throw new Error('A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.');
         }
@@ -287,11 +287,11 @@ export const createFilteredQuery = (table: string, companyId: number) => {
         }
         
         // If it's a connection refused error, throw a user-friendly error
-        if (error.message && (
-            error.message.includes('ECONNREFUSED') || 
-            error.message.includes('connection refused') ||
-            error.message.includes('network error') ||
-            error.message.includes('supabase.co')
+        if ((error as any).message && (
+            (error as any).message.includes('ECONNREFUSED') || 
+            (error as any).message.includes('connection refused') ||
+            (error as any).message.includes('network error') ||
+            (error as any).message.includes('supabase.co')
         )) {
           throw new Error('A conexão com o banco de dados foi recusada. Verifique sua conexão com a internet ou se o serviço está disponível.');
         }

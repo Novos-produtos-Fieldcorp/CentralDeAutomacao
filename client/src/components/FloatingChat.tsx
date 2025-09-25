@@ -145,7 +145,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     },
   });
 
-  console.log("Using secure backend proxy for WiseApp API");
+  // Using secure backend proxy for WiseApp API
 
   const checkNetworkConnectivity = () => {
     return navigator.onLine;
@@ -347,7 +347,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           setShowInboxSelector(true);
           setSelectedInboxId(null); // Não seleciona automaticamente
         } else {
-          console.log("No inboxes found or empty response");
+          // No inboxes found or empty response
           setAvailableInboxes([]);
         }
       } catch (error) {
@@ -620,7 +620,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             contactToUse = searchResponse.data.payload[0];
           }
         } catch (error) {
-          console.log("Erro ao buscar contato:", error);
+          // Error searching for contact
         }
         if (!contactToUse) {
           const contactNameToUse =

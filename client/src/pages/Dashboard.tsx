@@ -16,9 +16,12 @@ import {
   Activity,
   Plus,
   Edit,
+  Lock,
+  ClipboardList,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useWiseAppAccess } from "../context/WiseAppAccessContext";
+import { useAuth } from "../context/AuthContext";
+import { useModuleAccess } from "../hooks/useModuleAccess";
 import LoadingSpinner from "../components/LoadingSpinner";
 import {
   LineChart,
@@ -32,10 +35,24 @@ import {
   Cell,
   AreaChart,
   Area,
+  BarChart,
+  Bar,
 } from "recharts";
 import { format, subMonths, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "../lib/supabase";
+import AccessTooltip from "../components/AccessTooltip";
+
+// Checklist types
+const CHECKLIST_TYPES = {
+  MENSAL: 1,
+  SEMANAL: 2,
+} as const;
+
+const CHECKLIST_TYPE_NAMES = {
+  [CHECKLIST_TYPES.MENSAL]: "Mensal",
+  [CHECKLIST_TYPES.SEMANAL]: "Semanal",
+} as const;
 
 // Helper function to process hodometro data with correct field names
 const processRealHodometroData = (hodometroData: any[]) => {
@@ -107,8 +124,8 @@ const processRealHodometroData = (hodometroData: any[]) => {
 interface DashboardStats {
   // Contratacao + Vagas data
   agregados: number;
-  contratados: number; // Now represents motoristas
-  outros: number; // Now represents contratados
+  contratados: number; // Representa contratados (função contratado)
+  outros: number; // Representa motoristas (função motorista)
   vagasAbertas: number;
   vagasPreenchidas: number;
   vagasVencidas: number;
@@ -152,6 +169,18 @@ interface DashboardStats {
     }[];
   };
 
+  // Checklist data
+  checklists: {
+    totalMensal: number;
+    monthlyData: {
+      month: string;
+      value: number;
+      mensal: number;
+      semanal: number;
+    }[];
+    typeData: { name: string; value: number; color: string }[];
+  };
+
   // Recent Activity
   recentActivity: {
     id: string;
@@ -180,10 +209,66 @@ const SimpleTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+// Custom Tooltip for Checklist Stacked Bars
+const ChecklistTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const mensal = payload.find((p: any) => p.dataKey === 'mensal')?.value || 0;
+    const semanal = payload.find((p: any) => p.dataKey === 'semanal')?.value || 0;
+    const total = mensal + semanal;
+    
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-3">
+        <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+          {label}
+        </p>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Mensal: <span className="font-semibold">{mensal}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Semanal: <span className="font-semibold">{semanal}</span>
+            </p>
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-600 pt-1 mt-2">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              Total: <span className="font-semibold">{total}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+// Interface for HeroCard props
+interface HeroCardProps {
+  stats: DashboardStats;
+  hasAccess?: boolean;
+}
+
 // 1. ContratacaoVagasHeroCard - United Card with Pie Chart
-const ContratacaoVagasHeroCard = ({ stats }: { stats: DashboardStats }) => {
+const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-contratacao">
+          <AccessTooltip module="motoristas">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -253,7 +338,7 @@ const ContratacaoVagasHeroCard = ({ stats }: { stats: DashboardStats }) => {
               </div>
               <div>
                 <div className="text-sm font-bold text-gray-900 dark:text-white">
-                  {stats.outros}
+                  {stats.contratados}
                 </div>
                 <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                   Contratados
@@ -285,17 +370,6 @@ const ContratacaoVagasHeroCard = ({ stats }: { stats: DashboardStats }) => {
         </div>
       </div>
 
-      {/* Vagas Section */}
-      <div className="flex gap-1 text-xs justify-end">
-        <Link
-          to="/vagas"
-          className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1"
-          data-testid="link-vagas"
-        >
-          Vagas
-          <ExternalLink className="w-2 h-2" />
-        </Link>
-      </div>
       <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
         <h3 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
           Gestão de Vagas
@@ -334,7 +408,7 @@ const ContratacaoVagasHeroCard = ({ stats }: { stats: DashboardStats }) => {
 };
 
 // 2. HodometroHeroCard
-const HodometroHeroCard = ({ stats }: { stats: DashboardStats }) => {
+const HodometroHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   const totalKm = (stats.hodometroData || []).reduce(
     (sum, item) => sum + item.km_rodados,
     0,
@@ -345,7 +419,20 @@ const HodometroHeroCard = ({ stats }: { stats: DashboardStats }) => {
   );
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-hodometros">
+          <AccessTooltip module="hodometro">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -411,9 +498,22 @@ const HodometroHeroCard = ({ stats }: { stats: DashboardStats }) => {
 };
 
 // 3. ClientesHeroCard with Pie Chart
-const ClientesHeroCard = ({ stats }: { stats: DashboardStats }) => {
+const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-clientes">
+          <AccessTooltip module="resumo">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -558,9 +658,22 @@ const ClientesHeroCard = ({ stats }: { stats: DashboardStats }) => {
 };
 
 // 4. VeiculosHeroCard
-const VeiculosHeroCard = ({ stats }: { stats: DashboardStats }) => {
+const VeiculosHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-veiculos">
+          <AccessTooltip module="resumo">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -649,9 +762,22 @@ const VeiculosHeroCard = ({ stats }: { stats: DashboardStats }) => {
 };
 
 // 5. ComprovantesHeroCard
-const ComprovantesHeroCard = ({ stats }: { stats: DashboardStats }) => {
+const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px]">
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-comprovantes">
+          <AccessTooltip module="comprovantes">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -714,9 +840,120 @@ const ComprovantesHeroCard = ({ stats }: { stats: DashboardStats }) => {
   );
 };
 
+const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
+  return (
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-checklist">
+          <AccessTooltip module="checklist">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
+      
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+            <ClipboardList className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Checklist
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Inspeções e verificações
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/checklist"
+          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1"
+          data-testid="link-checklist"
+        >
+          Ver todos
+          <ExternalLink className="w-2 h-2" />
+        </Link>
+      </div>
+
+      {/* Split Layout - KPI + Pie Chart */}
+      <div className="flex gap-3 mb-3">
+        {/* KPI Principal */}
+        <div className="flex items-center gap-2">
+          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+            <ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {stats.checklists.totalMensal}
+            </div>
+            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+              Este mês
+            </p>
+          </div>
+        </div>
+
+        {/* Mini Pie Chart */}
+        {stats.checklists.typeData.length > 0 && (
+          <div className="w-20 h-16">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={stats.checklists.typeData}
+                  dataKey="value"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={12}
+                  outerRadius={28}
+                >
+                  {stats.checklists.typeData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<SimpleTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      {/* Monthly Chart - Separated by Type */}
+      <div className="h-32">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={stats.checklists.monthlyData}>
+            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 10 }} />
+            <Tooltip content={<ChecklistTooltip />} />
+            <Bar
+              dataKey="mensal"
+              fill="#3b82f6"
+              radius={[2, 2, 0, 0]}
+              name="Mensal"
+              stackId="checklist"
+            />
+            <Bar
+              dataKey="semanal"
+              fill="#10b981"
+              radius={[2, 2, 0, 0]}
+              name="Semanal"
+              stackId="checklist"
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
-  const { companyId } = useWiseAppAccess();
+  const { companyId } = useAuth();
+  const { loading: moduleAccessLoading, moduleAccess } = useModuleAccess();
   const [stats, setStats] = useState<DashboardStats>({
     agregados: 0,
     contratados: 0,
@@ -743,6 +980,11 @@ const Dashboard: React.FC = () => {
     comprovantes: {
       totalMensal: 0,
       monthlyData: [],
+    },
+    checklists: {
+      totalMensal: 0,
+      monthlyData: [],
+      typeData: [],
     },
     recentActivity: [],
   });
@@ -785,6 +1027,8 @@ const Dashboard: React.FC = () => {
         recentVeiculoResult,
         recentVagaResult,
         recentComprovanteResult,
+        checklistResult,
+        checklistCurrentMonthResult,
       ] = await Promise.all([
         // Optimized count queries for motoristas - 3 categorias específicas
         supabase
@@ -801,12 +1045,13 @@ const Dashboard: React.FC = () => {
           .eq("ativo", true)
           .ilike("funcao", "%motorista%"),
 
+        // Contratados - buscar registros com funcao NULL (são os contratados)
         supabase
           .from("motorista")
           .select("motorista_id", { count: "exact", head: true })
           .eq("company_id", companyId)
           .eq("ativo", true)
-          .ilike("funcao", "%contratado%"),
+          .is("funcao", null),
 
         // Real hodometro data with correct fields - last 6 months
         supabase
@@ -816,10 +1061,10 @@ const Dashboard: React.FC = () => {
           .gte("data", sixMonthsAgo.toISOString().split("T")[0])
           .order("data", { ascending: true }),
 
-        // Real clientes data without created_at (field doesn't exist)
+        // Count total clients (optimized) - using same query as clientesResult but for total
         supabase
           .from("cliente")
-          .select("cliente_id, nome, st_cliente")
+          .select("cliente_id", { count: "exact", head: true })
           .eq("company_id", companyId),
 
         // Count active clients
@@ -829,7 +1074,7 @@ const Dashboard: React.FC = () => {
           .eq("company_id", companyId)
           .eq("st_cliente", true),
 
-        // Recent clients for activity feed (without created_at)
+        // Recent clients for activity feed (limited to 5)
         supabase
           .from("cliente")
           .select("nome, cliente_id")
@@ -837,11 +1082,12 @@ const Dashboard: React.FC = () => {
           .order("cliente_id", { ascending: false })
           .limit(5),
 
-        // Real vehicles data
+        // Count vehicles by type (optimized query)
         supabase
           .from("veiculo")
-          .select("veiculo_id, tipo")
-          .eq("company_id", companyId),
+          .select("tipo", { count: "exact" })
+          .eq("company_id", companyId)
+          .limit(1000), // Limit for performance
 
         // Real vagas data with status
         supabase
@@ -906,6 +1152,21 @@ const Dashboard: React.FC = () => {
           .eq("company_id", companyId)
           .order("created_at", { ascending: false })
           .limit(2),
+
+        // Checklist data queries
+        supabase
+          .from("checklist")
+          .select("*")
+          .eq("company_id", companyId)
+          .gte("data", sixMonthsAgo.toISOString().split("T")[0])
+          .order("data", { ascending: true }),
+
+        // Current month checklists count
+        supabase
+          .from("checklist")
+          .select("*", { count: "exact", head: true })
+          .eq("company_id", companyId)
+          .gte("data", startOfMonth.toISOString().split("T")[0]),
       ]);
 
       // Check for critical errors
@@ -921,12 +1182,24 @@ const Dashboard: React.FC = () => {
         console.warn("Erro clientes:", clientesResult.error.message);
       if (veiculosResult.error)
         console.warn("Erro veículos:", veiculosResult.error.message);
+      
+      // Check for vagas errors
+      if (vagasResult.error)
+        console.warn("Erro vagas:", vagasResult.error.message);
+      if (statusVagasResult.error)
+        console.warn("Erro status vagas:", statusVagasResult.error.message);
 
-      // Process real vagas data with debug logging
+      // Check for checklist errors
+      if (checklistResult.error)
+        console.warn("Erro checklist:", checklistResult.error.message);
+      if (checklistCurrentMonthResult.error)
+        console.warn("Erro checklist current month:", checklistCurrentMonthResult.error.message);
+
+      // Process real vagas data
       const vagas = vagasResult.data || [];
       const statusVagasData = statusVagasResult.data || [];
-      console.log("Vagas raw data:", vagas.length, "vagas");
-      console.log("Status vagas data:", statusVagasData.length, "status");
+      
+      // Vagas processing optimized for performance
 
       const statusMap = statusVagasData.reduce(
         (map: any, status: any) => {
@@ -947,9 +1220,7 @@ const Dashboard: React.FC = () => {
         const status = statusMap[stVagaId] || "";
         const isExpired = vaga.dt_limite && new Date(vaga.dt_limite) < now;
 
-        console.log(
-          `Vaga ${vaga.id}: status="${status}", expired=${isExpired}`,
-        );
+        // Processing vaga status
 
         if (isExpired) {
           vagasVencidas++;
@@ -984,17 +1255,17 @@ const Dashboard: React.FC = () => {
 
       // Process real hodometro data only - no fake data
       const hodometroData = hodometroResult.data || [];
-      console.log("Hodometro raw data:", hodometroData.length, "registros");
+      // Hodometro data processing
 
       // Only use real data, no fallback/fake data
       const hodometroArray =
         hodometroData.length > 0 ? processRealHodometroData(hodometroData) : [];
-      console.log("Processed hodometro data:", hodometroArray);
+      // Hodometro processing complete
 
-      // Process real clientes data
-      const clientes = clientesResult.data || [];
+      // Process real clientes data - corrigir inconsistência
+      const totalClientes = clientesResult.count || 0;
       const clientesAtivos = clientesAtivosResult.count || 0;
-      const clientesDesativos = clientes.length - clientesAtivos;
+      const clientesDesativos = totalClientes - clientesAtivos;
 
       // Calculate new clients this month - using fallback since created_at doesn't exist
       const clientesNoMes = 0; // Disabled due to schema limitation
@@ -1012,60 +1283,61 @@ const Dashboard: React.FC = () => {
 
       // Process real veiculos data with proper type classification
       const veiculos = veiculosResult.data || [];
-      console.log("Veiculos raw data:", veiculos.length, "veículos", veiculos);
+      // Vehicles data processing
+
+      // Lista canônica de tipos válidos - apenas categorias gerais de veículos
+      const VALID_VEHICLE_TYPES = [
+        'FIORINO', 'VAN', 'CAMINHÃO', 'CAMINHÃO 3/4', 'HR', 'CAVALO', 'PASSEIO', 
+        'FURGÃO', 'OUTROS', 'DUCATO', 'DOBLO', 'H100', 'BESTA', 'BOXER',
+        'CAMINHONETE', 'CARRETA', 'MOTO', 'VUC', 'AUTOMOVEL', 'UTILITARIO',
+        'KOMBI', 'TRATOR', 'PICKUP'
+      ];
+      
+      // Função para normalizar tipo de veículo
+      const normalizeVehicleType = (type: string): string | null => {
+        if (!type || typeof type !== 'string') return null;
+        
+        // Normalizar removendo acentos e convertendo para maiúsculo
+        let normalized = type.trim().toUpperCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, ''); // Remove acentos
+        
+        // Mapear algumas variações comuns
+        const typeMapping: Record<string, string> = {
+          'CAMINHAO': 'CAMINHÃO',
+          'CAMINHAO 3/4': 'CAMINHÃO 3/4',
+          'FURGAO': 'FURGÃO',
+          'MOTOCICLETA': 'MOTO',
+          'MOTORCYCLE': 'MOTO',
+          'TRACTOR': 'TRATOR',
+          'AUTOMOVEL': 'AUTOMOVEL',
+          'UTILITARIO': 'UTILITARIO'
+        };
+        
+        const mappedType = typeMapping[normalized] || normalized;
+        
+        return VALID_VEHICLE_TYPES.includes(mappedType) ? mappedType : null;
+      };
 
       const vehicleTypes: { [key: string]: number } = {};
       veiculos.forEach((v: any) => {
-        // Enhanced vehicle classification logic
-        let tipo = "Veículo";
-
-        // First try tipo field
-        if (v.tipo && v.tipo.trim()) {
-          tipo = v.tipo.trim();
+        // Primeiro tentar normalizar o campo tipo
+        let tipo = normalizeVehicleType(v.tipo);
+        
+        // Se não conseguiu tipo válido, tentar tipologia  
+        if (!tipo && v.tipologia) {
+          tipo = normalizeVehicleType(v.tipologia);
         }
-        // Then try marca_veiculo field
-        else if (v.marca_veiculo && v.marca_veiculo.trim()) {
-          const marca = v.marca_veiculo.toLowerCase();
-          if (
-            marca.includes("caminhão") ||
-            marca.includes("caminhao") ||
-            marca.includes("truck")
-          ) {
-            tipo = "Caminhão";
-          } else if (
-            marca.includes("van") ||
-            marca.includes("furgão") ||
-            marca.includes("furgao")
-          ) {
-            tipo = "Van";
-          } else if (
-            marca.includes("carro") ||
-            marca.includes("sedan") ||
-            marca.includes("hatch")
-          ) {
-            tipo = "Carro";
-          } else if (marca.includes("moto")) {
-            tipo = "Moto";
-          } else {
-            tipo = "Veículo";
-          }
-        }
-        // Try modelo_veiculo field as fallback
-        else if (v.modelo_veiculo && v.modelo_veiculo.trim()) {
-          const modelo = v.modelo_veiculo.toLowerCase();
-          if (modelo.includes("caminhão") || modelo.includes("truck")) {
-            tipo = "Caminhão";
-          } else if (modelo.includes("van") || modelo.includes("furgão")) {
-            tipo = "Van";
-          } else {
-            tipo = "Veículo";
-          }
+        
+        // Se ainda não conseguiu, usar categoria padrão
+        if (!tipo) {
+          tipo = "OUTROS";
         }
 
         vehicleTypes[tipo] = (vehicleTypes[tipo] || 0) + 1;
       });
 
-      console.log("Vehicle types processed:", vehicleTypes);
+      // Vehicle types processing complete
 
       let vehicleTypeData = Object.entries(vehicleTypes).map(
         ([name, value], index) => ({
@@ -1097,7 +1369,7 @@ const Dashboard: React.FC = () => {
         ];
       }
 
-      console.log("Final vehicle type data:", vehicleTypeData);
+      // Vehicle type data processing completed
 
       // Process real comprovantes data by month
       const comprovantesData = comprovantesResult.data || [];
@@ -1138,10 +1410,64 @@ const Dashboard: React.FC = () => {
           return months.indexOf(a.month) - months.indexOf(b.month);
         });
 
-      // Pie chart data for contratacao - 3 categorias específicas
+      // Process checklist data
+      const checklistData = checklistResult.data || [];
+      const checklistThisMonth = checklistCurrentMonthResult.count || 0;
+      
+      // Group checklists by type
+      const checklistByType = checklistData.reduce((acc: any, checklist: any) => {
+        const tipoId = checklist.id_tipo_checklist;
+        const tipoName = tipoId === CHECKLIST_TYPES.MENSAL ? 'Mensal' : 
+                        tipoId === CHECKLIST_TYPES.SEMANAL ? 'Semanal' : 'Sem Tipo';
+        acc[tipoName] = (acc[tipoName] || 0) + 1;
+        return acc;
+      }, {});
+      
+      // Create pie data for checklist types
+      const checklistPieData = Object.entries(checklistByType).map(([tipoName, count]) => ({
+        name: tipoName,
+        value: count as number,
+        color: tipoName === 'Mensal' ? '#3b82f6' : tipoName === 'Semanal' ? '#10b981' : '#f59e0b'
+      }));
+
+      // Process monthly checklist data separated by type
+      const monthlyChecklistsMensal: { [key: string]: number } = {};
+      const monthlyChecklistsSemanal: { [key: string]: number } = {};
+      
+      checklistData.forEach((checklist) => {
+        if (checklist.data) {
+          const monthKey = format(new Date(checklist.data), "MMM", {
+            locale: ptBR,
+          });
+          
+          if (checklist.id_tipo_checklist === CHECKLIST_TYPES.MENSAL) {
+            monthlyChecklistsMensal[monthKey] = (monthlyChecklistsMensal[monthKey] || 0) + 1;
+          } else if (checklist.id_tipo_checklist === CHECKLIST_TYPES.SEMANAL) {
+            monthlyChecklistsSemanal[monthKey] = (monthlyChecklistsSemanal[monthKey] || 0) + 1;
+          }
+        }
+      });
+
+      // Create a combined array with both types
+      const months = [
+        "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+        "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+      ];
+
+      const checklistArray = months.map(month => {
+        const monthLower = month.toLowerCase();
+        return {
+          month,
+          mensal: monthlyChecklistsMensal[monthLower] || 0,
+          semanal: monthlyChecklistsSemanal[monthLower] || 0,
+          value: (monthlyChecklistsMensal[monthLower] || 0) + (monthlyChecklistsSemanal[monthLower] || 0),
+        };
+      }).filter(item => item.value > 0); // Only show months with data
+
+      // Pie chart data for contratacao - 3 categorias específicas  
       const agregados = agregadosResult.count || 0;
       const motoristas = motoristasResult.count || 0;
-      const contratados = contratadosResult.count || 0;
+      const contratados = contratadosResult.count || 0; // Agora funcao = null
 
       const contratacaoPieData = [
         { name: "Agregados", value: agregados, color: "#f97316" },
@@ -1202,10 +1528,28 @@ const Dashboard: React.FC = () => {
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
       );
 
+      // Debug logging para verificar dados
+      console.log("Dashboard data loaded:", {
+        agregados,
+        motoristas,
+        contratados,
+        totalVagas: vagas.length,
+        vagasAbertas,
+        vagasPreenchidas,
+        vagasVencidas,
+        clientes: totalClientes,
+        clientesAtivos,
+        veiculos: veiculos.length,
+        comprovantesThisMonth,
+        checklistThisMonth,
+        hodometroDataLength: hodometroArray.length,
+        checklistTypesCount: checklistPieData.length
+      });
+
       setStats({
         agregados,
-        contratados: motoristas, // Now represents motoristas
-        outros: contratados, // Now represents contratados
+        contratados: contratados, // Representa contratados (função contratado)
+        outros: motoristas, // Representa motoristas (função motorista)
         vagasAbertas,
         vagasPreenchidas,
         vagasVencidas,
@@ -1213,7 +1557,7 @@ const Dashboard: React.FC = () => {
         contratacaoPieData,
         hodometroData: hodometroArray,
         clientes: {
-          total: clientes.length,
+          total: totalClientes,
           ativos: clientesAtivos,
           desativos: clientesDesativos,
           novosNoMes: clientesNoMes,
@@ -1228,6 +1572,11 @@ const Dashboard: React.FC = () => {
         comprovantes: {
           totalMensal: comprovantesThisMonth,
           monthlyData: comprovantesArray,
+        },
+        checklists: {
+          totalMensal: checklistThisMonth,
+          monthlyData: checklistArray,
+          typeData: checklistPieData,
         },
         recentActivity: recentActivity.slice(0, 10),
       });
@@ -1264,6 +1613,11 @@ const Dashboard: React.FC = () => {
           totalMensal: 0,
           monthlyData: [],
         },
+        checklists: {
+          totalMensal: 0,
+          monthlyData: [],
+          typeData: [],
+        },
         recentActivity: [],
       });
     } finally {
@@ -1271,7 +1625,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (statsLoading) {
+  if (statsLoading || moduleAccessLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner />
@@ -1297,20 +1651,41 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Contratação + Vagas (spans 2 columns if space allows) */}
         <div className="xl:col-span-2">
-          <ContratacaoVagasHeroCard stats={stats} />
+          <ContratacaoVagasHeroCard 
+            stats={stats} 
+            hasAccess={moduleAccess.motoristas} 
+          />
         </div>
 
         {/* Hodômetro */}
-        <HodometroHeroCard stats={stats} />
+        <HodometroHeroCard 
+          stats={stats} 
+          hasAccess={moduleAccess.hodometros} 
+        />
 
         {/* Clientes */}
-        <ClientesHeroCard stats={stats} />
+        <ClientesHeroCard 
+          stats={stats} 
+          hasAccess={moduleAccess.clientes} 
+        />
 
         {/* Veículos */}
-        <VeiculosHeroCard stats={stats} />
+        <VeiculosHeroCard 
+          stats={stats} 
+          hasAccess={moduleAccess.veiculos} 
+        />
 
         {/* Comprovantes */}
-        <ComprovantesHeroCard stats={stats} />
+        <ComprovantesHeroCard 
+          stats={stats} 
+          hasAccess={moduleAccess.comprovantes} 
+        />
+
+        {/* Checklist */}
+        <ChecklistHeroCard 
+          stats={stats} 
+          hasAccess={moduleAccess.checklist} 
+        />
       </div>
 
       {/* Recent Activity Section */}

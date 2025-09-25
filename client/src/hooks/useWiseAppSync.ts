@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 // Removed direct API service - now using secure backend routes
 import { useAuth } from '@/context/AuthContext';
+import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 
 interface SyncResult {
   success: boolean;
@@ -14,6 +15,8 @@ interface BulkSyncResult {
   totalProcessed: number;
   successful: number;
   failed: number;
+  created: number;
+  photoUpdated: number;
   errors: Array<{ motorista_id: number; nome: string; error: string }>;
 }
 
@@ -30,7 +33,8 @@ interface WiseAppSyncHookReturn {
 export function useWiseAppSync(): WiseAppSyncHookReturn {
   const [configValid, setConfigValid] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
-  const { companyId } = useAuth();
+  const { companyId, accountId } = useAuth();
+  const { token: wiseAppToken, companyId: wiseAppCompanyId } = useWiseAppAccess();
 
   // Individual motorista sync mutation using secure backend
   const syncMotoristaMutation = useMutation({
@@ -68,15 +72,21 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
-  // Bulk sync mutation using secure backend
+  // Bulk sync mutation using secure backend - EXATAMENTE IGUAL AO SINCRONIZAR TAGS (USANDO HEADERS)
   const bulkSyncMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
+      // EXATAMENTE como o sincronizar tags - usar headers
+      if (!wiseAppToken) throw new Error('Configure um token WiseApp válido antes de sincronizar contatos');
+      if (!wiseAppCompanyId) throw new Error('Account ID WiseApp não encontrado');
+      
       const response = await fetch('/api/wiseapp/sync-all-motoristas', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'wiseapp-token': wiseAppToken,          // EXATAMENTE como o sincronizar tags
+          'wiseapp-account-id': wiseAppCompanyId.toString()  // EXATAMENTE como o sincronizar tags
         },
         body: JSON.stringify({
           companyId: companyId
@@ -93,22 +103,54 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     onSuccess: (data) => {
       const result = data.data as BulkSyncResult;
       
+      // Create summary message with new fields
+      let message = `Sincronização concluída! (${result.totalProcessed} processados)\n`;
+      
       if (result.successful > 0) {
-        toast.success(
-          `Sincronização concluída!\n✓ ${result.successful} contatos sincronizados\n${result.failed > 0 ? `✗ ${result.failed} falharam` : ''}`
-        );
+        message += `✓ ${result.successful} já existentes sincronizados\n`;
+      }
+      
+      if (result.created > 0) {
+        message += `🆕 ${result.created} contatos criados no WiseApp\n`;
+      }
+      
+      if (result.photoUpdated > 0) {
+        message += `📸 ${result.photoUpdated} fotos atualizadas\n`;
+      }
+      
+      if (result.failed > 0) {
+        message += `✗ ${result.failed} falharam`;
+      }
+      
+      // Show success toast if any operation was successful
+      if (result.successful > 0 || result.created > 0 || result.photoUpdated > 0) {
+        toast.success(message.trim());
       }
 
       if (result.failed > 0) {
         console.warn('Erros na sincronização:', result.errors);
         
-        // Show detailed errors for failed syncs
-        result.errors.slice(0, 3).forEach(error => {
-          toast.error(`${error.nome}: ${error.error}`, { duration: 5000 });
-        });
+        // Check if all or most errors are due to WiseApp service being unavailable
+        const serviceUnavailableErrors = result.errors.filter(error => 
+          error.error.includes('temporariamente indisponível') ||
+          error.error.includes('Erro interno do servidor WiseApp')
+        );
         
-        if (result.errors.length > 3) {
-          toast.error(`E mais ${result.errors.length - 3} erros...`);
+        // If most errors are service unavailability (80% threshold)
+        if (serviceUnavailableErrors.length >= result.errors.length * 0.8) {
+          toast.error(
+            `Serviço WiseApp está temporariamente indisponível. Tente novamente em alguns minutos.`, 
+            { duration: 6000 }
+          );
+        } else {
+          // Show detailed errors for individual contact failures
+          result.errors.slice(0, 3).forEach(error => {
+            toast.error(`${error.nome}: ${error.error}`, { duration: 5000 });
+          });
+          
+          if (result.errors.length > 3) {
+            toast.error(`E mais ${result.errors.length - 3} erros...`);
+          }
         }
       }
 

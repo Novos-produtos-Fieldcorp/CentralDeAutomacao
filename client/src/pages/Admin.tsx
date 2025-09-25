@@ -11,9 +11,9 @@ interface AccessControl {
   id_conta_wiseapp: string;
   checklist_access: boolean;
   motorista_access: boolean;
-  vagas_access: boolean;
   hodometro_acsess: boolean;
   resumo_access: boolean;
+  comprovante_access: boolean;
   tags_access: boolean | null;
   st_company: boolean;
 }
@@ -80,7 +80,7 @@ const Admin = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('company')
-        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, vagas_access, hodometro_acsess, resumo_access, tags_access, st_company')
+        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, comprovante_access, tags_access, st_company')
         .order('company_id', { ascending: true });
 
       if (error) throw error;
@@ -147,9 +147,9 @@ const Admin = () => {
           .update({
             checklist_access: control.checklist_access,
             motorista_access: control.motorista_access,
-            vagas_access: control.vagas_access,
             hodometro_acsess: control.hodometro_acsess,
             resumo_access: control.resumo_access,
+            comprovante_access: control.comprovante_access,
             tags_access: control.tags_access
           })
           .eq('company_id', control.company_id);
@@ -209,9 +209,9 @@ const Admin = () => {
           id_conta_wiseapp: companyFormData.id_conta_wiseapp,
           checklist_access: false,
           motorista_access: false,
-          vagas_access: false,
           hodometro_acsess: false,
           resumo_access: false,
+          comprovante_access: false,
           tags_access: true
         }])
         .select();
@@ -360,13 +360,13 @@ const Admin = () => {
                       Contratações
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Vagas
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Hodômetro
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Resumos em Grupo
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Comprovantes
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Tags
@@ -411,18 +411,6 @@ const Admin = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <button
-                          onClick={() => handleToggleAccess(index, 'vagas_access')}
-                          className={`p-2 rounded-full ${
-                            control.vagas_access
-                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
-                          }`}
-                        >
-                          <CheckCircle size={20} />
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <button
                           onClick={() => handleToggleAccess(index, 'hodometro_acsess')}
                           className={`p-2 rounded-full ${
                             control.hodometro_acsess
@@ -438,6 +426,18 @@ const Admin = () => {
                           onClick={() => handleToggleAccess(index, 'resumo_access')}
                           className={`p-2 rounded-full ${
                             control.resumo_access
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                          }`}
+                        >
+                          <CheckCircle size={20} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleToggleAccess(index, 'comprovante_access')}
+                          className={`p-2 rounded-full ${
+                            control.comprovante_access
                               ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                               : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                           }`}
