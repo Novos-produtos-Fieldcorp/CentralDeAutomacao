@@ -24,7 +24,6 @@ import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 import { TableDropdown } from '../../components/TableDropdown';
-import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
 import BulkContactTagsSync from '../../components/BulkContactTagsSync';
 import { useAuth } from '../../context/AuthContext';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
@@ -2099,14 +2098,6 @@ const MotoristasLista = () => {
         )}
       </div>
 
-      {/* WiseApp Bulk Sync Panel - now positioned fixed in top right */}
-      <WiseAppBulkSyncPanel 
-        onTagsSync={() => {
-          if (motoristas && motoristas.length > 0) {
-            fetchAllMotoristaTags(motoristas);
-          }
-        }}
-      />
 
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative z-[10]">
         <div className="overflow-hidden">
