@@ -1484,22 +1484,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('Max retries reached');
       };
       
-      // Helper function to normalize phone number
+      // Helper function to normalize phone number for WiseApp (always with +55)
       const normalizePhone = (phone: any): { searchPhone: string, e164Phone: string } | null => {
+        // Convert to string if it's a number
+        let phoneStr = phone;
+        if (typeof phone === 'number') {
+          phoneStr = phone.toString();
+        }
+        
         // Check if phone is valid
-        if (!phone || typeof phone !== 'string' || phone.trim() === '') {
+        if (!phoneStr || typeof phoneStr !== 'string' || phoneStr.trim() === '') {
           return null;
         }
         
-        const digits = phone.replace(/\D/g, '');
+        // Remove all non-digits
+        const digits = phoneStr.replace(/\D/g, '');
         
-        // Check if we have enough digits after cleaning
-        if (digits.length < 10) {
+        // Brazilian phone numbers: 10-11 digits (DDD + number)
+        // Accept 10 digits (landline: DDD + 8 digits) or 11 digits (mobile: DDD + 9 digits)
+        if (digits.length < 10 || digits.length > 13) {
           return null;
         }
         
-        const searchPhone = digits.startsWith('55') ? digits : `55${digits}`;
-        const e164Phone = `+${searchPhone}`;
+        let brazilianNumber = digits;
+        
+        // Remove country code if already present
+        if (digits.startsWith('55') && digits.length >= 12) {
+          brazilianNumber = digits.substring(2);
+        }
+        
+        // Ensure we have a valid Brazilian number (10 or 11 digits)
+        if (brazilianNumber.length < 10 || brazilianNumber.length > 11) {
+          return null;
+        }
+        
+        // Always format with +55 for WiseApp
+        const searchPhone = `55${brazilianNumber}`;
+        const e164Phone = `+55${brazilianNumber}`;
+        
         return { searchPhone, e164Phone };
       };
       
