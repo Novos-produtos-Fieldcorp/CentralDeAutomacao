@@ -84,7 +84,8 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
   });
 
   // Get WiseApp access context values (same logic as tags)
-  const { token: wiseAppToken, accountId } = useWiseAppAccess();
+  const { token: wiseAppToken } = useWiseAppAccess();
+  const { accountId } = useAuth();
 
   // Bulk sync mutation using secure backend
   const bulkSyncMutation = useMutation({
