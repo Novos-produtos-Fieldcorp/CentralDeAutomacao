@@ -2040,7 +2040,6 @@ const MotoristasLista = () => {
 
           </div>
 
-
           {/* Botão Sincronizar Contatos */}
           <button
             onClick={syncAllMotoristas}

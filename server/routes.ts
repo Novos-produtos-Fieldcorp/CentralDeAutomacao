@@ -1393,39 +1393,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { companyId } = req.body;
       
-      // 1. Obter token e account_id dos headers (mesmo padrão das tags)
-      const token = req.headers['wiseapp-token'] as string;
-      const accountId = req.headers['wiseapp-account-id'] as string;
-      
-      console.log(`🔄 Starting sync-all-motoristas for company ${companyId}`);
-      console.log(`📋 Headers - Token: ${token ? 'provided' : 'missing'}, Account ID: ${accountId ? 'provided' : 'missing'}`);
-      
       if (!companyId) {
         return res.status(400).json({ error: 'Company ID é obrigatório' });
       }
       
+      console.log(`Starting sync-all-motoristas for company ${companyId}`);
+      
+      // 1. Buscar token WiseApp para esta empresa
+      const token = await storage.getWiseappToken(parseInt(companyId));
+      
       if (!token) {
-        console.log(`❌ No WiseApp token provided in headers`);
+        console.log(`Token WiseApp não encontrado para company_id: ${companyId}`);
         return res.status(401).json({ 
-          error: "Token WiseApp não fornecido",
+          error: "Token WiseApp não configurado para esta empresa",
           message: "Configure um token WiseApp válido antes de sincronizar contatos"
         });
       }
       
-      if (!accountId) {
-        console.log(`❌ No WiseApp account ID provided in headers`);
-        return res.status(400).json({ 
-          error: "Account ID do WiseApp não fornecido" 
+      // 2. Buscar dados da empresa para obter account ID do WiseApp
+      const { data: companies, error: companyError } = await supabaseBackendBackend
+        .from("company")
+        .select("id_conta_wiseapp")
+        .eq("company_id", parseInt(companyId))
+        .limit(1);
+      
+      if (companyError || !companies || companies.length === 0) {
+        console.log(`Empresa não encontrada para company_id: ${companyId}`);
+        return res.status(404).json({ 
+          error: "Empresa não encontrada ou account ID não configurado" 
         });
       }
       
-      console.log(`✅ Using token and account ID from headers`);
+      const accountId = companies[0].id_conta_wiseapp;
       
-      // Validar que accountId é numérico
-      const numericAccountId = parseInt(accountId);
-      if (isNaN(numericAccountId)) {
+      if (!accountId) {
         return res.status(400).json({ 
-          error: "Account ID deve ser numérico" 
+          error: "Account ID do WiseApp não configurado para esta empresa" 
         });
       }
       

@@ -25,6 +25,7 @@ import { createPortal } from 'react-dom';
   import ContextMenu from '../../components/ContextMenu';
   import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
   import { TableDropdown } from '../../components/TableDropdown';
+import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
 import { API_BASE_URL } from '@/lib/api-config';
 import FilterTags from '../../components/FilterTags';
 
@@ -2994,6 +2995,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           )}
         </div>
 
+        {/* WiseApp Bulk Sync Panel - positioned fixed in top right */}
+        <WiseAppBulkSyncPanel 
+          onTagsSync={() => {
+            if (contratados && contratados.length > 0) {
+              fetchMotoristaTags(contratados);
+            }
+          }}
+        />
 
         {/* Context Menu */}
         {contextMenu.visible && contextMenu.motorista && (

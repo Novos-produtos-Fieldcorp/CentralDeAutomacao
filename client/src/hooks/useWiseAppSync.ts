@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 // Removed direct API service - now using secure backend routes
 import { useAuth } from '@/context/AuthContext';
-import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 
 interface SyncResult {
   success: boolean;
@@ -51,10 +50,8 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        // Extract the appropriate error message
-        const errorMessage = errorData.message || errorData.error || 'Sync failed';
-        throw new Error(errorMessage);
+        const error = await response.json();
+        throw new Error(error.message || 'Sync failed');
       }
       
       return response.json();
@@ -69,49 +66,19 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       }
     },
     onError: (error: Error) => {
-      console.error('Individual sync error:', error);
-      
-      if (error.message.includes('Token WiseApp não configurado') || 
-          error.message.includes('Configure um token WiseApp válido')) {
-        toast.error(
-          'Token WiseApp não configurado. Configure o token de acesso nas configurações da empresa.',
-          { duration: 6000 }
-        );
-      } else {
-        toast.error(`Erro na sincronização: ${error.message}`, { duration: 5000 });
-      }
+      toast.error(`Erro na sincronização: ${error.message}`);
     }
   });
-
-  // Get WiseApp access context values (same logic as tags)
-  const { token: wiseAppToken } = useWiseAppAccess();
-  const { accountId } = useAuth();
 
   // Bulk sync mutation using secure backend
   const bulkSyncMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      if (!wiseAppToken) {
-        throw new Error('NEED_WISEAPP_CONFIG');
-      }
-      
-      if (!accountId) {
-        throw new Error('NEED_ACCOUNT_CONFIG');
-      }
-      
-      console.log('🔄 Initiating WiseApp sync:', { 
-        companyId, 
-        hasToken: !!wiseAppToken,
-        hasAccountId: !!accountId 
-      });
-      
       const response = await fetch('/api/wiseapp/sync-all-motoristas', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-token': wiseAppToken,
-          'wiseapp-account-id': accountId
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           companyId: companyId
@@ -119,10 +86,8 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        // Extract the appropriate error message
-        const errorMessage = errorData.message || errorData.error || 'Bulk sync failed';
-        throw new Error(errorMessage);
+        const error = await response.json();
+        throw new Error(error.message || 'Bulk sync failed');
       }
       
       return response.json();
@@ -185,46 +150,35 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       queryClient.invalidateQueries({ queryKey: ['/api/motoristas'] });
     },
     onError: (error: Error) => {
-      console.error('Bulk sync error:', error);
-      
-      if (error.message === 'NEED_WISEAPP_CONFIG' || error.message === 'NEED_ACCOUNT_CONFIG') {
-        // Auto-open WiseApp configuration modal
-        const event = new CustomEvent('openWiseAppModal');
-        window.dispatchEvent(event);
-        return; // Don't show error toast since modal will handle it
-      } else if (error.message.includes('Token WiseApp não configurado') || 
-          error.message.includes('Configure um token WiseApp válido')) {
-        toast.error(
-          'Token WiseApp não configurado. Configure o token de acesso antes de sincronizar contatos.',
-          { duration: 6000 }
-        );
-      } else if (error.message.includes('Account ID não configurado')) {
-        toast.error(
-          'Account ID do WiseApp não configurado. Verifique as configurações.',
-          { duration: 6000 }
-        );
+      if (error.message.includes('Token WiseApp não configurado')) {
+        toast.error('Para usar a sincronização com WiseApp, configure primeiro o token de acesso nas configurações da empresa.');
       } else {
-        toast.error(`Erro na sincronização: ${error.message}`, { duration: 5000 });
+        toast.error(`Erro na sincronização em lote: ${error.message}`);
       }
     }
   });
 
-  // Config validation mutation - simplified for header-based auth
+  // Config validation mutation using secure backend
   const validateConfigMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      // Since we now use headers for auth, validate by checking if tokens are available
-      if (!wiseAppToken) {
-        throw new Error('Token WiseApp não fornecido');
+      const response = await fetch('/api/wiseapp/validate-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          companyId: companyId
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Config validation failed');
       }
       
-      if (!accountId) {
-        throw new Error('Account ID não fornecido');
-      }
-      
-      // Return valid if both headers are present
-      return { valid: true, message: 'Configuração válida - usando headers' };
+      return response.json();
     },
     onSuccess: (data) => {
       setConfigValid(data.valid);

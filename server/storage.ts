@@ -79,7 +79,6 @@ export interface IStorage {
 
   // WiseApp methods
   getWiseappToken(companyId: number): Promise<string | null>;
-  getWiseappTokenByEmail(email: string, companyId?: number): Promise<string | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -401,38 +400,25 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // WiseApp token method (deprecated - use getWiseappTokenByEmail instead)
+  // WiseApp token method
   async getWiseappToken(companyId: number): Promise<string | null> {
-    console.log(`⚠️ getWiseappToken is deprecated - company_id column removed from wiseapp_acesso table`);
-    console.log(`❌ Cannot fetch token by company ${companyId} - use email-based lookup instead`);
-    return null;
-  }
-
-  // Method to get WiseApp token by email (simplified without company_id)
-  async getWiseappTokenByEmail(email: string, companyId?: number): Promise<string | null> {
-    console.log(`🔍 Fetching WiseApp token for email: ${email}`);
+    console.log(`Fetching WiseApp token for company ${companyId}`);
     try {
       const { data, error } = await supabase
         .from('wiseapp_acesso')
-        .select('access_token_wiseapp, email, nome')
-        .eq('email', email)
-        .not('access_token_wiseapp', 'is', null)
+        .select('access_token_wiseapp')
+        .eq('company_id', companyId)
         .single();
-
-      if (error) {
-        console.error(`❌ Error fetching WiseApp token for email ${email}:`, error);
-        return null;
-      }
-
-      if (!data?.access_token_wiseapp) {
-        console.log(`❌ No WiseApp token found for email: ${email}`);
+      
+      if (error || !data?.access_token_wiseapp) {
+        console.log(`No WiseApp token found for company ${companyId}`);
         return null;
       }
       
-      console.log(`✅ Found WiseApp token for email: ${email} (${data.nome})`);
+      console.log(`Found WiseApp token for company ${companyId}`);
       return data.access_token_wiseapp;
     } catch (error) {
-      console.error(`Error fetching WiseApp token for email ${email}:`, error);
+      console.error(`Error fetching WiseApp token for company ${companyId}:`, error);
       return null;
     }
   }
