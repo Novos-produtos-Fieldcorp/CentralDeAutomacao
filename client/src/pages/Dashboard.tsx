@@ -155,6 +155,16 @@ interface DashboardStats {
     }[];
   };
 
+  // Checklist data
+  checklists: {
+    totalMensal: number;
+    monthlyData: {
+      month: string;
+      value: number;
+    }[];
+    typeData: { name: string; value: number; color: string }[];
+  };
+
   // Recent Activity
   recentActivity: {
     id: string;
@@ -849,6 +859,8 @@ const Dashboard: React.FC = () => {
         recentVeiculoResult,
         recentVagaResult,
         recentComprovanteResult,
+        checklistResult,
+        checklistCurrentMonthResult,
       ] = await Promise.all([
         // Optimized count queries for motoristas - 3 categorias específicas
         supabase
@@ -972,6 +984,21 @@ const Dashboard: React.FC = () => {
           .eq("company_id", companyId)
           .order("created_at", { ascending: false })
           .limit(2),
+
+        // Checklist data queries
+        supabase
+          .from("checklist")
+          .select("*")
+          .eq("company_id", companyId)
+          .gte("data", sixMonthsAgo.toISOString().split("T")[0])
+          .order("data", { ascending: true }),
+
+        // Current month checklists count
+        supabase
+          .from("checklist")
+          .select("*", { count: "exact", head: true })
+          .eq("company_id", companyId)
+          .gte("data", startOfMonth.toISOString().split("T")[0]),
       ]);
 
       // Check for critical errors
@@ -994,23 +1021,11 @@ const Dashboard: React.FC = () => {
       if (statusVagasResult.error)
         console.warn("Erro status vagas:", statusVagasResult.error.message);
 
-      // DEBUG: Check checklist data to understand structure
-      const checklistSimple = await supabase
-        .from("checklist")
-        .select("*")
-        .limit(10);
-      
-      console.log("Debug checklist:", {
-        error: checklistSimple.error?.message,
-        count: checklistSimple.data?.length,
-        firstItem: checklistSimple.data?.[0]
-      });
-      
-      // Count total checklists
-      const checklistCount = await supabase
-        .from("checklist")
-        .select("*", { count: "exact", head: true });
-      console.log("Total checklists na tabela:", checklistCount.count);
+      // Check for checklist errors
+      if (checklistResult.error)
+        console.warn("Erro checklist:", checklistResult.error.message);
+      if (checklistCurrentMonthResult.error)
+        console.warn("Erro checklist current month:", checklistCurrentMonthResult.error.message);
 
       // Process real vagas data
       const vagas = vagasResult.data || [];
@@ -1227,6 +1242,48 @@ const Dashboard: React.FC = () => {
           return months.indexOf(a.month) - months.indexOf(b.month);
         });
 
+      // Process checklist data
+      const checklistData = checklistResult.data || [];
+      const checklistThisMonth = checklistCurrentMonthResult.count || 0;
+      
+      // Group checklists by type
+      const checklistByType = checklistData.reduce((acc: any, checklist: any) => {
+        const tipo = checklist.id_tipo_checklist || 'Sem Tipo';
+        acc[tipo] = (acc[tipo] || 0) + 1;
+        return acc;
+      }, {});
+      
+      // Create pie data for checklist types
+      const checklistPieData = Object.entries(checklistByType).map(([tipo, count]) => ({
+        name: `Tipo ${tipo}`,
+        value: count as number,
+        color: tipo === '1' ? '#3b82f6' : tipo === '2' ? '#10b981' : '#f59e0b'
+      }));
+
+      // Process monthly checklist data
+      const monthlyChecklists: { [key: string]: number } = {};
+      checklistData.forEach((checklist) => {
+        if (checklist.data) {
+          const monthKey = format(new Date(checklist.data), "MMM", {
+            locale: ptBR,
+          });
+          monthlyChecklists[monthKey] = (monthlyChecklists[monthKey] || 0) + 1;
+        }
+      });
+
+      const checklistArray = Object.entries(monthlyChecklists)
+        .map(([month, value]) => ({
+          month,
+          value,
+        }))
+        .sort((a, b) => {
+          const months = [
+            "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+            "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+          ];
+          return months.indexOf(a.month) - months.indexOf(b.month);
+        });
+
       // Pie chart data for contratacao - 3 categorias específicas  
       const agregados = agregadosResult.count || 0;
       const motoristas = motoristasResult.count || 0;
@@ -1304,7 +1361,9 @@ const Dashboard: React.FC = () => {
         clientesAtivos,
         veiculos: veiculos.length,
         comprovantesThisMonth,
-        hodometroDataLength: hodometroArray.length
+        checklistThisMonth,
+        hodometroDataLength: hodometroArray.length,
+        checklistTypesCount: checklistPieData.length
       });
 
       setStats({
@@ -1333,6 +1392,11 @@ const Dashboard: React.FC = () => {
         comprovantes: {
           totalMensal: comprovantesThisMonth,
           monthlyData: comprovantesArray,
+        },
+        checklists: {
+          totalMensal: checklistThisMonth,
+          monthlyData: checklistArray,
+          typeData: checklistPieData,
         },
         recentActivity: recentActivity.slice(0, 10),
       });
@@ -1368,6 +1432,11 @@ const Dashboard: React.FC = () => {
         comprovantes: {
           totalMensal: 0,
           monthlyData: [],
+        },
+        checklists: {
+          totalMensal: 0,
+          monthlyData: [],
+          typeData: [],
         },
         recentActivity: [],
       });
