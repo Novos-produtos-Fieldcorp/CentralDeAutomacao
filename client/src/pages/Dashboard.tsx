@@ -988,14 +988,13 @@ const Dashboard: React.FC = () => {
       if (veiculosResult.error)
         console.warn("Erro veículos:", veiculosResult.error.message);
       
-      // DEBUG VAGAS: Check for errors and data
+      // Check for vagas errors
       if (vagasResult.error)
         console.warn("Erro vagas:", vagasResult.error.message);
       if (statusVagasResult.error)
         console.warn("Erro status vagas:", statusVagasResult.error.message);
-        
 
-      // Process real vagas data with debug logging
+      // Process real vagas data
       const vagas = vagasResult.data || [];
       const statusVagasData = statusVagasResult.data || [];
       
