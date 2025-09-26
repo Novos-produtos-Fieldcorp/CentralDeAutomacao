@@ -104,28 +104,41 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     onSuccess: (data) => {
       const result = data.data as BulkSyncResult;
       
-      // Create summary message with new fields
-      let message = `Sincronização concluída! (${result.totalProcessed} processados)\n`;
+      // Calcular totais para notificação mais clara
+      const totalImportados = result.successful + result.created;
+      const totalNaoImportados = result.failed;
       
-      if (result.successful > 0) {
-        message += `✓ ${result.successful} já existentes sincronizados\n`;
+      // Notificação principal com foco em importados vs não importados
+      if (totalImportados > 0) {
+        let successMessage = `✅ ${totalImportados} contatos importados com sucesso!`;
+        
+        // Detalhes adicionais se houver
+        const detalhes = [];
+        if (result.created > 0) {
+          detalhes.push(`${result.created} novos contatos criados`);
+        }
+        if (result.successful > 0) {
+          detalhes.push(`${result.successful} contatos já existentes sincronizados`);
+        }
+        if (result.photoUpdated > 0) {
+          detalhes.push(`${result.photoUpdated} fotos atualizadas`);
+        }
+        
+        if (detalhes.length > 0) {
+          successMessage += `\n${detalhes.join(', ')}`;
+        }
+        
+        toast.success(successMessage, { duration: 4000 });
       }
       
-      if (result.created > 0) {
-        message += `🆕 ${result.created} contatos criados no WiseApp\n`;
+      // Notificação separada para falhas, se houver
+      if (totalNaoImportados > 0) {
+        toast.error(`❌ ${totalNaoImportados} contatos não foram importados`, { duration: 4000 });
       }
       
-      if (result.photoUpdated > 0) {
-        message += `📸 ${result.photoUpdated} fotos atualizadas\n`;
-      }
-      
-      if (result.failed > 0) {
-        message += `✗ ${result.failed} falharam`;
-      }
-      
-      // Show success toast if any operation was successful
-      if (result.successful > 0 || result.created > 0 || result.photoUpdated > 0) {
-        toast.success(message.trim());
+      // Se nenhum contato foi processado
+      if (result.totalProcessed === 0) {
+        toast('ℹ️ Nenhum motorista ativo encontrado para sincronizar');
       }
 
       if (result.failed > 0) {
