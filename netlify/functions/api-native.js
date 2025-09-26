@@ -32,6 +32,11 @@ exports.handler = async (event, context) => {
   console.log('Final path:', path);
   console.log('======================');
   
+  // Debug específico para sync-all-motoristas
+  if (httpMethod === 'POST' && (path.includes('sync-all-motoristas') || event.pathParameters?.splat?.includes('sync-all-motoristas'))) {
+    console.log(`🔍 SYNC DEBUG - Method: ${httpMethod}, Path: "${path}", Splat: "${event.pathParameters?.splat}"`);
+  }
+  
   // CORS headers - mais permissivos para resolver problemas
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -523,7 +528,8 @@ exports.handler = async (event, context) => {
     event.pathParameters?.splat === 'wiseapp/sync-all-motoristas'
   )) {
     try {
-      console.log(`Sync all motoristas request received`);
+      console.log(`✅ SYNC ALL MOTORISTAS - Route matched successfully!`);
+      console.log(`Path: ${path}, Splat: ${event.pathParameters?.splat}`);
       
       const token = headers['wiseapp-token'];
       const accountId = headers['wiseapp-account-id'];
