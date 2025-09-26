@@ -584,10 +584,43 @@ exports.handler = async (event, context) => {
       console.log(`Starting sync-all-motoristas for company ${companyId}`);
       console.log(`Using WiseApp account ID: ${accountId}`);
       
-      // TODO: Implementar sincronização real igual ao Replit
-      // Por enquanto, retornar resposta que não quebra o frontend
+      // Configuração do Supabase
+      const { createClient } = require('@supabase/supabase-js');
+      const supabaseUrl = process.env.VITE_SUPABASE_URL;
+      const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey) {
+        console.error('Supabase credentials not found');
+        return {
+          statusCode: 500,
+          headers: corsHeaders,
+          body: JSON.stringify({ 
+            error: 'Configuração do Supabase não encontrada' 
+          })
+        };
+      }
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Buscar todos os motoristas ativos com telefone
+      const { data: motoristas, error: motoristasError } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome, telefone, foto_whatsapp')
+        .eq('company_id', companyId)
+        .eq('ativo', true)
+        .not('telefone', 'is', null);
+      
+      if (motoristasError) {
+        console.error('Erro ao buscar motoristas:', motoristasError);
+        return {
+          statusCode: 500,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'Erro ao buscar motoristas' })
+        };
+      }
+      
       const results = {
-        totalProcessed: 0,
+        totalProcessed: motoristas?.length || 0,
         successful: 0,
         failed: 0,
         created: 0,
@@ -595,7 +628,201 @@ exports.handler = async (event, context) => {
         errors: []
       };
       
-      console.log(`Sync completed for company ${companyId} (simplified version)`);
+      if (!motoristas || motoristas.length === 0) {
+        console.log('Nenhum motorista ativo encontrado');
+        return {
+          statusCode: 200,
+          headers: corsHeaders,
+          body: JSON.stringify({ 
+            success: true, 
+            data: results 
+          })
+        };
+      }
+      
+      console.log(`Processando ${motoristas.length} motoristas`);
+      
+      // WiseApp API URL
+      const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
+      
+      // Função para normalizar telefone (igual ao Replit)
+      const normalizePhone = (phone) => {
+        if (!phone) return null;
+        
+        const digits = phone.replace(/\D/g, '');
+        
+        if (digits.length < 10 || digits.length > 13) {
+          return null;
+        }
+        
+        let brazilianNumber = digits;
+        
+        if (digits.startsWith('55') && digits.length >= 12) {
+          brazilianNumber = digits.substring(2);
+        }
+        
+        if (brazilianNumber.length < 10 || brazilianNumber.length > 11) {
+          return null;
+        }
+        
+        const searchPhone = `55${brazilianNumber}`;
+        const e164Phone = `+55${brazilianNumber}`;
+        
+        return { searchPhone, e164Phone };
+      };
+      
+      // Função de retry com backoff
+      const retryWithBackoff = async (fn, maxRetries = 3, baseDelay = 1000) => {
+        for (let i = 0; i < maxRetries; i++) {
+          try {
+            return await fn();
+          } catch (error) {
+            if (i === maxRetries - 1) throw error;
+            const delay = baseDelay * Math.pow(2, i);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      };
+      
+      // Processar cada motorista
+      for (const motorista of motoristas) {
+        try {
+          console.log(`Processing motorista ${motorista.motorista_id}: ${motorista.nome}`);
+          
+          // Normalizar telefone
+          const phoneResult = normalizePhone(motorista.telefone);
+          if (!phoneResult) {
+            console.log(`Skipping motorista ${motorista.nome} - invalid phone number: ${motorista.telefone}`);
+            results.failed++;
+            results.errors.push({
+              motorista_id: motorista.motorista_id,
+              nome: motorista.nome || 'N/A',
+              error: 'Número de telefone inválido ou ausente'
+            });
+            continue;
+          }
+          
+          const { searchPhone, e164Phone } = phoneResult;
+          const searchUrl = `${wiseappApiUrl}/api/v1/accounts/${accountId}/contacts/search?q=${searchPhone}`;
+          
+          // Buscar contato existente
+          const searchResponse = await retryWithBackoff(() => fetch(searchUrl, {
+            headers: {
+              'api_access_token': token,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          }));
+          
+          if (searchResponse.status === 401 || searchResponse.status === 403) {
+            console.error('Authentication failed with WiseApp API');
+            return {
+              statusCode: 401,
+              headers: corsHeaders,
+              body: JSON.stringify({ 
+                error: "Token WiseApp inválido ou expirado" 
+              })
+            };
+          }
+          
+          let contact = null;
+          let contactCreated = false;
+          
+          if (searchResponse.ok) {
+            const searchData = await searchResponse.json();
+            
+            if (searchData.payload?.length > 0) {
+              contact = searchData.payload[0];
+              console.log(`Contact found for ${motorista.nome}: ${contact.id}`);
+            } else {
+              // Contato não encontrado - criar novo
+              console.log(`Contact not found for ${motorista.nome}, creating new contact`);
+              
+              const createUrl = `${wiseappApiUrl}/api/v1/accounts/${accountId}/contacts`;
+              const createResponse = await retryWithBackoff(() => fetch(createUrl, {
+                method: 'POST',
+                headers: {
+                  'api_access_token': token,
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                  name: motorista.nome || `Contato ${searchPhone}`,
+                  phone_number: e164Phone
+                })
+              }));
+              
+              if (createResponse.ok) {
+                const createData = await createResponse.json();
+                contact = createData.payload || createData;
+                contactCreated = true;
+                results.created++;
+                console.log(`Contact created for ${motorista.nome}: ${contact.id}`);
+              } else {
+                const errorText = await createResponse.text();
+                console.error(`Failed to create contact for ${motorista.nome}: ${createResponse.status} - ${errorText}`);
+                results.failed++;
+                results.errors.push({
+                  motorista_id: motorista.motorista_id,
+                  nome: motorista.nome || 'N/A',
+                  error: `Erro ao criar contato: ${createResponse.status}`
+                });
+                continue;
+              }
+            }
+          } else {
+            const errorText = await searchResponse.text();
+            console.error(`Search failed for ${motorista.nome}: ${searchResponse.status} - ${errorText}`);
+            results.failed++;
+            
+            let errorMessage = `Erro na busca do WiseApp: ${searchResponse.status}`;
+            if (searchResponse.status === 502 || searchResponse.status === 503) {
+              errorMessage = "Serviço WiseApp temporariamente indisponível";
+            } else if (searchResponse.status === 429) {
+              errorMessage = "Muitas requisições - tente novamente em alguns minutos";
+            } else if (searchResponse.status >= 500) {
+              errorMessage = "Erro interno do servidor WiseApp";
+            }
+            
+            results.errors.push({
+              motorista_id: motorista.motorista_id,
+              nome: motorista.nome || 'N/A',
+              error: errorMessage
+            });
+            continue;
+          }
+          
+          // Atualizar foto se o contato tem thumbnail e é diferente da atual
+          if (contact && contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
+            const { error: updateError } = await supabase
+              .from('motorista')
+              .update({ foto_whatsapp: contact.thumbnail })
+              .eq('motorista_id', motorista.motorista_id);
+            
+            if (!updateError) {
+              results.photoUpdated++;
+              console.log(`Photo updated for ${motorista.nome}`);
+            } else {
+              console.error(`Failed to update photo for ${motorista.nome}:`, updateError);
+            }
+          }
+          
+          if (!contactCreated) {
+            results.successful++;
+          }
+          
+        } catch (error) {
+          console.error(`Error processing motorista ${motorista.nome}:`, error);
+          results.failed++;
+          results.errors.push({
+            motorista_id: motorista.motorista_id,
+            nome: motorista.nome || 'N/A',
+            error: error.message || 'Erro desconhecido'
+          });
+        }
+      }
+      
+      console.log(`Sync completed for company ${companyId}:`, results);
       
       return {
         statusCode: 200,
@@ -603,7 +830,7 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ 
           success: true, 
           data: results,
-          message: 'Sincronização concluída (versão simplificada)'
+          message: 'Sincronização concluída'
         })
       };
       
