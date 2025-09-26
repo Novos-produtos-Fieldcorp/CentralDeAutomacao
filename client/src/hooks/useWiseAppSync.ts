@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 // Removed direct API service - now using secure backend routes
 import { useAuth } from '@/context/AuthContext';
 import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
+import { createApiUrl } from '@/lib/api-config';
 
 interface SyncResult {
   success: boolean;
@@ -41,7 +42,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     mutationFn: async (motoristaId: number) => {
       if (!companyId) throw new Error('Company ID not found');
       
-      const response = await fetch(`/api/wiseapp/sync-motorista/${motoristaId}`, {
+      const response = await fetch(createApiUrl(`/api/wiseapp/sync-motorista/${motoristaId}`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -81,7 +82,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       if (!wiseAppToken) throw new Error('Configure um token WiseApp válido antes de sincronizar contatos');
       if (!wiseAppCompanyId) throw new Error('Account ID WiseApp não encontrado');
       
-      const response = await fetch('/api/wiseapp/sync-all-motoristas', {
+      const response = await fetch(createApiUrl('/api/wiseapp/sync-all-motoristas'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +172,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      const response = await fetch('/api/wiseapp/validate-config', {
+      const response = await fetch(createApiUrl('/api/wiseapp/validate-config'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
