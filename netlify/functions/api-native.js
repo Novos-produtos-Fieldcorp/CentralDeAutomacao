@@ -8,7 +8,8 @@ exports.handler = async (event, context) => {
   console.log('rawQuery:', event.rawQuery);
   console.log('Headers:', event.headers);
   console.log('Query:', event.queryStringParameters);
-  console.log('Function is executing!'); // Novo log
+  console.log('Body:', event.body);
+  console.log('Function is executing!');
   console.log('================================');
   
   const { httpMethod, queryStringParameters: query, headers } = event;
@@ -18,6 +19,11 @@ exports.handler = async (event, context) => {
   // Para Netlify functions, o path pode vir como parâmetro :splat
   if (event.pathParameters && event.pathParameters.splat) {
     path = '/' + event.pathParameters.splat;
+  }
+  
+  // Fix: Se o path não começa com /, adicionar
+  if (path && !path.startsWith('/')) {
+    path = '/' + path;
   }
   
   console.log('=== PATH PROCESSING ===');
@@ -73,6 +79,7 @@ exports.handler = async (event, context) => {
       })
     };
   }
+  
   
   // WiseApp contact search - more flexible matching
   console.log(`Checking contact search pattern for path: "${path}"`);
@@ -509,9 +516,25 @@ exports.handler = async (event, context) => {
     }
   }
   
-  // WiseApp sync all motoristas
+  // Debug all POST requests first
+  if (httpMethod === 'POST') {
+    console.log('=== POST REQUEST DEBUG ===');
+    console.log(`POST path: "${path}"`);
+    console.log(`Original path: "${event.path}"`);
+    console.log(`Raw URL: "${event.rawUrl}"`);
+    console.log(`Path parameters:`, event.pathParameters);
+    console.log(`Body:`, event.body);
+    console.log('=========================');
+  }
+  
+  // WiseApp sync all motoristas  
   console.log(`Checking sync-all-motoristas pattern for path: "${path}"`);
-  if (httpMethod === 'POST' && path === '/wiseapp/sync-all-motoristas') {
+  console.log(`Path includes wiseapp: ${path.includes('wiseapp')}`);
+  console.log(`Path includes sync-all-motoristas: ${path.includes('sync-all-motoristas')}`);
+  console.log(`Method is POST: ${httpMethod === 'POST'}`);
+  console.log(`Exact match check: ${path === '/wiseapp/sync-all-motoristas'}`);
+  
+  if (httpMethod === 'POST' && (path === '/wiseapp/sync-all-motoristas' || path.includes('sync-all-motoristas'))) {
     try {
       console.log(`Sync all motoristas request received`);
       
@@ -629,7 +652,7 @@ exports.handler = async (event, context) => {
         'GET /wiseapp/:companyId/labels',
         'GET /wiseapp/:companyId/contacts/search',
         'POST /wiseapp/:companyId/contacts/:contactId/labels',
-        'POST /wiseapp/sync-all-motoristas'
+        'POST /api/wiseapp/sync-all-motoristas'
       ]
     })
   };
