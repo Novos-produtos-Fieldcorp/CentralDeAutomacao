@@ -21,6 +21,11 @@ exports.handler = async (event, context) => {
     path = '/' + event.pathParameters.splat;
   }
   
+  // Fix: Se o path não começa com /, adicionar
+  if (path && !path.startsWith('/')) {
+    path = '/' + path;
+  }
+  
   console.log('=== PATH PROCESSING ===');
   console.log('Original path:', event.path);
   console.log('Path parameters:', event.pathParameters);
@@ -75,28 +80,6 @@ exports.handler = async (event, context) => {
     };
   }
   
-  // Test sync motoristas endpoint
-  if (httpMethod === 'POST' && (path.includes('/test-sync') || path === '/test-sync')) {
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: JSON.stringify({
-        success: true,
-        message: 'Test sync endpoint working!',
-        path: path,
-        method: httpMethod,
-        timestamp: new Date().toISOString(),
-        data: {
-          totalProcessed: 0,
-          successful: 0,
-          failed: 0,
-          created: 0,
-          photoUpdated: 0,
-          errors: []
-        }
-      })
-    };
-  }
   
   // WiseApp contact search - more flexible matching
   console.log(`Checking contact search pattern for path: "${path}"`);
@@ -549,8 +532,9 @@ exports.handler = async (event, context) => {
   console.log(`Path includes wiseapp: ${path.includes('wiseapp')}`);
   console.log(`Path includes sync-all-motoristas: ${path.includes('sync-all-motoristas')}`);
   console.log(`Method is POST: ${httpMethod === 'POST'}`);
+  console.log(`Exact match check: ${path === '/wiseapp/sync-all-motoristas'}`);
   
-  if (httpMethod === 'POST' && path.includes('sync-all-motoristas')) {
+  if (httpMethod === 'POST' && (path === '/wiseapp/sync-all-motoristas' || path.includes('sync-all-motoristas'))) {
     try {
       console.log(`Sync all motoristas request received`);
       

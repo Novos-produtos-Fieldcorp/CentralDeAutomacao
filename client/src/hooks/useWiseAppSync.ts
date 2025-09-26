@@ -81,7 +81,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       if (!wiseAppToken) throw new Error('Configure um token WiseApp válido antes de sincronizar contatos');
       if (!wiseAppCompanyId) throw new Error('Account ID WiseApp não encontrado');
       
-      const response = await fetch('/api/test-sync', {
+      const response = await fetch('/api/wiseapp/sync-all-motoristas', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
