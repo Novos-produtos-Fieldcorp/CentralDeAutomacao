@@ -584,7 +584,8 @@ exports.handler = async (event, context) => {
       console.log(`Starting sync-all-motoristas for company ${companyId}`);
       console.log(`Using WiseApp account ID: ${accountId}`);
       
-      // Return success response (simplified version)
+      // TODO: Implementar sincronização real igual ao Replit
+      // Por enquanto, retornar resposta que não quebra o frontend
       const results = {
         totalProcessed: 0,
         successful: 0,
@@ -594,7 +595,7 @@ exports.handler = async (event, context) => {
         errors: []
       };
       
-      console.log(`Sync completed for company ${companyId}`);
+      console.log(`Sync completed for company ${companyId} (simplified version)`);
       
       return {
         statusCode: 200,
@@ -602,7 +603,7 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ 
           success: true, 
           data: results,
-          message: 'Sincronização concluída'
+          message: 'Sincronização concluída (versão simplificada)'
         })
       };
       
