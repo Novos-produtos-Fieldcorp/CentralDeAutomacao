@@ -360,7 +360,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
           ...pessoaJuridicaData,
           id_documento_veiculo: documentoVeiculoId,
           cnpj: pessoaJuridicaData.cnpj
-            ? parseFloat(pessoaJuridicaData.cnpj)
+            ? pessoaJuridicaData.cnpj.replace(/\D/g, '')
             : null,
         };
 
