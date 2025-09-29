@@ -1030,28 +1030,25 @@ const Dashboard: React.FC = () => {
         checklistResult,
         checklistCurrentMonthResult,
       ] = await Promise.all([
-        // Optimized count queries for motoristas - 3 categorias específicas
+        // Optimized count queries using Supabase views - 3 categorias específicas
         supabase
-          .from("motorista")
+          .from("vw_agregados_completo")
           .select("motorista_id", { count: "exact", head: true })
           .eq("company_id", companyId)
-          .eq("ativo", true)
-          .ilike("funcao", "%agregado%"),
+          .eq("ativo", true),
 
         supabase
-          .from("motorista")
+          .from("vw_motoristas_completo")
           .select("motorista_id", { count: "exact", head: true })
           .eq("company_id", companyId)
-          .eq("ativo", true)
-          .ilike("funcao", "%motorista%"),
+          .eq("ativo", true),
 
-        // Contratados - buscar registros com funcao NULL (são os contratados)
+        // Contratados - buscar da view de contratados ou motoristas com status contratado
         supabase
-          .from("motorista")
+          .from("vw_contratados_completo")
           .select("motorista_id", { count: "exact", head: true })
           .eq("company_id", companyId)
-          .eq("ativo", true)
-          .is("funcao", null),
+          .eq("ativo", true),
 
         // Real hodometro data with correct fields - last 6 months
         supabase
