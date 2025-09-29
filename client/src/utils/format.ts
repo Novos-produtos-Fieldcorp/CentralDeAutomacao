@@ -104,3 +104,27 @@ export const formatPercentage = (value: number | null | undefined): string => {
   if (value === null || value === undefined) return 'N/A';
   return `${value}%`;
 };
+
+// Format CNPJ to Brazilian format (XX.XXX.XXX/XXXX-XX)
+export const formatCNPJ = (cnpj: string | number | undefined | null): string => {
+  if (!cnpj) return 'Não informado';
+  
+  // Convert to string first to handle both string and number inputs
+  const cnpjString = String(cnpj);
+  
+  // Remove any non-digit characters
+  const cleanCNPJ = cnpjString.replace(/\D/g, '');
+  
+  // Return formatted CNPJ if it has exactly 14 digits
+  if (cleanCNPJ.length === 14) {
+    return cleanCNPJ.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+  }
+  
+  // If CNPJ doesn't have 14 digits, return it as-is with a note
+  if (cleanCNPJ.length > 0) {
+    return `${cnpjString} (incompleto)`;
+  }
+  
+  // Return fallback message for empty values
+  return 'Não informado';
+};

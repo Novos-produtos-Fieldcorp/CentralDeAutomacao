@@ -8,7 +8,7 @@ import type {
   Motorista,
   DocumentoAjudante
 } from '../types/database';
-import { formatCPF, formatPhone, formatDate, formatCEP } from '../utils/format';
+import { formatCPF, formatPhone, formatDate, formatCEP, formatCNPJ } from '../utils/format';
 import DocumentoMotoristaForm from './DocumentoMotoristaForm';
 import { supabase } from '../lib/supabase';
 import EditMotoristaModal from './EditMotoristaModal';
@@ -977,7 +977,7 @@ const UnifiedMotoristaModal = ({
                                   CNPJ
                                 </dt>
                                 <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                                  {proprietarioVeiculo.pessoaJuridica.cnpj ? proprietarioVeiculo.pessoaJuridica.cnpj.toString().replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : 'Não informado'}
+                                  {formatCNPJ(proprietarioVeiculo.pessoaJuridica?.cnpj)}
                                 </dd>
                               </div>
                               <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
