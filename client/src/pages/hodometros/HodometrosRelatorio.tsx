@@ -78,9 +78,12 @@ const HodometrosRelatorio = () => {
     preco_lido: '',
     preco_informado: '',
     litro_lido: '',
-    litro_informado: ''
+    litro_informado: '',
+    foto_hodometro: '',
+    foto_bomba: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const fetchReadings = useCallback(async () => {
     try {
@@ -238,11 +241,39 @@ const HodometrosRelatorio = () => {
       preco_lido: reading.bomba_gasolina?.preco_lido || '',
       preco_informado: reading.bomba_gasolina?.preco_informado || '',
       litro_lido: reading.bomba_gasolina?.litro_lido || '',
-      litro_informado: reading.bomba_gasolina?.litro_informado || ''
+      litro_informado: reading.bomba_gasolina?.litro_informado || '',
+      foto_hodometro: reading.foto_hodometro || '',
+      foto_bomba: reading.bomba_gasolina?.foto_bomba || ''
     });
     
     // Open the edit modal
     setIsEditModalOpen(true);
+  };
+
+  const handlePhotoUpload = async (file: File, type: 'hodometro' | 'bomba') => {
+    if (!file) return;
+    
+    try {
+      setUploadingPhoto(true);
+      
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        if (type === 'hodometro') {
+          setEditFormData(prev => ({ ...prev, foto_hodometro: base64String }));
+        } else {
+          setEditFormData(prev => ({ ...prev, foto_bomba: base64String }));
+        }
+        toast.success(`Foto ${type === 'hodometro' ? 'do hodômetro' : 'da bomba'} carregada com sucesso`);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast.error('Erro ao carregar foto');
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const handleSaveEdit = async (e: React.FormEvent) => {
@@ -257,7 +288,8 @@ const HodometrosRelatorio = () => {
       const updateData: any = {
         data: editFormData.data,
         hora: editFormData.hora,
-        km_rodado: editFormData.km_rodado ? parseFloat(editFormData.km_rodado) : null
+        km_rodado: editFormData.km_rodado ? parseFloat(editFormData.km_rodado) : null,
+        foto_hodometro: editFormData.foto_hodometro || null
       };
       
       // Add vehicle-specific fields based on type
@@ -286,7 +318,8 @@ const HodometrosRelatorio = () => {
         preco_lido: editFormData.preco_lido || null,
         preco_informado: editFormData.preco_informado || null,
         litro_lido: editFormData.litro_lido || null,
-        litro_informado: editFormData.litro_informado || null
+        litro_informado: editFormData.litro_informado || null,
+        foto_bomba: editFormData.foto_bomba || null
       };
 
       // Check if bomba_gasolina record exists (using maybeSingle to handle 0 or 1 rows safely)
@@ -312,7 +345,7 @@ const HodometrosRelatorio = () => {
       } else {
         // Insert new record only if at least one field has a value
         if (bombaData.preco_lido || bombaData.preco_informado || 
-            bombaData.litro_lido || bombaData.litro_informado) {
+            bombaData.litro_lido || bombaData.litro_informado || bombaData.foto_bomba) {
           const { error: bombaError } = await supabase
             .from('bomba_gasolina')
             .insert(bombaData);
@@ -334,13 +367,14 @@ const HodometrosRelatorio = () => {
                 trip_lida: updateData.trip_lida !== undefined ? updateData.trip_lida : reading.trip_lida,
                 km_rodado: updateData.km_rodado !== undefined ? updateData.km_rodado : reading.km_rodado,
                 bateria: updateData.bateria !== undefined ? updateData.bateria : reading.bateria,
+                foto_hodometro: editFormData.foto_hodometro || null,
                 // Always update bomba_gasolina data to reflect changes (including cleared values)
                 bomba_gasolina: {
                   preco_lido: editFormData.preco_lido || null,
                   preco_informado: editFormData.preco_informado || null,
                   litro_lido: editFormData.litro_lido || null,
                   litro_informado: editFormData.litro_informado || null,
-                  foto_bomba: reading.bomba_gasolina?.foto_bomba || null
+                  foto_bomba: editFormData.foto_bomba || null
                 }
               }
             : reading
@@ -1090,6 +1124,103 @@ const HodometrosRelatorio = () => {
                     onChange={(e) => setEditFormData(prev => ({ ...prev, km_rodado: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
+                </div>
+                
+                {/* Photo Upload Sections */}
+                <div className="md:col-span-2 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-purple-700 dark:text-purple-400 mb-3 flex items-center gap-2">
+                    <Camera className="w-4 h-4" />
+                    Foto do Hodômetro
+                  </h4>
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                    {editFormData.foto_hodometro && (
+                      <div className="relative w-40 h-40 border-2 border-purple-200 dark:border-purple-700 rounded-lg overflow-hidden">
+                        <img 
+                          src={editFormData.foto_hodometro} 
+                          alt="Foto do Hodômetro"
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setEditFormData(prev => ({ ...prev, foto_hodometro: '' }))}
+                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                          title="Remover foto"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <label className="block">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handlePhotoUpload(file, 'hodometro');
+                          }}
+                          className="hidden"
+                          disabled={uploadingPhoto}
+                          data-testid="input-foto-hodometro"
+                        />
+                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                          <Camera size={16} />
+                          {editFormData.foto_hodometro ? 'Substituir Foto' : 'Adicionar Foto'}
+                        </span>
+                      </label>
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        Clique para {editFormData.foto_hodometro ? 'substituir' : 'adicionar'} a foto do hodômetro
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
+                    <Camera className="w-4 h-4" />
+                    Foto da Bomba de Gasolina
+                  </h4>
+                  <div className="flex flex-col md:flex-row gap-4 items-center">
+                    {editFormData.foto_bomba && (
+                      <div className="relative w-40 h-40 border-2 border-green-200 dark:border-green-700 rounded-lg overflow-hidden">
+                        <img 
+                          src={editFormData.foto_bomba} 
+                          alt="Foto da Bomba"
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setEditFormData(prev => ({ ...prev, foto_bomba: '' }))}
+                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                          title="Remover foto"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <label className="block">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handlePhotoUpload(file, 'bomba');
+                          }}
+                          className="hidden"
+                          disabled={uploadingPhoto}
+                          data-testid="input-foto-bomba"
+                        />
+                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                          <Camera size={16} />
+                          {editFormData.foto_bomba ? 'Substituir Foto' : 'Adicionar Foto'}
+                        </span>
+                      </label>
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        Clique para {editFormData.foto_bomba ? 'substituir' : 'adicionar'} a foto da bomba de gasolina
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
               
