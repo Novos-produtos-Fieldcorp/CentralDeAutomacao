@@ -58,6 +58,7 @@ const HodometrosRelatorio = () => {
   const [error, setError] = useState<string | null>(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [photoType, setPhotoType] = useState<'hodometro' | 'bomba'>('hodometro');
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
@@ -209,10 +210,11 @@ const HodometrosRelatorio = () => {
     return num.toLocaleString('pt-BR');
   };
 
-  const handleShowPhoto = (photo: string | null, e: React.MouseEvent) => {
+  const handleShowPhoto = (photo: string | null, e: React.MouseEvent, type: 'hodometro' | 'bomba' = 'hodometro') => {
     e.stopPropagation();
     if (photo) {
       setSelectedPhoto(photo);
+      setPhotoType(type);
       setShowPhotoModal(true);
     } else {
       toast.error('Nenhuma foto disponível');
@@ -758,19 +760,37 @@ const HodometrosRelatorio = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {reading.foto_hodometro ? (
-                        <button
-                          onClick={(e) => handleShowPhoto(reading.foto_hodometro, e)}
-                          className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                          title="Ver foto do hodômetro"
-                        >
-                          <Camera size={16} />
-                        </button>
-                      ) : (
-                        <span className="text-gray-400 dark:text-gray-600">
-                          <Camera size={16} className="inline-block opacity-50" />
-                        </span>
-                      )}
+                      <div className="flex items-center justify-center gap-2">
+                        {reading.foto_hodometro ? (
+                          <button
+                            onClick={(e) => handleShowPhoto(reading.foto_hodometro, e)}
+                            className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                            title="Ver foto do hodômetro"
+                            data-testid="button-foto-hodometro"
+                          >
+                            <Camera size={16} />
+                          </button>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-600">
+                            <Camera size={16} className="inline-block opacity-50" />
+                          </span>
+                        )}
+                        
+                        {reading.bomba_gasolina?.foto_bomba ? (
+                          <button
+                            onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e, 'bomba')}
+                            className="inline-flex items-center justify-center p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                            title="Ver foto da bomba de gasolina"
+                            data-testid="button-foto-bomba"
+                          >
+                            <Camera size={16} />
+                          </button>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-600">
+                            <Camera size={16} className="inline-block opacity-50" />
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <button
@@ -822,7 +842,7 @@ const HodometrosRelatorio = () => {
           >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Foto do Hodômetro
+                {photoType === 'hodometro' ? 'Foto do Hodômetro' : 'Foto da Bomba de Gasolina'}
               </h3>
               <button
                 onClick={() => setShowPhotoModal(false)}
@@ -834,14 +854,14 @@ const HodometrosRelatorio = () => {
             <div className="relative aspect-video">
               <img
                 src={selectedPhoto}
-                alt="Foto do Hodômetro"
+                alt={photoType === 'hodometro' ? 'Foto do Hodômetro' : 'Foto da Bomba de Gasolina'}
                 className="absolute inset-0 w-full h-full object-contain"
               />
             </div>
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
               <a
                 href={selectedPhoto}
-                download="hodometro.jpg"
+                download={photoType === 'hodometro' ? 'hodometro.jpg' : 'bomba_gasolina.jpg'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
