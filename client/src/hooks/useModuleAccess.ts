@@ -12,6 +12,7 @@ interface ModuleAccess {
   resumos: boolean;
   tags: boolean;
   comprovantes: boolean;
+  bomba: boolean;
 }
 
 export const useModuleAccess = () => {
@@ -27,6 +28,7 @@ export const useModuleAccess = () => {
     resumos: true,
     tags: true,
     comprovantes: true,
+    bomba: false,
   });
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export const useModuleAccess = () => {
         const { data: company, error: companyError } = await supabase
           .from("company")
           .select(
-            "checklist_access, motorista_access, hodometro_acsess, resumo_access, tags_access, comprovante_access",
+            "checklist_access, motorista_access, hodometro_acsess, resumo_access, tags_access, comprovante_access, bomba_access",
           )
           .eq("company_id", companyId)
           .maybeSingle();
@@ -61,6 +63,7 @@ export const useModuleAccess = () => {
             resumos: true,
             tags: true,
             comprovantes: true,
+            bomba: false,
           });
           return;
         }
@@ -75,6 +78,7 @@ export const useModuleAccess = () => {
             resumos: company.resumo_access || false,
             tags: company.tags_access || false,
             comprovantes: company.comprovante_access || false,
+            bomba: company.bomba_access || false,
           });
         } else {
           // Default to all modules enabled if company data doesn't exist
@@ -88,6 +92,7 @@ export const useModuleAccess = () => {
             resumos: true,
             tags: true,
             comprovantes: true,
+            bomba: false,
           });
         }
       } catch (error) {
@@ -107,6 +112,7 @@ export const useModuleAccess = () => {
           resumos: true,
           tags: true,
           comprovantes: true,
+          bomba: false,
         });
       } finally {
         setLoading(false);

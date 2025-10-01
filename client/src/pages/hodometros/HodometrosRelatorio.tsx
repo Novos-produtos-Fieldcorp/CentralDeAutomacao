@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save, Gauge, Fuel } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
+import { useModuleAccess } from '../../hooks/useModuleAccess';
 import toast from 'react-hot-toast';
 
 import { useDateRange } from '../../hooks/useDateRange';
@@ -51,6 +52,7 @@ interface HodometroReading {
 
 const HodometrosRelatorio = () => {
   const { companyId } = useAuth();
+  const { moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('30days', true);
@@ -662,8 +664,12 @@ const HodometrosRelatorio = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Litros</th>
+                {moduleAccess.bomba && (
+                  <>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Litros</th>
+                  </>
+                )}
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Editar</th>
@@ -727,34 +733,38 @@ const HodometrosRelatorio = () => {
                         </>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      {reading.bomba_gasolina ? (
-                        <>
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            Lido: {reading.bomba_gasolina.preco_lido || '-'}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Informado: {reading.bomba_gasolina.preco_informado || '-'}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      {reading.bomba_gasolina ? (
-                        <>
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            Lido: {reading.bomba_gasolina.litro_lido || '-'}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Informado: {reading.bomba_gasolina.litro_informado || '-'}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                      )}
-                    </td>
+                    {moduleAccess.bomba && (
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          {reading.bomba_gasolina ? (
+                            <>
+                              <div className="text-sm text-gray-900 dark:text-white">
+                                Lido: {reading.bomba_gasolina.preco_lido || '-'}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Informado: {reading.bomba_gasolina.preco_informado || '-'}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          {reading.bomba_gasolina ? (
+                            <>
+                              <div className="text-sm text-gray-900 dark:text-white">
+                                Lido: {reading.bomba_gasolina.litro_lido || '-'}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Informado: {reading.bomba_gasolina.litro_informado || '-'}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                          )}
+                        </td>
+                      </>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       {reading.trip_lida !== null ? (
                         <>
@@ -791,22 +801,26 @@ const HodometrosRelatorio = () => {
                           </span>
                         )}
                         
-                        {reading.bomba_gasolina?.foto_bomba ? (
-                          <button
-                            onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e, 'bomba')}
-                            className="inline-flex items-center justify-center p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
-                            title="Ver foto da bomba de gasolina"
-                            data-testid="button-foto-bomba"
-                          >
-                            <Fuel size={16} />
-                          </button>
-                        ) : (
-                          <span 
-                            className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50"
-                            title="Sem foto da bomba"
-                          >
-                            <Fuel size={16} />
-                          </span>
+                        {moduleAccess.bomba && (
+                          <>
+                            {reading.bomba_gasolina?.foto_bomba ? (
+                              <button
+                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e, 'bomba')}
+                                className="inline-flex items-center justify-center p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                                title="Ver foto da bomba de gasolina"
+                                data-testid="button-foto-bomba"
+                              >
+                                <Fuel size={16} />
+                              </button>
+                            ) : (
+                              <span 
+                                className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50"
+                                title="Sem foto da bomba"
+                              >
+                                <Fuel size={16} />
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
@@ -1050,10 +1064,11 @@ const HodometrosRelatorio = () => {
                 </div>
                 
                 {/* Fuel Pump Fields */}
-                <div className="md:col-span-2 border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    Dados da Bomba de Gasolina
-                  </h4>
+                {moduleAccess.bomba && (
+                  <div className="md:col-span-2 border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      Dados da Bomba de Gasolina
+                    </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1108,9 +1123,9 @@ const HodometrosRelatorio = () => {
                       />
                     </div>
                   </div>
-                </div>
+                  </div>
+                )}
                 
-                {/* Photo Upload Sections */}
                 <div className="md:col-span-2 border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
                   <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <Gauge className="w-4 h-4" />
@@ -1158,11 +1173,12 @@ const HodometrosRelatorio = () => {
                   </div>
                 </div>
 
-                <div className="md:col-span-2 border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <Fuel className="w-4 h-4" />
-                    Foto da Bomba de Gasolina
-                  </h4>
+                {moduleAccess.bomba && (
+                  <div className="md:col-span-2 border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
+                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                      <Fuel className="w-4 h-4" />
+                      Foto da Bomba de Gasolina
+                    </h4>
                   <div className="flex flex-col md:flex-row gap-4 items-center">
                     {editFormData.foto_bomba && (
                       <div className="relative w-40 h-40 border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
@@ -1203,7 +1219,8 @@ const HodometrosRelatorio = () => {
                       </p>
                     </div>
                   </div>
-                </div>
+                  </div>
+                )}
               </div>
               
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

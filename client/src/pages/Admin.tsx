@@ -15,6 +15,7 @@ interface AccessControl {
   resumo_access: boolean;
   comprovante_access: boolean;
   tags_access: boolean | null;
+  bomba_access: boolean;
   st_company: boolean;
 }
 
@@ -80,7 +81,7 @@ const Admin = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('company')
-        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, comprovante_access, tags_access, st_company')
+        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, comprovante_access, tags_access, bomba_access, st_company')
         .order('company_id', { ascending: true });
 
       if (error) throw error;
@@ -372,6 +373,9 @@ const Admin = () => {
                       Tags
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Bomba
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
                     </th>
                   </tr>
@@ -458,6 +462,18 @@ const Admin = () => {
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleToggleAccess(index, 'bomba_access')}
+                          className={`p-2 rounded-full ${
+                            control.bomba_access
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                          }`}
+                        >
+                          <CheckCircle size={20} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           control.st_company
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
@@ -470,7 +486,7 @@ const Admin = () => {
                   ))}
                   {accessControls.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <td colSpan={10} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                         Nenhuma conta configurada
                       </td>
                     </tr>

@@ -18,6 +18,7 @@ export const company = pgTable("company", {
   hodometro_acsess: boolean("hodometro_acsess").default(true),
   resumo_access: boolean("resumo_access").default(false),
   tags_access: boolean("tags_access").default(true),
+  bomba_access: boolean("bomba_access").default(false),
 
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
