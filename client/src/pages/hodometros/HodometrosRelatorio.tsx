@@ -1035,9 +1035,23 @@ const HodometrosRelatorio = () => {
                   </>
                 )}
                 
+                {/* Common Fields */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    KM Rodado
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={editFormData.km_rodado}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, km_rodado: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                
                 {/* Fuel Pump Fields */}
-                <div className="md:col-span-2 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-3">
+                <div className="md:col-span-2 border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     Dados da Bomba de Gasolina
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1096,29 +1110,15 @@ const HodometrosRelatorio = () => {
                   </div>
                 </div>
                 
-                {/* Common Fields */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    KM Rodado
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={editFormData.km_rodado}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, km_rodado: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-                
                 {/* Photo Upload Sections */}
-                <div className="md:col-span-2 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-purple-700 dark:text-purple-400 mb-3 flex items-center gap-2">
+                <div className="md:col-span-2 border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <Camera className="w-4 h-4" />
                     Foto do Hodômetro
                   </h4>
                   <div className="flex flex-col md:flex-row gap-4 items-center">
                     {editFormData.foto_hodometro && (
-                      <div className="relative w-40 h-40 border-2 border-purple-200 dark:border-purple-700 rounded-lg overflow-hidden">
+                      <div className="relative w-40 h-40 border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
                         <img 
                           src={editFormData.foto_hodometro} 
                           alt="Foto do Hodômetro"
@@ -1147,7 +1147,7 @@ const HodometrosRelatorio = () => {
                           disabled={uploadingPhoto}
                           data-testid="input-foto-hodometro"
                         />
-                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                           <Camera size={16} />
                           {editFormData.foto_hodometro ? 'Substituir Foto' : 'Adicionar Foto'}
                         </span>
@@ -1159,14 +1159,14 @@ const HodometrosRelatorio = () => {
                   </div>
                 </div>
 
-                <div className="md:col-span-2 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
+                <div className="md:col-span-2 border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                     <Camera className="w-4 h-4" />
                     Foto da Bomba de Gasolina
                   </h4>
                   <div className="flex flex-col md:flex-row gap-4 items-center">
                     {editFormData.foto_bomba && (
-                      <div className="relative w-40 h-40 border-2 border-green-200 dark:border-green-700 rounded-lg overflow-hidden">
+                      <div className="relative w-40 h-40 border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
                         <img 
                           src={editFormData.foto_bomba} 
                           alt="Foto da Bomba"
@@ -1195,7 +1195,7 @@ const HodometrosRelatorio = () => {
                           disabled={uploadingPhoto}
                           data-testid="input-foto-bomba"
                         />
-                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                           <Camera size={16} />
                           {editFormData.foto_bomba ? 'Substituir Foto' : 'Adicionar Foto'}
                         </span>
