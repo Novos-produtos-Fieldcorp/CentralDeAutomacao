@@ -805,8 +805,8 @@ const HodometrosRelatorio = () => {
                             <Camera size={16} />
                           </button>
                         ) : (
-                          <span className="text-gray-400 dark:text-gray-600">
-                            <Camera size={16} className="inline-block opacity-50" />
+                          <span className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50">
+                            <Camera size={16} />
                           </span>
                         )}
                         
@@ -820,8 +820,8 @@ const HodometrosRelatorio = () => {
                             <Camera size={16} />
                           </button>
                         ) : (
-                          <span className="text-gray-400 dark:text-gray-600">
-                            <Camera size={16} className="inline-block opacity-50" />
+                          <span className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50">
+                            <Camera size={16} />
                           </span>
                         )}
                       </div>
