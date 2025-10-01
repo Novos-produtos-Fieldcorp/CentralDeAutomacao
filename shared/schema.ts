@@ -263,6 +263,24 @@ export const hodometro = pgTable("hodometro", {
   bateria: text("bateria"),
 });
 
+// Bomba_gasolina table (real structure from database)
+export const bomba_gasolina = pgTable("bomba_gasolina", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
+  data: date("data"),
+  hora: text("hora"),
+  litro_informado: text("litro_informado"),
+  litro_lido: text("litro_lido"),
+  preco_informado: text("preco_informado"),
+  preco_lido: text("preco_lido"),
+  foto_bomba: text("foto_bomba"),
+  comparacao_leitura: boolean("comparacao_leitura"),
+  motorista_id: bigint("motorista_id", { mode: "number" }).references(() => motorista.motorista_id),
+  veiculo_id: bigint("veiculo_id", { mode: "number" }).references(() => veiculo.veiculo_id),
+  cliente_id: bigint("cliente_id", { mode: "number" }).references(() => cliente.cliente_id),
+  company_id: bigint("company_id", { mode: "number" }).references(() => company.company_id),
+  hodometro_id: bigint("hodometro_id", { mode: "number" }).references(() => hodometro.id_hodometro),
+});
+
 // Relations
 export const motoristaRelations = relations(motorista, ({ one, many }) => ({
   company: one(company, {
