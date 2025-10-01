@@ -1148,8 +1148,7 @@ const HodometrosRelatorio = () => {
                           data-testid="input-foto-hodometro"
                         />
                         <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                          <Gauge size={16} />
-                          {editFormData.foto_hodometro ? 'Substituir Foto' : 'Adicionar Foto'}
+                          {editFormData.foto_hodometro ? 'Substituir' : 'Adicionar'}
                         </span>
                       </label>
                       <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -1196,8 +1195,7 @@ const HodometrosRelatorio = () => {
                           data-testid="input-foto-bomba"
                         />
                         <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                          <Fuel size={16} />
-                          {editFormData.foto_bomba ? 'Substituir Foto' : 'Adicionar Foto'}
+                          {editFormData.foto_bomba ? 'Substituir' : 'Adicionar'}
                         </span>
                       </label>
                       <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
