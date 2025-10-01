@@ -780,14 +780,14 @@ const HodometrosRelatorio = () => {
                             title="Ver foto do hodômetro"
                             data-testid="button-foto-hodometro"
                           >
-                            <Camera size={16} />
+                            <Gauge size={16} />
                           </button>
                         ) : (
                           <span 
                             className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50"
                             title="Sem foto do hodômetro"
                           >
-                            <Camera size={16} />
+                            <Gauge size={16} />
                           </span>
                         )}
                         
@@ -798,14 +798,14 @@ const HodometrosRelatorio = () => {
                             title="Ver foto da bomba de gasolina"
                             data-testid="button-foto-bomba"
                           >
-                            <Camera size={16} />
+                            <Fuel size={16} />
                           </button>
                         ) : (
                           <span 
                             className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50"
                             title="Sem foto da bomba"
                           >
-                            <Camera size={16} />
+                            <Fuel size={16} />
                           </span>
                         )}
                       </div>
