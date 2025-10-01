@@ -73,7 +73,11 @@ const HodometrosRelatorio = () => {
     trip_lida: '',
     trip_informada: '',
     km_rodado: '',
-    bateria: ''
+    bateria: '',
+    preco_lido: '',
+    preco_informado: '',
+    litro_lido: '',
+    litro_informado: ''
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -228,7 +232,11 @@ const HodometrosRelatorio = () => {
       trip_lida: reading.trip_lida?.toString() || '',
       trip_informada: reading.trip_informada || '',
       km_rodado: reading.km_rodado?.toString() || '',
-      bateria: reading.bateria?.toString() || ''
+      bateria: reading.bateria?.toString() || '',
+      preco_lido: reading.bomba_gasolina?.preco_lido || '',
+      preco_informado: reading.bomba_gasolina?.preco_informado || '',
+      litro_lido: reading.bomba_gasolina?.litro_lido || '',
+      litro_informado: reading.bomba_gasolina?.litro_informado || ''
     });
     
     // Open the edit modal
@@ -269,6 +277,47 @@ const HodometrosRelatorio = () => {
         .eq('id_hodometro', selectedReading.id_hodometro);
         
       if (error) throw error;
+
+      // Always update or insert bomba_gasolina data (even if empty, to allow clearing values)
+      const bombaData = {
+        hodometro_id: selectedReading.id_hodometro,
+        preco_lido: editFormData.preco_lido || null,
+        preco_informado: editFormData.preco_informado || null,
+        litro_lido: editFormData.litro_lido || null,
+        litro_informado: editFormData.litro_informado || null
+      };
+
+      // Check if bomba_gasolina record exists (using maybeSingle to handle 0 or 1 rows safely)
+      const { data: existingBomba, error: checkError } = await supabase
+        .from('bomba_gasolina')
+        .select('id')
+        .eq('hodometro_id', selectedReading.id_hodometro)
+        .maybeSingle();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 is "no rows returned" which is fine
+        throw checkError;
+      }
+
+      if (existingBomba) {
+        // Update existing record
+        const { error: bombaError } = await supabase
+          .from('bomba_gasolina')
+          .update(bombaData)
+          .eq('hodometro_id', selectedReading.id_hodometro);
+        
+        if (bombaError) throw bombaError;
+      } else {
+        // Insert new record only if at least one field has a value
+        if (bombaData.preco_lido || bombaData.preco_informado || 
+            bombaData.litro_lido || bombaData.litro_informado) {
+          const { error: bombaError } = await supabase
+            .from('bomba_gasolina')
+            .insert(bombaData);
+          
+          if (bombaError) throw bombaError;
+        }
+      }
       
       // Update the local state
       setReadings(prevReadings => 
@@ -282,7 +331,15 @@ const HodometrosRelatorio = () => {
                 hod_lido: updateData.hod_lido !== undefined ? updateData.hod_lido : reading.hod_lido,
                 trip_lida: updateData.trip_lida !== undefined ? updateData.trip_lida : reading.trip_lida,
                 km_rodado: updateData.km_rodado !== undefined ? updateData.km_rodado : reading.km_rodado,
-                bateria: updateData.bateria !== undefined ? updateData.bateria : reading.bateria
+                bateria: updateData.bateria !== undefined ? updateData.bateria : reading.bateria,
+                // Always update bomba_gasolina data to reflect changes (including cleared values)
+                bomba_gasolina: {
+                  preco_lido: editFormData.preco_lido || null,
+                  preco_informado: editFormData.preco_informado || null,
+                  litro_lido: editFormData.litro_lido || null,
+                  litro_informado: editFormData.litro_informado || null,
+                  foto_bomba: reading.bomba_gasolina?.foto_bomba || null
+                }
               }
             : reading
         )
@@ -939,6 +996,67 @@ const HodometrosRelatorio = () => {
                     </div>
                   </>
                 )}
+                
+                {/* Fuel Pump Fields */}
+                <div className="md:col-span-2 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-3">
+                    Dados da Bomba de Gasolina
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Preço Lido
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.preco_lido}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, preco_lido: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        placeholder="Ex: R$ 5.89"
+                        data-testid="input-preco-lido"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Preço Informado
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.preco_informado}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, preco_informado: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        placeholder="Ex: R$ 5.90"
+                        data-testid="input-preco-informado"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Litros Lido
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.litro_lido}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, litro_lido: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        placeholder="Ex: 45.5"
+                        data-testid="input-litro-lido"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Litros Informado
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.litro_informado}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, litro_informado: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        placeholder="Ex: 45.0"
+                        data-testid="input-litro-informado"
+                      />
+                    </div>
+                  </div>
+                </div>
                 
                 {/* Common Fields */}
                 <div>
