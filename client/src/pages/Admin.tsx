@@ -15,7 +15,7 @@ interface AccessControl {
   resumo_access: boolean;
   comprovante_access: boolean;
   tags_access: boolean | null;
-  bomba_access: boolean;
+  bomba_gasolina_access: boolean;
   st_company: boolean;
 }
 
@@ -81,7 +81,7 @@ const Admin = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('company')
-        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, comprovante_access, tags_access, bomba_access, st_company')
+        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, comprovante_access, tags_access, bomba_gasolina_access, st_company')
         .order('company_id', { ascending: true });
 
       if (error) throw error;
@@ -463,9 +463,9 @@ const Admin = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <button
-                          onClick={() => handleToggleAccess(index, 'bomba_access')}
+                          onClick={() => handleToggleAccess(index, 'bomba_gasolina_access')}
                           className={`p-2 rounded-full ${
-                            control.bomba_access
+                            control.bomba_gasolina_access
                               ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                               : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                           }`}
