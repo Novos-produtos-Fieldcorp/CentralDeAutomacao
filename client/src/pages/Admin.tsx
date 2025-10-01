@@ -364,6 +364,9 @@ const Admin = () => {
                       Hodômetro
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Bomba
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Resumos em Grupo
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -371,9 +374,6 @@ const Admin = () => {
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Tags
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Bomba
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
@@ -427,6 +427,18 @@ const Admin = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <button
+                          onClick={() => handleToggleAccess(index, 'bomba_gasolina_access')}
+                          className={`p-2 rounded-full ${
+                            control.bomba_gasolina_access
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                          }`}
+                        >
+                          <CheckCircle size={20} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
                           onClick={() => handleToggleAccess(index, 'resumo_access')}
                           className={`p-2 rounded-full ${
                             control.resumo_access
@@ -454,18 +466,6 @@ const Admin = () => {
                           onClick={() => handleToggleAccess(index, 'tags_access')}
                           className={`p-2 rounded-full ${
                             control.tags_access === true
-                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
-                          }`}
-                        >
-                          <CheckCircle size={20} />
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <button
-                          onClick={() => handleToggleAccess(index, 'bomba_gasolina_access')}
-                          className={`p-2 rounded-full ${
-                            control.bomba_gasolina_access
                               ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                               : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                           }`}
