@@ -40,6 +40,13 @@ interface HodometroReading {
     cliente_id: number;
     nome: string;
   } | null;
+  bomba_gasolina?: {
+    preco_lido: string | null;
+    preco_informado: string | null;
+    litro_lido: string | null;
+    litro_informado: string | null;
+    foto_bomba: string | null;
+  } | null;
 }
 
 const HodometrosRelatorio = () => {
@@ -112,6 +119,13 @@ const HodometrosRelatorio = () => {
           cliente:cliente_id (
             cliente_id,
             nome
+          ),
+          bomba_gasolina!bomba_gasolina_hodometro_id_fkey (
+            preco_lido,
+            preco_informado,
+            litro_lido,
+            litro_informado,
+            foto_bomba
           )
         `)
         .eq('company_id', companyId)
@@ -136,7 +150,10 @@ const HodometrosRelatorio = () => {
       const formattedReadings = data.map((reading: any) => ({
         ...reading,
         veiculo: Array.isArray(reading.veiculo) ? reading.veiculo[0] : reading.veiculo,
-        motorista: Array.isArray(reading.motorista) ? reading.motorista[0] : reading.motorista
+        motorista: Array.isArray(reading.motorista) ? reading.motorista[0] : reading.motorista,
+        bomba_gasolina: Array.isArray(reading.bomba_gasolina) && reading.bomba_gasolina.length > 0
+          ? reading.bomba_gasolina[0]
+          : null
       })) as HodometroReading[];
 
       setReadings(formattedReadings);
@@ -552,6 +569,8 @@ const HodometrosRelatorio = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Litros</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Editar</th>
@@ -616,6 +635,56 @@ const HodometrosRelatorio = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
+                      {reading.bomba_gasolina ? (
+                        <>
+                          <div className="flex items-center justify-end gap-1">
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              Lido: {reading.bomba_gasolina.preco_lido || '-'}
+                            </div>
+                            {reading.bomba_gasolina.foto_bomba && (
+                              <button
+                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e)}
+                                className="inline-flex items-center justify-center p-1 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                title="Ver foto do preço"
+                              >
+                                <Camera size={12} />
+                              </button>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Informado: {reading.bomba_gasolina.preco_informado || '-'}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      {reading.bomba_gasolina ? (
+                        <>
+                          <div className="flex items-center justify-end gap-1">
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              Lido: {reading.bomba_gasolina.litro_lido || '-'}
+                            </div>
+                            {reading.bomba_gasolina.foto_bomba && (
+                              <button
+                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e)}
+                                className="inline-flex items-center justify-center p-1 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                title="Ver foto dos litros"
+                              >
+                                <Camera size={12} />
+                              </button>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Informado: {reading.bomba_gasolina.litro_informado || '-'}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
                       {reading.trip_lida !== null ? (
                         <>
                           <div className="text-sm text-gray-900 dark:text-white">
@@ -660,7 +729,7 @@ const HodometrosRelatorio = () => {
               })}
               {paginatedReadings.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     {filteredReadings.length === 0 
                       ? "Nenhuma leitura encontrada para o período selecionado" 
                       : "Carregando..."}
