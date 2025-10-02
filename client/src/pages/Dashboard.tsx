@@ -595,28 +595,6 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
         </div>
       </div>
 
-      {/* Legend for contratados por cliente (top 3) */}
-      {(() => {
-        const data = stats.clientes.pieData || [];
-        const isContratados =
-          data.length > 0 &&
-          data.every((d) => d.name !== "Ativos" && d.name !== "Desativos");
-        if (!isContratados) return null;
-        return (
-          <div className="mt-1 space-y-1">
-            {data.slice(0, 3).map((d, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400"
-              >
-                <span className="truncate max-w-[60%]">{d.name}</span>
-                <span className="font-medium">{d.value} contratados</span>
-              </div>
-            ))}
-          </div>
-        );
-      })()}
-
       {/* Growth and Recent Clients */}
       <div className="mb-2">
         <div className="flex items-center gap-2 mb-2">
@@ -1041,6 +1019,41 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (companyId) {
+      // Limpa o cache quando muda de conta
+      setStats({
+        agregados: 0,
+        contratados: 0,
+        outros: 0,
+        vagasAbertas: 0,
+        vagasPreenchidas: 0,
+        vagasVencidas: 0,
+        taxaPreenchimento: 0,
+        contratacaoPieData: [],
+        hodometroData: [],
+        clientes: {
+          total: 0,
+          ativos: 0,
+          desativos: 0,
+          novosNoMes: 0,
+          crescimento: 0,
+          recentClientes: [],
+          pieData: [],
+        },
+        veiculos: {
+          total: 0,
+          typeData: [],
+        },
+        comprovantes: {
+          totalMensal: 0,
+          monthlyData: [],
+        },
+        checklists: {
+          totalMensal: 0,
+          monthlyData: [],
+          typeData: [],
+        },
+        recentActivity: [],
+      });
       fetchDashboardData();
     } else {
       setStatsLoading(false);
@@ -1139,12 +1152,14 @@ const Dashboard: React.FC = () => {
           .order("cliente_id", { ascending: false })
           .limit(5),
 
+        // Motoristas contratados por cliente (status contratado) - só da company atual
         supabase
           .from("motorista")
           .select("cliente_id")
           .eq("company_id", companyId)
           .eq("ativo", true)
-          .eq("st_cadastro", "contratado"),
+          .eq("st_cadastro", "contratado")
+          .not("cliente_id", "is", null),
 
         supabase
           .from("veiculo")
@@ -1345,14 +1360,19 @@ const Dashboard: React.FC = () => {
       const clientesList: Array<{ cliente_id: number; nome: string }> =
         (clientesAllResult.data as any[]) || [];
       const clientesMap = new Map<number, string>();
-      clientesList.forEach((c) => clientesMap.set(c.cliente_id, c.nome));
+      const clientesIdsDaCompany = new Set<number>();
+      clientesList.forEach((c) => {
+        clientesMap.set(c.cliente_id, c.nome);
+        clientesIdsDaCompany.add(c.cliente_id);
+      });
 
       const contratadosPorClienteRows: Array<{ cliente_id: number | null }> =
         (contratadosPorClienteResult.data as any[]) || [];
 
       const contratadosCounts = new Map<number, number>();
       contratadosPorClienteRows.forEach((row) => {
-        if (row.cliente_id && clientesMap.has(row.cliente_id)) {
+        // Como a query já filtra por company_id, só conta se o cliente existe na lista
+        if (row.cliente_id && clientesIdsDaCompany.has(row.cliente_id)) {
           contratadosCounts.set(
             row.cliente_id,
             (contratadosCounts.get(row.cliente_id) || 0) + 1,
