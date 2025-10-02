@@ -1090,13 +1090,12 @@ const Dashboard: React.FC = () => {
           .order("cliente_id", { ascending: false })
           .limit(5),
 
-        // Motoristas contratados por cliente (funcao = null => contratados)
         supabase
           .from("motorista")
           .select("cliente_id")
           .eq("company_id", companyId)
           .eq("ativo", true)
-          .is("funcao", null),
+          .eq("st_cadastro", "contratado"),
 
         // Count vehicles by type (optimized query)
         supabase
