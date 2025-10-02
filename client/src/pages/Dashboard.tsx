@@ -595,6 +595,28 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
         </div>
       </div>
 
+      {/* Legend for contratados por cliente (top 3) */}
+      {(() => {
+        const data = stats.clientes.pieData || [];
+        const isContratados =
+          data.length > 0 &&
+          data.every((d) => d.name !== "Ativos" && d.name !== "Desativos");
+        if (!isContratados) return null;
+        return (
+          <div className="mt-1 space-y-1">
+            {data.slice(0, 3).map((d, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400"
+              >
+                <span className="truncate max-w-[60%]">{d.name}</span>
+                <span className="font-medium">{d.value} contratados</span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       {/* Growth and Recent Clients */}
       <div className="mb-2">
         <div className="flex items-center gap-2 mb-2">
@@ -1097,12 +1119,10 @@ const Dashboard: React.FC = () => {
           .eq("ativo", true)
           .eq("st_cadastro", "contratado"),
 
-        // Count vehicles by type (optimized query)
         supabase
           .from("veiculo")
-          .select("tipo", { count: "exact" })
-          .eq("company_id", companyId)
-          .limit(1000), // Limit for performance
+          .select("tipo, tipologia")
+          .eq("company_id", companyId),
 
         // Real vagas data with status
         supabase
