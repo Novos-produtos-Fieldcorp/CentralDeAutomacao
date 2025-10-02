@@ -1016,8 +1016,10 @@ const Dashboard: React.FC = () => {
         contratadosResult,
         hodometroResult,
         clientesResult,
+        clientesAllResult,
         clientesAtivosResult,
         clientesRecentResult,
+        contratadosPorClienteResult,
         veiculosResult,
         vagasResult,
         statusVagasResult,
@@ -1067,6 +1069,12 @@ const Dashboard: React.FC = () => {
           .select("cliente_id", { count: "exact", head: true })
           .eq("company_id", companyId),
 
+        // All clients id/name for mapping
+        supabase
+          .from("cliente")
+          .select("cliente_id, nome")
+          .eq("company_id", companyId),
+
         // Count active clients
         supabase
           .from("cliente")
@@ -1081,6 +1089,14 @@ const Dashboard: React.FC = () => {
           .eq("company_id", companyId)
           .order("cliente_id", { ascending: false })
           .limit(5),
+
+        // Motoristas contratados por cliente (funcao = null => contratados)
+        supabase
+          .from("motorista")
+          .select("cliente_id")
+          .eq("company_id", companyId)
+          .eq("ativo", true)
+          .is("funcao", null),
 
         // Count vehicles by type (optimized query)
         supabase
@@ -1180,6 +1196,10 @@ const Dashboard: React.FC = () => {
         console.warn("Erro hodômetros:", hodometroResult.error.message);
       if (clientesResult.error)
         console.warn("Erro clientes:", clientesResult.error.message);
+      if (clientesAllResult.error)
+        console.warn("Erro clientesAll:", clientesAllResult.error.message);
+      if (contratadosPorClienteResult.error)
+        console.warn("Erro contratados por cliente:", contratadosPorClienteResult.error.message);
       if (veiculosResult.error)
         console.warn("Erro veículos:", veiculosResult.error.message);
       
@@ -1275,11 +1295,45 @@ const Dashboard: React.FC = () => {
         created_at: new Date().toISOString(), // Using fallback since created_at doesn't exist
       }));
 
-      // Pie chart data for clientes
-      const clientesPieData = [
-        { name: "Ativos", value: clientesAtivos, color: "#10b981" },
-        { name: "Desativos", value: clientesDesativos, color: "#ef4444" },
-      ].filter((item) => item.value > 0);
+      // Build contratados por cliente distribution for Clientes pie chart
+      const clientesList: Array<{ cliente_id: number; nome: string }> =
+        (clientesAllResult.data as any[]) || [];
+      const clientesMap = new Map<number, string>();
+      clientesList.forEach((c) => clientesMap.set(c.cliente_id, c.nome));
+
+      const contratadosPorClienteRows: Array<{ cliente_id: number | null }> =
+        (contratadosPorClienteResult.data as any[]) || [];
+
+      const contratadosCounts = new Map<number, number>();
+      contratadosPorClienteRows.forEach((row) => {
+        if (row.cliente_id && clientesMap.has(row.cliente_id)) {
+          contratadosCounts.set(
+            row.cliente_id,
+            (contratadosCounts.get(row.cliente_id) || 0) + 1,
+          );
+        }
+      });
+
+      let clientesPieData: { name: string; value: number; color: string }[] = [];
+      if (contratadosCounts.size > 0) {
+        const palette = ["#0ea5e9", "#22c55e", "#f59e0b", "#8b5cf6", "#ef4444"];
+        const sorted = Array.from(contratadosCounts.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5);
+        clientesPieData = sorted.map(([id, count], index) => ({
+          name: clientesMap.get(id) || `Cliente ${id}`,
+          value: count,
+          color: palette[index % palette.length],
+        }));
+      }
+
+      // Fallback to ativos vs desativos when there is no contratados distribution
+      if (clientesPieData.length === 0) {
+        clientesPieData = [
+          { name: "Ativos", value: clientesAtivos, color: "#10b981" },
+          { name: "Desativos", value: clientesDesativos, color: "#ef4444" },
+        ].filter((item) => item.value > 0);
+      }
 
       // Process real veiculos data with proper type classification
       const veiculos = veiculosResult.data || [];
