@@ -645,19 +645,16 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
         </div>
       </div>
 
-      {/* Recent Clients */}
-      <div className="space-y-1 max-h-16 overflow-y-auto">
-        {!stats.clientes.recentClientes ||
-        stats.clientes.recentClientes.length === 0 ? (
-          <div className="text-center py-1">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Nenhum cliente recente
-            </p>
-          </div>
-        ) : (
-          (stats.clientes.recentClientes || [])
-            .slice(0, 2)
-            .map((cliente, index) => (
+      {/* All Clients with Contracted Count */}
+      <div className="space-y-1 max-h-20 overflow-y-auto">
+        {(() => {
+          const data = stats.clientes.pieData || [];
+          const isContratados =
+            data.length > 0 &&
+            data.every((d) => d.name !== "Ativos" && d.name !== "Desativos");
+          
+          if (isContratados) {
+            return data.map((cliente, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-1 bg-gray-50 dark:bg-gray-700/50 rounded"
@@ -665,15 +662,45 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
                 <div className="flex items-center gap-1">
                   <Building2 className="w-2 h-2 text-teal-600 dark:text-teal-400" />
                   <span className="text-xs font-medium text-gray-900 dark:text-white truncate">
-                    {cliente.nome}
+                    {cliente.name}
                   </span>
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  Recente
+                <div className="text-xs text-teal-600 dark:text-teal-400 font-medium">
+                  {cliente.value} contratados
                 </div>
               </div>
-            ))
-        )}
+            ));
+          } else {
+            // Fallback to recent clients when showing ativos/desativos
+            return !stats.clientes.recentClientes ||
+            stats.clientes.recentClientes.length === 0 ? (
+              <div className="text-center py-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Nenhum cliente recente
+                </p>
+              </div>
+            ) : (
+              (stats.clientes.recentClientes || [])
+                .slice(0, 2)
+                .map((cliente, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-1 bg-gray-50 dark:bg-gray-700/50 rounded"
+                  >
+                    <div className="flex items-center gap-1">
+                      <Building2 className="w-2 h-2 text-teal-600 dark:text-teal-400" />
+                      <span className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                        {cliente.nome}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Recente
+                    </div>
+                  </div>
+                ))
+            );
+          }
+        })()}
       </div>
     </div>
   );
