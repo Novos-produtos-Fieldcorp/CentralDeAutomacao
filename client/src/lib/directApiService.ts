@@ -391,9 +391,9 @@ export const searchWiseAppContact = async (accountId: string, token: string, pho
 
   const primaryUrl = createApiUrl(`wiseapp/${companyId}/contacts/search?phone=${phone}`);
   const fallbackUrls = [
-    createApiUrl(`wiseapp/2/contacts/search?phone=${phone}`), // Fallback para companyId 2
-    createApiUrl(`wiseapp/1/contacts/search?phone=${phone}`)  // Fallback para companyId 1
-  ].filter(url => url !== primaryUrl); // Remove duplicatas
+    createApiUrl(`wiseapp/2/contacts/search?phone=${phone}`),
+    createApiUrl(`wiseapp/1/contacts/search?phone=${phone}`)
+  ].filter(url => url !== primaryUrl);
   
   console.log(`Buscando contato por telefone ${phone} via backend para:`, primaryUrl);
   
@@ -401,7 +401,7 @@ export const searchWiseAppContact = async (accountId: string, token: string, pho
     return await robustWiseAppFetch(primaryUrl, {
       method: 'GET',
       cacheKey: `wiseapp-contact-${accountId}-${phone}`,
-      cacheTtl: 2 * 60 * 1000, // 2 minutos de cache para contatos
+      cacheTtl: 2 * 60 * 1000,
       fallbackUrls,
       onRetry: (attempt, error) => {
         console.log(`[WiseApp Contact] Tentativa ${attempt} falhou para telefone ${phone}: ${error.message}`);
