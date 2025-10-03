@@ -63,6 +63,16 @@ serve(async (req) => {
       return await handleClienteRoutes(req, path, method, supabase)
     }
 
+    // Vagas routes
+    if (path.startsWith('/vagas')) {
+      return await handleVagasRoutes(req, path, method, supabase)
+    }
+
+    // Inboxes routes (WiseApp)
+    if (path.startsWith('/v1/accounts')) {
+      return await handleWiseAppProxyRoutes(req, path, method, supabase)
+    }
+
     // Default 404
     return new Response(JSON.stringify({
       error: 'Endpoint não encontrado',
@@ -94,17 +104,30 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     const match = path.match(/^\/wiseapp\/(\d+)\/token$/)
     const companyId = match![1]
     
+    console.log('Debug: Tentando acessar wiseapp_acesso para company_id:', companyId);
+    
     const { data, error } = await supabase
       .from('wiseapp_acesso')
-      .select('access_token_wiseapp')
-      .eq('company_id', companyId)
+      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+      .not('access_token_wiseapp', 'is', null)
       .limit(1)
-      .single()
-
+      .single();
+    
     if (error || !data) {
       return new Response(JSON.stringify({
-        error: "Token WiseApp não encontrado",
-        message: "Configure o token WiseApp nas configurações da empresa"
+        error: "Token WiseApp não encontrado para esta empresa",
+        message: "Configure o token WiseApp nas configurações da empresa",
+        details: error?.message || "Nenhum registro encontrado"
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    
+    if (!data.access_token_wiseapp) {
+      return new Response(JSON.stringify({
+        error: "Token WiseApp não configurado para esta empresa",
+        message: "O token está vazio ou null"
       }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -123,7 +146,7 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     
     const { data: tokenData, error: tokenError } = await supabase
       .from('wiseapp_acesso')
-      .select('access_token_wiseapp, account_id')
+      .select('access_token_wiseapp, id_conta_wiseapp')
       .eq('company_id', companyId)
       .limit(1)
       .single()
@@ -137,7 +160,7 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       })
     }
 
-    const { access_token_wiseapp: token, account_id: accountId } = tokenData
+    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
 
     // Fetch labels from WiseApp API
     const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`
@@ -189,7 +212,7 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     
     const { data: tokenData, error: tokenError } = await supabase
       .from('wiseapp_acesso')
-      .select('access_token_wiseapp, account_id')
+      .select('access_token_wiseapp, id_conta_wiseapp')
       .eq('company_id', companyId)
       .limit(1)
       .single()
@@ -203,7 +226,7 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       })
     }
 
-    const { access_token_wiseapp: token, account_id: accountId } = tokenData
+    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
     const formattedPhone = `55${phone}`
     const wiseappUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${formattedPhone}`
 
@@ -244,7 +267,7 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     
     const { data: tokenData, error: tokenError } = await supabase
       .from('wiseapp_acesso')
-      .select('access_token_wiseapp, account_id')
+      .select('access_token_wiseapp, id_conta_wiseapp')
       .eq('company_id', companyId)
       .limit(1)
       .single()
@@ -258,7 +281,7 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       })
     }
 
-    const { access_token_wiseapp: token, account_id: accountId } = tokenData
+    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
     const requestBody = await req.json()
     
     let labelsToApply: string[] = []
@@ -536,4 +559,120 @@ async function handleClienteRoutes(req: Request, path: string, method: string, s
     status: 404,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   })
+}
+
+// Vagas routes handler
+async function handleVagasRoutes(req: Request, path: string, method: string, supabase: any) {
+  const companyId = parseInt(req.headers.get('company-id') || '1')
+
+  // Dashboard routes
+  if (path.match(/^\/vagas\/dashboard\/(\d+)$/) && method === 'GET') {
+    const match = path.match(/^\/vagas\/dashboard\/(\d+)$/)
+    const companyId = parseInt(match![1])
+    
+    // Retornar dados básicos do dashboard de vagas
+    const { data, error } = await supabase
+      .from('vaga')
+      .select('*')
+      .eq('company_id', companyId)
+      .limit(100)
+
+    if (error) {
+      return new Response(JSON.stringify({
+        error: 'Erro ao buscar vagas',
+        details: error.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    return new Response(JSON.stringify({
+      data: data || [],
+      total: data?.length || 0,
+      company_id: companyId
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+  }
+
+  return new Response(JSON.stringify({
+    error: 'Endpoint Vagas não encontrado',
+    path,
+    method
+  }), {
+    status: 404,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  })
+}
+
+// WiseApp Proxy routes handler
+async function handleWiseAppProxyRoutes(req: Request, path: string, method: string, supabase: any) {
+  // Extract account ID from path like /v1/accounts/1/inboxes
+  const accountMatch = path.match(/^\/v1\/accounts\/(\d+)\/(.+)$/)
+  
+  if (!accountMatch) {
+    return new Response(JSON.stringify({
+      error: 'Formato de URL inválido',
+      expected: '/v1/accounts/{accountId}/{endpoint}',
+      received: path
+    }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+  }
+
+  const accountId = accountMatch[1]
+  const endpoint = accountMatch[2]
+  
+  console.log(`WiseApp Proxy: ${method} /v1/accounts/${accountId}/${endpoint}`)
+
+  // Get token from headers or find by account ID
+  const token = req.headers.get('api_access_token') || req.headers.get('wiseapp-token')
+  
+  if (!token) {
+    return new Response(JSON.stringify({
+      error: 'Token de acesso não fornecido',
+      message: 'Forneça um token válido no header api_access_token ou wiseapp-token'
+    }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+  }
+
+  // Proxy to WiseApp API
+  const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/${endpoint}`
+  
+  try {
+    const requestBody = method !== 'GET' ? await req.text() : undefined
+    
+    const response = await fetch(wiseAppUrl, {
+      method: method,
+      headers: {
+        'api_access_token': token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: requestBody
+    })
+
+    const responseData = await response.text()
+    
+    return new Response(responseData, {
+      status: response.status,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': response.headers.get('Content-Type') || 'application/json'
+      }
+    })
+
+  } catch (error) {
+    return new Response(JSON.stringify({
+      error: 'Erro ao acessar WiseApp API',
+      details: error.message
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+  }
 }
