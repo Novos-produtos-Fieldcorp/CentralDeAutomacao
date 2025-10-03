@@ -29,7 +29,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
 import { useWiseAppSync } from '../../hooks/useWiseAppSync';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { API_BASE_URL } from '@/lib/api-config';
+import { API_BASE_URL, createApiUrl } from '@/lib/api-config';
 import FilterTags from '../../components/FilterTags';
 
 // Função auxiliar para converter ViewMotorista para Motorista
@@ -187,7 +187,7 @@ const MotoristasLista = () => {
 
     try {
       // 1. Buscar todas as tags existentes
-      const labelsResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/labels`, {
+      const labelsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/labels`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -228,7 +228,7 @@ const MotoristasLista = () => {
       const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
 
       // Buscando contato por telefone
-      const searchContactResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/contacts/search?phone=${formattedPhone}`, {
+      const searchContactResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/search?phone=${formattedPhone}`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -257,7 +257,7 @@ const MotoristasLista = () => {
 
       // 4. Aplicar a tag existente ao contato específico
       // Applying tag to contact
-      const applyTagResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/contacts/${contactId}/labels`, {
+      const applyTagResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -298,7 +298,7 @@ const MotoristasLista = () => {
       if (!tagData) return;
 
       // Buscar labels no WiseApp via proxy
-      const labelsResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/labels`, {
+      const labelsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/labels`), {
         headers: {
           'wiseapp-account-id': accountId || '',
           'wiseapp-token': wiseAppToken || ''
@@ -311,7 +311,7 @@ const MotoristasLista = () => {
 
         if (wiseAppLabel) {
           // Remover label do WiseApp via proxy
-          const deleteResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/labels/${wiseAppLabel.id}`, {
+          const deleteResponse = await fetch(createApiUrl(`wiseapp/${companyId}/labels/${wiseAppLabel.id}`), {
             method: 'DELETE',
             headers: {
               'wiseapp-account-id': accountId || '',

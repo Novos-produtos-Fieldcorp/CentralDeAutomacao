@@ -1,6 +1,6 @@
 // Serviço para chamadas diretas sem backend Express
 import { supabase } from './supabase';
-import { API_BASE_URL } from './api-config';
+import { API_BASE_URL, createApiUrl } from './api-config';
 import { robustWiseAppFetch, clearCache } from './robustFetch';
 
 // Serviço para buscar empresa por account_id
@@ -311,10 +311,10 @@ export const getWiseAppLabels = async (accountId: string, token: string, company
     }
   }
 
-  const primaryUrl = `${API_BASE_URL}/wiseapp/${finalCompanyId}/labels`;
+  const primaryUrl = createApiUrl(`wiseapp/${finalCompanyId}/labels`);
   const fallbackUrls = [
-    `${API_BASE_URL}/wiseapp/2/labels`, // Fallback para companyId 2
-    `${API_BASE_URL}/wiseapp/1/labels`  // Fallback para companyId 1
+    createApiUrl(`wiseapp/2/labels`), // Fallback para companyId 2
+    createApiUrl(`wiseapp/1/labels`)  // Fallback para companyId 1
   ].filter(url => url !== primaryUrl); // Remove duplicatas
   
   // Synchronizing tags with WiseApp
@@ -440,7 +440,7 @@ export const applyWiseAppContactLabels = async (accountId: string, token: string
     throw new Error('AccountId, token e contactId são obrigatórios para aplicar labels.');
   }
 
-  const url = `${API_BASE_URL}/wiseapp/${companyId}/contacts/${contactId}/labels`;
+  const url = createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`);
   
   console.log(`Aplicando labels [${labelNames.join(', ')}] ao contato ${contactId}`);
   
