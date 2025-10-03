@@ -108,6 +108,15 @@ function setCachedData(key: string, data: any, ttl: number): void {
     }
   }
   
+  if (key.includes('wiseapp') && !key.includes('/api/')) {
+    console.warn('URL sem /api detectada, limpando cache:', key);
+    memoryCache.delete(key);
+    const persistentCache = getPersistentCache();
+    delete persistentCache[key];
+    setPersistentCache(persistentCache);
+    return;
+  }
+  
   console.log(`[RobustFetch] Cached data for key: ${key}, TTL: ${ttl}ms`);
 }
 
@@ -326,7 +335,14 @@ export function clearCache(keyPattern?: string): void {
   console.log(`[RobustFetch] Removidas ${totalRemoved} entradas do cache que continham: ${keyPattern}`);
 }
 
-// Função utilitária para verificar conectividade
+export function clearAllCache() {
+  memoryCache.clear();
+  
+  localStorage.removeItem('robustFetchCache');
+  
+  console.log('Cache limpo completamente');
+}
+
 export async function checkConnectivity(url = '/api/health'): Promise<boolean> {
   try {
     const response = await fetchWithTimeout(url, { method: 'HEAD' }, 5000);
