@@ -331,7 +331,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             Accept: "application/json",
           },
         });
-        const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
+        const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
         
         // Verificar se há erro de autenticação
         if (response.data?.error === "WiseApp authentication failed") {
@@ -415,7 +415,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         },
       });
 
-      const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
+      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
       if (response.data?.payload) {
         setInboxes(response.data.payload);
 
