@@ -14,30 +14,31 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Parse URL to get path and method
+  const url = new URL(req.url)
+  const path = url.pathname.replace('/api', '') // Remove /api prefix
+  const method = req.method
+
+  console.log(`[${method}] ${path}`)
+
+  // Health check (no auth required)
+  if (path === '/health' && method === 'GET') {
+    return new Response(JSON.stringify({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      environment: 'supabase-edge',
+      version: '2.0.0'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+  }
+
   try {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Parse URL to get path and method
-    const url = new URL(req.url)
-    const path = url.pathname.replace('/api', '') // Remove /api prefix
-    const method = req.method
-
-    console.log(`[${method}] ${path}`)
-
-    // Health check
-    if (path === '/health' && method === 'GET') {
-      return new Response(JSON.stringify({
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        environment: 'supabase-edge',
-        version: '2.0.0'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
 
     // WiseApp routes
     if (path.startsWith('/wiseapp/')) {
