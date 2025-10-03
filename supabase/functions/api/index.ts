@@ -148,8 +148,8 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     
     const { data: tokenData, error: tokenError } = await supabase
       .from('wiseapp_acesso')
-      .select('access_token_wiseapp, id_conta_wiseapp')
-      .eq('company_id', companyId)
+      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+      .not('access_token_wiseapp', 'is', null)
       .limit(1)
       .single()
 
@@ -214,8 +214,8 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     
     const { data: tokenData, error: tokenError } = await supabase
       .from('wiseapp_acesso')
-      .select('access_token_wiseapp, id_conta_wiseapp')
-      .eq('company_id', companyId)
+      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+      .not('access_token_wiseapp', 'is', null)
       .limit(1)
       .single()
 
@@ -269,8 +269,8 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     
     const { data: tokenData, error: tokenError } = await supabase
       .from('wiseapp_acesso')
-      .select('access_token_wiseapp, id_conta_wiseapp')
-      .eq('company_id', companyId)
+      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+      .not('access_token_wiseapp', 'is', null)
       .limit(1)
       .single()
 
