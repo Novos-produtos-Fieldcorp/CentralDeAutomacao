@@ -98,7 +98,10 @@ serve(async (req) => {
 
 // WiseApp routes handler
 async function handleWiseAppRoutes(req: Request, path: string, method: string, supabase: any) {
-  // Get WiseApp token by company ID
+  if (method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   if (path.match(/^\/wiseapp\/(\d+)\/token$/) && method === 'GET') {
     const match = path.match(/^\/wiseapp\/(\d+)\/token$/)
     const companyId = match![1]
@@ -349,6 +352,11 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
 
 // Company routes handler
 async function handleCompanyRoutes(req: Request, path: string, method: string, supabase: any) {
+  // Handle CORS preflight requests
+  if (method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   // Get all companies
   if (path === '/companies' && method === 'GET') {
     const { data, error } = await supabase
@@ -409,6 +417,11 @@ async function handleCompanyRoutes(req: Request, path: string, method: string, s
 
 // Motorista routes handler
 async function handleMotoristaRoutes(req: Request, path: string, method: string, supabase: any) {
+  // Handle CORS preflight requests
+  if (method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   const companyId = parseInt(req.headers.get('company-id') || '1')
 
   // Get all motoristas
@@ -460,6 +473,11 @@ async function handleMotoristaRoutes(req: Request, path: string, method: string,
 
 // Veiculo routes handler
 async function handleVeiculoRoutes(req: Request, path: string, method: string, supabase: any) {
+  // Handle CORS preflight requests
+  if (method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   const companyId = parseInt(req.headers.get('company-id') || '1')
 
   // Get all veiculos
@@ -511,6 +529,11 @@ async function handleVeiculoRoutes(req: Request, path: string, method: string, s
 
 // Cliente routes handler
 async function handleClienteRoutes(req: Request, path: string, method: string, supabase: any) {
+  // Handle CORS preflight requests
+  if (method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   const companyId = parseInt(req.headers.get('company-id') || '1')
 
   // Get all clientes
@@ -562,6 +585,11 @@ async function handleClienteRoutes(req: Request, path: string, method: string, s
 
 // Vagas routes handler
 async function handleVagasRoutes(req: Request, path: string, method: string, supabase: any) {
+  // Handle CORS preflight requests
+  if (method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   const companyId = parseInt(req.headers.get('company-id') || '1')
 
   // Dashboard routes
@@ -607,6 +635,11 @@ async function handleVagasRoutes(req: Request, path: string, method: string, sup
 
 // WiseApp Proxy routes handler
 async function handleWiseAppProxyRoutes(req: Request, path: string, method: string, supabase: any) {
+  // Handle CORS preflight requests
+  if (method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   // Extract account ID from path like /v1/accounts/1/inboxes
   const accountMatch = path.match(/^\/v1\/accounts\/(\d+)\/(.+)$/)
   
