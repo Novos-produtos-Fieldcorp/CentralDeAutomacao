@@ -187,7 +187,7 @@ app.use((req, res, next) => {
 
   // Using port 5000 - configurado para aceitar conexões externas no Replit
   const port = process.env.PORT || 5000;
-  const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+  const host = '0.0.0.0';
   
   console.log('🌐 Configuração do servidor:');
   console.log('  Porta:', port);

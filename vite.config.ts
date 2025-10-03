@@ -28,4 +28,17 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
   },
+  server: {
+    host: "0.0.0.0",
+    port: 5173,
+    strictPort: false,
+    hmr: {
+      clientPort: 443,
+      protocol: "wss",
+    },
+  },
+  preview: {
+    host: "0.0.0.0",
+    port: 5173,
+  },
 });

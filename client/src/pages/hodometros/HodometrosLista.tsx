@@ -41,6 +41,13 @@ interface HodometroReading {
     marca: string;
     tipo: string;
   };
+  bomba_gasolina?: {
+    preco_lido: string | null;
+    preco_informado: string | null;
+    litro_lido: string | null;
+    litro_informado: string | null;
+    foto_bomba: string | null;
+  } | null;
 }
 
 interface VehicleData {
@@ -113,6 +120,13 @@ const HodometrosLista = () => {
             placa,
             marca,
             tipo
+          ),
+          bomba_gasolina!bomba_gasolina_hodometro_id_fkey (
+            preco_lido,
+            preco_informado,
+            litro_lido,
+            litro_informado,
+            foto_bomba
           )
         `)
         .eq('company_id', companyId)
@@ -237,7 +251,10 @@ const HodometrosLista = () => {
             : (hodometro.motorista as any),
           veiculo: Array.isArray(hodometro.veiculo) 
             ? (hodometro.veiculo[0] as any)
-            : (hodometro.veiculo as any)
+            : (hodometro.veiculo as any),
+          bomba_gasolina: Array.isArray(hodometro.bomba_gasolina) && hodometro.bomba_gasolina.length > 0
+            ? (hodometro.bomba_gasolina[0] as any)
+            : null
         };
         
         dailyVehicleEntry.readings.push(formattedHodometro);
@@ -805,6 +822,8 @@ const HodometrosLista = () => {
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Data/Hora</th>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Motorista</th>
                                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Hodômetro</th>
+                                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Preço</th>
+                                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Litros</th>
                                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Trip</th>
                                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">KM Rodado</th>
                                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">Foto</th>
@@ -855,6 +874,56 @@ const HodometrosLista = () => {
                                       )}
                                     </td>
                                     <td className="px-4 py-2 whitespace-nowrap text-right">
+                                      {reading.bomba_gasolina ? (
+                                        <div>
+                                          <div className="flex items-center justify-end gap-1">
+                                            <div className="text-sm text-gray-900 dark:text-white">
+                                              Lido: {reading.bomba_gasolina.preco_lido || '-'}
+                                            </div>
+                                            {reading.bomba_gasolina.foto_bomba && (
+                                              <button
+                                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e)}
+                                                className="inline-flex items-center justify-center p-1 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                                title="Ver foto do preço lido"
+                                              >
+                                                <Camera size={12} />
+                                              </button>
+                                            )}
+                                          </div>
+                                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            Informado: {reading.bomba_gasolina.preco_informado || '-'}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-right">
+                                      {reading.bomba_gasolina ? (
+                                        <div>
+                                          <div className="flex items-center justify-end gap-1">
+                                            <div className="text-sm text-gray-900 dark:text-white">
+                                              Lido: {reading.bomba_gasolina.litro_lido || '-'}
+                                            </div>
+                                            {reading.bomba_gasolina.foto_bomba && (
+                                              <button
+                                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e)}
+                                                className="inline-flex items-center justify-center p-1 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                                title="Ver foto dos litros lidos"
+                                              >
+                                                <Camera size={12} />
+                                              </button>
+                                            )}
+                                          </div>
+                                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            Informado: {reading.bomba_gasolina.litro_informado || '-'}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-right">
                                       {reading.trip_lida !== null ? (
                                         <div className="text-sm text-gray-900 dark:text-white">
                                           {formatNumber(reading.trip_lida)}
@@ -892,7 +961,7 @@ const HodometrosLista = () => {
                                 ))}
                                 {vehicle.readings.length === 0 && (
                                   <tr>
-                                    <td colSpan={6} className="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                                    <td colSpan={8} className="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
                                       Nenhuma leitura encontrada para este veículo
                                     </td>
                                   </tr>
