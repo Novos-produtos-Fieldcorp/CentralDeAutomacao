@@ -3,8 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, company-id, wiseapp-token, wiseapp-account-id',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, company-id, wiseapp-token, wiseapp-account-id, api_access_token, X-Requested-With, Accept, Origin, Cache-Control, Pragma, Expires',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD',
+  'Access-Control-Allow-Credentials': 'true',
 }
 
 serve(async (req) => {
