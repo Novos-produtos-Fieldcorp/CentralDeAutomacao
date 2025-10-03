@@ -9,19 +9,16 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  // Parse URL to get path and method
   const url = new URL(req.url)
-  const path = url.pathname.replace('/api', '') // Remove /api prefix
+  const path = url.pathname.replace('/api', '')
   const method = req.method
 
   console.log(`[${method}] ${path}`)
 
-  // Health check (no auth required)
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   if (path === '/health' && method === 'GET') {
     return new Response(JSON.stringify({
       status: 'OK',
@@ -34,7 +31,7 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
+    // Initialize Supabase clien    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
@@ -642,7 +639,76 @@ async function handleWiseAppProxyRoutes(req: Request, path: string, method: stri
     })
   }
 
-  // Proxy to WiseApp API
+  // Special handling for POST /v1/accounts/{accountId}/contacts
+  if (method === 'POST' && endpoint === 'contacts') {
+    try {
+      const requestBody = await req.text()
+      const contactData = JSON.parse(requestBody)
+      
+      // Check if contact already exists by phone number
+      const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${contactData.phone_number}`
+      
+      const searchResponse = await fetch(searchUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      })
+      
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json()
+        
+        // If contact already exists, return it instead of creating a new one
+        if (searchData.payload && searchData.payload.length > 0) {
+          console.log(`Contact with phone ${contactData.phone_number} already exists, returning existing contact`)
+          return new Response(JSON.stringify(searchData.payload[0]), {
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            }
+          })
+        }
+      }
+      
+      // If contact doesn't exist, create it
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/${endpoint}`
+      
+      const response = await fetch(wiseAppUrl, {
+        method: method,
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: requestBody
+      })
+
+      const responseData = await response.text()
+      
+      return new Response(responseData, {
+        status: response.status,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': response.headers.get('Content-Type') || 'application/json'
+        }
+      })
+      
+    } catch (error) {
+      console.error('Error in contact creation with duplicate check:', error)
+      return new Response(JSON.stringify({
+        error: 'Erro ao processar criação de contato',
+        details: error.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // Proxy to WiseApp API for all other endpoints
   const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/${endpoint}`
   
   try {

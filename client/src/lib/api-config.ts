@@ -19,5 +19,10 @@ console.log('API Configuration:', {
 
 export const createApiUrl = (path: string) => {
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  return `${API_BASE_URL}/${cleanPath}`;
+  
+  if (API_BASE_URL.endsWith('/functions/v1')) {
+    return `${API_BASE_URL}/${cleanPath}`;
+  }
+  
+  return `${API_BASE_URL}/api/${cleanPath}`;
 };
