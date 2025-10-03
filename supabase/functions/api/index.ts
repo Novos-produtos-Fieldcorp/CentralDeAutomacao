@@ -111,8 +111,8 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     const { data, error } = await supabase
       .from('wiseapp_acesso')
       .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+      .eq('company_id', companyId)
       .not('access_token_wiseapp', 'is', null)
-      .limit(1)
       .single();
     
     if (error || !data) {
@@ -149,8 +149,8 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     const { data: tokenData, error: tokenError } = await supabase
       .from('wiseapp_acesso')
       .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+      .eq('company_id', companyId)
       .not('access_token_wiseapp', 'is', null)
-      .limit(1)
       .single()
 
     if (tokenError || !tokenData) {
@@ -205,6 +205,64 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     }
   }
 
+  // Create WiseApp label
+  if (path.match(/^\/wiseapp\/(\d+)\/labels$/) && method === 'POST') {
+    const match = path.match(/^\/wiseapp\/(\d+)\/labels$/)
+    const companyId = match![1]
+    
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('wiseapp_acesso')
+      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+      .eq('company_id', companyId)
+      .not('access_token_wiseapp', 'is', null)
+      .single()
+
+    if (tokenError || !tokenData) {
+      return new Response(JSON.stringify({
+        error: 'Token WiseApp não configurado para esta empresa'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
+    const requestBody = await req.text()
+
+    // Create label in WiseApp
+    const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`
+    
+    try {
+      const response = await fetch(wiseAppUrl, {
+        method: 'POST',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json'
+        },
+        body: requestBody
+      })
+
+      const responseData = await response.text()
+
+      return new Response(responseData, {
+        status: response.status,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': response.headers.get('Content-Type') || 'application/json'
+        }
+      })
+
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'Erro ao criar label no WiseApp',
+        details: error.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
   // Search contacts
   if (path.match(/^\/wiseapp\/(\d+)\/contacts\/search$/) && method === 'GET') {
     const match = path.match(/^\/wiseapp\/(\d+)\/contacts\/search$/)
@@ -215,8 +273,8 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     const { data: tokenData, error: tokenError } = await supabase
       .from('wiseapp_acesso')
       .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+      .eq('company_id', companyId)
       .not('access_token_wiseapp', 'is', null)
-      .limit(1)
       .single()
 
     if (tokenError || !tokenData || !phone) {
@@ -270,8 +328,8 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     const { data: tokenData, error: tokenError } = await supabase
       .from('wiseapp_acesso')
       .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+      .eq('company_id', companyId)
       .not('access_token_wiseapp', 'is', null)
-      .limit(1)
       .single()
 
     if (tokenError || !tokenData) {
