@@ -71,9 +71,12 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       if (accountId && wiseAppToken) {
         try {
           await createWiseAppTag(newTag);
+          toast.success("Marcador criado com sucesso localmente e no WiseApp!");
         } catch (error) {
-          console.warn('Erro ao criar tag no WiseApp (não crítico):', error);
+          console.warn('Erro ao criar tag no WiseApp:', error);
         }
+      } else {
+        toast.success("Marcador criado com sucesso localmente!");
       }
 
       // Invalidar todas as queries relacionadas a tags
@@ -85,7 +88,6 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       // Forçar refetch das queries
       await queryClient.refetchQueries({ queryKey: ['local-tags', companyId] });
 
-      toast.success("Marcador criado com sucesso!");
       setIsCreateModalOpen(false);
     },
     onError: (error: any) => {
@@ -210,7 +212,10 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
   // Função para criar tag no WiseApp usando a rota do backend
   const createWiseAppTag = async (tag: Tag) => {
-    if (!accountId || !wiseAppToken) return;
+    if (!accountId || !wiseAppToken) {
+      console.warn('Token WiseApp ou Account ID não disponível');
+      return;
+    }
 
     try {
       const labelData = {
@@ -220,7 +225,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       };
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       const response = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels`), {
         method: 'POST',
@@ -238,12 +243,23 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       if (response.ok) {
         const result = await response.json();
         console.log('Tag criada no WiseApp:', result);
+        return result;
       } else {
         const errorData = await response.text();
         console.warn(`WiseApp API retornou status ${response.status}: ${errorData}`);
+        
+        // Se for erro 401, tentar renovar o token
+        if (response.status === 401) {
+          console.warn('Token WiseApp expirado, tentando renovar...');
+          // Aqui você pode implementar renovação de token se necessário
+          throw new Error('Token WiseApp expirado. Por favor, reconecte sua conta WiseApp.');
+        }
+        
+        throw new Error(`Erro ao criar tag no WiseApp: ${response.status} - ${errorData}`);
       }
     } catch (error) {
-      console.warn('Erro ao criar tag no WiseApp (não crítico):', error);
+      console.warn('Erro ao criar tag no WiseApp:', error);
+      throw error;
     }
   };
 
