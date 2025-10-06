@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Tag, CheckCircle, Calendar, Tags } from 'lucide-react';
+import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Tag, CheckCircle, Calendar, Tags, Plus } from 'lucide-react';
 import WhatsAppAvatar from '../../components/WhatsAppAvatar';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database'; // Adicionando tipos necessários
@@ -237,6 +237,19 @@ const Contratados = () => {
   const [isApplyingTag, setIsApplyingTag] = useState(false);
   const [editingDate, setEditingDate] = useState<{type: 'integracao' | 'treinamento' | 'cadastro', motoristaId: number} | null>(null);
   const [tempDate, setTempDate] = useState<string>('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Funções auxiliares para filtros
+  const hasActiveFilters = () => {
+    return statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
+           ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all' || tagFilter.length > 0;
+  };
+
+  const getActiveFiltersCount = () => {
+    return [statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, 
+            ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0, 
+            tagFilter.length > 0 ? 1 : 0].reduce((a, b) => a + b, 0);
+  };
 
   const convertToMotorista = (contratado: ViewContratado | null): MotoristaWithAddress | null => {
     if (!contratado) return null;
@@ -1310,70 +1323,65 @@ const Contratados = () => {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 p-6 rounded-xl shadow-lg border border-gray-200/70 dark:border-gray-700/70 backdrop-blur-sm">
-        {/* Controles de filtro */}
-        <div className="flex justify-end items-center mb-4">
-          <div className="flex items-center gap-2">
-            {/* Contador de filtros ativos */}
-            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
-              ativoFilter !== '' || tipoVeiculoFilter.length > 0 || funcaoFilter.length > 0 || dateFilter !== 'all') && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
-                <Filter className="w-3 h-3" />
-                <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, funcaoFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
-              </div>
-            )}
-            
-            {/* Botão limpar filtros */}
-            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
-              ativoFilter !== '' || tipoVeiculoFilter.length > 0 || funcaoFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
-              <button
-                onClick={() => {
-                  setStatusFilter([]);
-                  setCidadeFilter([]);
-                  setClienteFilter([]);
-                  setAtivoFilter('');
-                  setTipoVeiculoFilter([]);
-                  setFuncaoFilter([]);
-                  setDateFilter('all');
-                  setSearchTerm('');
-                  setCustomDateRange({ startDate: '', endDate: '' });
-                }}
-                className="flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-              >
-                <X className="w-3 h-3" />
-                Limpar
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Campo de busca inteligente */}
-        <div className="mb-4">
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-4 flex items-center">
-              <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="p-4">
+          {/* Compact header with search and add button */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            {/* Search bar */}
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Buscar por nome, CPF, email ou telefone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+              />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
-            <input
-              type="text"
-              placeholder="Buscar por nome, CPF, email ou telefone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-12 py-3.5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm group-focus-within:shadow-md"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm('')}
-                className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            )}
-          </div>
-        </div>
 
-        {/* Filtros modernos */}
-        <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
+            {/* Filter toggle and add button */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={`inline-flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg border transition-colors ${
+                  showAdvancedFilters || hasActiveFilters()
+                    ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-300'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                <Filter size={16} />
+                Filtros
+                {hasActiveFilters() && (
+                  <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
+                    {getActiveFiltersCount()}
+                  </span>
+                )}
+                <ChevronDown className={`h-4 w-4 transition-transform ${showAdvancedFilters ? 'transform rotate-180' : ''}`} />
+              </button>
+              
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="inline-flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                title="Novo Contratado"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Advanced filters - collapsible */}
+          {showAdvancedFilters && (
+            <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              {/* Filtros modernos */}
+              <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
           <div className="flex flex-wrap gap-2">
             {/* Status Filter */}
             <div className="relative z-[50]">
@@ -1843,7 +1851,10 @@ const Contratados = () => {
               />
             </div>
           </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative z-[1]">
