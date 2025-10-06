@@ -437,7 +437,26 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     if (requestBody.labels && Array.isArray(requestBody.labels)) {
       labelsToApply = requestBody.labels
     } else if (requestBody.tagName) {
-      labelsToApply = [requestBody.tagName]
+      // Buscar labels existentes primeiro
+      try {
+        const getResponse = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'api_access_token': token,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (getResponse.ok) {
+          const currentData = await getResponse.json();
+          const existingLabels = currentData.payload || [];
+          labelsToApply = [...existingLabels, requestBody.tagName];
+        } else {
+          labelsToApply = [requestBody.tagName];
+        }
+      } catch (getError) {
+        labelsToApply = [requestBody.tagName];
+      }
     } else {
       return new Response(JSON.stringify({
         error: 'Formato inválido. Use {labels: [...]} ou {tagName: "..."}'
