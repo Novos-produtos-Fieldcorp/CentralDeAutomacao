@@ -16,8 +16,8 @@ interface BulkSyncResult {
   totalProcessed: number;
   successful: number;
   failed: number;
-  created: number;
-  photoUpdated: number;
+  tagsImportadas?: number;
+  tagsExportadas?: number;
   errors: Array<{ motorista_id: number; nome: string; error: string }>;
 }
 
@@ -73,24 +73,18 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
-  // Bulk sync mutation using secure backend - EXATAMENTE IGUAL AO SINCRONIZAR TAGS (USANDO HEADERS)
+  // Bulk sync mutation using secure backend - usando rota funcional sync-motoristas-bulk
   const bulkSyncMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      // EXATAMENTE como o sincronizar tags - usar headers
-      if (!wiseAppToken) throw new Error('Configure um token WiseApp válido antes de sincronizar contatos');
-      if (!wiseAppCompanyId) throw new Error('Account ID WiseApp não encontrado');
-      
-      const response = await fetch(createApiUrl('wiseapp/sync-all-motoristas'), {
+      const response = await fetch(createApiUrl('sync-motoristas-bulk'), {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-token': wiseAppToken,          // EXATAMENTE como o sincronizar tags
-          'wiseapp-account-id': wiseAppCompanyId.toString()  // EXATAMENTE como o sincronizar tags
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          companyId: companyId
+          company_id: companyId
         })
       });
       
@@ -102,26 +96,25 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       return response.json();
     },
     onSuccess: (data) => {
-      const result = data.data as BulkSyncResult;
+      const result = data.data;
       
       // Calcular totais para notificação mais clara
-      const totalImportados = result.successful + result.created;
-      const totalNaoImportados = result.failed;
+      const totalProcessados = result.successful;
+      const totalNaoProcessados = result.failed;
+      const tagsImportadas = result.tagsImportadas || 0;
+      const tagsExportadas = result.tagsExportadas || 0;
       
-      // Notificação principal com foco em importados vs não importados
-      if (totalImportados > 0) {
-        let successMessage = `✅ ${totalImportados} contatos importados com sucesso!`;
+      // Notificação principal com foco em processados vs não processados
+      if (totalProcessados > 0) {
+        let successMessage = `✅ ${totalProcessados} contatos sincronizados com sucesso!`;
         
         // Detalhes adicionais se houver
         const detalhes = [];
-        if (result.created > 0) {
-          detalhes.push(`${result.created} novos contatos criados`);
+        if (tagsImportadas > 0) {
+          detalhes.push(`${tagsImportadas} tags importadas do WiseApp`);
         }
-        if (result.successful > 0) {
-          detalhes.push(`${result.successful} contatos já existentes sincronizados`);
-        }
-        if (result.photoUpdated > 0) {
-          detalhes.push(`${result.photoUpdated} fotos atualizadas`);
+        if (tagsExportadas > 0) {
+          detalhes.push(`${tagsExportadas} tags exportadas para o WiseApp`);
         }
         
         if (detalhes.length > 0) {
@@ -132,8 +125,8 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       }
       
       // Notificação separada para falhas, se houver
-      if (totalNaoImportados > 0) {
-        toast.error(`❌ ${totalNaoImportados} contatos não foram importados`, { duration: 4000 });
+      if (totalNaoProcessados > 0) {
+        toast.error(`❌ ${totalNaoProcessados} contatos não foram processados`, { duration: 4000 });
       }
       
       // Se nenhum contato foi processado
