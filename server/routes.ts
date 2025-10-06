@@ -2266,6 +2266,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const errorData = await response.text();
         console.log(`WiseApp API response: ${response.status} - ${errorData}`);
         
+        // Se for erro 401, token expirado
+        if (response.status === 401) {
+          return res.status(401).json({ 
+            error: "Token WiseApp expirado ou inválido",
+            details: "Por favor, reconecte sua conta WiseApp"
+          });
+        }
+        
         // Se a tag já existe (422), buscar a tag existente
         if (response.status === 422) {
           try {

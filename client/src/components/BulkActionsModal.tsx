@@ -122,21 +122,34 @@ const BulkActionsModal = ({
       let syncSuccessCount = 0;
       console.log(`DEBUG: Processando ${motoristaIds.length} motoristas:`, motoristaIds);
 
-      // Rate limiting inteligente + proteção contra conflitos
-      const shouldRateLimit = motoristaIds.length > 50 || accountId === '20';
-      const delayMs = shouldRateLimit ? 300 : 100; // Mais delay para evitar conflitos com operações individuais
+      // Processar em lotes menores para evitar timeout e problemas de URL longa
+      const batchSize = 25; // Reduzir tamanho do lote
+      const batches = [];
+      for (let i = 0; i < motoristaIds.length; i += batchSize) {
+        batches.push(motoristaIds.slice(i, i + batchSize));
+      }
 
-      console.log(`[BULK] Processing ${motoristaIds.length} motoristas with ${delayMs}ms delay (Account: ${accountId})`);
+      console.log(`[BULK] Processando ${batches.length} lotes de até ${batchSize} motoristas cada`);
 
-      for (let i = 0; i < motoristaIds.length; i++) {
-        const motoristaId = motoristaIds[i];
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        console.log(`[BULK] Processando lote ${batchIndex + 1}/${batches.length} com ${batch.length} motoristas`);
 
-        // Rate limiting: delay entre requisições para evitar 401
-        if (i > 0) {
-          await new Promise(resolve => setTimeout(resolve, delayMs));
+        // Rate limiting entre lotes
+        if (batchIndex > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 segundo entre lotes
         }
 
-        try {
+        // Processar motoristas do lote em paralelo (mas com delay entre cada um)
+        for (let i = 0; i < batch.length; i++) {
+          const motoristaId = batch[i];
+
+          // Rate limiting: delay entre requisições para evitar 401
+          if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, 200)); // 200ms entre requisições
+          }
+
+          try {
           console.log(`[BULK] Processando motorista ${motoristaId} (${i + 1}/${motoristaIds.length})`);
 
           // Buscar dados do motorista usando abordagem mais confiável (tabelas diretas primeiro)
@@ -296,8 +309,9 @@ const BulkActionsModal = ({
               console.error(`BULK DEBUG: Erro na busca do contato:`, searchError);
             }
           }
-        } catch (contactError) {
-          console.warn(`Erro ao processar motorista ${motoristaId}:`, contactError);
+          } catch (contactError) {
+            console.warn(`Erro ao processar motorista ${motoristaId}:`, contactError);
+          }
         }
       }
 
