@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown } from 'lucide-react';
+import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, PlusCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useModuleAccess } from '../../hooks/useModuleAccess';
 import toast from 'react-hot-toast';
@@ -7,6 +7,7 @@ import { useDateRange } from '../../hooks/useDateRange';
 import { formatCPF } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import DocumentUploader from '../../components/DocumentUploader';
 import Pagination from '../../components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import * as XLSX from 'xlsx';
@@ -41,6 +42,18 @@ const HodometrosMinuta: React.FC = () => {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  // Create Minuta modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newMinutaInformada, setNewMinutaInformada] = useState('');
+  const [newRomaneio, setNewRomaneio] = useState('');
+  const [newFotoMinuta, setNewFotoMinuta] = useState('');
+  const [newFilialId, setNewFilialId] = useState<number | null>(null);
+  const [newMotoristaId, setNewMotoristaId] = useState<number | null>(null);
+  const [newVeiculoId, setNewVeiculoId] = useState<number | null>(null);
+  const [motoristas, setMotoristas] = useState<Array<any>>([]);
+  const [veiculos, setVeiculos] = useState<Array<any>>([]);
+  const [filiais, setFiliais] = useState<Array<any>>([]);
 
   const fetchMinutas = useCallback(async () => {
     try {
@@ -104,6 +117,40 @@ const HodometrosMinuta: React.FC = () => {
   useEffect(() => {
     if (!pendingDateRange) fetchMinutas();
   }, [fetchMinutas, pendingDateRange]);
+
+  // fetch selectable options for the create form
+  const fetchCreateOptions = useCallback(async () => {
+    if (!companyId) return;
+    try {
+      const { data: mot, error: e1 } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome, cpf')
+        .eq('company_id', companyId)
+        .order('nome', { ascending: true });
+      if (!e1 && mot) setMotoristas(mot as any[]);
+
+      const { data: veic, error: e2 } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa, marca, tipo')
+        .eq('company_id', companyId)
+        .order('placa', { ascending: true });
+      if (!e2 && veic) setVeiculos(veic as any[]);
+
+      // load filiais for the current company (or global ones with null company_id)
+      const { data: fil, error: e3 } = await supabase
+        .from('filial')
+        .select('id, filial, company_id')
+        .or(`company_id.eq.${companyId},company_id.is.null`)
+        .order('filial', { ascending: true });
+      if (!e3 && fil) setFiliais(fil as any[]);
+    } catch (err) {
+      console.warn('Error fetching create options', err);
+    }
+  }, [companyId]);
+
+  useEffect(() => {
+    if (showCreateModal) fetchCreateOptions();
+  }, [showCreateModal, fetchCreateOptions]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -267,19 +314,30 @@ const HodometrosMinuta: React.FC = () => {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <div className="relative group">
+          <div className="flex items-center gap-2">
             <button
-              onClick={exportMinutasToExcel}
-              className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                       transition-colors flex items-center justify-center"
-              disabled={filteredMinutas.length === 0}
-              aria-label="Exportar Excel"
+              type="button"
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
             >
-              <Download className="w-5 h-5" />
+              <PlusCircle className="h-4 w-4" />
+              Nova Minuta
             </button>
-            <div className="opacity-0 group-hover:opacity-100 absolute right-0 top-full mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
-              Exportar Excel
+
+            <div className="relative group">
+              <button
+                onClick={exportMinutasToExcel}
+                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                         transition-colors flex items-center justify-center"
+                disabled={filteredMinutas.length === 0}
+                aria-label="Exportar Excel"
+              >
+                <Download className="w-5 h-5" />
+              </button>
+              <div className="opacity-0 group-hover:opacity-100 absolute right-0 top-full mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
+                Exportar Excel
+              </div>
             </div>
           </div>
         </div>
@@ -356,6 +414,124 @@ const HodometrosMinuta: React.FC = () => {
           onPageChange={handlePageChange}
           onPageSizeChange={handlePageSizeChange}
         />
+      )}
+
+      {/* Create Minuta Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowCreateModal(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full shadow-md max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Nova Minuta</h3>
+              <button onClick={() => setShowCreateModal(false)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400"> <X size={20} /> </button>
+            </div>
+            <div className="p-4 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 160px)' }}>
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-300">Nº Minuta</label>
+                <input value={newMinutaInformada} onChange={(e) => setNewMinutaInformada(e.target.value)} className="mt-1 block w-full rounded-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2" />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-600 dark:text-gray-300">Romaneio</label>
+                <input value={newRomaneio} onChange={(e) => setNewRomaneio(e.target.value)} className="mt-1 block w-full rounded-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2" />
+              </div>
+
+              <div className="flex justify-start">
+                <div className="max-w-[220px] w-full">
+                  <DocumentUploader
+                    documentType="comprovante_residencia"
+                    motorista_id={0}
+                    currentUrl={newFotoMinuta || undefined}
+                    onUploadComplete={(url) => setNewFotoMinuta(url)}
+                    label="Foto da Minuta"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm text-gray-600 dark:text-gray-300">Filial</label>
+                  <select value={newFilialId ?? ''} onChange={(e) => setNewFilialId(e.target.value ? Number(e.target.value) : null)} className="mt-1 block w-full rounded-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2">
+                    <option value="" className="text-gray-400 dark:text-gray-500">Adicionar</option>
+                    {filiais.map(f => <option key={f.id} value={f.id}>{f.filial}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-600 dark:text-gray-300">Motorista</label>
+                  <select value={newMotoristaId ?? ''} onChange={(e) => setNewMotoristaId(e.target.value ? Number(e.target.value) : null)} className="mt-1 block w-full rounded-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2">
+                    <option value="" className="text-gray-400 dark:text-gray-500">Adicionar</option>
+                    {motoristas.map(m => <option key={m.motorista_id} value={m.motorista_id}>{m.nome}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-600 dark:text-gray-300">Veículo</label>
+                  <select value={newVeiculoId ?? ''} onChange={(e) => setNewVeiculoId(e.target.value ? Number(e.target.value) : null)} className="mt-1 block w-full rounded-md border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-2">
+                    <option value="" className="text-gray-400 dark:text-gray-500">Adicionar</option>
+                    {veiculos.map(v => <option key={v.veiculo_id} value={v.veiculo_id}>{v.placa}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 rounded-md border border-gray-300 text-sm">Cancelar</button>
+              <button
+                onClick={async () => {
+                  try {
+                    setCreating(true);
+
+                      const payload: any = {
+                        minuta_informada: newMinutaInformada || null,
+                        romaneio: newRomaneio || null,
+                        foto_minuta: newFotoMinuta || null,
+                        filial_id: newFilialId,
+                        motorista_id: newMotoristaId,
+                        veiculo_id: newVeiculoId,
+                        company_id: companyId
+                      };
+
+                      const { data: insData, error: insErr } = await supabase.from('minuta').insert([payload]).select();
+                    if (insErr) throw insErr;
+                    toast.success('Minuta criada com sucesso');
+                    // reset form
+                    setNewMinutaInformada('');
+                    setNewRomaneio('');
+                    setNewFotoMinuta('');
+                    setNewFilialId(null);
+                    setNewMotoristaId(null);
+                    setNewVeiculoId(null);
+                    setShowCreateModal(false);
+                    // If insert returned created row, expand date range to include its created_at so it appears
+                    if (insData && insData[0] && insData[0].created_at) {
+                      try {
+                        const created = new Date(insData[0].created_at);
+                        // set dateRange to include created (simple approach: set start to 7 days before created and end to created)
+                        const start = new Date(created);
+                        start.setDate(created.getDate() - 7);
+                        const end = new Date(created);
+                        setDateRange({ startDate: start.toISOString(), endDate: end.toISOString() });
+                      } catch (err) {
+                        // ignore
+                      }
+                    }
+                    // refresh list
+                    fetchMinutas();
+                  } catch (err: any) {
+                    console.error('Error creating minuta', err);
+                    const msg = err?.message || String(err);
+                    toast.error('Erro ao criar minuta: ' + msg);
+                  } finally {
+                    setCreating(false);
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md"
+                disabled={creating}
+              >
+                {creating ? 'Salvando...' : 'Criar Minuta'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Photo Modal */}
