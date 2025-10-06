@@ -80,6 +80,8 @@ export interface ViewContratado {
   ajudantes?: string[];
 }
 
+
+
 // Status options for dropdown - matching database values exactly
 const STATUS_OPTIONS = [
   { value: 'Cadastrado', label: 'Cadastrado', color: 'bg-gray-100 dark:bg-gray-700' },
@@ -112,7 +114,7 @@ const Contratados = () => {
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
   const [showFuncaoDropdown, setShowFuncaoDropdown] = useState(false);
-
+  const [tagDropdownOpen, setTagDropdownOpen] = useState<{[key: number]: boolean}>({});
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
@@ -747,6 +749,47 @@ const Contratados = () => {
     setIsBulkActionsModalOpen(true);
   };
 
+
+  // Listener adicional para scroll - fechar dropdowns de tags quando rolar
+  useEffect(() => {
+    const handleScroll = () => {
+      // Fecha todos os dropdowns de filtro se estiverem abertos
+      if (showStatusDropdown) setShowStatusDropdown(false);
+      if (showClienteDropdown) setShowClienteDropdown(false);
+      if (showCidadeDropdown) setShowCidadeDropdown(false);
+      if (showTipoVeiculoDropdown) setShowTipoVeiculoDropdown(false);
+      if (showFuncaoDropdown) setShowFuncaoDropdown(false);
+  
+      // Mantém a lógica para fechar os dropdowns de tags das linhas
+      if (Object.values(tagDropdownOpen).some(isOpen => isOpen)) {
+        setTagDropdownOpen({});
+      }
+    };
+  
+    // Adiciona o listener tanto na janela principal quanto no contêiner da tabela
+    const tableEl = tableContainerRef.current;
+    window.addEventListener('scroll', handleScroll, true); // `true` para capturar o evento mais cedo
+    if (tableEl) {
+      tableEl.addEventListener('scroll', handleScroll, true);
+    }
+  
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      if (tableEl) {
+        tableEl.removeEventListener('scroll', handleScroll, true);
+      }
+    };
+  }, [
+    // Adicione todas as dependências para o hook funcionar corretamente
+    tagDropdownOpen,
+    showStatusDropdown,
+    showClienteDropdown,
+    showCidadeDropdown,
+    showTipoVeiculoDropdown,
+    showFuncaoDropdown
+  ]);
+  
+  
   const handleBulkUpdateTreinamento = async (marcar: boolean) => {
     if (selectedItems.size === 0) {
       toast.error('Selecione pelo menos um motorista');
@@ -1872,23 +1915,23 @@ const Contratados = () => {
             </div>
           </div>
 
-          <div className="relative max-h-[600px] overflow-auto">
+          <div className="overflow-x-auto">
             <div ref={tableContainerRef} className="w-full">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800">
+                <thead>
                   <tr>
-                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600"></th>
-                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Nome</th>
-                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">CPF</th>
-                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Contato</th>
-                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Status</th>
-                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Cliente</th>
-                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Cidade</th>
-                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Integração Interna</th>
-                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Treinamento Cliente</th>
-                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Veículo</th>
-                    <th className="sticky top-0 z-10 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Data Cadastro</th>
-                    <th className="sticky top-0 z-10 px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600">Ações</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800"></th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Nome</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Integração Interna</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Treinamento Cliente</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
