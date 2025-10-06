@@ -943,6 +943,8 @@ const Contratados = () => {
         throw new Error('Tag não encontrada');
       }
       
+      // Aplicar a tag ao contato
+      await applyWiseAppContactLabels(accountId || '', wiseAppToken || '', contact.id, [tagToApply.title || tagToApply.name], companyId);
 
       toast.success(`Marcador "${tagToApply.title || tagToApply.name}" aplicado ao contato ${selectedMotorista.nome_motorista}!`);
       setIsTagModalOpen(false);

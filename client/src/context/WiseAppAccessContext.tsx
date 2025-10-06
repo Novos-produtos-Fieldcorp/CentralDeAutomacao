@@ -91,11 +91,11 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
   const [searchParams] = useSearchParams();
 
   // Helper function to cache data with expiration
-  const cacheData = (key: string, data: any, expirationHours: number = 2) => {
+  const cacheData = (key: string, data: any, expirationHours: number = 1) => { // Reduzir para 1 hora
     try {
       const cache = {
         ...data,
-        expiresAt: Date.now() + (expirationHours * 60 * 60 * 1000) // 2 hours default
+        expiresAt: Date.now() + (expirationHours * 60 * 60 * 1000) // 1 hour default
       };
       localStorage.setItem(key, JSON.stringify(cache));
     } catch (error) {
@@ -117,10 +117,50 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
     });
   };
 
+  // Helper function to validate token and clear if expired
+  const validateToken = () => {
+    try {
+      const cached = localStorage.getItem('wiseapp_token_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const isExpired = Date.now() > parsed.expiresAt;
+        if (isExpired) {
+          console.log('Token WiseApp expirado, limpando cache...');
+          clearCache();
+          return false;
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error('Error validating token:', error);
+      clearCache();
+      return false;
+    }
+  };
+
+  // Helper function to clear all cached data
+  const clearCache = () => {
+    try {
+      localStorage.removeItem('wiseapp_token_cache');
+      localStorage.removeItem('wiseapp_company_cache');
+      localStorage.removeItem('wiseapp_attendant_cache');
+      setToken(null);
+      setCompanyId(null);
+      setAttendantId(null);
+      setAttendantName(null);
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+    }
+  };
+
   useEffect(() => {
     const verificarAcesso = async () => {
       // Don't check again if we already checked in this session
       if (hasCheckedToken) {
+        // Validar token antes de finalizar
+        if (token && !validateToken()) {
+          setShowModal(true);
+        }
         setIsLoading(false);
         return;
       }

@@ -18,6 +18,7 @@ import {
   Edit,
   Lock,
   ClipboardList,
+  MessageSquare,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -179,6 +180,18 @@ interface DashboardStats {
       semanal: number;
     }[];
     typeData: { name: string; value: number; color: string }[];
+  };
+
+  // Resumo em Grupo data
+  resumoGrupo: {
+    totalGrupos: number;
+    gruposAtivos: number;
+    enviosHoje: number;
+    enviosSemana: number;
+    monthlyData: {
+      month: string;
+      envios: number;
+    }[];
   };
 
   // Recent Activity
@@ -358,6 +371,7 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
                   innerRadius={8}
                   outerRadius={18}
                   dataKey="value"
+                  stroke="none"
                 >
                   {(stats.contratacaoPieData || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -575,23 +589,24 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
 
         {/* Pie Chart */}
         <div className="h-12 w-12">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={stats.clientes.pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={8}
-                outerRadius={18}
-                dataKey="value"
-              >
-                {(stats.clientes.pieData || []).map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip content={<SimpleTooltip />} />
-            </PieChart>
-          </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={stats.clientes.pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={8}
+                  outerRadius={18}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {(stats.clientes.pieData || []).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<SimpleTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
         </div>
       </div>
 
@@ -623,19 +638,16 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
         </div>
       </div>
 
-      {/* Recent Clients */}
-      <div className="space-y-1 max-h-16 overflow-y-auto">
-        {!stats.clientes.recentClientes ||
-        stats.clientes.recentClientes.length === 0 ? (
-          <div className="text-center py-1">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Nenhum cliente recente
-            </p>
-          </div>
-        ) : (
-          (stats.clientes.recentClientes || [])
-            .slice(0, 2)
-            .map((cliente, index) => (
+      {/* All Clients with Contracted Count */}
+      <div className="space-y-1 max-h-20 overflow-y-auto">
+        {(() => {
+          const data = stats.clientes.pieData || [];
+          const isContratados =
+            data.length > 0 &&
+            data.every((d) => d.name !== "Ativos" && d.name !== "Desativos");
+          
+          if (isContratados) {
+            return data.map((cliente, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-1 bg-gray-50 dark:bg-gray-700/50 rounded"
@@ -643,15 +655,45 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
                 <div className="flex items-center gap-1">
                   <Building2 className="w-2 h-2 text-teal-600 dark:text-teal-400" />
                   <span className="text-xs font-medium text-gray-900 dark:text-white truncate">
-                    {cliente.nome}
+                    {cliente.name}
                   </span>
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  Recente
+                <div className="text-xs text-teal-600 dark:text-teal-400 font-medium">
+                  {cliente.value} contratados
                 </div>
               </div>
-            ))
-        )}
+            ));
+          } else {
+            // Fallback to recent clients when showing ativos/desativos
+            return !stats.clientes.recentClientes ||
+            stats.clientes.recentClientes.length === 0 ? (
+              <div className="text-center py-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Nenhum cliente recente
+                </p>
+              </div>
+            ) : (
+              (stats.clientes.recentClientes || [])
+                .slice(0, 2)
+                .map((cliente, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-1 bg-gray-50 dark:bg-gray-700/50 rounded"
+                  >
+                    <div className="flex items-center gap-1">
+                      <Building2 className="w-2 h-2 text-teal-600 dark:text-teal-400" />
+                      <span className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                        {cliente.nome}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Recente
+                    </div>
+                  </div>
+                ))
+            );
+          }
+        })()}
       </div>
     </div>
   );
@@ -717,23 +759,24 @@ const VeiculosHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       {/* Chart por tipo */}
       <div className="h-24">
         {stats.veiculos.typeData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={stats.veiculos.typeData}
-                cx="50%"
-                cy="50%"
-                innerRadius={20}
-                outerRadius={40}
-                dataKey="value"
-              >
-                {(stats.veiculos.typeData || []).map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip content={<SimpleTooltip />} />
-            </PieChart>
-          </ResponsiveContainer>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={stats.veiculos.typeData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={20}
+                  outerRadius={40}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {(stats.veiculos.typeData || []).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<SimpleTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
         ) : (
           <div className="flex items-center justify-center h-full">
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -840,6 +883,95 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   );
 };
 
+// 6. ResumoGrupoHeroCard
+const ResumoGrupoHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
+  return (
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-resumo-grupo">
+          <AccessTooltip module="resumo">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
+      
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
+            <MessageSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Resumo em Grupo
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Automação de envios
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/resumos-grupo"
+          className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1"
+          data-testid="link-resumo-grupo"
+        >
+          Ver todos
+          <ExternalLink className="w-2 h-2" />
+        </Link>
+      </div>
+
+      {/* KPIs */}
+      <div className="flex gap-2 mb-3">
+        <div className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-medium">
+          {stats.resumoGrupo.gruposAtivos} ativos
+        </div>
+        <div className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-medium">
+          {stats.resumoGrupo.enviosHoje} hoje
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div className="h-32">
+        {stats.resumoGrupo.monthlyData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={stats.resumoGrupo.monthlyData}>
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip content={<SimpleTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="envios"
+                stroke="#6366f1"
+                fill="#6366f1"
+                fillOpacity={0.3}
+                name="Envios"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Nenhum envio encontrado
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div className="mt-2 text-center">
+        <div className="text-xs text-gray-600 dark:text-gray-400">
+          {stats.resumoGrupo.enviosSemana} envios esta semana
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   return (
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
@@ -910,6 +1042,7 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
                   cy="50%"
                   innerRadius={12}
                   outerRadius={28}
+                  stroke="none"
                 >
                   {stats.checklists.typeData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -986,12 +1119,61 @@ const Dashboard: React.FC = () => {
       monthlyData: [],
       typeData: [],
     },
+    resumoGrupo: {
+      totalGrupos: 0,
+      gruposAtivos: 0,
+      enviosHoje: 0,
+      enviosSemana: 0,
+      monthlyData: [],
+    },
     recentActivity: [],
   });
   const [statsLoading, setStatsLoading] = useState(false);
 
   useEffect(() => {
     if (companyId) {
+      // Limpa o cache quando muda de conta
+      setStats({
+        agregados: 0,
+        contratados: 0,
+        outros: 0,
+        vagasAbertas: 0,
+        vagasPreenchidas: 0,
+        vagasVencidas: 0,
+        taxaPreenchimento: 0,
+        contratacaoPieData: [],
+        hodometroData: [],
+        clientes: {
+          total: 0,
+          ativos: 0,
+          desativos: 0,
+          novosNoMes: 0,
+          crescimento: 0,
+          recentClientes: [],
+          pieData: [],
+        },
+        veiculos: {
+          total: 0,
+          typeData: [],
+        },
+        comprovantes: {
+          totalMensal: 0,
+          monthlyData: [],
+        },
+        checklists: {
+          totalMensal: 0,
+          monthlyData: [],
+          typeData: [],
+        },
+        resumoGrupo: {
+          totalGrupos: 0,
+          gruposAtivos: 0,
+          enviosHoje: 0,
+          enviosSemana: 0,
+          monthlyData: [],
+        },
+        recentActivity: [],
+      });
       fetchDashboardData();
     } else {
       setStatsLoading(false);
@@ -1016,8 +1198,10 @@ const Dashboard: React.FC = () => {
         contratadosResult,
         hodometroResult,
         clientesResult,
+        clientesAllResult,
         clientesAtivosResult,
         clientesRecentResult,
+        contratadosPorClienteResult,
         veiculosResult,
         vagasResult,
         statusVagasResult,
@@ -1029,6 +1213,11 @@ const Dashboard: React.FC = () => {
         recentComprovanteResult,
         checklistResult,
         checklistCurrentMonthResult,
+        grupoResumoResult,
+        grupoResumoAtivosResult,
+        envioResumoHojeResult,
+        envioResumoSemanaResult,
+        envioResumoMonthlyResult,
       ] = await Promise.all([
         // Optimized count queries using Supabase views - 3 categorias específicas
         supabase
@@ -1064,6 +1253,12 @@ const Dashboard: React.FC = () => {
           .select("cliente_id", { count: "exact", head: true })
           .eq("company_id", companyId),
 
+        // All clients id/name for mapping
+        supabase
+          .from("cliente")
+          .select("cliente_id, nome")
+          .eq("company_id", companyId),
+
         // Count active clients
         supabase
           .from("cliente")
@@ -1079,12 +1274,19 @@ const Dashboard: React.FC = () => {
           .order("cliente_id", { ascending: false })
           .limit(5),
 
-        // Count vehicles by type (optimized query)
+        // Motoristas contratados por cliente (status contratado) - só da company atual
+        supabase
+          .from("motorista")
+          .select("cliente_id")
+          .eq("company_id", companyId)
+          .eq("ativo", true)
+          .eq("st_cadastro", "contratado")
+          .not("cliente_id", "is", null),
+
         supabase
           .from("veiculo")
-          .select("tipo", { count: "exact" })
-          .eq("company_id", companyId)
-          .limit(1000), // Limit for performance
+          .select("tipo, tipologia")
+          .eq("company_id", companyId),
 
         // Real vagas data with status
         supabase
@@ -1164,6 +1366,40 @@ const Dashboard: React.FC = () => {
           .select("*", { count: "exact", head: true })
           .eq("company_id", companyId)
           .gte("data", startOfMonth.toISOString().split("T")[0]),
+
+        // Resumo em Grupo data
+        supabase
+          .from("grupo_resumo")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", companyId),
+
+        supabase
+          .from("grupo_resumo")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", companyId)
+          .eq("ativo", true),
+
+        // Envios de hoje
+        supabase
+          .from("envio_resumo")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", companyId)
+          .gte("created_at", new Date().toISOString().split("T")[0]),
+
+        // Envios da semana
+        supabase
+          .from("envio_resumo")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", companyId)
+          .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+
+        // Envios mensais para gráfico
+        supabase
+          .from("envio_resumo")
+          .select("created_at")
+          .eq("company_id", companyId)
+          .gte("created_at", sixMonthsAgo.toISOString())
+          .order("created_at", { ascending: true }),
       ]);
 
       // Check for critical errors
@@ -1177,6 +1413,10 @@ const Dashboard: React.FC = () => {
         console.warn("Erro hodômetros:", hodometroResult.error.message);
       if (clientesResult.error)
         console.warn("Erro clientes:", clientesResult.error.message);
+      if (clientesAllResult.error)
+        console.warn("Erro clientesAll:", clientesAllResult.error.message);
+      if (contratadosPorClienteResult.error)
+        console.warn("Erro contratados por cliente:", contratadosPorClienteResult.error.message);
       if (veiculosResult.error)
         console.warn("Erro veículos:", veiculosResult.error.message);
       
@@ -1191,6 +1431,18 @@ const Dashboard: React.FC = () => {
         console.warn("Erro checklist:", checklistResult.error.message);
       if (checklistCurrentMonthResult.error)
         console.warn("Erro checklist current month:", checklistCurrentMonthResult.error.message);
+
+      // Check for resumo grupo errors
+      if (grupoResumoResult.error)
+        console.warn("Erro grupo resumo:", grupoResumoResult.error.message);
+      if (grupoResumoAtivosResult.error)
+        console.warn("Erro grupo resumo ativos:", grupoResumoAtivosResult.error.message);
+      if (envioResumoHojeResult.error)
+        console.warn("Erro envio resumo hoje:", envioResumoHojeResult.error.message);
+      if (envioResumoSemanaResult.error)
+        console.warn("Erro envio resumo semana:", envioResumoSemanaResult.error.message);
+      if (envioResumoMonthlyResult.error)
+        console.warn("Erro envio resumo monthly:", envioResumoMonthlyResult.error.message);
 
       // Process real vagas data
       const vagas = vagasResult.data || [];
@@ -1294,11 +1546,50 @@ const Dashboard: React.FC = () => {
         created_at: new Date().toISOString(), // Using fallback since created_at doesn't exist
       }));
 
-      // Pie chart data for clientes
-      const clientesPieData = [
-        { name: "Ativos", value: clientesAtivos, color: "#10b981" },
-        { name: "Desativos", value: clientesDesativos, color: "#ef4444" },
-      ].filter((item) => item.value > 0);
+      // Build contratados por cliente distribution for Clientes pie chart
+      const clientesList: Array<{ cliente_id: number; nome: string }> =
+        (clientesAllResult.data as any[]) || [];
+      const clientesMap = new Map<number, string>();
+      const clientesIdsDaCompany = new Set<number>();
+      clientesList.forEach((c) => {
+        clientesMap.set(c.cliente_id, c.nome);
+        clientesIdsDaCompany.add(c.cliente_id);
+      });
+
+      const contratadosPorClienteRows: Array<{ cliente_id: number | null }> =
+        (contratadosPorClienteResult.data as any[]) || [];
+
+      const contratadosCounts = new Map<number, number>();
+      contratadosPorClienteRows.forEach((row) => {
+        // Como a query já filtra por company_id, só conta se o cliente existe na lista
+        if (row.cliente_id && clientesIdsDaCompany.has(row.cliente_id)) {
+          contratadosCounts.set(
+            row.cliente_id,
+            (contratadosCounts.get(row.cliente_id) || 0) + 1,
+          );
+        }
+      });
+
+      let clientesPieData: { name: string; value: number; color: string }[] = [];
+      if (contratadosCounts.size > 0) {
+        const palette = ["#0ea5e9", "#22c55e", "#f59e0b", "#8b5cf6", "#ef4444"];
+        const sorted = Array.from(contratadosCounts.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5);
+        clientesPieData = sorted.map(([id, count], index) => ({
+          name: clientesMap.get(id) || `Cliente ${id}`,
+          value: count,
+          color: palette[index % palette.length],
+        }));
+      }
+
+      // Fallback to ativos vs desativos when there is no contratados distribution
+      if (clientesPieData.length === 0) {
+        clientesPieData = [
+          { name: "Ativos", value: clientesAtivos, color: "#10b981" },
+          { name: "Desativos", value: clientesDesativos, color: "#ef4444" },
+        ].filter((item) => item.value > 0);
+      }
 
       // Process real veiculos data with proper type classification
       const veiculos = veiculosResult.data || [];
@@ -1547,6 +1838,47 @@ const Dashboard: React.FC = () => {
           new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
       );
 
+      // Process resumo grupo data
+      const totalGrupos = grupoResumoResult.count || 0;
+      const gruposAtivos = grupoResumoAtivosResult.count || 0;
+      const enviosHoje = envioResumoHojeResult.count || 0;
+      const enviosSemana = envioResumoSemanaResult.count || 0;
+
+      // Process monthly envios data
+      const enviosData = envioResumoMonthlyResult.data || [];
+      const monthlyEnvios: { [key: string]: number } = {};
+      enviosData.forEach((envio) => {
+        if (envio.created_at) {
+          const monthKey = format(new Date(envio.created_at), "MMM", {
+            locale: ptBR,
+          });
+          monthlyEnvios[monthKey] = (monthlyEnvios[monthKey] || 0) + 1;
+        }
+      });
+
+      const enviosArray = Object.entries(monthlyEnvios)
+        .map(([month, value]) => ({
+          month,
+          envios: value,
+        }))
+        .sort((a, b) => {
+          const months = [
+            "Jan",
+            "Fev",
+            "Mar",
+            "Abr",
+            "Mai",
+            "Jun",
+            "Jul",
+            "Ago",
+            "Set",
+            "Out",
+            "Nov",
+            "Dez",
+          ];
+          return months.indexOf(a.month) - months.indexOf(b.month);
+        });
+
       // Debug logging para verificar dados
       console.log("Dashboard data loaded:", {
         agregados,
@@ -1597,6 +1929,13 @@ const Dashboard: React.FC = () => {
           monthlyData: checklistArray,
           typeData: checklistPieData,
         },
+        resumoGrupo: {
+          totalGrupos,
+          gruposAtivos,
+          enviosHoje,
+          enviosSemana,
+          monthlyData: enviosArray,
+        },
         recentActivity: recentActivity.slice(0, 10),
       });
     } catch (error) {
@@ -1637,6 +1976,13 @@ const Dashboard: React.FC = () => {
           monthlyData: [],
           typeData: [],
         },
+        resumoGrupo: {
+          totalGrupos: 0,
+          gruposAtivos: 0,
+          enviosHoje: 0,
+          enviosSemana: 0,
+          monthlyData: [],
+        },
         recentActivity: [],
       });
     } finally {
@@ -1666,7 +2012,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Grid - 5 Cards */}
+      {/* Main Grid - 6 Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Contratação + Vagas (spans 2 columns if space allows) */}
         <div className="xl:col-span-2">
@@ -1704,6 +2050,12 @@ const Dashboard: React.FC = () => {
         <ChecklistHeroCard 
           stats={stats} 
           hasAccess={moduleAccess.checklist} 
+        />
+
+        {/* Resumo em Grupo */}
+        <ResumoGrupoHeroCard 
+          stats={stats} 
+          hasAccess={moduleAccess.resumos} 
         />
       </div>
 

@@ -18,6 +18,7 @@ export const company = pgTable("company", {
   hodometro_acsess: boolean("hodometro_acsess").default(true),
   resumo_access: boolean("resumo_access").default(false),
   tags_access: boolean("tags_access").default(true),
+  bomba_gasolina_access: boolean("bomba_gasolina_access").default(false),
 
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
@@ -261,6 +262,24 @@ export const hodometro = pgTable("hodometro", {
   foto_hodometro: text("foto_hodometro"),
   company_id: integer("company_id").references(() => company.company_id),
   bateria: text("bateria"),
+});
+
+// Bomba_gasolina table (real structure from database)
+export const bomba_gasolina = pgTable("bomba_gasolina", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
+  data: date("data"),
+  hora: text("hora"),
+  litro_informado: text("litro_informado"),
+  litro_lido: text("litro_lido"),
+  preco_informado: text("preco_informado"),
+  preco_lido: text("preco_lido"),
+  foto_bomba: text("foto_bomba"),
+  comparacao_leitura: boolean("comparacao_leitura"),
+  motorista_id: bigint("motorista_id", { mode: "number" }).references(() => motorista.motorista_id),
+  veiculo_id: bigint("veiculo_id", { mode: "number" }).references(() => veiculo.veiculo_id),
+  cliente_id: bigint("cliente_id", { mode: "number" }).references(() => cliente.cliente_id),
+  company_id: bigint("company_id", { mode: "number" }).references(() => company.company_id),
+  hodometro_id: bigint("hodometro_id", { mode: "number" }).references(() => hodometro.id_hodometro),
 });
 
 // Relations

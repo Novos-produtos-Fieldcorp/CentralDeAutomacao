@@ -53,7 +53,9 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string, apiKey?: string, a
     // Usar axios igual ao FloatingChat para manter consistência
     const axios = (await import('axios')).default;
     const apiClient = axios.create({
-      baseURL: '/api',
+      baseURL: window.location.hostname.includes('netlify.app') 
+        ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
+        : '/api',
       headers: {
         'api_access_token': token,
         'Content-Type': 'application/json',
