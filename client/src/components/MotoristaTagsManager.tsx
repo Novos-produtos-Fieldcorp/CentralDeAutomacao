@@ -176,6 +176,29 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
               if (contacts.length > 0) {
                 const contact = contacts[0];
                 
+                // Buscar labels existentes primeiro
+                const existingTagsResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                  method: 'GET',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'wiseapp-token': wiseAppToken,
+                    'wiseapp-account-id': accountId
+                  }
+                });
+
+                let existingTags: string[] = [];
+                if (existingTagsResponse.ok) {
+                  const existingTagsData = await existingTagsResponse.json();
+                  existingTags = existingTagsData.payload || [];
+                }
+
+                // Criar array com todas as tags (existentes + nova)
+                const allTags = [...existingTags];
+                if (!allTags.some(existingTag => existingTag.toLowerCase() === tag.nome.toLowerCase())) {
+                  allTags.push(tag.nome);
+                }
+
+                // Enviar array completo
                 const tagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                   method: 'POST',
                   headers: {
@@ -183,7 +206,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                     'wiseapp-token': wiseAppToken,
                     'wiseapp-account-id': accountId
                   },
-                  body: JSON.stringify({ tagName: tag.nome })
+                  body: JSON.stringify({ labels: allTags })
                 });
 
                 if (tagResponse.ok) {

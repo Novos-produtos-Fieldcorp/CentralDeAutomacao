@@ -277,6 +277,29 @@ const BulkActionsModal = ({
               if (contacts.length > 0) {
                 const contact = contacts[0];
                 
+                // Buscar labels existentes primeiro
+                const existingTagsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contact.id}/labels`), {
+                  method: 'GET',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'wiseapp-token': wiseAppToken,
+                    'wiseapp-account-id': accountId
+                  }
+                });
+
+                let existingTags: string[] = [];
+                if (existingTagsResponse.ok) {
+                  const existingTagsData = await existingTagsResponse.json();
+                  existingTags = existingTagsData.payload || [];
+                }
+
+                // Criar array com todas as tags (existentes + nova)
+                const allTags = [...existingTags];
+                if (!allTags.some(tag => tag.toLowerCase() === tagData.nome.toLowerCase())) {
+                  allTags.push(tagData.nome);
+                }
+
+                // Enviar array completo
                 const tagResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contact.id}/labels`), {
                   method: 'POST',
                   headers: {
@@ -284,7 +307,7 @@ const BulkActionsModal = ({
                     'wiseapp-token': wiseAppToken,
                     'wiseapp-account-id': accountId
                   },
-                  body: JSON.stringify({ tagName: tagData.nome })
+                  body: JSON.stringify({ labels: allTags })
                 });
                 
                 if (!tagResponse.ok) {
