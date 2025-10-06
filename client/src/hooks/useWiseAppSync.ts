@@ -78,7 +78,13 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      const response = await fetch(createApiUrl('sync-motoristas-bulk'), {
+      // Para Netlify, usar função do Supabase diretamente
+      const isNetlify = window.location.hostname.includes('netlify.app');
+      const url = isNetlify 
+        ? `/functions/v1/sync-motoristas-bulk`
+        : createApiUrl('sync-motoristas-bulk');
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -22,6 +22,11 @@
   status = 200
 
 [[redirects]]
+  from = "/functions/v1/sync-motoristas-bulk"
+  to = "/.netlify/functions/sync-motoristas-bulk"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

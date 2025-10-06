@@ -1,23 +1,26 @@
 // Configuração da API
-const isReplit = window.location.hostname.includes('replit.dev');
 const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const isNetlify = window.location.hostname.includes('netlify.app');
 
-// Backend do Replit (fallback)
-const REPLIT_BACKEND = 'https://cbc1561b-2d4f-411e-98f5-2b46e017850a-00-3brgcq7ngokp0.picard.replit.dev/api';
-
-// Usar backend do Replit no Netlify, senão usar API local
-export const API_BASE_URL = isNetlify ? REPLIT_BACKEND : '/api';
+// Para Netlify, usar as funções do Supabase diretamente
+// Para desenvolvimento local, usar API local
+export const API_BASE_URL = isNetlify ? '' : '/api';
 
 console.log('API Configuration:', {
   hostname: window.location.hostname,
-  environment: isNetlify ? 'Netlify' : isReplit ? 'Replit' : isLocalDev ? 'Local' : 'Unknown',
+  environment: isNetlify ? 'Netlify (Supabase)' : isLocalDev ? 'Local' : 'Unknown',
   API_BASE_URL,
-  usingReplitBackend: isNetlify
+  usingSupabase: isNetlify
 });
 
 export const createApiUrl = (path: string) => {
   // Remove leading slash if present to avoid double slashes
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  
+  // Se API_BASE_URL está vazio (Netlify), usar apenas o path
+  if (!API_BASE_URL) {
+    return `/${cleanPath}`;
+  }
+  
   return `${API_BASE_URL}/${cleanPath}`;
 };
