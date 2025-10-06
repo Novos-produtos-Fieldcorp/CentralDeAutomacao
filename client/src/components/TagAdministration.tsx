@@ -48,9 +48,21 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     enabled: !!companyId,
   });
 
-  // Mutation para criar tag
   const createTagMutation = useMutation({
     mutationFn: async (tagData: Omit<Tag, 'id' | 'created_at' | 'updated_at'>) => {
+      if (!accountId || !wiseAppToken) {
+        throw new Error('Token/conta WiseApp não configurados. Capture o token antes de criar marcadores.');
+      }
+      await createWiseAppTag({
+        id: 0,
+        nome: tagData.nome,
+        cor: tagData.cor || '#3B82F6',
+        limite_max: tagData.limite_max || null,
+        company_id: tagData.company_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as Tag);
+
       const { data, error } = await supabase
         .from('tag')
         .insert({
@@ -66,19 +78,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       if (error) throw error;
       return data[0];
     },
-    onSuccess: async (newTag) => {
-      // Criar no WiseApp também
-      if (accountId && wiseAppToken) {
-        try {
-          await createWiseAppTag(newTag);
-          toast.success("Marcador criado com sucesso localmente e no WiseApp!");
-        } catch (error) {
-          console.warn('Erro ao criar tag no WiseApp:', error);
-        }
-      } else {
-        toast.success("Marcador criado com sucesso localmente!");
-      }
-
+    onSuccess: async () => {
       // Invalidar todas as queries relacionadas a tags
       await queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       await queryClient.invalidateQueries({ queryKey: ['tags'] });
@@ -88,10 +88,11 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       // Forçar refetch das queries
       await queryClient.refetchQueries({ queryKey: ['local-tags', companyId] });
 
+      toast.success("Marcador criado no WiseApp e sincronizado localmente!");
       setIsCreateModalOpen(false);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao criar marcador");
+      toast.error(error.message || "Erro ao criar marcador no WiseApp");
     },
   });
 
@@ -210,57 +211,43 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     setDeletingTag(null);
   };
 
-  // Função para criar tag no WiseApp usando a rota do backend
+  // Função para criar tag no WiseApp usando a rota do backend (estrita)
   const createWiseAppTag = async (tag: Tag) => {
     if (!accountId || !wiseAppToken) {
-      console.warn('Token WiseApp ou Account ID não disponível');
-      return;
+      throw new Error('Token WiseApp ou Account ID não disponível');
     }
 
-    try {
-      const labelData = {
-        name: tag.nome,
-        color: tag.cor,
-        description: tag.nome
-      };
+    const labelData = {
+      name: tag.nome,
+      color: tag.cor,
+      description: tag.nome
+    };
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      const response = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels`), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-token': wiseAppToken,
-          'wiseapp-account-id': accountId
-        },
-        body: JSON.stringify(labelData),
-        signal: controller.signal
-      });
+    const response = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels`), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'wiseapp-token': wiseAppToken,
+        'wiseapp-account-id': accountId
+      },
+      body: JSON.stringify(labelData),
+      signal: controller.signal
+    });
 
-      clearTimeout(timeoutId);
+    clearTimeout(timeoutId);
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Tag criada no WiseApp:', result);
-        return result;
-      } else {
-        const errorData = await response.text();
-        console.warn(`WiseApp API retornou status ${response.status}: ${errorData}`);
-        
-        // Se for erro 401, tentar renovar o token
-        if (response.status === 401) {
-          console.warn('Token WiseApp expirado, tentando renovar...');
-          // Aqui você pode implementar renovação de token se necessário
-          throw new Error('Token WiseApp expirado. Por favor, reconecte sua conta WiseApp.');
-        }
-        
-        throw new Error(`Erro ao criar tag no WiseApp: ${response.status} - ${errorData}`);
+    if (!response.ok) {
+      const errorData = await response.text();
+      if (response.status === 401) {
+        throw new Error('Token WiseApp expirado. Por favor, reconecte sua conta WiseApp.');
       }
-    } catch (error) {
-      console.warn('Erro ao criar tag no WiseApp:', error);
-      throw error;
+      throw new Error(`Erro ao criar tag no WiseApp: ${response.status} - ${errorData}`);
     }
+
+    return response.json();
   };
 
   // Função para deletar tag no WiseApp usando a rota do backend
