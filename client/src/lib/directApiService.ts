@@ -457,11 +457,19 @@ export const applyWiseAppContactLabels = async (accountId: string, token: string
     
     const existingLabels: string[] = existingLabelsData?.payload || [];
     
-    // 2. Adicionar novas labels se não existirem
+    // 2. Adicionar novas labels se não existirem (case insensitive)
     const mergedLabels = [...existingLabels];
     for (const newLabel of labelNames) {
-      if (!mergedLabels.includes(newLabel)) {
+      // Verificar se a label já existe (case insensitive)
+      const labelExists = mergedLabels.some(existingLabel => 
+        existingLabel.toLowerCase() === newLabel.toLowerCase()
+      );
+      
+      if (!labelExists) {
         mergedLabels.push(newLabel);
+        console.log(`Adding new label "${newLabel}" to contact ${contactId}`);
+      } else {
+        console.log(`Label "${newLabel}" already exists for contact ${contactId}`);
       }
     }
     

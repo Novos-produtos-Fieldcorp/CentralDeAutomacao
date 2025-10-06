@@ -1677,15 +1677,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (getResponse.ok) {
           const result = await getResponse.json();
           existingLabels = result.payload || [];
-          console.log(`Found ${existingLabels.length} existing labels`);
+          console.log(`Found ${existingLabels.length} existing labels:`, existingLabels);
+        } else {
+          console.warn(`Failed to get existing labels: ${getResponse.status}`);
         }
         
-        // Adicionar nova label se não existir
+        // Adicionar nova label se não existir (case insensitive)
         const newLabel = tagName || tagId;
         finalLabels = [...existingLabels];
-        if (newLabel && !finalLabels.includes(newLabel)) {
+        
+        // Verificar se a label já existe (case insensitive)
+        const labelExists = finalLabels.some(existingLabel => 
+          existingLabel.toLowerCase() === newLabel.toLowerCase()
+        );
+        
+        if (newLabel && !labelExists) {
           finalLabels.push(newLabel);
-          console.log(`Added "${newLabel}" to labels list`);
+          console.log(`Added "${newLabel}" to labels list. New list:`, finalLabels);
+        } else {
+          console.log(`Label "${newLabel}" already exists or is empty`);
         }
       }
       
@@ -2535,15 +2545,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (getResponse.ok) {
           const result = await getResponse.json();
           existingLabels = result.payload || [];
-          console.log(`Found ${existingLabels.length} existing labels`);
+          console.log(`Found ${existingLabels.length} existing labels:`, existingLabels);
+        } else {
+          console.warn(`Failed to get existing labels: ${getResponse.status}`);
         }
         
-        // Adicionar nova label se não existir
+        // Adicionar nova label se não existir (case insensitive)
         const newLabel = tagName || tagId;
         finalLabels = [...existingLabels];
-        if (newLabel && !finalLabels.includes(newLabel)) {
+        
+        // Verificar se a label já existe (case insensitive)
+        const labelExists = finalLabels.some(existingLabel => 
+          existingLabel.toLowerCase() === newLabel.toLowerCase()
+        );
+        
+        if (newLabel && !labelExists) {
           finalLabels.push(newLabel);
-          console.log(`Added "${newLabel}" to labels list`);
+          console.log(`Added "${newLabel}" to labels list. New list:`, finalLabels);
+        } else {
+          console.log(`Label "${newLabel}" already exists or is empty`);
         }
       }
       
