@@ -156,28 +156,48 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
         if (error) throw error;
 
-        // Sincronizar via backend seguro
-        if (motorista.telefone && accountId) {
+        // Sincronizar via backend seguro (usando a mesma lógica do BulkActionsModal)
+        if (motorista.telefone && accountId && wiseAppToken) {
           try {
-            const syncResponse = await fetch(`/api/wiseapp/sync-contact-tags/${motoristaId}`, {
-              method: 'POST',
+            // Buscar contato no WiseApp primeiro
+            const formattedPhone = motorista.telefone.replace(/\D/g, '');
+            const searchResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?phone=${formattedPhone}`, {
+              method: 'GET',
               headers: {
+                'api_access_token': wiseAppToken,
                 'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                operation: 'add_tag',
-                tagId: tagId,
-                tagName: tag.nome,
-                companyId: companyId,
-                accountId: accountId.toString()
-              })
+              }
             });
 
-            if (syncResponse.ok) {
-              console.log(`✅ Tag "${tag.nome}" sincronizada com sucesso no WiseApp`);
+            if (searchResponse.ok) {
+              const searchData = await searchResponse.json();
+              const contacts = searchData.payload || [];
+              
+              if (contacts.length > 0) {
+                const contact = contacts[0];
+                
+                // Aplicar tag ao contato usando rota que preserva tags existentes
+                const tagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'wiseapp-token': wiseAppToken,
+                    'wiseapp-account-id': accountId
+                  },
+                  body: JSON.stringify({ tagName: tag.nome })
+                });
+
+                if (tagResponse.ok) {
+                  console.log(`✅ Tag "${tag.nome}" sincronizada com sucesso no WiseApp`);
+                } else {
+                  const errorData = await tagResponse.text();
+                  console.warn(`⚠️ Erro na sincronização WiseApp:`, errorData);
+                }
+              } else {
+                console.log(`❌ Nenhum contato encontrado no WiseApp para ${motorista.nome} (${formattedPhone})`);
+              }
             } else {
-              const errorData = await syncResponse.json();
-              console.warn(`⚠️ Erro na sincronização WiseApp:`, errorData.error);
+              console.warn(`⚠️ Erro ao buscar contato no WiseApp:`, searchResponse.status);
             }
           } catch (error) {
             console.warn(`⚠️ Erro não crítico na sincronização:`, error);
@@ -231,29 +251,47 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
 
         if (error) throw error;
 
-        // Sincronizar via backend seguro
-        if (motorista.telefone && accountId) {
+        // Sincronizar via backend seguro (usando a mesma lógica do BulkActionsModal)
+        if (motorista.telefone && accountId && wiseAppToken) {
           try {
-            const syncResponse = await fetch(`/api/wiseapp/sync-contact-tags/${motoristaId}`, {
-              method: 'POST',
+            // Buscar contato no WiseApp primeiro
+            const formattedPhone = motorista.telefone.replace(/\D/g, '');
+            const searchResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?phone=${formattedPhone}`, {
+              method: 'GET',
               headers: {
+                'api_access_token': wiseAppToken,
                 'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                operation: 'remove_tag',
-                tagId: tagId,
-                tagName: tag.nome,
-                companyId: companyId,
-                accountId: accountId.toString()
-              })
+              }
             });
 
-            if (syncResponse.ok) {
-              const result = await syncResponse.json();
-              console.log(`✅ Tag "${tag.nome}" removida e sincronizada no WiseApp. Tags restantes: ${result.remainingLabels?.length || 0}`);
+            if (searchResponse.ok) {
+              const searchData = await searchResponse.json();
+              const contacts = searchData.payload || [];
+              
+              if (contacts.length > 0) {
+                const contact = contacts[0];
+                
+                // Remover tag do contato usando rota que preserva outras tags
+                const tagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels/${tagId}`, {
+                  method: 'DELETE',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'wiseapp-token': wiseAppToken,
+                    'wiseapp-account-id': accountId
+                  }
+                });
+
+                if (tagResponse.ok) {
+                  console.log(`✅ Tag "${tag.nome}" removida com sucesso no WiseApp`);
+                } else {
+                  const errorData = await tagResponse.text();
+                  console.warn(`⚠️ Erro na remoção WiseApp:`, errorData);
+                }
+              } else {
+                console.log(`❌ Nenhum contato encontrado no WiseApp para ${motorista.nome} (${formattedPhone})`);
+              }
             } else {
-              const errorData = await syncResponse.json();
-              console.warn(`⚠️ Erro na sincronização WiseApp:`, errorData.error);
+              console.warn(`⚠️ Erro ao buscar contato no WiseApp:`, searchResponse.status);
             }
           } catch (error) {
             console.warn(`⚠️ Erro não crítico na sincronização:`, error);
