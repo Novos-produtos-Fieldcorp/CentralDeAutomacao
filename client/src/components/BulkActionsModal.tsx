@@ -276,39 +276,6 @@ const BulkActionsModal = ({
 
               if (contacts.length > 0) {
                 const contact = contacts[0];
-
-                // 1. Primeiro buscar as tags existentes do contato
-                console.log(`[BULK] Buscando tags existentes do contato ${contact.id} (${motorista.nome_motorista})`);
-                
-                const existingTagsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contact.id}/labels`), {
-                  method: 'GET',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': accountId
-                  }
-                });
-
-                let existingTags: string[] = [];
-                if (existingTagsResponse.ok) {
-                  const existingTagsData = await existingTagsResponse.json();
-                  existingTags = existingTagsData.payload || [];
-                  console.log(`[BULK] Tags existentes do contato ${contact.id}:`, existingTags);
-                } else {
-                  console.warn(`[BULK] Erro ao buscar tags existentes: ${existingTagsResponse.status}`);
-                }
-
-                // 2. Criar lista com tags existentes + nova tag (se não existir)
-                const allTags = [...existingTags];
-                if (!allTags.some(tag => tag.toLowerCase() === tagData.nome.toLowerCase())) {
-                  allTags.push(tagData.nome);
-                  console.log(`[BULK] Adicionando nova tag "${tagData.nome}" à lista:`, allTags);
-                } else {
-                  console.log(`[BULK] Tag "${tagData.nome}" já existe no contato ${contact.id}`);
-                }
-
-                // 3. Aplicar todas as tags (existentes + nova) ao contato
-                console.log(`[BULK] Aplicando ${allTags.length} tags ao contato ${contact.id} (${motorista.nome_motorista})`);
                 
                 const tagResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contact.id}/labels`), {
                   method: 'POST',
@@ -317,7 +284,7 @@ const BulkActionsModal = ({
                     'wiseapp-token': wiseAppToken,
                     'wiseapp-account-id': accountId
                   },
-                  body: JSON.stringify({ labels: allTags })
+                  body: JSON.stringify({ tagName: tagData.nome })
                 });
                 
                 if (!tagResponse.ok) {

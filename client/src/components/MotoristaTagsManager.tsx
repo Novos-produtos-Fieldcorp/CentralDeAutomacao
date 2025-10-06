@@ -176,39 +176,6 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
               if (contacts.length > 0) {
                 const contact = contacts[0];
                 
-                // 1. Primeiro buscar as tags existentes do contato
-                console.log(`Buscando tags existentes do contato ${contact.id} (${motorista.nome})`);
-                
-                const existingTagsResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
-                  method: 'GET',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': accountId
-                  }
-                });
-
-                let existingTags: string[] = [];
-                if (existingTagsResponse.ok) {
-                  const existingTagsData = await existingTagsResponse.json();
-                  existingTags = existingTagsData.payload || [];
-                  console.log(`Tags existentes do contato ${contact.id}:`, existingTags);
-                } else {
-                  console.warn(`Erro ao buscar tags existentes: ${existingTagsResponse.status}`);
-                }
-
-                // 2. Criar lista com tags existentes + nova tag (se não existir)
-                const allTags = [...existingTags];
-                if (!allTags.some(existingTag => existingTag.toLowerCase() === tag.nome.toLowerCase())) {
-                  allTags.push(tag.nome);
-                  console.log(`Adicionando nova tag "${tag.nome}" à lista:`, allTags);
-                } else {
-                  console.log(`Tag "${tag.nome}" já existe no contato ${contact.id}`);
-                }
-
-                // 3. Aplicar todas as tags (existentes + nova) ao contato
-                console.log(`Aplicando ${allTags.length} tags ao contato ${contact.id} (${motorista.nome})`);
-                
                 const tagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
                   method: 'POST',
                   headers: {
@@ -216,7 +183,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                     'wiseapp-token': wiseAppToken,
                     'wiseapp-account-id': accountId
                   },
-                  body: JSON.stringify({ labels: allTags })
+                  body: JSON.stringify({ tagName: tag.nome })
                 });
 
                 if (tagResponse.ok) {
