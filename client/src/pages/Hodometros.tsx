@@ -5,6 +5,7 @@ import { useModuleAccess } from '../hooks/useModuleAccess';
 import HodometrosDashboard from './hodometros/HodometrosDashboard';
 import HodometrosLista from './hodometros/HodometrosLista';
 import HodometrosRelatorio from './hodometros/HodometrosRelatorio';
+import HodometrosMinuta from './hodometros/HodometrosMinuta';
 
 const Hodometros = () => {
   const location = useLocation();
@@ -45,6 +46,7 @@ const Hodometros = () => {
   const tabs = [
     { path: '/hodometros/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/hodometros/relatorio', icon: Gauge, label: 'Leituras' },
+    { path: '/hodometros/minuta', icon: ClipboardList, label: 'Minuta' },
     { path: '/hodometros/lista', icon: ClipboardList, label: 'Relatórios' }
   ];
 
@@ -101,9 +103,10 @@ const Hodometros = () => {
 
         <div className="p-6">
           <Routes>
-            <Route index element={<Navigate to="/hodometros/dashboard\" replace />} />
+            <Route index element={<Navigate to="/hodometros/dashboard" replace />} />
             <Route path="dashboard" element={<HodometrosDashboard />} />
             <Route path="relatorio" element={<HodometrosRelatorio />} />
+            <Route path="minuta" element={<HodometrosMinuta />} />
             <Route path="lista" element={<HodometrosLista />} />
           </Routes>
         </div>
