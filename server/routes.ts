@@ -74,25 +74,9 @@ setInterval(cleanupOldJobs, 30 * 60 * 1000);
 // Initialize Supabase client with bypass RLS for backend operations
 const supabaseBackendUrl =
   process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co";
-// Prefer a service role key for backend operations to bypass RLS. Fall back to other keys if needed.
 const supabaseBackendKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_SERVICE_ROLE ||
   process.env.VITE_SUPABASE_ANON_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ";
-
-// Log which env var provided the backend key in a safe way (dont' print the key itself)
-if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.log('Using SUPABASE_SERVICE_ROLE_KEY for backend supabase client (service role).');
-} else if (process.env.SUPABASE_SERVICE_ROLE) {
-  console.log('Using SUPABASE_SERVICE_ROLE for backend supabase client (service role - alternate name).');
-} else if (process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY) {
-  console.warn('WARNING: Backend supabase client is using an anon key; this may be restricted by RLS.');
-} else {
-  console.warn('No supabase key env var detected; falling back to built-in default key. Please configure SUPABASE_SERVICE_ROLE_KEY.');
-}
-
 const supabaseBackend = createClient(supabaseBackendUrl, supabaseBackendKey, {
   db: { schema: "public" },
   auth: {
@@ -163,71 +147,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: "Erro interno do servidor", 
         details: error instanceof Error ? error.message : "Unknown error" 
       });
-    }
-  });
-
-  // Admin: toggle minuta_access for a company using service role (bypass RLS)
-  app.post('/api/admin/company/:companyId/minuta', async (req, res) => {
-    try {
-      const companyId = Number(req.params.companyId);
-      // Accept boolean, string ('true'/'false'), or numeric (1/0)
-      let { value } = req.body as { value?: any };
-      // Log incoming raw value for debugging (non-sensitive)
-      console.log(`/api/admin/company/${companyId}/minuta - incoming value:`, typeof value, value);
-
-      if (typeof value === 'string') {
-        const lower = value.toLowerCase();
-        if (lower === 'true') value = true;
-        else if (lower === 'false') value = false;
-      } else if (typeof value === 'number') {
-        value = value === 1 ? true : value === 0 ? false : value;
-      }
-
-      if (typeof value !== 'boolean') {
-        return res.status(400).json({ error: 'value must be boolean (or string "true"/"false" or number 1/0)' });
-      }
-
-      // Perform the update using the backend supabase client (prefer service role key)
-      console.log(`Updating company ${companyId} minuta_access -> ${value}`);
-      const { data, error } = await supabaseBackend
-        .from('company')
-        .update({ minuta_access: value })
-        .eq('company_id', companyId)
-        .select();
-
-      if (error) {
-        console.error('Error updating minuta_access via backend:', error);
-        return res.status(500).json({ error: error.message || String(error) });
-      }
-
-      return res.json({ data });
-    } catch (err) {
-      console.error('Unexpected error in /api/admin/company/:companyId/minuta', err);
-      return res.status(500).json({ error: String(err) });
-    }
-  });
-
-  // Diagnostic: get current minuta_access for a company (read-only)
-  app.get('/api/admin/company/:companyId/minuta', async (req, res) => {
-    try {
-      const companyId = Number(req.params.companyId);
-      const { data, error } = await supabaseBackend
-        .from('company')
-        .select('company_id, minuta_access')
-        .eq('company_id', companyId)
-        .limit(1);
-
-      if (error) {
-        console.error('Error reading minuta_access (diagnostic):', error);
-        return res.status(500).json({ error: error.message || String(error) });
-      }
-
-      if (!data || data.length === 0) return res.status(404).json({ error: 'company not found' });
-
-      return res.json({ data: data[0] });
-    } catch (err) {
-      console.error('Unexpected error in diagnostic /api/admin/company/:companyId/minuta', err);
-      return res.status(500).json({ error: String(err) });
     }
   });
 
@@ -353,110 +272,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error in company lookup:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
-    }
-  });
-
-  // New route: fetch minutas (uses backend supabase client to bypass RLS)
-  app.get('/api/minutas', async (req, res) => {
-    try {
-      const companyId = req.query.companyId ? Number(req.query.companyId) : null;
-      const start = req.query.start ? String(req.query.start) : null;
-      const end = req.query.end ? String(req.query.end) : null;
-      const rangeStart = req.query.rangeStart ? Number(req.query.rangeStart) : undefined;
-      const rangeEnd = req.query.rangeEnd ? Number(req.query.rangeEnd) : undefined;
-
-      let query = supabaseBackend.from('minuta')
-        .select(`
-          id,
-          minuta_informada,
-          minuta_lida,
-          romaneio,
-          foto_minuta,
-          filial_id,
-          filial:filial_id ( id, filial, company_id ),
-          motorista_id,
-          motorista:motorista_id ( motorista_id, nome, cpf, company_id ),
-          veiculo_id,
-          veiculo:veiculo_id ( veiculo_id, placa, marca, tipo, company_id ),
-          company_id,
-          created_at
-        `)
-        .order('created_at', { ascending: false });
-
-      if (companyId) query = query.eq('company_id', companyId);
-      if (start) query = query.gte('created_at', start);
-      if (end) query = query.lte('created_at', end);
-      if (typeof rangeStart === 'number' && typeof rangeEnd === 'number') {
-        query = query.range(rangeStart, rangeEnd);
-      }
-
-      const { data, error } = await query;
-      if (error) {
-        console.error('Error fetching minutas (backend):', error);
-        return res.status(500).json({ error: String(error) });
-      }
-      return res.json({ data });
-    } catch (err) {
-      console.error('Unexpected error in /api/minutas:', err);
-      return res.status(500).json({ error: 'Unexpected server error' });
-    }
-  });
-
-  // New route: fetch filiais for a company (or global null company_id entries)
-  app.get('/api/filiais/:companyId', async (req, res) => {
-    try {
-      const companyId = Number(req.params.companyId);
-      if (Number.isNaN(companyId)) return res.status(400).json({ error: 'Invalid companyId' });
-
-      const { data, error } = await supabaseBackend
-        .from('filial')
-        .select('id, filial, company_id')
-        .or(`company_id.eq.${companyId},company_id.is.null`)
-        .order('filial', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching filiais (backend):', error);
-        return res.status(500).json({ error: String(error) });
-      }
-
-      return res.json({ data });
-    } catch (err) {
-      console.error('Unexpected error in /api/filiais/:companyId', err);
-      return res.status(500).json({ error: 'Unexpected server error' });
-    }
-  });
-
-  // New route: fetch motoristas for a company
-  app.get('/api/motoristas', async (req, res) => {
-    try {
-      const companyId = req.query.companyId ? Number(req.query.companyId) : null;
-      const query = supabaseBackend.from('motorista').select('motorista_id, nome, cpf, company_id').order('nome', { ascending: true });
-      const { data, error } = companyId ? await query.eq('company_id', companyId) : await query;
-      if (error) {
-        console.error('Error fetching motoristas (backend):', error);
-        return res.status(500).json({ error: String(error) });
-      }
-      return res.json({ data });
-    } catch (err) {
-      console.error('Unexpected error in /api/motoristas:', err);
-      return res.status(500).json({ error: 'Unexpected server error' });
-    }
-  });
-
-  // New route: fetch veiculos for a company
-  app.get('/api/veiculos', async (req, res) => {
-    try {
-      const companyId = req.query.companyId ? Number(req.query.companyId) : null;
-      const query = supabaseBackend.from('veiculo').select('veiculo_id, placa, marca, tipo, company_id').order('placa', { ascending: true });
-      const { data, error } = companyId ? await query.eq('company_id', companyId) : await query;
-      if (error) {
-        console.error('Error fetching veiculos (backend):', error);
-        return res.status(500).json({ error: String(error) });
-      }
-      return res.json({ data });
-    } catch (err) {
-      console.error('Unexpected error in /api/veiculos:', err);
-      return res.status(500).json({ error: 'Unexpected server error' });
     }
   });
 
@@ -1862,15 +1677,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (getResponse.ok) {
           const result = await getResponse.json();
           existingLabels = result.payload || [];
-          console.log(`Found ${existingLabels.length} existing labels`);
+          console.log(`Found ${existingLabels.length} existing labels:`, existingLabels);
+        } else {
+          console.warn(`Failed to get existing labels: ${getResponse.status}`);
         }
         
-        // Adicionar nova label se não existir
+        // Adicionar nova label se não existir (case insensitive)
         const newLabel = tagName || tagId;
         finalLabels = [...existingLabels];
-        if (newLabel && !finalLabels.includes(newLabel)) {
+        
+        // Verificar se a label já existe (case insensitive)
+        const labelExists = finalLabels.some(existingLabel => 
+          existingLabel.toLowerCase() === newLabel.toLowerCase()
+        );
+        
+        if (newLabel && !labelExists) {
           finalLabels.push(newLabel);
-          console.log(`Added "${newLabel}" to labels list`);
+          console.log(`Added "${newLabel}" to labels list. New list:`, finalLabels);
+        } else {
+          console.log(`Label "${newLabel}" already exists or is empty`);
         }
       }
       
@@ -2451,6 +2276,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const errorData = await response.text();
         console.log(`WiseApp API response: ${response.status} - ${errorData}`);
         
+        // Se for erro 401, token expirado
+        if (response.status === 401) {
+          return res.status(401).json({ 
+            error: "Token WiseApp expirado ou inválido",
+            details: "Por favor, reconecte sua conta WiseApp"
+          });
+        }
+        
         // Se a tag já existe (422), buscar a tag existente
         if (response.status === 422) {
           try {
@@ -2712,15 +2545,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (getResponse.ok) {
           const result = await getResponse.json();
           existingLabels = result.payload || [];
-          console.log(`Found ${existingLabels.length} existing labels`);
+          console.log(`Found ${existingLabels.length} existing labels:`, existingLabels);
+        } else {
+          console.warn(`Failed to get existing labels: ${getResponse.status}`);
         }
         
-        // Adicionar nova label se não existir
+        // Adicionar nova label se não existir (case insensitive)
         const newLabel = tagName || tagId;
         finalLabels = [...existingLabels];
-        if (newLabel && !finalLabels.includes(newLabel)) {
+        
+        // Verificar se a label já existe (case insensitive)
+        const labelExists = finalLabels.some(existingLabel => 
+          existingLabel.toLowerCase() === newLabel.toLowerCase()
+        );
+        
+        if (newLabel && !labelExists) {
           finalLabels.push(newLabel);
-          console.log(`Added "${newLabel}" to labels list`);
+          console.log(`Added "${newLabel}" to labels list. New list:`, finalLabels);
+        } else {
+          console.log(`Label "${newLabel}" already exists or is empty`);
         }
       }
       
