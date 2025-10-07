@@ -50,13 +50,14 @@ interface HodometroReading {
   } | null;
 }
 
-const HodometrosRelatorio = () => {
+const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { initialTab: undefined }) => {
   const { companyId } = useAuth();
   const { moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('30days', true);
   const [readings, setReadings] = useState<HodometroReading[]>([]);
+  // (Minuta moved to its own page) - keep Relatório focused on Leituras
   const [error, setError] = useState<string | null>(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
@@ -176,6 +177,8 @@ const HodometrosRelatorio = () => {
       setLoading(false);
     }
   }, [dateRange, companyId]);
+
+  // Minutas are handled in their dedicated page (HodometrosMinuta)
 
   useEffect(() => {
     // Only fetch when date range actually changes, not on pending changes
@@ -464,7 +467,6 @@ const HodometrosRelatorio = () => {
     
     return matchesSearch && matchesVehicleType;
   });
-
   const {
     currentPage,
     pageSize,
@@ -477,6 +479,8 @@ const HodometrosRelatorio = () => {
     data: filteredReadings,
     initialPageSize: 25
   });
+
+  // (minuta pagination moved to its own page)
 
   if (loading) {
     return <LoadingSpinner />;
@@ -611,7 +615,7 @@ const HodometrosRelatorio = () => {
         {/* Export Button */}
         <div className="relative group">
           <button
-            onClick={exportToExcel}
+            onClick={() => exportToExcel()}
             className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
                      transition-colors flex items-center justify-center"
@@ -655,200 +659,136 @@ const HodometrosRelatorio = () => {
       )}
 
       {/* Readings Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-white dark:bg-gray-800">
-              <tr className="bg-gray-50 dark:bg-gray-800">
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
-                {moduleAccess.bomba && (
-                  <>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Litros</th>
-                  </>
-                )}
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Editar</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {paginatedReadings.map((reading) => {
-                const isElectric = reading.bateria !== null && reading.bateria !== undefined;
-                
-                return (
-                  <tr key={reading.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 text-gray-400 mr-1" />
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {formatDateBR(reading.data)}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+          <div className="overflow-x-auto">
+            {/* ...existing readings table markup... */}
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              {/* Reuse existing thead and tbody by rendering the same structure as before via copy */}
+              <thead className="bg-white dark:bg-gray-800">
+                <tr className="bg-gray-50 dark:bg-gray-800">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hodômetro</th>
+                  {moduleAccess.bomba && (
+                    <>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Preço</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Litros</th>
+                    </>
+                  )}
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trip</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Editar</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {paginatedReadings.map((reading) => {
+                  const isElectric = reading.bateria !== null && reading.bateria !== undefined;
+                  return (
+                    <tr key={reading.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 text-gray-400 mr-1" />
+                          <div className="text-sm text-gray-900 dark:text-white">{formatDateBR(reading.data)}</div>
                         </div>
-                      </div>
-                      <div className="flex items-center mt-1">
-                        <Clock className="h-4 w-4 text-gray-400 mr-1" />
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {reading.hora}
+                        <div className="flex items-center mt-1">
+                          <Clock className="h-4 w-4 text-gray-400 mr-1" />
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{reading.hora}</div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 text-gray-400 mr-1" />
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {reading.motorista?.nome || 'Não informado'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <User className="h-4 w-4 text-gray-400 mr-1" />
+                          <div className="text-sm text-gray-900 dark:text-white">{reading.motorista?.nome || 'Não informado'}</div>
                         </div>
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 ml-5">
-                        {reading.motorista?.cpf ? formatCPF(reading.motorista.cpf) : ''}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Truck className="h-4 w-4 text-gray-400 mr-1" />
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {reading.veiculo?.placa || 'Não informado'}
+                        <div className="text-xs text-gray-500 dark:text-gray-400 ml-5">{reading.motorista?.cpf ? formatCPF(reading.motorista.cpf) : ''}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Truck className="h-4 w-4 text-gray-400 mr-1" />
+                          <div className="text-sm text-gray-900 dark:text-white">{reading.veiculo?.placa || 'Não informado'}</div>
                         </div>
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 ml-5">
-                        {reading.veiculo?.marca} {reading.veiculo?.tipo}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      {isElectric ? (
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          Bateria: {reading.bateria}
-                        </div>
-                      ) : (
-                        <>
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            Lido: {formatNumber(reading.hod_lido)}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Informado: {formatNumber(reading.hod_informado)}
-                          </div>
-                        </>
-                      )}
-                    </td>
-                    {moduleAccess.bomba && (
-                      <>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          {reading.bomba_gasolina ? (
-                            <>
-                              <div className="text-sm text-gray-900 dark:text-white">
-                                Lido: {reading.bomba_gasolina.preco_lido || '-'}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Informado: {reading.bomba_gasolina.preco_informado || '-'}
-                              </div>
-                            </>
-                          ) : (
-                            <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          {reading.bomba_gasolina ? (
-                            <>
-                              <div className="text-sm text-gray-900 dark:text-white">
-                                Lido: {reading.bomba_gasolina.litro_lido || '-'}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Informado: {reading.bomba_gasolina.litro_informado || '-'}
-                              </div>
-                            </>
-                          ) : (
-                            <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                          )}
-                        </td>
-                      </>
-                    )}
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      {reading.trip_lida !== null ? (
-                        <>
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            Lida: {formatNumber(reading.trip_lida)}
-                          </div>
-                          {reading.trip_informada && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              Informada: {reading.trip_informada}
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {reading.foto_hodometro ? (
-                          <button
-                            onClick={(e) => handleShowPhoto(reading.foto_hodometro, e)}
-                            className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                            title="Ver foto do hodômetro"
-                            data-testid="button-foto-hodometro"
-                          >
-                            <Gauge size={16} />
-                          </button>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 ml-5">{reading.veiculo?.marca} {reading.veiculo?.tipo}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        {isElectric ? (
+                          <div className="text-sm text-gray-900 dark:text-white">Bateria: {reading.bateria}</div>
                         ) : (
-                          <span 
-                            className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50"
-                            title="Sem foto do hodômetro"
-                          >
-                            <Gauge size={16} />
-                          </span>
-                        )}
-                        
-                        {moduleAccess.bomba && (
                           <>
-                            {reading.bomba_gasolina?.foto_bomba ? (
-                              <button
-                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e, 'bomba')}
-                                className="inline-flex items-center justify-center p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
-                                title="Ver foto da bomba de gasolina"
-                                data-testid="button-foto-bomba"
-                              >
-                                <Fuel size={16} />
-                              </button>
-                            ) : (
-                              <span 
-                                className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50"
-                                title="Sem foto da bomba"
-                              >
-                                <Fuel size={16} />
-                              </span>
-                            )}
+                            <div className="text-sm text-gray-900 dark:text-white">Lido: {formatNumber(reading.hod_lido)}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Informado: {formatNumber(reading.hod_informado)}</div>
                           </>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <button
-                        onClick={(e) => handleEditReading(reading, e)}
-                        className="inline-flex items-center justify-center p-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-full hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
-                        title="Editar leitura"
-                      >
-                        <Edit size={16} />
-                      </button>
-                    </td>
+                      </td>
+                      {moduleAccess.bomba && (
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                            {reading.bomba_gasolina ? (
+                              <>
+                                <div className="text-sm text-gray-900 dark:text-white">Lido: {reading.bomba_gasolina.preco_lido || '-'}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">Informado: {reading.bomba_gasolina.preco_informado || '-'}</div>
+                              </>
+                            ) : (
+                              <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                            {reading.bomba_gasolina ? (
+                              <>
+                                <div className="text-sm text-gray-900 dark:text-white">Lido: {reading.bomba_gasolina.litro_lido || '-'}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">Informado: {reading.bomba_gasolina.litro_informado || '-'}</div>
+                              </>
+                            ) : (
+                              <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                            )}
+                          </td>
+                        </>
+                      )}
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        {reading.trip_lida !== null ? (
+                          <>
+                            <div className="text-sm text-gray-900 dark:text-white">Lida: {formatNumber(reading.trip_lida)}</div>
+                            {reading.trip_informada && <div className="text-xs text-gray-500 dark:text-gray-400">Informada: {reading.trip_informada}</div>}
+                          </>
+                        ) : (
+                          <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {reading.foto_hodometro ? (
+                            <button onClick={(e) => handleShowPhoto(reading.foto_hodometro, e)} className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors" title="Ver foto do hodômetro">
+                              <Gauge size={16} />
+                            </button>
+                          ) : (
+                            <span className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50" title="Sem foto do hodômetro"><Gauge size={16} /></span>
+                          )}
+                          {moduleAccess.bomba && (
+                            reading.bomba_gasolina?.foto_bomba ? (
+                              <button onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e, 'bomba')} className="inline-flex items-center justify-center p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors" title="Ver foto da bomba de gasolina"><Fuel size={16} /></button>
+                            ) : (
+                              <span className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50" title="Sem foto da bomba"><Fuel size={16} /></span>
+                            )
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button onClick={(e) => handleEditReading(reading, e)} className="inline-flex items-center justify-center p-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-full hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors" title="Editar leitura"><Edit size={16} /></button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {paginatedReadings.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">{filteredReadings.length === 0 ? 'Nenhuma leitura encontrada para o período selecionado' : 'Carregando...'}</td>
                   </tr>
-                );
-              })}
-              {paginatedReadings.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    {filteredReadings.length === 0 
-                      ? "Nenhuma leitura encontrada para o período selecionado" 
-                      : "Carregando..."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+
+      {/* Minuta removed from this screen (has its own page) */}
 
       {/* Pagination */}
       {filteredReadings.length > 0 && (

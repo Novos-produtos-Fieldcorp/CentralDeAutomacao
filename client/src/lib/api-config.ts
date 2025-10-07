@@ -7,7 +7,7 @@ const SUPABASE_FUNCTIONS_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1` : '
 
 const REPLIT_BACKEND = 'https://cbc1561b-2d4f-411e-98f5-2b46e017850a-00-3brgcq7ngokp0.picard.replit.dev/api';
 
-export const API_BASE_URL = SUPABASE_FUNCTIONS_URL || REPLIT_BACKEND;
+
 
 console.log('API Configuration:', {
   hostname: window.location.hostname,
@@ -19,10 +19,3 @@ console.log('API Configuration:', {
 
 export const createApiUrl = (path: string) => {
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  
-  if (API_BASE_URL.endsWith('/functions/v1')) {
-    return `${API_BASE_URL}/api/${cleanPath}`;
-  }
-  
-  return `${API_BASE_URL}/api/${cleanPath}`;
-};
