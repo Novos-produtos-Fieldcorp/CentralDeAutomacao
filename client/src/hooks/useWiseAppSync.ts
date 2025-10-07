@@ -4,8 +4,7 @@ import toast from 'react-hot-toast';
 // Removed direct API service - now using secure backend routes
 import { useAuth } from '@/context/AuthContext';
 import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
-import { createApiUrl } from '@/lib/api-config';
-import { EndpointDetector } from '@/lib/endpointDetector';
+import { createApiUrl } from '@/lib/api-config-supabase';
 
 interface SyncResult {
   success: boolean;
@@ -79,8 +78,8 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      // Usar sempre o backend Express por enquanto (função Supabase não está deployada)
-      const url = createApiUrl('wiseapp/sync-all-motoristas');
+      // Usar função Supabase
+      const url = createApiUrl('sync-all-motoristas');
       const body = { companyId: companyId };
 
       const response = await fetch(url, {
