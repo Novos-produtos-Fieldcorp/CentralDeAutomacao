@@ -123,14 +123,28 @@ export const wiseAppApi = {
   },
   
   syncAllMotoristas: async (companyId: number, token: string, accountId: string) => {
-    return apiRequest('/wiseapp/sync-all-motoristas', {
+    // Para Netlify, usar função do Supabase diretamente
+    const isNetlify = window.location.hostname.includes('netlify.app');
+    const url = isNetlify 
+      ? `/functions/v1/sync-all-motoristas`
+      : createApiUrl('wiseapp/sync-all-motoristas');
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'wiseapp-token': token,
         'wiseapp-account-id': accountId
       },
       body: JSON.stringify({ companyId })
     });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Sync all motoristas failed');
+    }
+    
+    return response.json();
   }
 };
 
