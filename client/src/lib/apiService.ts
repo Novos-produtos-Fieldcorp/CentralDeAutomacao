@@ -1,7 +1,7 @@
 // API Service for Netlify deployment
 // This service handles all API calls to avoid CORS issues with direct Supabase calls
 
-import { createApiUrl } from './api-config-supabase';
+import { createApiUrl } from './api-config';
 
 const API_BASE_URL = '';
 
@@ -125,14 +125,15 @@ export const wiseAppApi = {
   },
   
   syncAllMotoristas: async (companyId: number, token: string, accountId: string) => {
-    // Usar função Supabase
-    const url = createApiUrl('sync-all-motoristas');
+    // Usar backend Express (função Supabase não está deployada)
+    const url = createApiUrl('wiseapp/sync-all-motoristas');
 
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'wiseapp-token': token,
+        'wiseapp-account-id': accountId
       },
       body: JSON.stringify({ companyId })
     });
