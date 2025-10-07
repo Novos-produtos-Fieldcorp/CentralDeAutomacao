@@ -12,13 +12,13 @@ export class EndpointDetector {
     
     try {
       // Testar função Supabase primeiro
-      const supabaseUrl = '/functions/v1/sync-motoristas-bulk';
+      const supabaseUrl = '/functions/v1/sync-all-motoristas';
       const testResponse = await fetch(supabaseUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ company_id: 1 }) // Teste com company_id 1
+        body: JSON.stringify({ companyId: 1 }) // Teste com companyId 1
       });
       
       if (testResponse.ok || testResponse.status === 400) {

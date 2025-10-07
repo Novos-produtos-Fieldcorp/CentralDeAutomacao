@@ -181,13 +181,6 @@ serve(async (req) => {
           const contact = searchData.payload[0];
           console.log(`Contato encontrado: ${motorista.nome} (ID: ${contact.id})`);
 
-          // Verificar se precisa criar ou atualizar contato
-          const contactData = {
-            name: motorista.nome,
-            phone: phone,
-            avatar: motorista.foto_whatsapp || null
-          };
-
           // Se contato já existe, apenas atualizar foto se necessário
           if (contact.avatar !== motorista.foto_whatsapp && motorista.foto_whatsapp) {
             const updateUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contact.id}`;
@@ -209,6 +202,12 @@ serve(async (req) => {
           results.successful++;
         } else {
           // Contato não existe, criar novo
+          const contactData = {
+            name: motorista.nome,
+            phone: phone,
+            avatar: motorista.foto_whatsapp || null
+          };
+
           const createUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts`;
           const createResponse = await fetch(createUrl, {
             method: 'POST',

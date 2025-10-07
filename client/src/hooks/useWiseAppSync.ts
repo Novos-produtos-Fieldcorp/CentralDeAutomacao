@@ -86,8 +86,8 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       let body: any;
       
       if (endpoint === 'supabase') {
-        url = '/functions/v1/sync-motoristas-bulk';
-        body = { company_id: companyId };
+        url = '/functions/v1/sync-all-motoristas';
+        body = { companyId: companyId };
       } else {
         url = createApiUrl('wiseapp/sync-all-motoristas');
         body = { companyId: companyId };
