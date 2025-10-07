@@ -110,6 +110,16 @@ export function TagManager({ companyId }: TagManagerProps) {
       }
 
       const existingTagNames = new Set(existingTags?.map(tag => tag.nome.toLowerCase()) || []);
+      
+      // Criar set de nomes de tags do WiseApp
+      const wiseAppTagNames = new Set(wiseAppTagsData.map((tag: any) => 
+        (tag.name || tag.title || 'Tag').toLowerCase()
+      ));
+
+      // Identificar tags para remover (existem localmente mas não no WiseApp)
+      const tagsToDelete = existingTags?.filter(tag => 
+        !wiseAppTagNames.has(tag.nome.toLowerCase())
+      ) || [];
 
       // Preparar tags para inserção (apenas as que não existem)
       const tagsToInsert = wiseAppTagsData
@@ -122,7 +132,26 @@ export function TagManager({ companyId }: TagManagerProps) {
           updated_at: new Date().toISOString()
         }));
 
-      // Processing tags for insertion
+      // Processing tags for insertion and deletion
+      let syncMessage = '';
+      
+      // Remover tags deletadas no WiseApp
+      if (tagsToDelete.length > 0) {
+        toast.loading(`Removendo ${tagsToDelete.length} marcadores deletados...`, { id: syncToast });
+        
+        const tagNamesToDelete = tagsToDelete.map(tag => tag.nome);
+        const { error: deleteError } = await supabase
+          .from('tag')
+          .delete()
+          .eq('company_id', companyId)
+          .in('nome', tagNamesToDelete);
+
+        if (deleteError) {
+          console.error('Erro ao deletar tags:', deleteError);
+        } else {
+          syncMessage += `${tagsToDelete.length} removidos, `;
+        }
+      }
 
       if (tagsToInsert.length > 0) {
         // Atualizar progresso
@@ -138,8 +167,14 @@ export function TagManager({ companyId }: TagManagerProps) {
           throw insertError;
         }
 
+        syncMessage += `${tagsToInsert.length} adicionados`;
         // Tags inserted successfully
-        toast.success(`✅ ${tagsToInsert.length} marcadores sincronizados e salvos no banco de dados!`, {
+        toast.success(`✅ Sincronização completa: ${syncMessage}`, {
+          id: syncToast,
+          duration: 5000
+        });
+      } else if (tagsToDelete.length > 0) {
+        toast.success(`✅ Sincronização completa: ${syncMessage.replace(', ', '')}`, {
           id: syncToast,
           duration: 5000
         });

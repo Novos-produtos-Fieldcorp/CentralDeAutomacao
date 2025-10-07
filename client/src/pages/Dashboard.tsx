@@ -1219,28 +1219,21 @@ const Dashboard: React.FC = () => {
         envioResumoSemanaResult,
         envioResumoMonthlyResult,
       ] = await Promise.all([
-        // Optimized count queries for motoristas - 3 categorias específicas
+        // Usar views otimizadas para contar motoristas, agregados e contratados
         supabase
-          .from("motorista")
+          .from("vw_agregados_completo")
           .select("motorista_id", { count: "exact", head: true })
-          .eq("company_id", companyId)
-          .eq("ativo", true)
-          .ilike("funcao", "%agregado%"),
+          .eq("company_id", companyId),
 
         supabase
-          .from("motorista")
+          .from("vw_motoristas_completo")
           .select("motorista_id", { count: "exact", head: true })
-          .eq("company_id", companyId)
-          .eq("ativo", true)
-          .ilike("funcao", "%motorista%"),
+          .eq("company_id", companyId),
 
-        // Contratados - buscar registros com funcao NULL (são os contratados)
         supabase
-          .from("motorista")
+          .from("vw_contratados_completo")
           .select("motorista_id", { count: "exact", head: true })
-          .eq("company_id", companyId)
-          .eq("ativo", true)
-          .is("funcao", null),
+          .eq("company_id", companyId),
 
         // Real hodometro data with correct fields - last 6 months
         supabase
@@ -1277,13 +1270,12 @@ const Dashboard: React.FC = () => {
           .order("cliente_id", { ascending: false })
           .limit(5),
 
-        // Motoristas contratados por cliente (status contratado) - só da company atual
+        // Motoristas contratados por cliente (ativo com cliente) - só da company atual
         supabase
           .from("motorista")
           .select("cliente_id")
           .eq("company_id", companyId)
           .eq("ativo", true)
-          .eq("st_cadastro", "contratado")
           .not("cliente_id", "is", null),
 
         supabase
