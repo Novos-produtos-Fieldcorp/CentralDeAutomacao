@@ -74,9 +74,25 @@ setInterval(cleanupOldJobs, 30 * 60 * 1000);
 // Initialize Supabase client with bypass RLS for backend operations
 const supabaseBackendUrl =
   process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co";
+// Prefer a service role key for backend operations to bypass RLS. Fall back to other keys if needed.
 const supabaseBackendKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE ||
   process.env.VITE_SUPABASE_ANON_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ";
+
+// Log which env var provided the backend key in a safe way (dont' print the key itself)
+if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.log('Using SUPABASE_SERVICE_ROLE_KEY for backend supabase client (service role).');
+} else if (process.env.SUPABASE_SERVICE_ROLE) {
+  console.log('Using SUPABASE_SERVICE_ROLE for backend supabase client (service role - alternate name).');
+} else if (process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY) {
+  console.warn('WARNING: Backend supabase client is using an anon key; this may be restricted by RLS.');
+} else {
+  console.warn('No supabase key env var detected; falling back to built-in default key. Please configure SUPABASE_SERVICE_ROLE_KEY.');
+}
+
 const supabaseBackend = createClient(supabaseBackendUrl, supabaseBackendKey, {
   db: { schema: "public" },
   auth: {
@@ -154,9 +170,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/company/:companyId/minuta', async (req, res) => {
     try {
       const companyId = Number(req.params.companyId);
-      const { value } = req.body;
-      if (typeof value !== 'boolean') return res.status(400).json({ error: 'value must be boolean' });
+      // Accept boolean, string ('true'/'false'), or numeric (1/0)
+      let { value } = req.body as { value?: any };
+      // Log incoming raw value for debugging (non-sensitive)
+      console.log(`/api/admin/company/${companyId}/minuta - incoming value:`, typeof value, value);
 
+      if (typeof value === 'string') {
+        const lower = value.toLowerCase();
+        if (lower === 'true') value = true;
+        else if (lower === 'false') value = false;
+      } else if (typeof value === 'number') {
+        value = value === 1 ? true : value === 0 ? false : value;
+      }
+
+      if (typeof value !== 'boolean') {
+        return res.status(400).json({ error: 'value must be boolean (or string "true"/"false" or number 1/0)' });
+      }
+
+      // Perform the update using the backend supabase client (prefer service role key)
+      console.log(`Updating company ${companyId} minuta_access -> ${value}`);
       const { data, error } = await supabaseBackend
         .from('company')
         .update({ minuta_access: value })
@@ -171,6 +203,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json({ data });
     } catch (err) {
       console.error('Unexpected error in /api/admin/company/:companyId/minuta', err);
+      return res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // Diagnostic: get current minuta_access for a company (read-only)
+  app.get('/api/admin/company/:companyId/minuta', async (req, res) => {
+    try {
+      const companyId = Number(req.params.companyId);
+      const { data, error } = await supabaseBackend
+        .from('company')
+        .select('company_id, minuta_access')
+        .eq('company_id', companyId)
+        .limit(1);
+
+      if (error) {
+        console.error('Error reading minuta_access (diagnostic):', error);
+        return res.status(500).json({ error: error.message || String(error) });
+      }
+
+      if (!data || data.length === 0) return res.status(404).json({ error: 'company not found' });
+
+      return res.json({ data: data[0] });
+    } catch (err) {
+      console.error('Unexpected error in diagnostic /api/admin/company/:companyId/minuta', err);
       return res.status(500).json({ error: String(err) });
     }
   });

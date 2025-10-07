@@ -25,12 +25,28 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'ALLOWALL');
   
   // CSP unificado otimizado para iframe e scripts
+  // Build CSP with dynamic connect-src entries for local dev hosts when appropriate
+  const connectSrcParts = ["'self'", 'https:'];
+  // Allow local backend in development or when request origin is localhost/127.0.0.1
+  try {
+    const reqOrigin = String(origin || '');
+  const isLocalOrigin = reqOrigin.includes('localhost') || reqOrigin.includes('127.0.0.1') || reqOrigin.includes('0.0.0.0') || reqOrigin === '';
+    const isDev = app.get('env') === 'development' || process.env.NODE_ENV === 'development';
+    if (isDev || isLocalOrigin) {
+      // backend default is http://localhost:5000 in dev
+      connectSrcParts.push('http://localhost:5000');
+      connectSrcParts.push('http://127.0.0.1:5000');
+    }
+  } catch (e) {
+    // ignore
+  }
+
   const cspPolicy = [
     "frame-ancestors *",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com https://*.replit.dev",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
-    "connect-src 'self' https:",
+    `connect-src ${connectSrcParts.join(' ')}`,
     "font-src 'self' https:",
     "object-src 'none'",
     "base-uri 'self'",

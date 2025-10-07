@@ -126,21 +126,36 @@ const Admin = () => {
       if (field === 'minuta_access') {
         // Use backend service route to bypass RLS for company updates
         try {
-          const resp = await fetch(`/api/admin/company/${control.company_id}/minuta`, {
+          const { createApiUrl } = await import('../lib/api-config');
+          const url = createApiUrl(`/admin/company/${control.company_id}/minuta`);
+          const resp = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ value: newValue })
           });
-          if (!resp.ok) {
-            const t = await resp.text();
-            toast.error('Erro ao contatar backend: ' + resp.status + ' ' + t);
+
+          // Read as text once, then try parse JSON from that text to avoid 'body stream already read'
+          const text = await resp.text();
+          let json: any = null;
+          try {
+            json = text ? JSON.parse(text) : null;
+          } catch (e) {
+            // not JSON, keep json as null
+            json = null;
           }
-          const json = await resp.json();
-          updatedData = json.data;
-          error = json.error || null;
-          console.log('[Admin] backend toggle minuta response', json);
-          if (json.error) {
-            toast.error('Erro do backend: ' + (json.error.message || JSON.stringify(json.error)));
+
+          if (!resp.ok) {
+            // Prefer backend json error message if available, otherwise raw text
+            const serverMessage = json?.error?.message || json?.error || text || `HTTP ${resp.status}`;
+            toast.error('Erro ao contatar backend: ' + serverMessage);
+            error = { message: serverMessage };
+          } else {
+            updatedData = json?.data ?? null;
+            error = json?.error ?? null;
+            console.log('[Admin] backend toggle minuta response', json ?? text);
+            if (json?.error) {
+              toast.error('Erro do backend: ' + (json.error.message || JSON.stringify(json.error)));
+            }
           }
         } catch (e) {
           error = e;
@@ -449,18 +464,6 @@ const Admin = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <button
-                          onClick={() => handleToggleAccess(index, 'minuta_access')}
-                          className={`p-2 rounded-full ${
-                            control.hasOwnProperty('minuta_access') && control.minuta_access
-                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
-                          }`}
-                        >
-                          {control.minuta_access ? <CheckCircle size={16} /> : <EyeOff size={16} />}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <button
                           onClick={() => handleToggleAccess(index, 'motorista_access')}
                           className={`p-2 rounded-full ${
                             control.motorista_access
@@ -505,6 +508,18 @@ const Admin = () => {
                           }`}
                         >
                           <CheckCircle size={20} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleToggleAccess(index, 'minuta_access')}
+                          className={`p-2 rounded-full ${
+                            control.hasOwnProperty('minuta_access') && control.minuta_access
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                          }`}
+                        >
+                          {control.minuta_access ? <CheckCircle size={16} /> : <EyeOff size={16} />}
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
