@@ -6,11 +6,17 @@ const isNetlify = window.location.hostname.includes('netlify.app');
 // Backend do Replit (fallback)
 const REPLIT_BACKEND = 'https://cbc1561b-2d4f-411e-98f5-2b46e017850a-00-3brgcq7ngokp0.picard.replit.dev/api';
 
-// Usar backend do Replit no Netlify.
-// Quando em desenvolvimento e o hostname for 0.0.0.0 (ex: binding do vite), mapear para localhost:5000
-let apiBase = '/api';
-if (isNetlify) apiBase = REPLIT_BACKEND;
-else if (window.location.hostname === '0.0.0.0') apiBase = 'http://localhost:5000/api';
+// Determinar a URL base da API
+let apiBase = '/api'; // Usar caminho relativo para o mesmo domínio
+
+// Se estiver rodando localmente (desenvolvimento)
+if (isLocalDev || window.location.hostname === '0.0.0.0') {
+  apiBase = 'http://localhost:5000/api';
+} 
+// Se estiver no Netlify, usar o backend do Replit
+else if (isNetlify) {
+  apiBase = REPLIT_BACKEND;
+}
 
 export const API_BASE_URL = apiBase;
 

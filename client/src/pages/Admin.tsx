@@ -178,14 +178,25 @@ const Admin = () => {
         return;
       }
 
-      // Update local state only if Supabase update was successful
+      // Update local state if the update was successful
       const updatedControls = [...accessControls];
-      updatedControls[index] = {
-        ...updatedControls[index],
-        [field]: newValue
-      };
-      setAccessControls(updatedControls);
       
+      // For minuta_access, we might get the updated data in the response
+      if (field === 'minuta_access' && updatedData && updatedData.length > 0) {
+        updatedControls[index] = {
+          ...updatedControls[index],
+          minuta_access: updatedData[0].minuta_access
+        };
+      } else {
+        // For other fields or if no updated data is returned
+        updatedControls[index] = {
+          ...updatedControls[index],
+          [field]: newValue
+        };
+      }
+      
+      setAccessControls(updatedControls);
+      console.log(`[Admin] local state updated for ${field} to ${updatedControls[index][field]}`);
       toast.success('Configuração atualizada com sucesso');
     } catch (error) {
       console.error(`Error toggling ${field}:`, error);
