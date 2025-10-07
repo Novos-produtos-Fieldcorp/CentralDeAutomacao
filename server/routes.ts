@@ -150,6 +150,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: toggle minuta_access for a company using service role (bypass RLS)
+  app.post('/api/admin/company/:companyId/minuta', async (req, res) => {
+    try {
+      const companyId = Number(req.params.companyId);
+      const { value } = req.body;
+      if (typeof value !== 'boolean') return res.status(400).json({ error: 'value must be boolean' });
+
+      const { data, error } = await supabaseBackend
+        .from('company')
+        .update({ minuta_access: value })
+        .eq('company_id', companyId)
+        .select();
+
+      if (error) {
+        console.error('Error updating minuta_access via backend:', error);
+        return res.status(500).json({ error: error.message || String(error) });
+      }
+
+      return res.json({ data });
+    } catch (err) {
+      console.error('Unexpected error in /api/admin/company/:companyId/minuta', err);
+      return res.status(500).json({ error: String(err) });
+    }
+  });
+
   // Nova rota específica para buscar inboxes com cache otimizado por company_id
   app.get("/api/inboxes/:companyId", async (req, res) => {
     try {

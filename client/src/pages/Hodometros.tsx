@@ -46,7 +46,7 @@ const Hodometros = () => {
   const tabs = [
     { path: '/hodometros/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/hodometros/relatorio', icon: Gauge, label: 'Leituras' },
-    { path: '/hodometros/minuta', icon: ClipboardList, label: 'Minuta' },
+    ...(moduleAccess.minuta ? [{ path: '/hodometros/minuta', icon: ClipboardList, label: 'Minuta' }] : []),
     { path: '/hodometros/lista', icon: ClipboardList, label: 'Relatórios' }
   ];
 
@@ -106,7 +106,7 @@ const Hodometros = () => {
             <Route index element={<Navigate to="/hodometros/dashboard" replace />} />
             <Route path="dashboard" element={<HodometrosDashboard />} />
             <Route path="relatorio" element={<HodometrosRelatorio />} />
-            <Route path="minuta" element={<HodometrosMinuta />} />
+            {moduleAccess.minuta && <Route path="minuta" element={<HodometrosMinuta />} />}
             <Route path="lista" element={<HodometrosLista />} />
           </Routes>
         </div>

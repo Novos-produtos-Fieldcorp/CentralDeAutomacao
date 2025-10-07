@@ -12,6 +12,7 @@ interface AccessControl {
   checklist_access: boolean;
   motorista_access: boolean;
   hodometro_acsess: boolean;
+  minuta_access: boolean;
   resumo_access: boolean;
   comprovante_access: boolean;
   tags_access: boolean | null;
@@ -81,12 +82,19 @@ const Admin = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('company')
-        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, comprovante_access, tags_access, bomba_gasolina_access, st_company')
+        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, minuta_access, resumo_access, comprovante_access, tags_access, bomba_gasolina_access, st_company')
         .order('company_id', { ascending: true });
 
       if (error) throw error;
 
-      setAccessControls(data || []);
+      // Ensure minuta_access exists on each record for backwards compatibility
+      const normalized = (data || []).map((d: any) => ({
+        ...d,
+        minuta_access: d.hasOwnProperty('minuta_access') ? d.minuta_access : false
+      }));
+
+  setAccessControls(normalized);
+  console.log('[Admin] fetched access controls', normalized);
     } catch (error) {
       console.error('Error fetching access controls:', error);
       toast.error('Erro ao carregar controles de acesso');
@@ -109,15 +117,49 @@ const Admin = () => {
     }
 
     try {
-      // Update in Supabase immediately
-      const { error } = await supabase
-        .from('company')
-        .update({ [field]: newValue })
-        .eq('company_id', control.company_id);
+      // DEBUG: show what we're about to send
+  console.log('[Admin] updating company field', { company_id: control.company_id, field, newValue });
+
+      let updatedData = null;
+      let error = null;
+
+      if (field === 'minuta_access') {
+        // Use backend service route to bypass RLS for company updates
+        try {
+          const resp = await fetch(`/api/admin/company/${control.company_id}/minuta`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: newValue })
+          });
+          if (!resp.ok) {
+            const t = await resp.text();
+            toast.error('Erro ao contatar backend: ' + resp.status + ' ' + t);
+          }
+          const json = await resp.json();
+          updatedData = json.data;
+          error = json.error || null;
+          console.log('[Admin] backend toggle minuta response', json);
+          if (json.error) {
+            toast.error('Erro do backend: ' + (json.error.message || JSON.stringify(json.error)));
+          }
+        } catch (e) {
+          error = e;
+        }
+      } else {
+        // Update in Supabase immediately and return the updated row for inspection
+        const supRes = await supabase
+          .from('company')
+          .update({ [field]: newValue })
+          .eq('company_id', control.company_id)
+          .select();
+  updatedData = supRes.data;
+  error = supRes.error;
+  console.log('[Admin] supabase update response', { updatedData, error });
+      }
 
       if (error) {
         console.error(`Error updating ${field} for company ${control.company_id}:`, error);
-        toast.error(`Erro ao atualizar ${field}`);
+        toast.error(`Erro ao atualizar ${field}: ${error.message || String(error)}`);
         return;
       }
 
@@ -142,13 +184,14 @@ const Admin = () => {
       let hasError = false;
 
       // Update each company record
-      for (const control of accessControls) {
+        for (const control of accessControls) {
         const { error } = await supabase
           .from('company')
           .update({
             checklist_access: control.checklist_access,
             motorista_access: control.motorista_access,
             hodometro_acsess: control.hodometro_acsess,
+            minuta_access: control.minuta_access,
             resumo_access: control.resumo_access,
             comprovante_access: control.comprovante_access,
             tags_access: control.tags_access
@@ -370,6 +413,9 @@ const Admin = () => {
                       Resumos em Grupo
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Minuta
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Comprovantes
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -399,6 +445,18 @@ const Admin = () => {
                           }`}
                         >
                           <CheckCircle size={20} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleToggleAccess(index, 'minuta_access')}
+                          className={`p-2 rounded-full ${
+                            control.hasOwnProperty('minuta_access') && control.minuta_access
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                          }`}
+                        >
+                          {control.minuta_access ? <CheckCircle size={16} /> : <EyeOff size={16} />}
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
