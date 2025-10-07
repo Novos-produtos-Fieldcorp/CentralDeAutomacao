@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { searchWiseAppContact } from '../lib/directApiService';
-import { API_BASE_URL, createApiUrl } from '@/lib/api-config';
+import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
 
 interface BulkActionsModalProps {
   isOpen: boolean;

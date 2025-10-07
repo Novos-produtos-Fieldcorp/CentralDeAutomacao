@@ -1,6 +1,6 @@
 // Serviço para chamadas diretas sem backend Express
 import { supabase } from './supabase';
-import { API_BASE_URL, createApiUrl } from './api-config';
+import { API_BASE_URL, createApiUrl } from './api-config-supabase';
 import { robustWiseAppFetch, clearCache } from './robustFetch';
 
 // Serviço para buscar empresa por account_id
@@ -221,7 +221,7 @@ export const wiseAppService = {
   async syncMotoristasBulkWithTags(companyId: number) {
     try {
       // Usar a rota backend que gerencia tudo
-      const response = await fetch('/api/sync-motoristas-bulk', {
+      const response = await fetch(createApiUrl('sync-motoristas-bulk'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

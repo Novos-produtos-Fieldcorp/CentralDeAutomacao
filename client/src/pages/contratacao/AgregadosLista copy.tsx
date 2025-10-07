@@ -26,7 +26,7 @@ import ContextMenu from '../../components/ContextMenu';
 import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
-import { API_BASE_URL } from '@/lib/api-config';
+import { API_BASE_URL } from '@/lib/api-config-supabase';
 import FilterTags from '../../components/FilterTags';
 
 interface AgregadosListaProps {

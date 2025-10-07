@@ -126,7 +126,7 @@ const Admin = () => {
       if (field === 'minuta_access') {
         // Use backend service route to bypass RLS for company updates
         try {
-          const { createApiUrl } = await import('../lib/api-config');
+          const { createApiUrl } = await import('../lib/api-config-supabase');
           const url = createApiUrl(`/admin/company/${control.company_id}/minuta`);
           const resp = await fetch(url, {
             method: 'POST',

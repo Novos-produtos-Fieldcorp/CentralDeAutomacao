@@ -3,7 +3,7 @@ import { RefreshCw, Tag, Users, AlertCircle, CheckCircle, X, TrendingUp } from '
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useCompanyData } from '@/hooks/useCompanyData';
-import { API_BASE_URL, createApiUrl } from '@/lib/api-config';
+import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
 import { queryClient } from '@/lib/queryClient';
 
 interface BulkSyncResult {
@@ -54,7 +54,7 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
       const poll = async () => {
         try {
           console.log(`[pollProgress] Checking status for job ${jobId}`);
-          const response = await fetch(createApiUrl(`wiseapp/bulk-sync-progress/${jobId}`));
+          const response = await fetch(createApiUrl(`bulk-sync-progress/${jobId}`));
           
           if (!response.ok) {
             console.error(`[pollProgress] Request failed: ${response.status}`);
@@ -119,10 +119,10 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
 
     try {
       setProgress('Verificando token WiseApp...');
-      console.log('[startBulkSync] Fazendo requisição para:', createApiUrl(`wiseapp/bulk-sync-contact-tags/${companyId}`));
+      console.log('[startBulkSync] Fazendo requisição para:', createApiUrl(`bulk-sync-contact-tags/${companyId}`));
       
       // Start the sync and get job ID for polling
-      const response = await fetch(createApiUrl(`wiseapp/bulk-sync-contact-tags/${companyId}`), {
+      const response = await fetch(createApiUrl(`bulk-sync-contact-tags/${companyId}`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

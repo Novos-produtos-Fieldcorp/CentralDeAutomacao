@@ -29,7 +29,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
 import { useWiseAppSync } from '../../hooks/useWiseAppSync';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import { API_BASE_URL, createApiUrl } from '@/lib/api-config';
+import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
 import FilterTags from '../../components/FilterTags';
 
 // Função auxiliar para converter ViewMotorista para Motorista
