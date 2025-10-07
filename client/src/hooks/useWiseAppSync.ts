@@ -79,19 +79,9 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      // Detectar melhor endpoint disponível
-      const endpoint = await EndpointDetector.detectBestEndpoint();
-      
-      let url: string;
-      let body: any;
-      
-      if (endpoint === 'supabase') {
-        url = '/functions/v1/sync-all-motoristas';
-        body = { companyId: companyId };
-      } else {
-        url = createApiUrl('wiseapp/sync-all-motoristas');
-        body = { companyId: companyId };
-      }
+      // Usar sempre o backend Express por enquanto (função Supabase não está deployada)
+      const url = createApiUrl('wiseapp/sync-all-motoristas');
+      const body = { companyId: companyId };
 
       const response = await fetch(url, {
         method: 'POST',
