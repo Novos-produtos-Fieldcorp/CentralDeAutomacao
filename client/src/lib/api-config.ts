@@ -14,7 +14,6 @@ console.log('API Configuration:', {
 });
 
 export const createApiUrl = (path: string) => {
-  // Remove leading slash if present to avoid double slashes
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
   
   // Se API_BASE_URL está vazio (Netlify), usar apenas o path

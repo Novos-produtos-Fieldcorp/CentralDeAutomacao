@@ -999,7 +999,6 @@ const Contratados = () => {
         throw new Error('Tag não encontrada');
       }
 
-
       toast.success(`Marcador "${tagToApply.title || tagToApply.name}" aplicado ao contato ${selectedMotorista.nome_motorista}!`);
       setIsTagModalOpen(false);
 

@@ -37,14 +37,12 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
       // For PDF files, we need to convert to base64 and then to blob to ensure proper MIME type
       let fileToUpload = file;
       if (fileExt?.toLowerCase() === 'pdf') {
-        // Convert to base64 and back to blob to ensure proper MIME type
+        // Convert to ArrayBuffer then to a File with correct MIME type
         const reader = new FileReader();
-        const dataPromise = new Promise<Blob>((resolve, reject) => {
+        const dataPromise = new Promise<ArrayBuffer>((resolve, reject) => {
           reader.onload = () => {
             try {
-              // Create a new blob with the correct MIME type
-              const blob = new Blob([reader.result as ArrayBuffer], { type: 'application/pdf' });
-              resolve(blob);
+              resolve(reader.result as ArrayBuffer);
             } catch (err) {
               reject(err);
             }
@@ -52,8 +50,12 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
           reader.onerror = reject;
           reader.readAsArrayBuffer(file);
         });
-        
-        fileToUpload = await dataPromise;
+
+        const arrayBuffer = await dataPromise;
+        const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+        // Create a File object so Supabase SDK accepts it as a file
+        const pdfFile = new File([blob], fileName, { type: 'application/pdf' });
+        fileToUpload = pdfFile as unknown as File;
       }
 
       // Upload to Supabase Storage
@@ -215,32 +217,24 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
           />
           <label
             htmlFor={`file-${documentType}`}
-            className={`flex flex-col items-center justify-center w-full aspect-[1.414] border-2 border-dashed rounded-lg cursor-pointer
-                      ${error ? 'border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20' : 
-                      'border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50'}
-                      hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors
-                      ${uploading ? 'opacity-75 cursor-not-allowed' : ''}`}
+            className={`flex items-center justify-center gap-3 w-full max-w-[200px] h-36 rounded-md cursor-pointer px-3
+                      ${error ? 'border border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20' : 
+                      'border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'}
+                      transition-colors ${uploading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+            <div className="flex items-center gap-3">
               {uploading ? (
                 <>
-                  <Loader2 className="w-10 h-10 text-gray-400 animate-spin mb-4" />
+                  <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
                   <p className="text-sm text-gray-500 dark:text-gray-400">Enviando...</p>
                 </>
               ) : (
                 <>
-                  <Camera className="w-10 h-10 text-gray-400 mb-4" />
-                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span className="font-semibold">Clique para enviar</span> ou arraste e solte
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    JPEG, PNG ou PDF (máx. 15MB)
-                  </p>
-                  {error && (
-                    <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-                      {error}
-                    </p>
-                  )}
+                  <Camera className="w-6 h-6 text-gray-400" />
+                  <div className="flex flex-col">
+                    <span className="text-sm text-gray-700 dark:text-gray-200">Clique para enviar</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-400">JPEG, PNG ou PDF • máx. 15MB</span>
+                  </div>
                 </>
               )}
             </div>

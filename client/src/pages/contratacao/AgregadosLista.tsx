@@ -26,7 +26,7 @@ import ContextMenu from '../../components/ContextMenu';
 import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
-import { API_BASE_URL } from '@/lib/api-config';
+import { API_BASE_URL, createApiUrl } from '@/lib/api-config';
 import FilterTags from '../../components/FilterTags';
 
 interface AgregadosListaProps {
@@ -773,7 +773,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
     try {
       // 1. Buscar todas as tags existentes
-      const labelsResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/labels`, {
+      const labelsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/labels`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -831,7 +831,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
 
       // 4. Aplicar a tag existente ao contato específico
-      const applyTagResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/contacts/${contactId}/labels`, {
+      const applyTagResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -839,7 +839,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           'wiseapp-token': wiseAppToken || ''
         },
         body: JSON.stringify({
-          tagId: existingTag.id,
           tagName: existingTag.name
         })
       });
@@ -871,7 +870,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       // 2. Buscar o contato pelo telefone (sem +55 como funciona na individual)
       const phoneStr = String(motorista.telefone);
       const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
-
       const searchContactResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/contacts/search?phone=${formattedPhone}`, {
         method: 'GET',
         headers: {
@@ -895,7 +893,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
 
       // 3. Buscar labels atuais do contato
-      const getLabelsResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/contacts/${contactId}/labels`, {
+      const getLabelsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -918,7 +916,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       );
 
       // 5. Aplicar as labels atualizadas (sem a tag removida)
-      const updateLabelsResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/contacts/${contactId}/labels`, {
+      const updateLabelsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
