@@ -398,29 +398,48 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
 
   const exportToExcel = () => {
     try {
+      // Check if company has access to bomba module
+      const hasBombaAccess = moduleAccess?.bomba;
+      
       // Prepare data for export
-      const exportData = readings.map(reading => ({
-        'Data': formatDateBR(reading.data),
-        'Hora': reading.hora,
-        'Motorista': reading.motorista?.nome || 'Não informado',
-        'CPF': reading.motorista?.cpf ? formatCPF(reading.motorista.cpf) : 'Não informado',
-        'Veículo': reading.veiculo?.placa || 'Não informado',
-        'Marca/Modelo': `${reading.veiculo?.marca || ''} ${reading.veiculo?.tipo || ''}`.trim() || 'Não informado',
-        'Hodômetro Informado': reading.hod_informado !== null ? formatNumber(reading.hod_informado) : '-',
-        'Hodômetro Lido': reading.hod_lido !== null ? formatNumber(reading.hod_lido) : '-',
-        'Bateria': reading.bateria !== null ? `${reading.bateria}` : '-',
-        'Trip Lida': reading.trip_lida !== null ? formatNumber(reading.trip_lida) : '-',
-        'Trip Informada': reading.trip_informada || '-',
-        'Tem Foto': reading.foto_hodometro ? 'Sim' : 'Não',
-        'Cliente': reading.cliente?.nome || 'Sem cliente'
-      }));
+      const exportData = readings.map(reading => {
+        // Base fields
+        const baseData: Record<string, any> = {
+          'Data': formatDateBR(reading.data),
+          'Hora': reading.hora,
+          'Motorista': reading.motorista?.nome || 'Não informado',
+          'CPF': reading.motorista?.cpf ? formatCPF(reading.motorista.cpf) : 'Não informado',
+          'Veículo': reading.veiculo?.placa || 'Não informado',
+          'Marca/Modelo': `${reading.veiculo?.marca || ''} ${reading.veiculo?.tipo || ''}`.trim() || 'Não informado',
+          'Hodômetro Informado': reading.hod_informado !== null ? formatNumber(reading.hod_informado) : '-',
+          'Hodômetro Lido': reading.hod_lido !== null ? formatNumber(reading.hod_lido) : '-',
+          'Bateria': reading.bateria !== null ? `${reading.bateria}` : '-',
+          'Trip Lida': reading.trip_lida !== null ? formatNumber(reading.trip_lida) : '-',
+          'Trip Informada': reading.trip_informada || '-',
+          'Tem Foto': reading.foto_hodometro ? 'Sim' : 'Não',
+          'Cliente': reading.cliente?.nome || 'Sem cliente'
+        };
 
-      // Create workbook
+        // Add bomba fields if company has access
+        if (hasBombaAccess) {
+          Object.assign(baseData, {
+            'Preço Lido': reading.bomba_gasolina?.preco_lido || '-',
+            'Preço Informado': reading.bomba_gasolina?.preco_informado || '-',
+            'Litro Lido': reading.bomba_gasolina?.litro_lido || '-',
+            'Litro Informado': reading.bomba_gasolina?.litro_informado || '-',
+            'URL Foto Bomba': reading.bomba_gasolina?.foto_bomba || 'Não'
+          });
+        }
+
+        return baseData;
+      });
+
+      // Create a new workbook and worksheet
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(exportData);
       
-      // Auto-size columns
-      const colWidths = [
+      // Set column widths
+      const baseColWidths = [
         { wch: 12 }, // Data
         { wch: 10 }, // Hora
         { wch: 25 }, // Motorista
@@ -435,11 +454,47 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
         { wch: 10 }, // Tem Foto
         { wch: 20 }  // Cliente
       ];
+
+      // Add bomba column widths if company has access
+      if (hasBombaAccess) {
+        baseColWidths.push(
+          { wch: 15 }, // Preço Lido
+          { wch: 15 }, // Preço Informado
+          { wch: 12 }, // Litro Lido
+          { wch: 15 }, // Litro Informado
+          { wch: 25 }  // URL Foto Bomba
+        );
+      }
       
-      ws['!cols'] = colWidths;
+      ws['!cols'] = baseColWidths;
       
+      // Add the worksheet to the workbook
       XLSX.utils.book_append_sheet(wb, ws, 'Leituras');
-      XLSX.writeFile(wb, `relatorio_leituras_hodometro_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      // Generate file name with current date
+      const fileName = `relatorio_leituras_hodometro_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      // Generate the Excel file
+      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      
+      // Create a Blob from the Excel buffer
+      const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      
+      // Trigger the download
+      link.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
       
       toast.success('Relatório exportado com sucesso');
     } catch (error) {
