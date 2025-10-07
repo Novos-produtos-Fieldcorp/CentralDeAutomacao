@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 import { createApiUrl } from '@/lib/api-config';
+import { EndpointDetector } from '@/lib/endpointDetector';
 
 interface SyncResult {
   success: boolean;
@@ -78,20 +79,26 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      // Para Netlify, usar função do Supabase diretamente
-      const isNetlify = window.location.hostname.includes('netlify.app');
-      const url = isNetlify 
-        ? `/functions/v1/sync-motoristas-bulk`
-        : createApiUrl('sync-motoristas-bulk');
+      // Detectar melhor endpoint disponível
+      const endpoint = await EndpointDetector.detectBestEndpoint();
+      
+      let url: string;
+      let body: any;
+      
+      if (endpoint === 'supabase') {
+        url = '/functions/v1/sync-motoristas-bulk';
+        body = { company_id: companyId };
+      } else {
+        url = createApiUrl('wiseapp/sync-all-motoristas');
+        body = { companyId: companyId };
+      }
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          company_id: companyId
-        })
+        body: JSON.stringify(body)
       });
       
       if (!response.ok) {
