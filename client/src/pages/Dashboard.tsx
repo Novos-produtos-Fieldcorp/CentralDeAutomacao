@@ -40,7 +40,7 @@ import {
 } from "recharts";
 import { format, subMonths, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { supabase } from "../lib/supabase";
+import { dashboardApi } from "../lib/apiService";
 import AccessTooltip from "../components/AccessTooltip";
 
 // Checklist types
