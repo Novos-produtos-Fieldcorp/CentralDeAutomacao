@@ -275,6 +275,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New route: fetch minutas (uses backend supabase client to bypass RLS)
+  app.get('/api/minutas', async (req, res) => {
+    try {
+      const companyId = req.query.companyId ? Number(req.query.companyId) : null;
+      const start = req.query.start ? String(req.query.start) : null;
+      const end = req.query.end ? String(req.query.end) : null;
+      const rangeStart = req.query.rangeStart ? Number(req.query.rangeStart) : undefined;
+      const rangeEnd = req.query.rangeEnd ? Number(req.query.rangeEnd) : undefined;
+
+      let query = supabaseBackend.from('minuta')
+        .select(`
+          id,
+          minuta_informada,
+          minuta_lida,
+          romaneio,
+          foto_minuta,
+          filial_id,
+          filial:filial_id ( id, filial, company_id ),
+          motorista_id,
+          motorista:motorista_id ( motorista_id, nome, cpf, company_id ),
+          veiculo_id,
+          veiculo:veiculo_id ( veiculo_id, placa, marca, tipo, company_id ),
+          company_id,
+          created_at
+        `)
+        .order('created_at', { ascending: false });
+
+      if (companyId) query = query.eq('company_id', companyId);
+      if (start) query = query.gte('created_at', start);
+      if (end) query = query.lte('created_at', end);
+      if (typeof rangeStart === 'number' && typeof rangeEnd === 'number') {
+        query = query.range(rangeStart, rangeEnd);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        console.error('Error fetching minutas (backend):', error);
+        return res.status(500).json({ error: String(error) });
+      }
+      return res.json({ data });
+    } catch (err) {
+      console.error('Unexpected error in /api/minutas:', err);
+      return res.status(500).json({ error: 'Unexpected server error' });
+    }
+  });
+
+  // New route: fetch filiais for a company (or global null company_id entries)
+  app.get('/api/filiais/:companyId', async (req, res) => {
+    try {
+      const companyId = Number(req.params.companyId);
+      if (Number.isNaN(companyId)) return res.status(400).json({ error: 'Invalid companyId' });
+
+      const { data, error } = await supabaseBackend
+        .from('filial')
+        .select('id, filial, company_id')
+        .or(`company_id.eq.${companyId},company_id.is.null`)
+        .order('filial', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching filiais (backend):', error);
+        return res.status(500).json({ error: String(error) });
+      }
+
+      return res.json({ data });
+    } catch (err) {
+      console.error('Unexpected error in /api/filiais/:companyId', err);
+      return res.status(500).json({ error: 'Unexpected server error' });
+    }
+  });
+
+  // New route: fetch motoristas for a company
+  app.get('/api/motoristas', async (req, res) => {
+    try {
+      const companyId = req.query.companyId ? Number(req.query.companyId) : null;
+      const query = supabaseBackend.from('motorista').select('motorista_id, nome, cpf, company_id').order('nome', { ascending: true });
+      const { data, error } = companyId ? await query.eq('company_id', companyId) : await query;
+      if (error) {
+        console.error('Error fetching motoristas (backend):', error);
+        return res.status(500).json({ error: String(error) });
+      }
+      return res.json({ data });
+    } catch (err) {
+      console.error('Unexpected error in /api/motoristas:', err);
+      return res.status(500).json({ error: 'Unexpected server error' });
+    }
+  });
+
+  // New route: fetch veiculos for a company
+  app.get('/api/veiculos', async (req, res) => {
+    try {
+      const companyId = req.query.companyId ? Number(req.query.companyId) : null;
+      const query = supabaseBackend.from('veiculo').select('veiculo_id, placa, marca, tipo, company_id').order('placa', { ascending: true });
+      const { data, error } = companyId ? await query.eq('company_id', companyId) : await query;
+      if (error) {
+        console.error('Error fetching veiculos (backend):', error);
+        return res.status(500).json({ error: String(error) });
+      }
+      return res.json({ data });
+    } catch (err) {
+      console.error('Unexpected error in /api/veiculos:', err);
+      return res.status(500).json({ error: 'Unexpected server error' });
+    }
+  });
+
   // Proxy para API do WiseApp (Chat)
   app.all("/api/api/v1/*", async (req, res) => {
     try {
