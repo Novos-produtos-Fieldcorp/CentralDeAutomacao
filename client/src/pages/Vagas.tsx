@@ -40,7 +40,7 @@ const Vagas: React.FC = () => {
       const apiBaseUrl = window.location.hostname.includes('netlify.app') 
         ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
         : '/api';
-      const response = await fetch(`${apiBaseUrl}/vagas/${companyId}`);
+      const response = await fetch(`${apiBaseUrl}/vagas/dashboard/${companyId}`);
       if (response.ok) {
         const data = await response.json();
         setDashboardData(data);
