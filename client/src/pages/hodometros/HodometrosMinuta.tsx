@@ -40,6 +40,8 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
       return str.split(';').map((r: string) => r.trim()).filter((r: string) => r);
     } else if (str.includes(',')) {
       return str.split(',').map((r: string) => r.trim()).filter((r: string) => r);
+    } else if (str.includes('\n')) {
+      return str.split('\n').map((r: string) => r.trim()).filter((r: string) => r);
     } else if (str.includes(' ')) {
       return str.split(/\s+/).filter((r: string) => r);
     } else {
@@ -421,13 +423,15 @@ const HodometrosMinuta: React.FC = () => {
   const handleOpenEditModal = async (minuta: Minuta) => {
     setSelectedMinuta(minuta);
     
-    // Função auxiliar para separar romaneios por delimitadores (espaço, vírgula, ponto e vírgula)
+    // Função auxiliar para separar romaneios por delimitadores (ponto e vírgula, vírgula, quebra de linha, espaço)
     const splitRomaneios = (str: string): string[] => {
-      // Tentar separar por ponto e vírgula, depois vírgula, depois espaço
+      // Tentar separar por ponto e vírgula, depois vírgula, depois quebra de linha, depois espaço
       if (str.includes(';')) {
         return str.split(';').map((r: string) => r.trim()).filter((r: string) => r);
       } else if (str.includes(',')) {
         return str.split(',').map((r: string) => r.trim()).filter((r: string) => r);
+      } else if (str.includes('\n')) {
+        return str.split('\n').map((r: string) => r.trim()).filter((r: string) => r);
       } else if (str.includes(' ')) {
         return str.split(/\s+/).filter((r: string) => r);
       } else {
