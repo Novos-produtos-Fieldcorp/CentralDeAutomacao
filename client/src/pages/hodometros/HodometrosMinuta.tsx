@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, Edit2, Plus, Trash2, Copy, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -29,6 +30,8 @@ interface Minuta {
 const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romaneio }) => {
   const [copied, setCopied] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   let romaneios: string[] = [];
@@ -50,19 +53,55 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
     }
   }
   
-  // Close dropdown when clicking outside
+  const updatePosition = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width
+      });
+    }
+  };
+  
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!showDropdown) {
+      updatePosition();
+    }
+    setShowDropdown(!showDropdown);
+  };
+  
+  const handleClickOutside = (event: MouseEvent) => {
+    if (
+      dropdownRef.current &&
+      !dropdownRef.current.contains(event.target as Node) &&
+      buttonRef.current &&
+      !buttonRef.current.contains(event.target as Node)
+    ) {
+      setShowDropdown(false);
+    }
+  };
+  
+  const handleScroll = () => {
+    if (showDropdown) {
+      updatePosition();
+    }
+  };
+  
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowDropdown(false);
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleScroll);
+      
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleScroll);
+      };
+    }
+  }, [showDropdown]);
   
   const handleCopyRomaneios = () => {
     const text = romaneios.join('\n');
@@ -94,54 +133,62 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
     );
   }
   
-  return (
-    <div style={{ position: 'relative' }}>
-      <div ref={dropdownRef}>
-        <button
-          type="button"
-          onClick={() => setShowDropdown(!showDropdown)}
-          className="cursor-pointer inline-flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
-        >
-          {romaneios[0]} <ChevronDown className="h-3 w-3" />
-        </button>
-        
-        {showDropdown && (
-          <div 
-            className="bg-white dark:bg-gray-800 shadow-2xl rounded-md border border-gray-200 dark:border-gray-700 py-1 min-w-[120px]"
-            style={{ 
-              position: 'absolute',
-              bottom: '100%',
-              left: 0,
-              marginBottom: '4px',
-              zIndex: 999999
-            }}
-          >
-            {romaneios.map((r, idx) => (
-              <div key={idx} className="text-sm text-gray-900 dark:text-white px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap">
-                {r}
-              </div>
-            ))}
-            <div className="border-t border-gray-200 dark:border-gray-700 mt-1 pt-1">
-              <button
-                onClick={handleCopyRomaneios}
-                className="w-full px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-1.5"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-3 w-3" />
-                    Copiado
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3 w-3" />
-                    Copiar
-                  </>
-                )}
-              </button>
-            </div>
+  const renderDropdown = () => {
+    if (!showDropdown) return null;
+
+    return createPortal(
+      <div
+        ref={dropdownRef}
+        className="fixed bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+        style={{
+          top: dropdownPosition.top,
+          left: dropdownPosition.left,
+          minWidth: '120px',
+          maxHeight: '200px',
+          overflowY: 'auto',
+          zIndex: 9999
+        }}
+      >
+        {romaneios.map((r, idx) => (
+          <div key={idx} className="text-sm text-gray-900 dark:text-white px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap">
+            {r}
           </div>
-        )}
-      </div>
+        ))}
+        <div className="border-t border-gray-200 dark:border-gray-700 mt-1 pt-1">
+          <button
+            onClick={handleCopyRomaneios}
+            className="w-full px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-1.5"
+          >
+            {copied ? (
+              <>
+                <Check className="h-3 w-3" />
+                Copiado
+              </>
+            ) : (
+              <>
+                <Copy className="h-3 w-3" />
+                Copiar
+              </>
+            )}
+          </button>
+        </div>
+      </div>,
+      document.body
+    );
+  };
+  
+  return (
+    <div className="relative inline-block">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleToggle}
+        className="cursor-pointer inline-flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
+      >
+        {romaneios[0]} <ChevronDown className="h-3 w-3" />
+      </button>
+      
+      {renderDropdown()}
     </div>
   );
 };
