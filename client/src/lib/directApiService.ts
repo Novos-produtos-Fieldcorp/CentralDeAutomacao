@@ -221,7 +221,7 @@ export const wiseAppService = {
   async syncMotoristasBulkWithTags(companyId: number) {
     try {
       // Usar a rota backend que gerencia tudo
-      const response = await fetch(createApiUrl('sync-motoristas-bulk'), {
+      const response = await fetch(createApiUrl('wiseapp/sync-motoristas-bulk'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

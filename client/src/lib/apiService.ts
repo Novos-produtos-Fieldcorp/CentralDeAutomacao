@@ -126,7 +126,7 @@ export const wiseAppApi = {
   
   syncAllMotoristas: async (companyId: number, token: string, accountId: string) => {
     // Usar Supabase Functions
-    const url = createApiUrl('sync-all-motoristas');
+    const url = createApiUrl('wiseapp/sync-all-motoristas');
 
     const response = await fetch(url, {
       method: 'POST',
