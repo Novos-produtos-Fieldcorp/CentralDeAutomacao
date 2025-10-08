@@ -31,7 +31,9 @@ serve(async (req) => {
         JSON.stringify({ error: 'Company ID é obrigatório' }),
         { 
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, 'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+           }
         }
       );
     }
