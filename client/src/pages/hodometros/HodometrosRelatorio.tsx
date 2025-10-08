@@ -780,8 +780,8 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
                           <td className="px-6 py-4 whitespace-nowrap text-right">
                             {reading.bomba_gasolina ? (
                               <>
-                                <div className="text-sm text-gray-900 dark:text-white">Lido: {reading.bomba_gasolina.preco_lido || '-'}</div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">Informado: {reading.bomba_gasolina.preco_informado || '-'}</div>
+                                <div className="text-sm text-gray-900 dark:text-white">Lido: {reading.bomba_gasolina.preco_lido ? `R$ ${reading.bomba_gasolina.preco_lido}` : '-'}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">Informado: {reading.bomba_gasolina.preco_informado ? `R$ ${reading.bomba_gasolina.preco_informado}` : '-'}</div>
                               </>
                             ) : (
                               <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
