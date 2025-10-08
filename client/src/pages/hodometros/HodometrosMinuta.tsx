@@ -413,31 +413,41 @@ const HodometrosMinuta: React.FC = () => {
   const handleOpenEditModal = async (minuta: Minuta) => {
     setSelectedMinuta(minuta);
     
+    // Função auxiliar para separar romaneios por delimitadores (espaço, vírgula, ponto e vírgula)
+    const splitRomaneios = (str: string): string[] => {
+      // Tentar separar por ponto e vírgula, depois vírgula, depois espaço
+      if (str.includes(';')) {
+        return str.split(';').map((r: string) => r.trim()).filter((r: string) => r);
+      } else if (str.includes(',')) {
+        return str.split(',').map((r: string) => r.trim()).filter((r: string) => r);
+      } else if (str.includes(' ')) {
+        return str.split(/\s+/).filter((r: string) => r);
+      } else {
+        return [str.trim()].filter((r: string) => r);
+      }
+    };
+    
     // Garantir que romaneio seja sempre um array
     let romaneios: string[] = [];
     if (minuta.romaneio) {
       if (Array.isArray(minuta.romaneio)) {
-        romaneios = minuta.romaneio.map((r: any) => String(r).trim()).filter((r: string) => r);
+        // Processar cada elemento do array, pois pode conter múltiplos valores separados
+        romaneios = minuta.romaneio.flatMap((r: any) => splitRomaneios(String(r)));
       } else if (typeof minuta.romaneio === 'string') {
         const romaneioStr = minuta.romaneio;
         // Tentar parsear como JSON
         try {
           const parsed = JSON.parse(romaneioStr);
           if (Array.isArray(parsed)) {
-            romaneios = parsed.map((r: any) => String(r).trim()).filter((r: string) => r);
+            // Processar cada elemento do array parseado
+            romaneios = parsed.flatMap((r: any) => splitRomaneios(String(r)));
           } else {
-            // Se parsed não é array, converter para string e usar
-            romaneios = [String(parsed).trim()].filter((r: string) => r);
+            // Se parsed não é array, separar o valor
+            romaneios = splitRomaneios(String(parsed));
           }
         } catch {
-          // Se JSON.parse falhar, tentar separar por vírgula ou espaço
-          if (romaneioStr.includes(',')) {
-            romaneios = romaneioStr.split(',').map((r: string) => r.trim()).filter((r: string) => r);
-          } else if (romaneioStr.includes(' ')) {
-            romaneios = romaneioStr.split(/\s+/).filter((r: string) => r);
-          } else {
-            romaneios = [romaneioStr.trim()].filter((r: string) => r);
-          }
+          // Se JSON.parse falhar, separar a string
+          romaneios = splitRomaneios(romaneioStr);
         }
       }
     }
