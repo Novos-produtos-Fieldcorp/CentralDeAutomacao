@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   BarChart2, Calendar, TrendingUp, Truck, Users, 
   AlertTriangle, Activity, FileText, Camera, X, Eye,
-  Gauge, AlertCircle, FileBarChart, ChevronDown, Lock
+  Gauge, AlertCircle, FileBarChart, ChevronDown, Lock,
+  ClipboardList, UserCheck, ImageIcon
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
@@ -99,6 +100,12 @@ const HodometrosDashboard = () => {
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
   const [todayReadings, setTodayReadings] = useState(0);
+  
+  // Minuta stats
+  const [totalMinutas, setTotalMinutas] = useState(0);
+  const [avgMinutasPerDay, setAvgMinutasPerDay] = useState(0);
+  const [avgMinutasPerDriver, setAvgMinutasPerDriver] = useState(0);
+  const [minutasWithPhotoPercent, setMinutasWithPhotoPercent] = useState(0);
   const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('30days', true);
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
@@ -120,8 +127,13 @@ const HodometrosDashboard = () => {
       fetchData();
       fetchTodayReadings();
       fetchInconsistencies();
+      
+      // Fetch minutas stats if user has access
+      if (moduleAccess.minuta) {
+        fetchMinutasStats();
+      }
     }
-  }, [dateRange, pendingDateRange, moduleAccess.hodometros]);
+  }, [dateRange, pendingDateRange, moduleAccess.hodometros, moduleAccess.minuta]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -570,6 +582,59 @@ const HodometrosDashboard = () => {
     }
   };
 
+  const fetchMinutasStats = async () => {
+    try {
+      setConnectionError(false);
+      
+      // Adjust end date to include the full day (23:59:59.999)
+      const endDateFull = dateRange.endDate ? `${dateRange.endDate}T23:59:59.999` : null;
+      
+      // Fetch minutas within date range
+      const { data, error } = await supabase
+        .from('minuta')
+        .select('id, created_at, motorista_id, foto_minuta')
+        .eq('company_id', companyId)
+        .gte('created_at', dateRange.startDate)
+        .lte('created_at', endDateFull)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      const minutas = data || [];
+      const totalMinutasCount = minutas.length;
+      
+      // Calculate unique days
+      const uniqueDays = new Set(
+        minutas.map(m => new Date(m.created_at).toISOString().split('T')[0])
+      ).size;
+      
+      // Calculate average minutas per day
+      const avgPerDay = uniqueDays > 0 ? totalMinutasCount / uniqueDays : 0;
+      
+      // Calculate unique drivers
+      const uniqueDrivers = new Set(
+        minutas.filter(m => m.motorista_id).map(m => m.motorista_id)
+      ).size;
+      
+      // Calculate average minutas per driver
+      const avgPerDriver = uniqueDrivers > 0 ? totalMinutasCount / uniqueDrivers : 0;
+      
+      // Calculate percentage of minutas with photo
+      const minutasWithPhoto = minutas.filter(m => m.foto_minuta && m.foto_minuta.trim() !== '').length;
+      const percentWithPhoto = totalMinutasCount > 0 
+        ? (minutasWithPhoto / totalMinutasCount) * 100 
+        : 0;
+      
+      setTotalMinutas(totalMinutasCount);
+      setAvgMinutasPerDay(avgPerDay);
+      setAvgMinutasPerDriver(avgPerDriver);
+      setMinutasWithPhotoPercent(percentWithPhoto);
+      
+    } catch (error) {
+      handleSupabaseError(error, 'carregar estatísticas de minutas');
+    }
+  };
+
   const handleShowPhoto = (photo: string | null) => {
     if (photo) {
       setSelectedPhoto(photo);
@@ -814,6 +879,31 @@ const HodometrosDashboard = () => {
           color="amber"
         />
       </div>
+
+      {/* Minuta Stats - Only visible with minuta access */}
+      {moduleAccess.minuta && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StatCard
+            title="Média Diária de Minutas"
+            value={Math.round(avgMinutasPerDay * 10) / 10}
+            icon={ClipboardList}
+            color="blue"
+          />
+          <StatCard
+            title="Média por Motorista"
+            value={Math.round(avgMinutasPerDriver * 10) / 10}
+            icon={UserCheck}
+            color="green"
+          />
+          <StatCard
+            title="Com Foto"
+            value={Math.round(minutasWithPhotoPercent)}
+            icon={ImageIcon}
+            color="purple"
+            unit="%"
+          />
+        </div>
+      )}
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
