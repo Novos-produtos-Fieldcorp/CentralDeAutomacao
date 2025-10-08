@@ -52,6 +52,9 @@ const HodometrosMinuta: React.FC = () => {
 
       if (!start || !end || !companyId) return;
 
+      // Adjust end date to include the full day (23:59:59.999)
+      const endDateFull = `${end}T23:59:59.999`;
+
       const { data, error } = await supabase.from('minuta')
         .select(`
           id,
@@ -69,8 +72,8 @@ const HodometrosMinuta: React.FC = () => {
           created_at
         `)
         .eq('company_id', companyId)
-  .gte('created_at', start)
-  .lte('created_at', end)
+        .gte('created_at', start)
+        .lte('created_at', endDateFull)
         .order('created_at', { ascending: false });
 
       if (error) {
