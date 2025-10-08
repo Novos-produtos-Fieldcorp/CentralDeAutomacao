@@ -34,30 +34,40 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
+  // Função auxiliar para separar romaneios por delimitadores
+  const splitRomaneios = (str: string): string[] => {
+    if (str.includes(';')) {
+      return str.split(';').map((r: string) => r.trim()).filter((r: string) => r);
+    } else if (str.includes(',')) {
+      return str.split(',').map((r: string) => r.trim()).filter((r: string) => r);
+    } else if (str.includes('\n')) {
+      return str.split('\n').map((r: string) => r.trim()).filter((r: string) => r);
+    } else if (str.includes(' ')) {
+      return str.split(/\s+/).filter((r: string) => r);
+    } else {
+      return [str.trim()].filter((r: string) => r);
+    }
+  };
+  
   let romaneios: string[] = [];
   if (romaneio) {
     if (Array.isArray(romaneio)) {
-      // Se for array, garantir que cada item seja string e remover duplicatas
-      romaneios = [...new Set(romaneio.map(r => String(r).trim()).filter(r => r))];
+      // Processar cada elemento do array, pois pode conter múltiplos valores separados
+      romaneios = [...new Set(romaneio.flatMap((r: any) => splitRomaneios(String(r))))];
     } else if (typeof romaneio === 'string') {
       // Se for string, tentar parsear como JSON
       try {
         const parsed = JSON.parse(romaneio);
         if (Array.isArray(parsed)) {
-          // Array parseado do JSON, remover duplicatas
-          romaneios = [...new Set(parsed.map(r => String(r).trim()).filter(r => r))];
+          // Processar cada elemento do array parseado
+          romaneios = [...new Set(parsed.flatMap((r: any) => splitRomaneios(String(r))))];
         } else {
-          romaneios = [String(parsed).trim()].filter(r => r);
+          // Se parsed não é array, separar o valor
+          romaneios = splitRomaneios(String(parsed));
         }
       } catch {
-        // Se falhar o parse JSON, verificar se é string com múltiplos valores separados
-        // Tentar separar por espaço, vírgula, ponto-e-vírgula ou quebra de linha
-        const separated = romaneio.split(/[\s,;\n]+/).map(r => r.trim()).filter(r => r);
-        if (separated.length > 1) {
-          romaneios = [...new Set(separated)];
-        } else {
-          romaneios = [romaneio.trim()].filter(r => r);
-        }
+        // Se JSON.parse falhar, separar a string
+        romaneios = splitRomaneios(romaneio);
       }
     }
   }
@@ -413,22 +423,43 @@ const HodometrosMinuta: React.FC = () => {
   const handleOpenEditModal = async (minuta: Minuta) => {
     setSelectedMinuta(minuta);
     
+    // Função auxiliar para separar romaneios por delimitadores (ponto e vírgula, vírgula, quebra de linha, espaço)
+    const splitRomaneios = (str: string): string[] => {
+      // Tentar separar por ponto e vírgula, depois vírgula, depois quebra de linha, depois espaço
+      if (str.includes(';')) {
+        return str.split(';').map((r: string) => r.trim()).filter((r: string) => r);
+      } else if (str.includes(',')) {
+        return str.split(',').map((r: string) => r.trim()).filter((r: string) => r);
+      } else if (str.includes('\n')) {
+        return str.split('\n').map((r: string) => r.trim()).filter((r: string) => r);
+      } else if (str.includes(' ')) {
+        return str.split(/\s+/).filter((r: string) => r);
+      } else {
+        return [str.trim()].filter((r: string) => r);
+      }
+    };
+    
     // Garantir que romaneio seja sempre um array
     let romaneios: string[] = [];
     if (minuta.romaneio) {
       if (Array.isArray(minuta.romaneio)) {
-        romaneios = minuta.romaneio;
+        // Processar cada elemento do array, pois pode conter múltiplos valores separados
+        romaneios = minuta.romaneio.flatMap((r: any) => splitRomaneios(String(r)));
       } else if (typeof minuta.romaneio === 'string') {
+        const romaneioStr = minuta.romaneio;
         // Tentar parsear como JSON
         try {
-          const parsed = JSON.parse(minuta.romaneio);
+          const parsed = JSON.parse(romaneioStr);
           if (Array.isArray(parsed)) {
-            romaneios = parsed;
+            // Processar cada elemento do array parseado
+            romaneios = parsed.flatMap((r: any) => splitRomaneios(String(r)));
           } else {
-            romaneios = [minuta.romaneio];
+            // Se parsed não é array, separar o valor
+            romaneios = splitRomaneios(String(parsed));
           }
         } catch {
-          romaneios = [minuta.romaneio];
+          // Se JSON.parse falhar, separar a string
+          romaneios = splitRomaneios(romaneioStr);
         }
       }
     }
@@ -935,7 +966,7 @@ const HodometrosMinuta: React.FC = () => {
                 {editFormData.romaneios.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2">
                     {editFormData.romaneios.map((rom, idx) => (
-                      <div key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
+                      <div key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
                         <span className="text-sm">{rom}</span>
                         <button
                           onClick={() => handleRemoveRomaneio(idx)}
