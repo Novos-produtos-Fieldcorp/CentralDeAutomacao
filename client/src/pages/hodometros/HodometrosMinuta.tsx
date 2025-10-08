@@ -34,30 +34,38 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
+  // Função auxiliar para separar romaneios por delimitadores
+  const splitRomaneios = (str: string): string[] => {
+    if (str.includes(';')) {
+      return str.split(';').map((r: string) => r.trim()).filter((r: string) => r);
+    } else if (str.includes(',')) {
+      return str.split(',').map((r: string) => r.trim()).filter((r: string) => r);
+    } else if (str.includes(' ')) {
+      return str.split(/\s+/).filter((r: string) => r);
+    } else {
+      return [str.trim()].filter((r: string) => r);
+    }
+  };
+  
   let romaneios: string[] = [];
   if (romaneio) {
     if (Array.isArray(romaneio)) {
-      // Se for array, garantir que cada item seja string e remover duplicatas
-      romaneios = [...new Set(romaneio.map(r => String(r).trim()).filter(r => r))];
+      // Processar cada elemento do array, pois pode conter múltiplos valores separados
+      romaneios = [...new Set(romaneio.flatMap((r: any) => splitRomaneios(String(r))))];
     } else if (typeof romaneio === 'string') {
       // Se for string, tentar parsear como JSON
       try {
         const parsed = JSON.parse(romaneio);
         if (Array.isArray(parsed)) {
-          // Array parseado do JSON, remover duplicatas
-          romaneios = [...new Set(parsed.map(r => String(r).trim()).filter(r => r))];
+          // Processar cada elemento do array parseado
+          romaneios = [...new Set(parsed.flatMap((r: any) => splitRomaneios(String(r))))];
         } else {
-          romaneios = [String(parsed).trim()].filter(r => r);
+          // Se parsed não é array, separar o valor
+          romaneios = splitRomaneios(String(parsed));
         }
       } catch {
-        // Se falhar o parse JSON, verificar se é string com múltiplos valores separados
-        // Tentar separar por espaço, vírgula, ponto-e-vírgula ou quebra de linha
-        const separated = romaneio.split(/[\s,;\n]+/).map(r => r.trim()).filter(r => r);
-        if (separated.length > 1) {
-          romaneios = [...new Set(separated)];
-        } else {
-          romaneios = [romaneio.trim()].filter(r => r);
-        }
+        // Se JSON.parse falhar, separar a string
+        romaneios = splitRomaneios(romaneio);
       }
     }
   }
