@@ -417,18 +417,27 @@ const HodometrosMinuta: React.FC = () => {
     let romaneios: string[] = [];
     if (minuta.romaneio) {
       if (Array.isArray(minuta.romaneio)) {
-        romaneios = minuta.romaneio;
+        romaneios = minuta.romaneio.map((r: any) => String(r).trim()).filter((r: string) => r);
       } else if (typeof minuta.romaneio === 'string') {
+        const romaneioStr = minuta.romaneio;
         // Tentar parsear como JSON
         try {
-          const parsed = JSON.parse(minuta.romaneio);
+          const parsed = JSON.parse(romaneioStr);
           if (Array.isArray(parsed)) {
-            romaneios = parsed;
+            romaneios = parsed.map((r: any) => String(r).trim()).filter((r: string) => r);
           } else {
-            romaneios = [minuta.romaneio];
+            // Se parsed não é array, converter para string e usar
+            romaneios = [String(parsed).trim()].filter((r: string) => r);
           }
         } catch {
-          romaneios = [minuta.romaneio];
+          // Se JSON.parse falhar, tentar separar por vírgula ou espaço
+          if (romaneioStr.includes(',')) {
+            romaneios = romaneioStr.split(',').map((r: string) => r.trim()).filter((r: string) => r);
+          } else if (romaneioStr.includes(' ')) {
+            romaneios = romaneioStr.split(/\s+/).filter((r: string) => r);
+          } else {
+            romaneios = [romaneioStr.trim()].filter((r: string) => r);
+          }
         }
       }
     }
