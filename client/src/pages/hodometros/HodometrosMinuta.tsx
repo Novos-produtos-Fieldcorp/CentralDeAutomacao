@@ -79,36 +79,38 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
   }
   
   return (
-    <details className="inline-block relative">
-      <summary className="cursor-pointer inline-flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
-        {romaneios[0]} <ChevronDown className="h-3 w-3" />
-      </summary>
-      <div className="absolute z-10 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-md py-1 min-w-[120px]">
-        {romaneios.map((r, idx) => (
-          <div key={idx} className="text-sm text-gray-900 dark:text-white px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700">
-            {r}
+    <div className="relative inline-block">
+      <details className="group">
+        <summary className="cursor-pointer inline-flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 list-none">
+          {romaneios[0]} <ChevronDown className="h-3 w-3" />
+        </summary>
+        <div className="absolute left-0 top-full z-50 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg py-1 min-w-[120px]">
+          {romaneios.map((r, idx) => (
+            <div key={idx} className="text-sm text-gray-900 dark:text-white px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap">
+              {r}
+            </div>
+          ))}
+          <div className="border-t border-gray-200 dark:border-gray-700 mt-1 pt-1">
+            <button
+              onClick={handleCopyRomaneios}
+              className="w-full px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-1.5"
+            >
+              {copied ? (
+                <>
+                  <Check className="h-3 w-3" />
+                  Copiado
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3 w-3" />
+                  Copiar
+                </>
+              )}
+            </button>
           </div>
-        ))}
-        <div className="border-t border-gray-200 dark:border-gray-700 mt-1 pt-1">
-          <button
-            onClick={handleCopyRomaneios}
-            className="w-full px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-1.5"
-          >
-            {copied ? (
-              <>
-                <Check className="h-3 w-3" />
-                Copiado
-              </>
-            ) : (
-              <>
-                <Copy className="h-3 w-3" />
-                Copiar
-              </>
-            )}
-          </button>
         </div>
-      </div>
-    </details>
+      </details>
+    </div>
   );
 };
 
