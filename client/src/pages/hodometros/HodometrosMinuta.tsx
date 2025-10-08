@@ -46,9 +46,15 @@ const HodometrosMinuta: React.FC = () => {
     minuta_informada: '',
     minuta_lida: '',
     romaneios: [] as string[],
-    newRomaneio: ''
+    newRomaneio: '',
+    motorista_id: null as number | null,
+    veiculo_id: null as number | null
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [motoristas, setMotoristas] = useState<Array<{ motorista_id: number; nome: string }>>([]);
+  const [veiculos, setVeiculos] = useState<Array<{ veiculo_id: number; placa: string }>>([]);
+  const [loadingMotoristas, setLoadingMotoristas] = useState(false);
+  const [loadingVeiculos, setLoadingVeiculos] = useState(false);
 
   const fetchMinutas = useCallback(async (overrideRange?: { startDate: string; endDate: string }) => {
     try {
@@ -206,15 +212,60 @@ const HodometrosMinuta: React.FC = () => {
     }
   };
 
-  const handleOpenEditModal = (minuta: Minuta) => {
+  const handleOpenEditModal = async (minuta: Minuta) => {
     setSelectedMinuta(minuta);
     setEditFormData({
       minuta_informada: minuta.minuta_informada || '',
       minuta_lida: minuta.minuta_lida || '',
       romaneios: minuta.romaneio || [],
-      newRomaneio: ''
+      newRomaneio: '',
+      motorista_id: minuta.motorista_id || null,
+      veiculo_id: minuta.veiculo_id || null
     });
     setShowEditModal(true);
+    
+    // Fetch motoristas e veículos
+    await Promise.all([fetchMotoristas(), fetchVeiculos()]);
+  };
+
+  const fetchMotoristas = async () => {
+    try {
+      setLoadingMotoristas(true);
+      const { data, error } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .eq('company_id', companyId)
+        .eq('st_motorista', true)
+        .order('nome');
+      
+      if (error) throw error;
+      setMotoristas(data || []);
+    } catch (err) {
+      console.error('Error fetching motoristas:', err);
+      toast.error('Erro ao carregar motoristas');
+    } finally {
+      setLoadingMotoristas(false);
+    }
+  };
+
+  const fetchVeiculos = async () => {
+    try {
+      setLoadingVeiculos(true);
+      const { data, error } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .eq('company_id', companyId)
+        .eq('st_veiculo', true)
+        .order('placa');
+      
+      if (error) throw error;
+      setVeiculos(data || []);
+    } catch (err) {
+      console.error('Error fetching veiculos:', err);
+      toast.error('Erro ao carregar veículos');
+    } finally {
+      setLoadingVeiculos(false);
+    }
   };
 
   const handleAddRomaneio = () => {
@@ -245,7 +296,9 @@ const HodometrosMinuta: React.FC = () => {
         .update({
           minuta_informada: editFormData.minuta_informada || null,
           minuta_lida: editFormData.minuta_lida || null,
-          romaneio: editFormData.romaneios.length > 0 ? editFormData.romaneios : null
+          romaneio: editFormData.romaneios.length > 0 ? editFormData.romaneios : null,
+          motorista_id: editFormData.motorista_id,
+          veiculo_id: editFormData.veiculo_id
         })
         .eq('id', selectedMinuta.id);
 
@@ -439,16 +492,33 @@ const HodometrosMinuta: React.FC = () => {
                         <div className="flex items-center"><Truck className="h-4 w-4 text-gray-400 mr-1" /><div className="text-sm text-gray-900 dark:text-white">{m.veiculo?.placa || 'Não informado'}</div></div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 ml-5">{m.veiculo?.marca} {m.veiculo?.tipo}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{m.minuta_informada || m.minuta_lida || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {m.minuta_lida && <div><span className="text-gray-500 dark:text-gray-400 text-xs">Lido:</span> {m.minuta_lida}</div>}
+                          {m.minuta_informada && <div><span className="text-gray-500 dark:text-gray-400 text-xs">Informado:</span> {m.minuta_informada}</div>}
+                          {!m.minuta_lida && !m.minuta_informada && <span className="text-gray-500 dark:text-gray-400">-</span>}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                         {m.romaneio && m.romaneio.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {m.romaneio.map((r, idx) => (
-                              <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
-                                {r}
-                              </span>
-                            ))}
-                          </div>
+                          m.romaneio.length === 1 ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
+                              {m.romaneio[0]}
+                            </span>
+                          ) : (
+                            <details className="inline-block">
+                              <summary className="cursor-pointer inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/30">
+                                {m.romaneio[0]} <ChevronDown className="ml-1 h-3 w-3" />
+                              </summary>
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {m.romaneio.slice(1).map((r, idx) => (
+                                  <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
+                                    {r}
+                                  </span>
+                                ))}
+                              </div>
+                            </details>
+                          )
                         ) : (
                           '-'
                         )}
@@ -588,6 +658,49 @@ const HodometrosMinuta: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     data-testid="input-minuta-lida"
                   />
+                </div>
+              </div>
+
+              {/* Motorista e Veículo Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Motorista
+                  </label>
+                  <select
+                    value={editFormData.motorista_id || ''}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, motorista_id: e.target.value ? Number(e.target.value) : null }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="select-motorista"
+                    disabled={loadingMotoristas}
+                  >
+                    <option value="">Selecione um motorista</option>
+                    {motoristas.map((m) => (
+                      <option key={m.motorista_id} value={m.motorista_id}>
+                        {m.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Veículo
+                  </label>
+                  <select
+                    value={editFormData.veiculo_id || ''}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, veiculo_id: e.target.value ? Number(e.target.value) : null }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="select-veiculo"
+                    disabled={loadingVeiculos}
+                  >
+                    <option value="">Selecione um veículo</option>
+                    {veiculos.map((v) => (
+                      <option key={v.veiculo_id} value={v.veiculo_id}>
+                        {v.placa}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
