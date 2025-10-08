@@ -158,12 +158,7 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
           zIndex: 9999
         }}
       >
-        {romaneios.map((r, idx) => (
-          <div key={idx} className="text-sm text-gray-900 dark:text-white px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap">
-            {r}
-          </div>
-        ))}
-        <div className="border-t border-gray-200 dark:border-gray-700 mt-1 pt-1">
+        <div className="border-b border-gray-200 dark:border-gray-700 mb-1 pb-1">
           <button
             onClick={handleCopyRomaneios}
             className="w-full px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-center gap-1.5"
@@ -181,6 +176,11 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
             )}
           </button>
         </div>
+        {romaneios.map((r, idx) => (
+          <div key={idx} className="text-sm text-gray-900 dark:text-white px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap">
+            {r}
+          </div>
+        ))}
       </div>,
       document.body
     );
