@@ -103,7 +103,8 @@ const HodometrosDashboard = () => {
   const [operationMileage, setOperationMileage] = useState<OperationMileage[]>([]);
   const [filialMinutas, setFilialMinutas] = useState<FilialMinutas[]>([]);
   const [driverMinutaBomba, setDriverMinutaBomba] = useState<DriverReadings[]>([]);
-  const [showMinutaBombaView, setShowMinutaBombaView] = useState(true);
+  const [driverHodometroBomba, setDriverHodometroBomba] = useState<DriverReadings[]>([]);
+  const [showMinutaBombaView, setShowMinutaBombaView] = useState(false);
   const [totalKm, setTotalKm] = useState(0);
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
@@ -146,8 +147,9 @@ const HodometrosDashboard = () => {
         if (moduleAccess.minuta) {
           fetchMinutasStats();
           fetchFilialMinutas();
+          fetchDriverMinutas();
         }
-        fetchDriverMinutaBomba();
+        fetchDriverHodometroBomba();
       }
       
       // Fetch bomba stats if user has access
@@ -770,7 +772,7 @@ const HodometrosDashboard = () => {
     }
   };
 
-  const fetchDriverMinutaBomba = async () => {
+  const fetchDriverMinutas = async () => {
     try {
       setConnectionError(false);
       
@@ -809,6 +811,57 @@ const HodometrosDashboard = () => {
         }
       }
       
+      // Convert to array and sort by count
+      const driverArray = Array.from(minutasByDriver.values())
+        .map(({ nome, count }) => ({ motorista_id: 0, nome, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 20); // Limit to top 20
+      
+      setDriverMinutaBomba(driverArray);
+      
+    } catch (error) {
+      handleSupabaseError(error, 'carregar minutas por motorista');
+    }
+  };
+
+  const fetchDriverHodometroBomba = async () => {
+    try {
+      setConnectionError(false);
+      
+      const endDateFull = dateRange.endDate ? `${dateRange.endDate}T23:59:59.999` : null;
+      
+      // Fetch hodometros and bomba by driver
+      const readingsByDriver = new Map<number, { nome: string; count: number }>();
+      
+      // Fetch hodometros by driver
+      const { data: hodometrosData, error: hodometrosError } = await supabase
+        .from('hodometro')
+        .select(`
+          id_hodometro,
+          motorista_id,
+          motorista:motorista_id ( motorista_id, nome )
+        `)
+        .eq('company_id', companyId)
+        .gte('created_at', dateRange.startDate)
+        .lte('created_at', endDateFull);
+      
+      if (!hodometrosError && hodometrosData) {
+        hodometrosData.forEach((hodo: any) => {
+          if (hodo.motorista_id && hodo.motorista) {
+            const motorista = Array.isArray(hodo.motorista) ? hodo.motorista[0] : hodo.motorista;
+            const existing = readingsByDriver.get(hodo.motorista_id);
+            if (existing) {
+              existing.count++;
+            } else {
+              readingsByDriver.set(hodo.motorista_id, {
+                nome: motorista.nome,
+                count: 1
+              });
+            }
+          }
+        });
+      }
+      
       // Fetch bomba by driver (using hodometro_id to get motorista)
       if (moduleAccess.bomba) {
         const { data: bombaData, error: bombaError } = await supabase
@@ -833,11 +886,11 @@ const HodometrosDashboard = () => {
                 ? bomba.hodometro.motorista[0] 
                 : bomba.hodometro.motorista;
               const motoristaId = bomba.hodometro.motorista_id;
-              const existing = minutasByDriver.get(motoristaId);
+              const existing = readingsByDriver.get(motoristaId);
               if (existing) {
                 existing.count++;
               } else {
-                minutasByDriver.set(motoristaId, {
+                readingsByDriver.set(motoristaId, {
                   nome: motorista.nome,
                   count: 1
                 });
@@ -848,15 +901,15 @@ const HodometrosDashboard = () => {
       }
       
       // Convert to array and sort by count
-      const driverArray = Array.from(minutasByDriver.values())
+      const driverArray = Array.from(readingsByDriver.values())
         .map(({ nome, count }) => ({ motorista_id: 0, nome, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 20); // Limit to top 20
       
-      setDriverMinutaBomba(driverArray);
+      setDriverHodometroBomba(driverArray);
       
     } catch (error) {
-      handleSupabaseError(error, 'carregar minuta/bomba por motorista');
+      handleSupabaseError(error, 'carregar hodômetro/bomba por motorista');
     }
   };
 
@@ -1092,13 +1145,13 @@ const HodometrosDashboard = () => {
           unit="km"
         />
         <StatCard
-          title="Total de Bomba + Minuta"
+          title="Total de Leituras"
           value={totalBomba + totalMinutas}
           icon={Fuel}
           color="purple"
         />
         <StatCard
-          title="Total de Hoje Bomba + Minuta"
+          title="Total de Leituras de Hoje"
           value={todayBombaMinuta}
           icon={ClipboardList}
           color="amber"
@@ -1255,18 +1308,8 @@ const HodometrosDashboard = () => {
               <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               Leituras por Motorista
             </h3>
-            {(moduleAccess.minuta || moduleAccess.bomba) && (
+            {moduleAccess.minuta && (
               <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                <button
-                  onClick={() => setShowMinutaBombaView(true)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    showMinutaBombaView
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  Minuta + Bomba
-                </button>
                 <button
                   onClick={() => setShowMinutaBombaView(false)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
@@ -1275,7 +1318,17 @@ const HodometrosDashboard = () => {
                       : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  Hodômetro
+                  Leituras
+                </button>
+                <button
+                  onClick={() => setShowMinutaBombaView(true)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    showMinutaBombaView
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Minuta
                 </button>
               </div>
             )}
@@ -1315,9 +1368,9 @@ const HodometrosDashboard = () => {
               </div>
             )
           ) : (
-            driverReadings.length > 0 ? (
+            driverHodometroBomba.length > 0 ? (
               <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-                {driverReadings.map((driver, index) => (
+                {driverHodometroBomba.map((driver, index) => (
                   <div key={index} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-black dark:text-gray-400">
@@ -1333,7 +1386,7 @@ const HodometrosDashboard = () => {
                         style={{ 
                           width: `${Math.max(
                             5, 
-                            (driver.count / Math.max(...driverReadings.map(d => d.count), 1)) * 100
+                            (driver.count / Math.max(...driverHodometroBomba.map(d => d.count), 1)) * 100
                           )}%` 
                         }}
                       />
