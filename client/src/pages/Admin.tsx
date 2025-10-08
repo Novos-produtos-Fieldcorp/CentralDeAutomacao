@@ -117,60 +117,16 @@ const Admin = () => {
     }
 
     try {
-      // DEBUG: show what we're about to send
-  console.log('[Admin] updating company field', { company_id: control.company_id, field, newValue });
+      console.log('[Admin] updating company field', { company_id: control.company_id, field, newValue });
 
-      let updatedData = null;
-      let error = null;
-
-      if (field === 'minuta_access') {
-        // Use backend service route to bypass RLS for company updates
-        try {
-          const { createApiUrl } = await import('../lib/api-config');
-          const url = createApiUrl(`/admin/company/${control.company_id}/minuta`);
-          const resp = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ value: newValue })
-          });
-
-          // Read as text once, then try parse JSON from that text to avoid 'body stream already read'
-          const text = await resp.text();
-          let json: any = null;
-          try {
-            json = text ? JSON.parse(text) : null;
-          } catch (e) {
-            // not JSON, keep json as null
-            json = null;
-          }
-
-          if (!resp.ok) {
-            // Prefer backend json error message if available, otherwise raw text
-            const serverMessage = json?.error?.message || json?.error || text || `HTTP ${resp.status}`;
-            toast.error('Erro ao contatar backend: ' + serverMessage);
-            error = { message: serverMessage };
-          } else {
-            updatedData = json?.data ?? null;
-            error = json?.error ?? null;
-            console.log('[Admin] backend toggle minuta response', json ?? text);
-            if (json?.error) {
-              toast.error('Erro do backend: ' + (json.error.message || JSON.stringify(json.error)));
-            }
-          }
-        } catch (e) {
-          error = e;
-        }
-      } else {
-        // Update in Supabase immediately and return the updated row for inspection
-        const supRes = await supabase
-          .from('company')
-          .update({ [field]: newValue })
-          .eq('company_id', control.company_id)
-          .select();
-  updatedData = supRes.data;
-  error = supRes.error;
-  console.log('[Admin] supabase update response', { updatedData, error });
-      }
+      // Update in Supabase immediately and return the updated row for inspection
+      const { data: updatedData, error } = await supabase
+        .from('company')
+        .update({ [field]: newValue })
+        .eq('company_id', control.company_id)
+        .select();
+      
+      console.log('[Admin] supabase update response', { updatedData, error });
 
       if (error) {
         console.error(`Error updating ${field} for company ${control.company_id}:`, error);
@@ -180,20 +136,10 @@ const Admin = () => {
 
       // Update local state if the update was successful
       const updatedControls = [...accessControls];
-      
-      // For minuta_access, we might get the updated data in the response
-      if (field === 'minuta_access' && updatedData && updatedData.length > 0) {
-        updatedControls[index] = {
-          ...updatedControls[index],
-          minuta_access: updatedData[0].minuta_access
-        };
-      } else {
-        // For other fields or if no updated data is returned
-        updatedControls[index] = {
-          ...updatedControls[index],
-          [field]: newValue
-        };
-      }
+      updatedControls[index] = {
+        ...updatedControls[index],
+        [field]: newValue
+      };
       
       setAccessControls(updatedControls);
       console.log(`[Admin] local state updated for ${field} to ${updatedControls[index][field]}`);
@@ -525,12 +471,12 @@ const Admin = () => {
                         <button
                           onClick={() => handleToggleAccess(index, 'minuta_access')}
                           className={`p-2 rounded-full ${
-                            control.hasOwnProperty('minuta_access') && control.minuta_access
+                            control.minuta_access
                               ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                               : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                           }`}
                         >
-                          {control.minuta_access ? <CheckCircle size={16} /> : <EyeOff size={16} />}
+                          <CheckCircle size={20} />
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -570,7 +516,7 @@ const Admin = () => {
                   ))}
                   {accessControls.length === 0 && (
                     <tr>
-                      <td colSpan={10} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <td colSpan={11} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                         Nenhuma conta configurada
                       </td>
                     </tr>
