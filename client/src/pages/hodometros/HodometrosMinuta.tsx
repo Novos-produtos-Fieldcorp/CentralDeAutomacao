@@ -757,7 +757,7 @@ const HodometrosMinuta: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <button
                           onClick={() => handleOpenEditModal(m)}
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                          className="inline-flex items-center justify-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                           title="Editar minuta"
                           data-testid={`button-edit-minuta-${m.id}`}
                         >
