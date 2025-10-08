@@ -34,7 +34,17 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
     if (Array.isArray(romaneio)) {
       romaneios = romaneio;
     } else if (typeof romaneio === 'string') {
-      romaneios = [romaneio];
+      // Se for string, pode ser um JSON array string
+      try {
+        const parsed = JSON.parse(romaneio);
+        if (Array.isArray(parsed)) {
+          romaneios = parsed;
+        } else {
+          romaneios = [romaneio];
+        }
+      } catch {
+        romaneios = [romaneio];
+      }
     }
   }
   
@@ -257,7 +267,17 @@ const HodometrosMinuta: React.FC = () => {
           if (Array.isArray(m.romaneio)) {
             romaneios = m.romaneio;
           } else if (typeof m.romaneio === 'string') {
-            romaneios = [m.romaneio];
+            // Tentar parsear como JSON
+            try {
+              const parsed = JSON.parse(m.romaneio);
+              if (Array.isArray(parsed)) {
+                romaneios = parsed;
+              } else {
+                romaneios = [m.romaneio];
+              }
+            } catch {
+              romaneios = [m.romaneio];
+            }
           }
         }
         
@@ -309,7 +329,17 @@ const HodometrosMinuta: React.FC = () => {
       if (Array.isArray(minuta.romaneio)) {
         romaneios = minuta.romaneio;
       } else if (typeof minuta.romaneio === 'string') {
-        romaneios = [minuta.romaneio];
+        // Tentar parsear como JSON
+        try {
+          const parsed = JSON.parse(minuta.romaneio);
+          if (Array.isArray(parsed)) {
+            romaneios = parsed;
+          } else {
+            romaneios = [minuta.romaneio];
+          }
+        } catch {
+          romaneios = [minuta.romaneio];
+        }
       }
     }
     
