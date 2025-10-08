@@ -37,18 +37,27 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
   let romaneios: string[] = [];
   if (romaneio) {
     if (Array.isArray(romaneio)) {
-      romaneios = romaneio;
+      // Se for array, garantir que cada item seja string e remover duplicatas
+      romaneios = [...new Set(romaneio.map(r => String(r).trim()).filter(r => r))];
     } else if (typeof romaneio === 'string') {
-      // Se for string, pode ser um JSON array string
+      // Se for string, tentar parsear como JSON
       try {
         const parsed = JSON.parse(romaneio);
         if (Array.isArray(parsed)) {
-          romaneios = parsed;
+          // Array parseado do JSON, remover duplicatas
+          romaneios = [...new Set(parsed.map(r => String(r).trim()).filter(r => r))];
         } else {
-          romaneios = [romaneio];
+          romaneios = [String(parsed).trim()].filter(r => r);
         }
       } catch {
-        romaneios = [romaneio];
+        // Se falhar o parse JSON, verificar se é string com múltiplos valores separados
+        // Tentar separar por espaço, vírgula, ponto-e-vírgula ou quebra de linha
+        const separated = romaneio.split(/[\s,;\n]+/).map(r => r.trim()).filter(r => r);
+        if (separated.length > 1) {
+          romaneios = [...new Set(separated)];
+        } else {
+          romaneios = [romaneio.trim()].filter(r => r);
+        }
       }
     }
   }
