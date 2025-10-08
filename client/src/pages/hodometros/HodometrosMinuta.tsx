@@ -48,7 +48,8 @@ const HodometrosMinuta: React.FC = () => {
     romaneios: [] as string[],
     newRomaneio: '',
     motorista_id: null as number | null,
-    veiculo_id: null as number | null
+    veiculo_id: null as number | null,
+    foto_minuta: null as string | null
   });
   const [isSaving, setIsSaving] = useState(false);
   const [motoristas, setMotoristas] = useState<Array<{ motorista_id: number; nome: string }>>([]);
@@ -242,7 +243,8 @@ const HodometrosMinuta: React.FC = () => {
       romaneios: romaneios,
       newRomaneio: '',
       motorista_id: minuta.motorista_id || null,
-      veiculo_id: minuta.veiculo_id || null
+      veiculo_id: minuta.veiculo_id || null,
+      foto_minuta: minuta.foto_minuta || null
     });
     setShowEditModal(true);
     
@@ -307,6 +309,27 @@ const HodometrosMinuta: React.FC = () => {
     }));
   };
 
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditFormData(prev => ({
+          ...prev,
+          foto_minuta: reader.result as string
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setEditFormData(prev => ({
+      ...prev,
+      foto_minuta: null
+    }));
+  };
+
   const handleSaveMinuta = async () => {
     if (!selectedMinuta) return;
 
@@ -320,7 +343,8 @@ const HodometrosMinuta: React.FC = () => {
           minuta_lida: editFormData.minuta_lida || null,
           romaneio: editFormData.romaneios.length > 0 ? editFormData.romaneios : null,
           motorista_id: editFormData.motorista_id,
-          veiculo_id: editFormData.veiculo_id
+          veiculo_id: editFormData.veiculo_id,
+          foto_minuta: editFormData.foto_minuta
         })
         .eq('id', selectedMinuta.id);
 
@@ -785,6 +809,56 @@ const HodometrosMinuta: React.FC = () => {
                     Adicionar
                   </button>
                 </div>
+              </div>
+
+              {/* Foto da Minuta Section */}
+              <div className="border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Foto da Minuta
+                </h4>
+
+                {editFormData.foto_minuta ? (
+                  <div className="space-y-3">
+                    <div className="relative w-full h-48 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                      <img 
+                        src={editFormData.foto_minuta} 
+                        alt="Preview da foto" 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <label className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-center">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          className="hidden"
+                          data-testid="input-replace-photo"
+                        />
+                        Substituir Foto
+                      </label>
+                      <button
+                        onClick={handleRemovePhoto}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                        data-testid="button-remove-photo"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="block w-full px-4 py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer text-center">
+                    <Camera className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Clique para adicionar foto</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                      data-testid="input-upload-photo"
+                    />
+                  </label>
+                )}
               </div>
             </div>
 
