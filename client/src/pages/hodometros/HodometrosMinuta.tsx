@@ -935,7 +935,7 @@ const HodometrosMinuta: React.FC = () => {
                 {editFormData.romaneios.length > 0 && (
                   <div className="mb-3 flex flex-wrap gap-2">
                     {editFormData.romaneios.map((rom, idx) => (
-                      <div key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
+                      <div key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
                         <span className="text-sm">{rom}</span>
                         <button
                           onClick={() => handleRemoveRomaneio(idx)}
