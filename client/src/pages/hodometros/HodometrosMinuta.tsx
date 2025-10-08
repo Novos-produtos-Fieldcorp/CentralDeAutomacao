@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown } from 'lucide-react';
+import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, Edit2, Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import { formatCPF } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
-// DocumentUploader previously used for create modal (now removed)
 import Pagination from '../../components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import * as XLSX from 'xlsx';
@@ -15,7 +14,7 @@ interface Minuta {
   id: number;
   minuta_informada: string | null;
   minuta_lida: string | null;
-  romaneio: string | null;
+  romaneio: string[] | null;
   foto_minuta: string | null;
   filial_id: number | null;
   filial?: { id: number; filial: string } | null;
@@ -41,7 +40,15 @@ const HodometrosMinuta: React.FC = () => {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
-  // create-modal state removed (creation flow moved out for tests)
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedMinuta, setSelectedMinuta] = useState<Minuta | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    minuta_informada: '',
+    minuta_lida: '',
+    romaneios: [] as string[],
+    newRomaneio: ''
+  });
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchMinutas = useCallback(async (overrideRange?: { startDate: string; endDate: string }) => {
     try {
@@ -144,7 +151,7 @@ const HodometrosMinuta: React.FC = () => {
       (m.veiculo?.marca || '').toLowerCase().includes(s) ||
       (m.veiculo?.tipo || '').toLowerCase().includes(s) ||
       (m.minuta_informada || '').toLowerCase().includes(s) ||
-      (m.romaneio || '').toLowerCase().includes(s) ||
+      (m.romaneio && Array.isArray(m.romaneio) ? m.romaneio.some(r => r.toLowerCase().includes(s)) : false) ||
       (m.filial?.filial || '').toLowerCase().includes(s)
     );
   });
@@ -170,7 +177,7 @@ const HodometrosMinuta: React.FC = () => {
         'Marca/Modelo': `${m.veiculo?.marca || ''} ${m.veiculo?.tipo || ''}`.trim() || 'Não informado',
         'Nº Minuta': m.minuta_informada || '-',
         'Minuta Lida': m.minuta_lida || '-',
-        'Romaneio': m.romaneio || '-',
+        'Romaneios': m.romaneio && m.romaneio.length > 0 ? m.romaneio.join(', ') : '-',
         'Filial': m.filial?.filial || 'Sem filial',
         'Tem Foto': m.foto_minuta ? 'Sim' : 'Não'
       }));
@@ -178,7 +185,7 @@ const HodometrosMinuta: React.FC = () => {
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(exportData);
       ws['!cols'] = [
-        { wch: 12 }, { wch: 8 }, { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 10 }
+        { wch: 12 }, { wch: 8 }, { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 20 }, { wch: 10 }
       ];
       XLSX.utils.book_append_sheet(wb, ws, 'Minutas');
       XLSX.writeFile(wb, `relatorio_minutas_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -196,6 +203,62 @@ const HodometrosMinuta: React.FC = () => {
       setShowPhotoModal(true);
     } else {
       toast.error('Nenhuma foto disponível');
+    }
+  };
+
+  const handleOpenEditModal = (minuta: Minuta) => {
+    setSelectedMinuta(minuta);
+    setEditFormData({
+      minuta_informada: minuta.minuta_informada || '',
+      minuta_lida: minuta.minuta_lida || '',
+      romaneios: minuta.romaneio || [],
+      newRomaneio: ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleAddRomaneio = () => {
+    if (editFormData.newRomaneio.trim()) {
+      setEditFormData(prev => ({
+        ...prev,
+        romaneios: [...prev.romaneios, prev.newRomaneio.trim()],
+        newRomaneio: ''
+      }));
+    }
+  };
+
+  const handleRemoveRomaneio = (index: number) => {
+    setEditFormData(prev => ({
+      ...prev,
+      romaneios: prev.romaneios.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSaveMinuta = async () => {
+    if (!selectedMinuta) return;
+
+    try {
+      setIsSaving(true);
+
+      const { error } = await supabase
+        .from('minuta')
+        .update({
+          minuta_informada: editFormData.minuta_informada || null,
+          minuta_lida: editFormData.minuta_lida || null,
+          romaneio: editFormData.romaneios.length > 0 ? editFormData.romaneios : null
+        })
+        .eq('id', selectedMinuta.id);
+
+      if (error) throw error;
+
+      toast.success('Minuta atualizada com sucesso!');
+      setShowEditModal(false);
+      fetchMinutas();
+    } catch (err) {
+      console.error('Error updating minuta:', err);
+      toast.error('Erro ao atualizar minuta');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -343,18 +406,19 @@ const HodometrosMinuta: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nº Minuta</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Romaneio</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Romaneios</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Filial</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Foto</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Editar</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {loadingMinutas ? (
-                <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Carregando...</td></tr>
+                <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Carregando...</td></tr>
               ) : errorMinutas ? (
-                <tr><td colSpan={7} className="px-6 py-8 text-center text-red-500">{errorMinutas}</td></tr>
+                <tr><td colSpan={8} className="px-6 py-8 text-center text-red-500">{errorMinutas}</td></tr>
               ) : minutas.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Nenhuma minuta encontrada para o período selecionado</td></tr>
+                <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Nenhuma minuta encontrada para o período selecionado</td></tr>
               ) : (
                 (paginatedData || []).map((m) => {
                   const created = m.created_at ? new Date(m.created_at) : null;
@@ -376,7 +440,19 @@ const HodometrosMinuta: React.FC = () => {
                         <div className="text-xs text-gray-500 dark:text-gray-400 ml-5">{m.veiculo?.marca} {m.veiculo?.tipo}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{m.minuta_informada || m.minuta_lida || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{m.romaneio || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                        {m.romaneio && m.romaneio.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {m.romaneio.map((r, idx) => (
+                              <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
+                                {r}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{m.filial?.filial || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         {m.foto_minuta ? (
@@ -386,6 +462,16 @@ const HodometrosMinuta: React.FC = () => {
                         ) : (
                           <span className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50"><Camera size={16} /></span>
                         )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleOpenEditModal(m)}
+                          className="inline-flex items-center justify-center p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                          title="Editar minuta"
+                          data-testid={`button-edit-minuta-${m.id}`}
+                        >
+                          <Edit2 size={16} />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -449,6 +535,132 @@ const HodometrosMinuta: React.FC = () => {
                 <Download size={16} />
                 Baixar Imagem
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && selectedMinuta && (
+        <div 
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowEditModal(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-md border border-gray-200 dark:border-gray-700"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Editar Minuta</h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                data-testid="button-close-edit-modal"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Minuta Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Minuta Informada
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.minuta_informada}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, minuta_informada: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="input-minuta-informada"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Minuta Lida
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.minuta_lida}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, minuta_lida: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="input-minuta-lida"
+                  />
+                </div>
+              </div>
+
+              {/* Romaneios Section */}
+              <div className="border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Romaneios
+                </h4>
+
+                {/* Current Romaneios List */}
+                {editFormData.romaneios.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {editFormData.romaneios.map((rom, idx) => (
+                      <div key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
+                        <span className="text-sm">{rom}</span>
+                        <button
+                          onClick={() => handleRemoveRomaneio(idx)}
+                          className="text-blue-600 dark:text-blue-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                          title="Remover romaneio"
+                          data-testid={`button-remove-romaneio-${idx}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add New Romaneio */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={editFormData.newRomaneio}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, newRomaneio: e.target.value }))}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddRomaneio();
+                      }
+                    }}
+                    placeholder="Digite o nº do romaneio"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="input-new-romaneio"
+                  />
+                  <button
+                    onClick={handleAddRomaneio}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    data-testid="button-add-romaneio"
+                  >
+                    <Plus size={16} />
+                    Adicionar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 sticky bottom-0 bg-white dark:bg-gray-800">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                data-testid="button-cancel-edit"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveMinuta}
+                disabled={isSaving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                data-testid="button-save-minuta"
+              >
+                {isSaving ? 'Salvando...' : 'Salvar'}
+              </button>
             </div>
           </div>
         </div>
