@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, Edit2, Plus, Trash2 } from 'lucide-react';
+import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, Edit2, Plus, Trash2, Copy, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
@@ -25,6 +25,82 @@ interface Minuta {
   veiculo?: { veiculo_id: number; placa: string; marca: string; tipo: string } | null;
   created_at: string;
 }
+
+const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romaneio }) => {
+  const [copied, setCopied] = useState(false);
+  
+  let romaneios: string[] = [];
+  if (romaneio) {
+    if (Array.isArray(romaneio)) {
+      romaneios = romaneio;
+    } else if (typeof romaneio === 'string') {
+      romaneios = [romaneio];
+    }
+  }
+  
+  const handleCopyRomaneios = () => {
+    const text = romaneios.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      toast.success('Romaneios copiados!');
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      toast.error('Erro ao copiar');
+    });
+  };
+  
+  if (romaneios.length === 0) return <span>-</span>;
+  
+  if (romaneios.length === 1) {
+    return (
+      <div className="inline-flex items-center gap-2">
+        <span className="text-sm text-gray-900 dark:text-white">
+          {romaneios[0]}
+        </span>
+        <button
+          onClick={handleCopyRomaneios}
+          className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          title="Copiar romaneio"
+        >
+          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+        </button>
+      </div>
+    );
+  }
+  
+  return (
+    <details className="inline-block relative">
+      <summary className="cursor-pointer inline-flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+        {romaneios.length} romaneios <ChevronDown className="h-3 w-3" />
+      </summary>
+      <div className="absolute z-10 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 min-w-[200px]">
+        <div className="space-y-1 mb-2">
+          {romaneios.map((r, idx) => (
+            <div key={idx} className="text-sm text-gray-900 dark:text-white px-2 py-1">
+              {r}
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={handleCopyRomaneios}
+          className="w-full px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+        >
+          {copied ? (
+            <>
+              <Check className="h-3 w-3" />
+              Copiado!
+            </>
+          ) : (
+            <>
+              <Copy className="h-3 w-3" />
+              Copiar todos
+            </>
+          )}
+        </button>
+      </div>
+    </details>
+  );
+};
 
 const HodometrosMinuta: React.FC = () => {
   const { companyId } = useAuth();
@@ -546,37 +622,7 @@ const HodometrosMinuta: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                        {(() => {
-                          let romaneios: string[] = [];
-                          if (m.romaneio) {
-                            if (Array.isArray(m.romaneio)) {
-                              romaneios = m.romaneio;
-                            } else if (typeof m.romaneio === 'string') {
-                              romaneios = [m.romaneio];
-                            }
-                          }
-                          
-                          return romaneios.length > 0 ? (
-                            romaneios.length === 1 ? (
-                              <span className="text-sm text-gray-900 dark:text-white">
-                                {romaneios[0]}
-                              </span>
-                            ) : (
-                              <details className="inline-block">
-                                <summary className="cursor-pointer inline-flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
-                                  {romaneios[0]} <ChevronDown className="h-3 w-3" />
-                                </summary>
-                                <div className="mt-1 space-y-1">
-                                  {romaneios.slice(1).map((r, idx) => (
-                                    <div key={idx} className="text-sm text-gray-600 dark:text-gray-400 pl-4">
-                                      {r}
-                                    </div>
-                                  ))}
-                                </div>
-                              </details>
-                            )
-                          ) : '-';
-                        })()}
+                        <RomaneioCell romaneio={m.romaneio} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{m.filial?.filial || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
