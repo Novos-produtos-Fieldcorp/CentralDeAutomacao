@@ -882,7 +882,7 @@ const HodometrosDashboard = () => {
 
       {/* Minuta Stats - Only visible with minuta access */}
       {moduleAccess.minuta && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <StatCard
             title="Média Diária de Minutas"
             value={Math.round(avgMinutasPerDay * 10) / 10}
@@ -894,13 +894,6 @@ const HodometrosDashboard = () => {
             value={Math.round(avgMinutasPerDriver * 10) / 10}
             icon={UserCheck}
             color="green"
-          />
-          <StatCard
-            title="Com Foto"
-            value={Math.round(minutasWithPhotoPercent)}
-            icon={ImageIcon}
-            color="purple"
-            unit="%"
           />
         </div>
       )}
