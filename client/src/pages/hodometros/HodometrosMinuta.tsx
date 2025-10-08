@@ -124,13 +124,45 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
   
   const handleCopyRomaneios = () => {
     const text = romaneios.join('\n');
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      toast.success('Romaneios copiados!');
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {
+    
+    // Tentar usar a API moderna primeiro
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopied(true);
+        toast.success('Romaneios copiados!');
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(() => {
+        // Fallback para método antigo se a API moderna falhar
+        copyToClipboardFallback(text);
+      });
+    } else {
+      // Usar método antigo diretamente
+      copyToClipboardFallback(text);
+    }
+  };
+  
+  const copyToClipboardFallback = (text: string) => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        setCopied(true);
+        toast.success('Romaneios copiados!');
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        toast.error('Erro ao copiar');
+      }
+    } catch (err) {
       toast.error('Erro ao copiar');
-    });
+    } finally {
+      document.body.removeChild(textarea);
+    }
   };
   
   if (romaneios.length === 0) return <span>-</span>;
