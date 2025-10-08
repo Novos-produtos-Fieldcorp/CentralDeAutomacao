@@ -174,19 +174,30 @@ const HodometrosMinuta: React.FC = () => {
 
   const exportMinutasToExcel = () => {
     try {
-      const exportData = minutas.map(m => ({
-        'Data': m.created_at ? new Date(m.created_at).toISOString().split('T')[0].split('-').reverse().join('/') : '-',
-        'Hora': m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
-        'Motorista': m.motorista?.nome || 'Não informado',
-        'CPF': m.motorista?.cpf ? formatCPF(m.motorista.cpf) : 'Não informado',
-        'Veículo': m.veiculo?.placa || 'Não informado',
-        'Marca/Modelo': `${m.veiculo?.marca || ''} ${m.veiculo?.tipo || ''}`.trim() || 'Não informado',
-        'Nº Minuta': m.minuta_informada || '-',
-        'Minuta Lida': m.minuta_lida || '-',
-        'Romaneios': m.romaneio && m.romaneio.length > 0 ? m.romaneio.join(', ') : '-',
-        'Filial': m.filial?.filial || 'Sem filial',
-        'Tem Foto': m.foto_minuta ? 'Sim' : 'Não'
-      }));
+      const exportData = minutas.map(m => {
+        let romaneios: string[] = [];
+        if (m.romaneio) {
+          if (Array.isArray(m.romaneio)) {
+            romaneios = m.romaneio;
+          } else if (typeof m.romaneio === 'string') {
+            romaneios = [m.romaneio];
+          }
+        }
+        
+        return {
+          'Data': m.created_at ? new Date(m.created_at).toISOString().split('T')[0].split('-').reverse().join('/') : '-',
+          'Hora': m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
+          'Motorista': m.motorista?.nome || 'Não informado',
+          'CPF': m.motorista?.cpf ? formatCPF(m.motorista.cpf) : 'Não informado',
+          'Veículo': m.veiculo?.placa || 'Não informado',
+          'Marca/Modelo': `${m.veiculo?.marca || ''} ${m.veiculo?.tipo || ''}`.trim() || 'Não informado',
+          'Nº Minuta Informada': m.minuta_informada || '-',
+          'Nº Minuta Lida': m.minuta_lida || '-',
+          'Romaneios': romaneios.length > 0 ? romaneios.join(', ') : '-',
+          'Filial': m.filial?.filial || 'Sem filial',
+          'Tem Foto': m.foto_minuta ? 'Sim' : 'Não'
+        };
+      });
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -214,10 +225,21 @@ const HodometrosMinuta: React.FC = () => {
 
   const handleOpenEditModal = async (minuta: Minuta) => {
     setSelectedMinuta(minuta);
+    
+    // Garantir que romaneio seja sempre um array
+    let romaneios: string[] = [];
+    if (minuta.romaneio) {
+      if (Array.isArray(minuta.romaneio)) {
+        romaneios = minuta.romaneio;
+      } else if (typeof minuta.romaneio === 'string') {
+        romaneios = [minuta.romaneio];
+      }
+    }
+    
     setEditFormData({
       minuta_informada: minuta.minuta_informada || '',
       minuta_lida: minuta.minuta_lida || '',
-      romaneios: minuta.romaneio || [],
+      romaneios: romaneios,
       newRomaneio: '',
       motorista_id: minuta.motorista_id || null,
       veiculo_id: minuta.veiculo_id || null
@@ -235,7 +257,7 @@ const HodometrosMinuta: React.FC = () => {
         .from('motorista')
         .select('motorista_id, nome')
         .eq('company_id', companyId)
-        .eq('st_motorista', true)
+        .eq('ativo', true)
         .order('nome');
       
       if (error) throw error;
@@ -255,7 +277,7 @@ const HodometrosMinuta: React.FC = () => {
         .from('veiculo')
         .select('veiculo_id, placa')
         .eq('company_id', companyId)
-        .eq('st_veiculo', true)
+        .eq('status_veiculo', true)
         .order('placa');
       
       if (error) throw error;
@@ -500,28 +522,37 @@ const HodometrosMinuta: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                        {m.romaneio && m.romaneio.length > 0 ? (
-                          m.romaneio.length === 1 ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
-                              {m.romaneio[0]}
-                            </span>
-                          ) : (
-                            <details className="inline-block">
-                              <summary className="cursor-pointer inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/30">
-                                {m.romaneio[0]} <ChevronDown className="ml-1 h-3 w-3" />
-                              </summary>
-                              <div className="mt-1 flex flex-wrap gap-1">
-                                {m.romaneio.slice(1).map((r, idx) => (
-                                  <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
-                                    {r}
-                                  </span>
-                                ))}
-                              </div>
-                            </details>
-                          )
-                        ) : (
-                          '-'
-                        )}
+                        {(() => {
+                          let romaneios: string[] = [];
+                          if (m.romaneio) {
+                            if (Array.isArray(m.romaneio)) {
+                              romaneios = m.romaneio;
+                            } else if (typeof m.romaneio === 'string') {
+                              romaneios = [m.romaneio];
+                            }
+                          }
+                          
+                          return romaneios.length > 0 ? (
+                            romaneios.length === 1 ? (
+                              <span className="text-sm text-gray-900 dark:text-white">
+                                {romaneios[0]}
+                              </span>
+                            ) : (
+                              <details className="inline-block">
+                                <summary className="cursor-pointer inline-flex items-center gap-1 text-sm text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+                                  {romaneios[0]} <ChevronDown className="h-3 w-3" />
+                                </summary>
+                                <div className="mt-1 space-y-1">
+                                  {romaneios.slice(1).map((r, idx) => (
+                                    <div key={idx} className="text-sm text-gray-600 dark:text-gray-400 pl-4">
+                                      {r}
+                                    </div>
+                                  ))}
+                                </div>
+                              </details>
+                            )
+                          ) : '-';
+                        })()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{m.filial?.filial || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
