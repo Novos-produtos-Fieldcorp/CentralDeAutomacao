@@ -215,7 +215,7 @@ const HodometrosMinuta: React.FC = () => {
         <div className="relative flex-grow min-w-64">
           <input
             type="text"
-            placeholder="Buscar por motorista, placa ou marca..."
+            placeholder="Buscar por motorista, placa, minuta, romaneio ou filial..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 
