@@ -824,8 +824,12 @@ const HodometrosLista = () => {
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Data/Hora</th>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Motorista</th>
                                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Hodômetro</th>
-                                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Preço</th>
-                                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Litros</th>
+                                  {moduleAccess.bomba && (
+                                    <>
+                                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Preço</th>
+                                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Litros</th>
+                                    </>
+                                  )}
                                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Trip</th>
                                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">KM Rodado</th>
                                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">Foto</th>
@@ -875,34 +879,38 @@ const HodometrosLista = () => {
                                         </div>
                                       )}
                                     </td>
-                                    <td className="px-4 py-2 whitespace-nowrap text-right">
-                                      {reading.bomba_gasolina ? (
-                                        <div>
-                                          <div className="text-sm text-gray-900 dark:text-white">
-                                            Lido: {reading.bomba_gasolina.preco_lido ? `R$ ${reading.bomba_gasolina.preco_lido}` : '-'}
-                                          </div>
-                                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                                            Informado: {reading.bomba_gasolina.preco_informado ? `R$ ${reading.bomba_gasolina.preco_informado}` : '-'}
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                                      )}
-                                    </td>
-                                    <td className="px-4 py-2 whitespace-nowrap text-right">
-                                      {reading.bomba_gasolina ? (
-                                        <div>
-                                          <div className="text-sm text-gray-900 dark:text-white">
-                                            Lido: {reading.bomba_gasolina.litro_lido || '-'}
-                                          </div>
-                                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                                            Informado: {reading.bomba_gasolina.litro_informado || '-'}
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                                      )}
-                                    </td>
+                                    {moduleAccess.bomba && (
+                                      <>
+                                        <td className="px-4 py-2 whitespace-nowrap text-right">
+                                          {reading.bomba_gasolina ? (
+                                            <div>
+                                              <div className="text-sm text-gray-900 dark:text-white">
+                                                Lido: {reading.bomba_gasolina.preco_lido ? `R$ ${reading.bomba_gasolina.preco_lido}` : '-'}
+                                              </div>
+                                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                Informado: {reading.bomba_gasolina.preco_informado ? `R$ ${reading.bomba_gasolina.preco_informado}` : '-'}
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                                          )}
+                                        </td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-right">
+                                          {reading.bomba_gasolina ? (
+                                            <div>
+                                              <div className="text-sm text-gray-900 dark:text-white">
+                                                Lido: {reading.bomba_gasolina.litro_lido || '-'}
+                                              </div>
+                                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                Informado: {reading.bomba_gasolina.litro_informado || '-'}
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                                          )}
+                                        </td>
+                                      </>
+                                    )}
                                     <td className="px-4 py-2 whitespace-nowrap text-right">
                                       {reading.trip_lida !== null ? (
                                         <div className="text-sm text-gray-900 dark:text-white">
