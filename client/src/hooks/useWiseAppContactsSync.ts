@@ -1,15 +1,12 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-// Removed direct API service - now using secure backend routes
 import { useAuth } from '@/context/AuthContext';
 import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
-import { createApiUrl, supabaseApiRequest } from '@/lib/api-config-supabase';
-import { supabase } from '@/lib/supabase';
 
 interface SyncResult {
   success: boolean;
-  contactId?: number;
+  contatoId?: number;
   error?: string;
 }
 
@@ -17,14 +14,14 @@ interface BulkSyncResult {
   totalProcessed: number;
   successful: number;
   failed: number;
-  tagsImportadas?: number;
-  tagsExportadas?: number;
-  errors: Array<{ motorista_id: number; nome: string; error: string }>;
+  created: number;
+  photoUpdated: number;
+  errors: Array<{ contato_id: number; nome: string; error: string }>;
 }
 
-interface WiseAppSyncHookReturn {
-  syncMotorista: (motoristaId: number) => Promise<void>;
-  syncAllMotoristas: () => Promise<void>;
+interface WiseAppContactsSyncHookReturn {
+  syncContato: (contatoId: number) => Promise<void>;
+  syncAllContatos: () => Promise<void>;
   validateWiseAppConfig: () => Promise<void>;
   configureTestToken: () => Promise<void>;
   isSyncing: boolean;
@@ -33,18 +30,18 @@ interface WiseAppSyncHookReturn {
   configValid: boolean | null;
 }
 
-export function useWiseAppSync(): WiseAppSyncHookReturn {
+export function useWiseAppContactsSync(): WiseAppContactsSyncHookReturn {
   const [configValid, setConfigValid] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
   const { companyId, accountId } = useAuth();
   const { token: wiseAppToken, companyId: wiseAppCompanyId } = useWiseAppAccess();
 
-  // Individual motorista sync mutation using secure backend
-  const syncMotoristaMutation = useMutation({
-    mutationFn: async (motoristaId: number) => {
+  // Individual contato sync mutation using secure backend
+  const syncContatoMutation = useMutation({
+    mutationFn: async (contatoId: number) => {
       if (!companyId) throw new Error('Company ID not found');
       
-      const response = await fetch(createApiUrl(`wiseapp/sync-motorista/${motoristaId}`), {
+      const response = await fetch(`/api/wiseapp/sync-contato/${contatoId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -64,8 +61,8 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     onSuccess: (data) => {
       if (data.success) {
         toast.success('Contato sincronizado com o WiseApp com sucesso!');
-        // Invalidate motoristas queries to refresh the data
-        queryClient.invalidateQueries({ queryKey: ['/api/motoristas'] });
+        // Invalidate contatos queries to refresh the data
+        queryClient.invalidateQueries({ queryKey: ['/api/contatos'] });
       } else {
         toast.error(data.message || 'Falha na sincronização');
       }
@@ -75,44 +72,42 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
+  // Bulk sync mutation using Supabase Edge Function
+  const bulkSyncMutation = useMutation({
+    mutationFn: async () => {
+      if (!companyId) throw new Error('Company ID not found');        
+      // Chamar Supabase Edge Function diretamente
+      const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      const requestUrl = `${supabaseUrl}/functions/v1/api/wiseapp/sync-all-contacts`;
+      const body = { companyId: companyId };
 
-// Bulk sync mutation using Supabase Edge Function
-const bulkSyncMutation = useMutation({
-  mutationFn: async () => {
-    if (!companyId) throw new Error('Company ID not found');        
-    // Chamar Supabase Edge Function diretamente
-    const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
-
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    const requestUrl = `${supabaseUrl}/functions/v1/api/wiseapp/sync-all-motoristas`;
-    const body = { companyId: companyId };
-
-    const response = await fetch(requestUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseAnonKey}`,
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Bulk sync failed');
-    }
-    
-    return response.json();
-  },
+      const response = await fetch(requestUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Bulk sync failed');
+      }
+      
+      return response.json();
+    },
     onSuccess: (data) => {
       const result = data.data;
       
       // Calcular totais para notificação mais clara
       const totalProcessados = result.successful;
       const totalNaoProcessados = result.failed;
-      const tagsImportadas = result.tagsImportadas || 0;
-      const tagsExportadas = result.tagsExportadas || 0;
+      const totalCriados = result.created || 0;
+      const totalFotosAtualizadas = result.photoUpdated || 0;
       
       // Notificação principal com foco em processados vs não processados
       if (totalProcessados > 0) {
@@ -120,11 +115,11 @@ const bulkSyncMutation = useMutation({
         
         // Detalhes adicionais se houver
         const detalhes = [];
-        if (tagsImportadas > 0) {
-          detalhes.push(`${tagsImportadas} tags importadas do WiseApp`);
+        if (totalCriados > 0) {
+          detalhes.push(`${totalCriados} contatos criados no WiseApp`);
         }
-        if (tagsExportadas > 0) {
-          detalhes.push(`${tagsExportadas} tags exportadas para o WiseApp`);
+        if (totalFotosAtualizadas > 0) {
+          detalhes.push(`${totalFotosAtualizadas} fotos atualizadas`);
         }
         
         if (detalhes.length > 0) {
@@ -141,14 +136,14 @@ const bulkSyncMutation = useMutation({
       
       // Se nenhum contato foi processado
       if (result.totalProcessed === 0) {
-        toast('ℹ️ Nenhum motorista ativo encontrado para sincronizar');
+        toast('ℹ️ Nenhum contato ativo encontrado para sincronizar');
       }
 
       if (result.failed > 0) {
         console.warn('Erros na sincronização:', result.errors);
         
         // Check if all or most errors are due to WiseApp service being unavailable
-        const serviceUnavailableErrors = result.errors.filter((error: { motorista_id: number; nome: string; error: string }) => 
+        const serviceUnavailableErrors = result.errors.filter((error: { contato_id: number; nome: string; error: string }) => 
           error.error.includes('temporariamente indisponível') ||
           error.error.includes('Erro interno do servidor WiseApp')
         );
@@ -161,7 +156,7 @@ const bulkSyncMutation = useMutation({
           );
         } else {
           // Show detailed errors for individual contact failures
-          result.errors.slice(0, 3).forEach((error: { motorista_id: number; nome: string; error: string }) => {
+          result.errors.slice(0, 3).forEach((error: { contato_id: number; nome: string; error: string }) => {
             toast.error(`${error.nome}: ${error.error}`, { duration: 5000 });
           });
           
@@ -171,8 +166,8 @@ const bulkSyncMutation = useMutation({
         }
       }
 
-      // Invalidate motoristas queries to refresh the data
-      queryClient.invalidateQueries({ queryKey: ['/api/motoristas'] });
+      // Invalidate contatos queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['/api/contatos'] });
     },
     onError: (error: Error) => {
       if (error.message.includes('Token WiseApp não configurado')) {
@@ -188,7 +183,7 @@ const bulkSyncMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');
       
-      const response = await fetch(createApiUrl('wiseapp/validate-config'), {
+      const response = await fetch('/api/wiseapp/validate-config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -274,25 +269,25 @@ const bulkSyncMutation = useMutation({
   };
 
   return {
-    syncMotorista: async (motoristaId: number) => {
-      await syncMotoristaMutation.mutateAsync(motoristaId);
+    syncContato: async (contatoId: number) => {
+      await syncContatoMutation.mutateAsync(contatoId);
     },
-    syncAllMotoristas: async () => {
+    syncAllContatos: async () => {
       await bulkSyncMutation.mutateAsync();
     },
     validateWiseAppConfig: async () => {
       await validateConfigMutation.mutateAsync();
     },
     configureTestToken,
-    isSyncing: syncMotoristaMutation.isPending,
+    isSyncing: syncContatoMutation.isPending,
     isBulkSyncing: bulkSyncMutation.isPending,
     isValidating: validateConfigMutation.isPending,
     configValid
   };
 }
 
-// Hook for automatic sync when creating/updating motoristas
-export function useWiseAppAutoSync() {
+// Hook for automatic sync when creating/updating contatos
+export function useWiseAppContactsAutoSync() {
   return {
     getSyncHeaders: (enableSync: boolean = true) => ({
       'x-sync-wiseapp': enableSync ? 'true' : 'false'

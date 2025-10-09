@@ -43,6 +43,7 @@ import { format, subMonths, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { dashboardApi } from "../lib/apiService";
 import AccessTooltip from "../components/AccessTooltip";
+import { supabase } from "../lib/supabase";
 
 // Checklist types
 const CHECKLIST_TYPES = {

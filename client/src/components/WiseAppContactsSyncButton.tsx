@@ -1,29 +1,29 @@
 import React from 'react';
 import { MessageSquare, Users, Loader2, CheckCircle, XCircle, Key } from 'lucide-react';
-import { useWiseAppSync } from '../hooks/useWiseAppSync';
+import { useWiseAppContactsSync } from '../hooks/useWiseAppContactsSync';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-interface WiseAppSyncButtonProps {
-  motoristaId?: number;
+interface WiseAppContactsSyncButtonProps {
+  contatoId?: number;
   variant?: 'individual' | 'bulk';
   size?: 'sm' | 'default' | 'lg';
   showLabel?: boolean;
 }
 
-export function WiseAppSyncButton({ 
-  motoristaId, 
+export function WiseAppContactsSyncButton({ 
+  contatoId, 
   variant = 'individual',
   size = 'default',
   showLabel = true
-}: WiseAppSyncButtonProps) {
+}: WiseAppContactsSyncButtonProps) {
   const { 
-    syncMotorista, 
-    syncAllMotoristas, 
+    syncContato, 
+    syncAllContatos, 
     configureTestToken,
     isSyncing, 
     isBulkSyncing 
-  } = useWiseAppSync();
+  } = useWiseAppContactsSync();
   
   const { accountId, companyId } = useAuth();
 
@@ -69,47 +69,28 @@ export function WiseAppSyncButton({
       
       if (!foundToken) {
         console.log('[captureAndSaveToken] Nenhum token encontrado no localStorage');
-        
-        // Listar todas as chaves do localStorage para debug
-        const allKeys = Object.keys(localStorage);
-        console.log('[captureAndSaveToken] Chaves disponíveis no localStorage:', allKeys);
         return false;
       }
       
-      if (!companyId || !accountId) {
-        console.error('[captureAndSaveToken] company_id ou account_id não definidos:', { companyId, accountId });
-        return false;
-      }
-      
-      console.log(`[captureAndSaveToken] Salvando token no banco (key: ${foundKey}, token length: ${foundToken.length})`);
+      console.log(`[captureAndSaveToken] Token encontrado: ${foundToken.substring(0, 10)}...`);
       
       // Salvar token no banco de dados
-      const tokenData = {
-        company_id: companyId,
-        access_token_wiseapp: foundToken,
-        nome: 'Token Automático Capturado',
-        email: 'auto@sistema.com',
-        id_conta_wiseapp: accountId
-      };
-      
-      console.log('[captureAndSaveToken] Dados a serem salvos:', {
-        ...tokenData,
-        access_token_wiseapp: `${foundToken.substring(0, 10)}...`
-      });
-      
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('wiseapp_acesso')
-        .upsert(tokenData, {
-          onConflict: 'company_id'
-        })
-        .select();
+        .upsert({
+          company_id: companyId,
+          access_token_wiseapp: foundToken,
+          email: 'auto-captured',
+          nome: 'Token Capturado Automaticamente',
+          updated_at: new Date().toISOString()
+        });
       
       if (error) {
         console.error('[captureAndSaveToken] Erro ao salvar token:', error);
         return false;
       }
       
-      console.log('[captureAndSaveToken] ✅ Token salvo com sucesso!', data);
+      console.log('[captureAndSaveToken] Token salvo com sucesso!');
       return true;
       
     } catch (error) {
@@ -119,7 +100,7 @@ export function WiseAppSyncButton({
   };
 
   const handleSync = async () => {
-    console.log(`[handleSync] Iniciando sync ${variant} ${motoristaId ? `para motorista ${motoristaId}` : ''}`);
+    console.log(`[handleSync] Iniciando sync ${variant} ${contatoId ? `para contato ${contatoId}` : ''}`);
     
     // Primeiro, tenta capturar e salvar o token automaticamente
     const tokenSaved = await captureAndSaveToken();
@@ -132,10 +113,10 @@ export function WiseAppSyncButton({
     
     // Depois executa a sincronização
     try {
-      if (variant === 'individual' && motoristaId) {
-        await syncMotorista(motoristaId);
+      if (variant === 'individual' && contatoId) {
+        await syncContato(contatoId);
       } else if (variant === 'bulk') {
-        await syncAllMotoristas();
+        await syncAllContatos();
       }
     } catch (error) {
       console.error('[handleSync] Erro durante sincronização:', error);
@@ -157,34 +138,29 @@ export function WiseAppSyncButton({
       ? 'px-6 py-3 text-base'
       : 'px-4 py-2 text-sm';
 
-  return (
+  const button = (
     <button
       onClick={handleSync}
-      disabled={isLoading || (variant === 'individual' && !motoristaId)}
-      className={`inline-flex items-center gap-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${buttonClass}`}
-      title={variant === 'individual' 
-        ? 'Sincronizar contato e foto do WhatsApp deste motorista com o WiseApp'
-        : 'Sincronizar contatos e fotos do WhatsApp de todos os motoristas ativos com o WiseApp'
-      }
+      disabled={isLoading}
+      className={`
+        ${buttonClass}
+        inline-flex items-center gap-2 rounded-md font-medium transition-colors
+        ${isLoading 
+          ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600' 
+          : 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-700 dark:hover:bg-blue-800'
+        }
+      `}
     >
       {isLoading ? (
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
         <Icon className="h-4 w-4" />
       )}
-      {showLabel && (
-        <span className="hidden sm:inline">
-          {isLoading 
-            ? (variant === 'individual' ? 'Sincronizando...' : 'Sincronizando...') 
-            : buttonText
-          }
-        </span>
-      )}
+      {showLabel && buttonText}
     </button>
   );
 
-  // Botão temporário para configurar token de teste
-  const TestTokenButton = () => (
+  const TestTokenButton = (
     <button
       onClick={configureTestToken}
       className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs"
@@ -202,17 +178,17 @@ export function WiseAppSyncButton({
   );
 }
 
-interface WiseAppSyncStatusProps {
-  motoristaId: number;
+interface WiseAppContactsSyncStatusProps {
+  contatoId: number;
   lastSyncAt?: string;
   syncStatus?: 'success' | 'failed' | 'pending' | null;
 }
 
-export function WiseAppSyncStatus({ 
-  motoristaId, 
+export function WiseAppContactsSyncStatus({ 
+  contatoId, 
   lastSyncAt, 
   syncStatus 
-}: WiseAppSyncStatusProps) {
+}: WiseAppContactsSyncStatusProps) {
   if (!syncStatus) return null;
 
   const statusConfig = {
@@ -232,7 +208,7 @@ export function WiseAppSyncStatus({
       icon: Loader2,
       color: 'text-yellow-600 dark:text-yellow-400',
       bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
-      label: 'Aguardando sincronização'
+      label: 'Sincronizando...'
     }
   };
 
@@ -252,16 +228,16 @@ export function WiseAppSyncStatus({
   );
 }
 
-interface WiseAppBulkSyncPanelProps {
+interface WiseAppContactsBulkSyncPanelProps {
   className?: string;
   onTagsSync?: () => void; // Callback para quando tags forem sincronizadas
 }
 
-export function WiseAppBulkSyncPanel({ className, onTagsSync }: WiseAppBulkSyncPanelProps) {
+export function WiseAppContactsBulkSyncPanel({ className, onTagsSync }: WiseAppContactsBulkSyncPanelProps) {
   const { 
-    syncAllMotoristas, 
+    syncAllContatos, 
     isBulkSyncing
-  } = useWiseAppSync();
+  } = useWiseAppContactsSync();
 
   return (
     <div className={`fixed top-4 right-4 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 max-w-xs ${className}`}>
@@ -271,21 +247,18 @@ export function WiseAppBulkSyncPanel({ className, onTagsSync }: WiseAppBulkSyncP
 
       <button
         onClick={async () => {
-          await syncAllMotoristas();
-          if (onTagsSync) {
-            onTagsSync(); // Chamar callback para carregar tags após sync
-          }
+          await syncAllContatos();
+          onTagsSync?.();
         }}
         disabled={isBulkSyncing}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full justify-center"
-        title="Sincronizar contatos e fotos do WhatsApp de motoristas e agregados com o WiseApp"
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {isBulkSyncing ? (
-          <Loader2 className="h-3 w-3 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <Users className="h-3 w-3" />
+          <Users className="h-4 w-4" />
         )}
-        {isBulkSyncing ? 'Sincronizando...' : 'Sincronizar Todos'}
+        {isBulkSyncing ? 'Sincronizando...' : 'Sincronizar Todos os Contatos'}
       </button>
     </div>
   );

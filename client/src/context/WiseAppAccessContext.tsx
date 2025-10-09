@@ -155,10 +155,14 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     const verificarAcesso = async () => {
+      console.log('🔍 [WiseAppAccess] Iniciando verificação de acesso...');
+      
       // Don't check again if we already checked in this session
       if (hasCheckedToken) {
+        console.log('🔍 [WiseAppAccess] Já verificado nesta sessão, validando token...');
         // Validar token antes de finalizar
         if (token && !validateToken()) {
+          console.log('❌ [WiseAppAccess] Token expirado, mostrando modal');
           setShowModal(true);
         }
         setIsLoading(false);
@@ -166,15 +170,21 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       }
 
       let accountId = searchParams.get('account_id')?.trim();
+      console.log('🔍 [WiseAppAccess] Account ID da URL:', accountId);
+      
       if (!accountId) {
         // Get from localStorage if available
         try {
           accountId = localStorage?.getItem('account_id');
+          console.log('🔍 [WiseAppAccess] Account ID do localStorage:', accountId);
         } catch {
           accountId = null;
         }
       }
+      
       if (!accountId) {
+        console.error('❌ [WiseAppAccess] Account ID não encontrado, mostrando modal');
+        setShowModal(true);
         setIsLoading(false);
         setHasCheckedToken(true);
         return;
@@ -212,45 +222,72 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
         }
         
         if (!useCache) {
+          console.log('🔍 [WiseAppAccess] Buscando dados frescos do banco...');
+          
           // Fetching fresh WiseApp token from database
           
           // Get company ID from account ID
+          console.log('🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp:', accountId);
+          
           const { data: company, error: companyError } = await supabase
             .from('company')
             .select('company_id')
             .eq('id_conta_wiseapp', accountId)
             .single();
 
+          console.log('📊 [WiseAppAccess] Resultado da busca da empresa:', {
+            error: companyError,
+            data: company
+          });
+
           if (companyError) {
-            console.error('Error fetching company:', companyError);
+            console.error('❌ [WiseAppAccess] Erro ao buscar empresa:', companyError);
             setIsLoading(false);
             return;
           }
 
           if (company) {
+            console.log('✅ [WiseAppAccess] Empresa encontrada:', company);
             setCompanyId(company.company_id);
             
             // Cache company data
             cacheData('wiseapp_company_cache', { companyId: company.company_id });
             
             // Check if there's a token for this company
+            console.log('🔍 [WiseAppAccess] Buscando token para company_id:', company.company_id);
+            
             const { data: access, error: accessError } = await supabase
               .from('wiseapp_acesso')
-              .select('wiseapp_acesso_id, access_token_wiseapp, nome')
+              .select('wiseapp_acesso_id, access_token_wiseapp, nome, email')
               .eq('company_id', company.company_id)
               .maybeSingle();
 
+            console.log('📊 [WiseAppAccess] Resultado da busca:', {
+              error: accessError,
+              data: access,
+              has_token: !!access?.access_token_wiseapp
+            });
+
             if (accessError && accessError.code !== 'PGRST116') {
-              console.error('Error fetching access token:', accessError);
+              console.error('❌ [WiseAppAccess] Erro ao buscar token:', accessError);
             }
 
             if (access && access.access_token_wiseapp) {
+              console.log('✅ [WiseAppAccess] Token encontrado:', {
+                email: access.email,
+                nome: access.nome,
+                token_length: access.access_token_wiseapp.length
+              });
               updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome);
               // WiseApp token fetched and cached successfully
             } else {
+              console.log('❌ [WiseAppAccess] Nenhum token encontrado no banco, verificando cache...');
+              
               // Check if we have a valid cached token that could be saved to database
               try {
                 const cachedToken = localStorage.getItem('wiseapp_token_cache');
+                console.log('🔍 [WiseAppAccess] Token em cache:', cachedToken ? 'Encontrado' : 'Não encontrado');
+                
                 if (cachedToken) {
                   const tokenData = JSON.parse(cachedToken);
                   const isTokenValid = Date.now() < tokenData.expiresAt;
@@ -293,12 +330,17 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
               }
               
               // No token found and couldn't save cached token, show modal
+              console.log('❌ [WiseAppAccess] Nenhum token válido encontrado, mostrando modal de autenticação');
               setShowModal(true);
             }
+          } else {
+            console.log('❌ [WiseAppAccess] Empresa não encontrada para Account ID:', accountId);
+            setShowModal(true);
           }
         }
       } catch (error) {
-        console.error('Error verifying access:', error);
+        console.error('❌ [WiseAppAccess] Erro na verificação:', error);
+        setShowModal(true);
       } finally {
         setIsLoading(false);
         setHasCheckedToken(true);
