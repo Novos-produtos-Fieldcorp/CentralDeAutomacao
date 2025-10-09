@@ -878,22 +878,11 @@ const HodometrosLista = () => {
                                     <td className="px-4 py-2 whitespace-nowrap text-right">
                                       {reading.bomba_gasolina ? (
                                         <div>
-                                          <div className="flex items-center justify-end gap-1">
-                                            <div className="text-sm text-gray-900 dark:text-white">
-                                              Lido: {reading.bomba_gasolina.preco_lido || '-'}
-                                            </div>
-                                            {reading.bomba_gasolina.foto_bomba && (
-                                              <button
-                                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e)}
-                                                className="inline-flex items-center justify-center p-1 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                                                title="Ver foto do preço lido"
-                                              >
-                                                <Camera size={12} />
-                                              </button>
-                                            )}
+                                          <div className="text-sm text-gray-900 dark:text-white">
+                                            Lido: {reading.bomba_gasolina.preco_lido ? `R$ ${reading.bomba_gasolina.preco_lido}` : '-'}
                                           </div>
                                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                                            Informado: {reading.bomba_gasolina.preco_informado || '-'}
+                                            Informado: {reading.bomba_gasolina.preco_informado ? `R$ ${reading.bomba_gasolina.preco_informado}` : '-'}
                                           </div>
                                         </div>
                                       ) : (
@@ -903,19 +892,8 @@ const HodometrosLista = () => {
                                     <td className="px-4 py-2 whitespace-nowrap text-right">
                                       {reading.bomba_gasolina ? (
                                         <div>
-                                          <div className="flex items-center justify-end gap-1">
-                                            <div className="text-sm text-gray-900 dark:text-white">
-                                              Lido: {reading.bomba_gasolina.litro_lido || '-'}
-                                            </div>
-                                            {reading.bomba_gasolina.foto_bomba && (
-                                              <button
-                                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e)}
-                                                className="inline-flex items-center justify-center p-1 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                                                title="Ver foto dos litros lidos"
-                                              >
-                                                <Camera size={12} />
-                                              </button>
-                                            )}
+                                          <div className="text-sm text-gray-900 dark:text-white">
+                                            Lido: {reading.bomba_gasolina.litro_lido || '-'}
                                           </div>
                                           <div className="text-xs text-gray-500 dark:text-gray-400">
                                             Informado: {reading.bomba_gasolina.litro_informado || '-'}
