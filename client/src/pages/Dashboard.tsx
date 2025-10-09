@@ -487,8 +487,8 @@ const HodometroHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
         {stats.hodometroData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={stats.hodometroData}>
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'inherit' }} />
+              <YAxis tick={{ fontSize: 11, fontFamily: 'inherit' }} />
               <Tooltip content={<SimpleTooltip />} />
               <Line
                 type="monotone"
@@ -865,8 +865,8 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       <div className="h-32">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={stats.comprovantes.monthlyData}>
-            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} />
+            <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'inherit' }} />
+            <YAxis tick={{ fontSize: 11, fontFamily: 'inherit' }} />
             <Tooltip content={<SimpleTooltip />} />
             <Area
               type="monotone"
@@ -1059,8 +1059,8 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       <div className="h-32">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={stats.checklists.monthlyData}>
-            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} />
+            <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'inherit' }} />
+            <YAxis tick={{ fontSize: 11, fontFamily: 'inherit' }} />
             <Tooltip content={<ChecklistTooltip />} />
             <Bar
               dataKey="mensal"

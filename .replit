@@ -24,8 +24,13 @@ localPort = 39601
 externalPort = 4200
 
 [[ports]]
+<<<<<<< HEAD
 localPort = 43015
 externalPort = 5000
+=======
+localPort = 43399
+externalPort = 5173
+>>>>>>> ad8d714 (Add a feature to view candidates for job openings and improve chart readability)
 
 [[ports]]
 localPort = 43895

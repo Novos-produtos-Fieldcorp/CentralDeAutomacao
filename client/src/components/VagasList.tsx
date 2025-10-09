@@ -8,6 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { queryClient } from '../lib/queryClient';
 import VagaDetailsModal from './VagaDetailsModal';
+import VagaCandidatesModal from './VagaCandidatesModal';
 import {
   fetchVagasWithRelations,
   fetchStatusVagas,
@@ -29,6 +30,8 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const { accountId } = useAuth();
   const [selectedVaga, setSelectedVaga] = useState<VagaWithRelations | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCandidatesModalOpen, setIsCandidatesModalOpen] = useState(false);
+  const [selectedVagaForCandidates, setSelectedVagaForCandidates] = useState<VagaWithRelations | null>(null);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -346,7 +349,9 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
     return (
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
         <div className="text-center py-8">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-red-600 dark:text-red-400">
+            Erro ao carregar vagas. Tente novamente.
+          </p>
         </div>
       </div>
     );
@@ -766,11 +771,23 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                     <div className="flex items-center justify-end space-x-2">
                       <button
                         onClick={() => {
+                          setSelectedVagaForCandidates(vaga);
+                          setIsCandidatesModalOpen(true);
+                        }}
+                        className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300"
+                        title="Ver Candidatos"
+                        data-testid={`button-view-candidates-${vaga.id}`}
+                      >
+                        <Users size={18} />
+                      </button>
+                      <button
+                        onClick={() => {
                           setSelectedVaga(vaga);
                           setIsModalOpen(true);
                         }}
                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                         title="Visualizar"
+                        data-testid={`button-view-details-${vaga.id}`}
                       >
                         <Eye size={18} />
                       </button>
@@ -778,6 +795,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                         onClick={() => handleDeleteVaga(vaga.id)}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                         title="Excluir"
+                        data-testid={`button-delete-${vaga.id}`}
                       >
                         <Trash2 size={18} />
                       </button>
@@ -794,16 +812,37 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
       {/* Modal de Detalhes/Edição */}
       {selectedVaga && (
         <VagaDetailsModal
-          vaga={selectedVaga}
+          vaga={{
+            ...selectedVaga,
+            quantidade: selectedVaga.quantidade?.toString() || null,
+          } as Vaga}
           isOpen={isModalOpen}
           onClose={() => {
             setIsModalOpen(false);
             setSelectedVaga(null);
           }}
           onUpdate={() => {
-            fetchVagas();
+            queryClient.invalidateQueries({ queryKey: ['vagas', companyId] });
             onRefresh();
           }}
+        />
+      )}
+
+      {/* Modal de Candidatos */}
+      {selectedVagaForCandidates && companyId && (
+        <VagaCandidatesModal
+          isOpen={isCandidatesModalOpen}
+          onClose={() => {
+            setIsCandidatesModalOpen(false);
+            setSelectedVagaForCandidates(null);
+          }}
+          vaga={{
+            id: selectedVagaForCandidates.id,
+            nome: selectedVagaForCandidates.nome,
+            cliente_id: selectedVagaForCandidates.cliente_id,
+            cliente_nome: selectedVagaForCandidates.cliente_nome,
+          }}
+          companyId={companyId}
         />
       )}
     </div>
