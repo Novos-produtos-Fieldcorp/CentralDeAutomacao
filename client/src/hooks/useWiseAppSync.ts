@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 // Removed direct API service - now using secure backend routes
 import { useAuth } from '@/context/AuthContext';
 import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
-import { createApiUrl } from '@/lib/api-config-supabase';
+import { createApiUrl, supabaseApiRequest } from '@/lib/api-config-supabase';
 
 interface SyncResult {
   success: boolean;
@@ -73,30 +73,37 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
-  // Bulk sync mutation using secure backend - usando rota funcional sync-motoristas-bulk
-  const bulkSyncMutation = useMutation({
-    mutationFn: async () => {
-      if (!companyId) throw new Error('Company ID not found');
-      
-      // Usar backend Express (função Supabase não está deployada)
-      const url = createApiUrl('wiseapp/sync-all-motoristas');
-      const body = { companyId: companyId };
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Bulk sync failed');
-      }
-      
-      return response.json();
-    },
+// Bulk sync mutation using Supabase Edge Function
+const bulkSyncMutation = useMutation({
+  mutationFn: async () => {
+    if (!companyId) throw new Error('Company ID not found');
+    const authToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';    
+    // Chamar Supabase Edge Function diretamente
+    const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    const requestUrl = `${supabaseUrl}/functions/v1/api/wiseapp/sync-all-motoristas`;
+    const body = { companyId: companyId };
+
+    const response = await fetch(requestUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Bulk sync failed');
+    }
+    
+    return response.json();
+  },
     onSuccess: (data) => {
       const result = data.data;
       
@@ -140,7 +147,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
         console.warn('Erros na sincronização:', result.errors);
         
         // Check if all or most errors are due to WiseApp service being unavailable
-        const serviceUnavailableErrors = result.errors.filter(error => 
+        const serviceUnavailableErrors = result.errors.filter((error: { motorista_id: number; nome: string; error: string }) => 
           error.error.includes('temporariamente indisponível') ||
           error.error.includes('Erro interno do servidor WiseApp')
         );
@@ -153,7 +160,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
           );
         } else {
           // Show detailed errors for individual contact failures
-          result.errors.slice(0, 3).forEach(error => {
+          result.errors.slice(0, 3).forEach((error: { motorista_id: number; nome: string; error: string }) => {
             toast.error(`${error.nome}: ${error.error}`, { duration: 5000 });
           });
           
