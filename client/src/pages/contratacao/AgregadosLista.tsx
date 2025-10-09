@@ -2013,11 +2013,17 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </button>
 
               <button
-                onClick={() => setShowAddModal(true)}
-                className="inline-flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                title="Novo Agregado"
+                onClick={() => {
+                  setShowAddModal(true);
+                  setSelectedMotorista(null);
+                  setIsUnifiedModalOpen(true);
+                }}
+                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm
+                text-blue-600"
+                title="Adicionar agregado"
               >
                 <Plus size={18} />
+                <span>Adicionar Agregado</span>
               </button>
             </div>
           </div>
@@ -2944,7 +2950,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                 } ${updatingStatus === motorista.motorista_id ? 'opacity-50 cursor-not-allowed' : ''}`}
                               role="switch"
                               aria-checked={motorista.ativo}
-                              title={motorista.ativo ? "Desativar motorista" : "Ativar motorista"}
+                              title={motorista.ativo ? "Desativar agregado" : "Ativar agregado"}
                             >
                               <span
                                 className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${motorista.ativo ? 'translate-x-5' : 'translate-x-0'
