@@ -3,7 +3,7 @@ import { RefreshCw, Tag, Users, AlertCircle, CheckCircle, X, TrendingUp } from '
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useCompanyData } from '@/hooks/useCompanyData';
-import { API_BASE_URL, createApiUrl } from '@/lib/api-config';
+import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
 import { queryClient } from '@/lib/queryClient';
 
 interface BulkSyncResult {

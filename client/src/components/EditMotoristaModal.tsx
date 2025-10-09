@@ -937,87 +937,89 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
             </div>
           </div>
 
-          {/* CNH Information Section */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-              Informações da CNH (Opcional)
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Número da CNH
-                </label>
-                <input
-                  type="text"
-                  name="nr_registro_cnh"
-                  value={cnhData.nr_registro_cnh}
-                  onChange={(e) => {
-                    const value = formatCnhInput(e.target.value);
-                    setCnhData(prev => ({ ...prev, nr_registro_cnh: value }));
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="Digite os 11 dígitos"
-                  maxLength={11}
-                  data-testid="input-cnh-numero"
-                />
-              </div>
+          {/* CNH Information Section (Only for Motoristas) */}
+          {motorista.funcao !== 'Agregado' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                Informações da CNH (Opcional)
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Número da CNH
+                  </label>
+                  <input
+                    type="text"
+                    name="nr_registro_cnh"
+                    value={cnhData.nr_registro_cnh}
+                    onChange={(e) => {
+                      const value = formatCnhInput(e.target.value);
+                      setCnhData(prev => ({ ...prev, nr_registro_cnh: value }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="Digite os 11 dígitos"
+                    maxLength={11}
+                    data-testid="input-cnh-numero"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Categoria da CNH
-                </label>
-                <select
-                  name="categoria_cnh"
-                  value={cnhData.categoria_cnh}
-                  onChange={(e) => setCnhData(prev => ({ ...prev, categoria_cnh: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  data-testid="select-cnh-categoria"
-                >
-                  <option value="">Selecione a categoria</option>
-                  {CNH_CATEGORIES.map(category => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Categoria da CNH
+                  </label>
+                  <select
+                    name="categoria_cnh"
+                    value={cnhData.categoria_cnh}
+                    onChange={(e) => setCnhData(prev => ({ ...prev, categoria_cnh: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="select-cnh-categoria"
+                  >
+                    <option value="">Selecione a categoria</option>
+                    {CNH_CATEGORIES.map(category => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Validade da CNH
-                </label>
-                <input
-                  type="date"
-                  name="validade_cnh"
-                  value={cnhData.validade_cnh}
-                  onChange={(e) => setCnhData(prev => ({ ...prev, validade_cnh: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  data-testid="input-cnh-validade"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Validade da CNH
+                  </label>
+                  <input
+                    type="date"
+                    name="validade_cnh"
+                    value={cnhData.validade_cnh}
+                    onChange={(e) => setCnhData(prev => ({ ...prev, validade_cnh: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="input-cnh-validade"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  UF da CNH
-                </label>
-                <select
-                  name="uf_cnh"
-                  value={cnhData.uf_cnh}
-                  onChange={(e) => setCnhData(prev => ({ ...prev, uf_cnh: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  data-testid="select-cnh-uf"
-                >
-                  <option value="">Selecione o estado</option>
-                  {estados.map(estado => (
-                    <option key={estado.id_estado} value={estado.sigla_estado}>
-                      {estado.sigla_estado}
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    UF da CNH
+                  </label>
+                  <select
+                    name="uf_cnh"
+                    value={cnhData.uf_cnh}
+                    onChange={(e) => setCnhData(prev => ({ ...prev, uf_cnh: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    data-testid="select-cnh-uf"
+                  >
+                    <option value="">Selecione o estado</option>
+                    {estados.map(estado => (
+                      <option key={estado.id_estado} value={estado.sigla_estado}>
+                        {estado.sigla_estado}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Vehicle Information Section (Only for Agregados) */}
           {motorista.funcao === 'Agregado' && (

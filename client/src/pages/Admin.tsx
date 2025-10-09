@@ -117,16 +117,60 @@ const Admin = () => {
     }
 
     try {
-      console.log('[Admin] updating company field', { company_id: control.company_id, field, newValue });
+      // DEBUG: show what we're about to send
+  console.log('[Admin] updating company field', { company_id: control.company_id, field, newValue });
 
-      // Update in Supabase immediately and return the updated row for inspection
-      const { data: updatedData, error } = await supabase
-        .from('company')
-        .update({ [field]: newValue })
-        .eq('company_id', control.company_id)
-        .select();
-      
-      console.log('[Admin] supabase update response', { updatedData, error });
+      let updatedData = null;
+      let error = null;
+
+      if (field === 'minuta_access') {
+        // Use backend service route to bypass RLS for company updates
+        try {
+          const { createApiUrl } = await import('../lib/api-config-supabase');
+          const url = createApiUrl(`/admin/company/${control.company_id}/minuta`);
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: newValue })
+          });
+
+          // Read as text once, then try parse JSON from that text to avoid 'body stream already read'
+          const text = await resp.text();
+          let json: any = null;
+          try {
+            json = text ? JSON.parse(text) : null;
+          } catch (e) {
+            // not JSON, keep json as null
+            json = null;
+          }
+
+          if (!resp.ok) {
+            // Prefer backend json error message if available, otherwise raw text
+            const serverMessage = json?.error?.message || json?.error || text || `HTTP ${resp.status}`;
+            toast.error('Erro ao contatar backend: ' + serverMessage);
+            error = { message: serverMessage };
+          } else {
+            updatedData = json?.data ?? null;
+            error = json?.error ?? null;
+            console.log('[Admin] backend toggle minuta response', json ?? text);
+            if (json?.error) {
+              toast.error('Erro do backend: ' + (json.error.message || JSON.stringify(json.error)));
+            }
+          }
+        } catch (e) {
+          error = e;
+        }
+      } else {
+        // Update in Supabase immediately and return the updated row for inspection
+        const supRes = await supabase
+          .from('company')
+          .update({ [field]: newValue })
+          .eq('company_id', control.company_id)
+          .select();
+  updatedData = supRes.data;
+  error = supRes.error;
+  console.log('[Admin] supabase update response', { updatedData, error });
+      }
 
       if (error) {
         console.error(`Error updating ${field} for company ${control.company_id}:`, error);

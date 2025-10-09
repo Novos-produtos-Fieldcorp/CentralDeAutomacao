@@ -626,6 +626,398 @@ exports.handler = async (event, context) => {
     }
   }
 
+  // Company by account endpoint
+  if (httpMethod === 'GET' && path.includes('/company/by-account/')) {
+    try {
+      const accountId = path.split('/company/by-account/')[1];
+      console.log(`Fetching company for account ID: ${accountId}`);
+      
+      // Initialize Supabase client
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      if (!supabaseUrl || !supabaseServiceKey) {
+        return {
+          statusCode: 500,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'Configuração do Supabase não encontrada' })
+        };
+      }
+
+      const { createClient } = require('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data: companyData, error: companyError } = await supabase
+        .from('company')
+        .select('company_id')
+        .eq('id_conta_wiseapp', accountId)
+        .single();
+
+      if (companyError) {
+        console.error('Error fetching company:', companyError);
+        return {
+          statusCode: 404,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'Company not found for account ID' })
+        };
+      }
+
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify(companyData)
+      };
+    } catch (error) {
+      console.error('Company by account error:', error);
+      return {
+        statusCode: 500,
+        headers: corsHeaders,
+        body: JSON.stringify({ 
+          error: 'Erro interno do servidor',
+          details: error.message || 'Erro desconhecido'
+        })
+      };
+    }
+  }
+
+  // Vagas dashboard endpoint
+  if (httpMethod === 'GET' && path.includes('/vagas/dashboard/')) {
+    try {
+      const companyId = path.split('/vagas/dashboard/')[1];
+      console.log(`Fetching vagas dashboard for company ID: ${companyId}`);
+      
+      // Initialize Supabase client
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      if (!supabaseUrl || !supabaseServiceKey) {
+        return {
+          statusCode: 500,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'Configuração do Supabase não encontrada' })
+        };
+      }
+
+      const { createClient } = require('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      // Fetch vagas data
+      const { data: vagas, error: vagasError } = await supabase
+        .from('vaga')
+        .select('*')
+        .eq('company_id', companyId);
+
+      if (vagasError) {
+        console.error('Error fetching vagas:', vagasError);
+        return {
+          statusCode: 500,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'Erro ao buscar vagas' })
+        };
+      }
+
+      // Fetch status vagas
+      const { data: statusVagas, error: statusError } = await supabase
+        .from('st_vaga')
+        .select('id, status_vaga')
+        .eq('company_id', companyId);
+
+      if (statusError) {
+        console.error('Error fetching status vagas:', statusError);
+        return {
+          statusCode: 500,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'Erro ao buscar status das vagas' })
+        };
+      }
+
+      // Process vagas data
+      const now = new Date();
+      const statusMap = {};
+      statusVagas?.forEach(status => {
+        statusMap[status.id] = status.status_vaga;
+      });
+
+      let totalVagas = vagas?.length || 0;
+      let vagasAbertas = 0;
+      let vagasFechadas = 0;
+      let vagasVencendo = 0;
+
+      vagas?.forEach(vaga => {
+        const status = statusMap[vaga.st_vaga_id] || '';
+        const isExpired = vaga.dt_limite && new Date(vaga.dt_limite) < now;
+        
+        if (isExpired) {
+          vagasVencendo++;
+        } else if (status.toLowerCase().includes('aberta') || status.toLowerCase().includes('aberto')) {
+          vagasAbertas++;
+        } else if (status.toLowerCase().includes('fechada') || status.toLowerCase().includes('fechado')) {
+          vagasFechadas++;
+        }
+      });
+
+      const dashboardData = {
+        totalVagas,
+        vagasAbertas,
+        vagasFechadas,
+        vagasVencendo
+      };
+
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify(dashboardData)
+      };
+    } catch (error) {
+      console.error('Vagas dashboard error:', error);
+      return {
+        statusCode: 500,
+        headers: corsHeaders,
+        body: JSON.stringify({ 
+          error: 'Erro interno do servidor',
+          details: error.message || 'Erro desconhecido'
+        })
+      };
+    }
+  }
+
+  // Main dashboard endpoint - comprehensive data fetching
+  if (httpMethod === 'GET' && path.includes('/dashboard/')) {
+    try {
+      const companyId = path.split('/dashboard/')[1];
+      console.log(`Fetching comprehensive dashboard data for company ID: ${companyId}`);
+      
+      // Initialize Supabase client
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      if (!supabaseUrl || !supabaseServiceKey) {
+        return {
+          statusCode: 500,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'Configuração do Supabase não encontrada' })
+        };
+      }
+
+      const { createClient } = require('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      // Fetch all dashboard data in parallel
+      const [
+        agregadosResult,
+        motoristasResult,
+        contratadosResult,
+        hodometroResult,
+        clientesResult,
+        clientesAtivosResult,
+        clientesRecentResult,
+        veiculosResult,
+        vagasResult,
+        statusVagasResult,
+        comprovantesResult,
+        comprovantesCurrentMonthResult,
+        recentMotoristaResult,
+        recentVeiculoResult,
+        recentVagaResult,
+        recentComprovanteResult,
+        checklistResult,
+        checklistCurrentMonthResult
+      ] = await Promise.all([
+        // Agregados
+        supabase.from('agregado').select('*').eq('company_id', companyId).eq('ativo', true),
+        
+        // Motoristas
+        supabase.from('motorista').select('*').eq('company_id', companyId).eq('ativo', true),
+        
+        // Contratados (motoristas ativos)
+        supabase.from('motorista').select('*').eq('company_id', companyId).eq('ativo', true),
+        
+        // Hodometros
+        supabase.from('hodometro').select('*').eq('company_id', companyId),
+        
+        // Clientes
+        supabase.from('cliente').select('*').eq('company_id', companyId),
+        
+        // Clientes ativos
+        supabase.from('cliente').select('*').eq('company_id', companyId).eq('st_cliente', true),
+        
+        // Clientes recentes (limit 5)
+        supabase.from('cliente').select('*').eq('company_id', companyId).order('cliente_id', { ascending: false }).limit(5),
+        
+        // Veiculos
+        supabase.from('veiculo').select('*').eq('company_id', companyId).order('veiculo_id', { ascending: false }).limit(3),
+        
+        // Vagas
+        supabase.from('vaga').select('*').eq('company_id', companyId),
+        
+        // Status vagas
+        supabase.from('st_vaga').select('*').eq('company_id', companyId),
+        
+        // Comprovantes
+        supabase.from('comprovante').select('*').eq('company_id', companyId),
+        
+        // Comprovantes current month
+        supabase.from('comprovante').select('*').eq('company_id', companyId).gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
+        
+        // Recent motoristas
+        supabase.from('motorista').select('*').eq('company_id', companyId).order('motorista_id', { ascending: false }).limit(5),
+        
+        // Recent veiculos
+        supabase.from('veiculo').select('*').eq('company_id', companyId).order('veiculo_id', { ascending: false }).limit(5),
+        
+        // Recent vagas
+        supabase.from('vaga').select('*').eq('company_id', companyId).order('vaga_id', { ascending: false }).limit(5),
+        
+        // Recent comprovantes
+        supabase.from('comprovante').select('*').eq('company_id', companyId).order('id', { ascending: false }).limit(5),
+        
+        // Checklists
+        supabase.from('checklist').select('*').eq('company_id', companyId),
+        
+        // Checklists current month
+        supabase.from('checklist').select('*').eq('company_id', companyId).gte('data', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
+      ]);
+
+      // Process the data
+      const now = new Date();
+      
+      // Process vagas data
+      const vagas = vagasResult.data || [];
+      const statusVagasData = statusVagasResult.data || [];
+      
+      const statusMap = statusVagasData.reduce((map, status) => {
+        map[status.id] = status.status_vaga;
+        return map;
+      }, {});
+
+      let vagasAbertas = 0;
+      let vagasPreenchidas = 0;
+      let vagasVencidas = 0;
+
+      vagas.forEach(vaga => {
+        const stVagaId = vaga.st_vaga_id || (vaga.st_vaga && vaga.st_vaga[0]?.id);
+        const status = statusMap[stVagaId] || '';
+        const isExpired = vaga.dt_limite && new Date(vaga.dt_limite) < now;
+
+        if (isExpired) {
+          vagasVencidas++;
+        } else if (!status || status.trim() === '') {
+          vagasAbertas++;
+        } else if (
+          status.toLowerCase().includes('aberta') ||
+          status.toLowerCase().includes('ativa') ||
+          status.toLowerCase().includes('aberto') ||
+          status.toLowerCase().includes('disponivel') ||
+          status.toLowerCase().includes('disponível')
+        ) {
+          vagasAbertas++;
+        } else if (
+          status.toLowerCase().includes('preenchida') ||
+          status.toLowerCase().includes('ocupada') ||
+          status.toLowerCase().includes('fechada') ||
+          status.toLowerCase().includes('fechado') ||
+          status.toLowerCase().includes('ocupado')
+        ) {
+          vagasPreenchidas++;
+        } else {
+          vagasAbertas++;
+        }
+      });
+
+      const totalVagas = vagas.length;
+      const taxaPreenchimento = totalVagas > 0 ? Math.round((vagasPreenchidas / totalVagas) * 100) : 0;
+
+      // Process clientes data
+      const totalClientes = clientesResult.data?.length || 0;
+      const clientesAtivos = clientesAtivosResult.data?.length || 0;
+      const clientesDesativos = totalClientes - clientesAtivos;
+
+      // Process hodometro data
+      const hodometroData = hodometroResult.data || [];
+      const hodometroArray = hodometroData.length > 0 ? processRealHodometroData(hodometroData) : [];
+
+      // Process comprovantes data
+      const comprovantesData = comprovantesResult.data || [];
+      const comprovantesCurrentMonth = comprovantesCurrentMonthResult.data?.length || 0;
+
+      // Process checklist data
+      const checklistData = checklistResult.data || [];
+      const checklistCurrentMonth = checklistCurrentMonthResult.data?.length || 0;
+
+      const dashboardData = {
+        // Vagas data
+        totalVagas,
+        vagasAbertas,
+        vagasPreenchidas,
+        vagasVencidas,
+        taxaPreenchimento,
+        
+        // Clientes data
+        totalClientes,
+        clientesAtivos,
+        clientesDesativos,
+        
+        // Motoristas data
+        totalMotoristas: motoristasResult.data?.length || 0,
+        totalAgregados: agregadosResult.data?.length || 0,
+        
+        // Veiculos data
+        totalVeiculos: veiculosResult.data?.length || 0,
+        
+        // Hodometro data
+        hodometroArray,
+        
+        // Comprovantes data
+        totalComprovantes: comprovantesData.length,
+        comprovantesCurrentMonth,
+        
+        // Checklist data
+        totalChecklists: checklistData.length,
+        checklistCurrentMonth,
+        
+        // Recent data
+        recentMotoristas: recentMotoristaResult.data || [],
+        recentVeiculos: recentVeiculoResult.data || [],
+        recentVagas: recentVagaResult.data || [],
+        recentComprovantes: recentComprovanteResult.data || [],
+        recentClientes: clientesRecentResult.data || []
+      };
+
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify(dashboardData)
+      };
+    } catch (error) {
+      console.error('Dashboard data error:', error);
+      return {
+        statusCode: 500,
+        headers: corsHeaders,
+        body: JSON.stringify({ 
+          error: 'Erro interno do servidor',
+          details: error.message || 'Erro desconhecido'
+        })
+      };
+    }
+  }
+
+  // Helper function to process hodometro data
+  function processRealHodometroData(hodometroData) {
+    const monthlyData = {};
+    
+    hodometroData.forEach(hodometro => {
+      if (hodometro.data) {
+        const monthKey = new Date(hodometro.data).toLocaleDateString('pt-BR', { month: 'short' });
+        monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
+      }
+    });
+    
+    return Object.entries(monthlyData).map(([month, count]) => ({
+      month,
+      count
+    }));
+  }
+
   // Default 404
   console.log(`No route matched for ${httpMethod} ${path}`);
   console.log(`Available routes check:`);
@@ -652,7 +1044,10 @@ exports.handler = async (event, context) => {
         'GET /wiseapp/:companyId/labels',
         'GET /wiseapp/:companyId/contacts/search',
         'POST /wiseapp/:companyId/contacts/:contactId/labels',
-        'POST /api/wiseapp/sync-all-motoristas'
+        'POST /api/wiseapp/sync-all-motoristas',
+        'GET /company/by-account/:accountId',
+        'GET /vagas/dashboard/:companyId',
+        'GET /dashboard/:companyId'
       ]
     })
   };

@@ -1451,6 +1451,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Processando ${motoristas.length} motoristas`);
+
+      // Processar cada motorista
+      for (const motorista of motoristas) {
+        try {
+          if (!motorista.telefone) {
+            results.successful++;
+            continue;
+          }
+
+          const phone = `55${motorista.telefone}`;
+          console.log(`Processando ${motorista.nome} - ${phone}`);
+          
+          // Buscar contato no WiseApp
+          const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${phone}`;
+          const searchResponse = await fetch(searchUrl, {
+            headers: {
+              'api_access_token': token,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (!searchResponse.ok) {
+            results.failed++;
+            results.errors.push({
+              motorista_id: motorista.motorista_id,
+              nome: motorista.nome,
+              error: `Erro ao buscar no WiseApp: ${searchResponse.status}`
+            });
+            continue;
+          }
+
+          const searchData = await searchResponse.json();
+
+          if (searchData.payload?.length > 0) {
+            const contact = searchData.payload[0];
+            console.log(`Contato encontrado: ${motorista.nome} (ID: ${contact.id})`);
+
+            // Se contato já existe, apenas atualizar foto se necessário
+            if (contact.avatar !== motorista.foto_whatsapp && motorista.foto_whatsapp) {
+              const updateUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contact.id}`;
+              const updateResponse = await fetch(updateUrl, {
+                method: 'PUT',
+                headers: {
+                  'api_access_token': token,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ avatar: motorista.foto_whatsapp })
+              });
+
+              if (updateResponse.ok) {
+                results.photoUpdated++;
+                console.log(`Foto atualizada para ${motorista.nome}`);
+              }
+            }
+
+            results.successful++;
+          } else {
+            // Contato não existe, criar novo
+            const contactData = {
+              name: motorista.nome,
+              phone: phone,
+              avatar: motorista.foto_whatsapp || null
+            };
+
+            const createUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts`;
+            const createResponse = await fetch(createUrl, {
+              method: 'POST',
+              headers: {
+                'api_access_token': token,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(contactData)
+            });
+
+            if (createResponse.ok) {
+              results.created++;
+              results.successful++;
+              console.log(`Contato criado: ${motorista.nome}`);
+            } else {
+              results.failed++;
+              results.errors.push({
+                motorista_id: motorista.motorista_id,
+                nome: motorista.nome,
+                error: `Erro ao criar contato: ${createResponse.status}`
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Erro processando ${motorista.nome}:`, error);
+          results.failed++;
+          results.errors.push({
+            motorista_id: motorista.motorista_id,
+            nome: motorista.nome,
+            error: (error as Error).message
+          });
+        }
+      }
+
+      console.log(`Sincronização concluída: ${results.successful} sucessos, ${results.failed} falhas, ${results.created} criados, ${results.photoUpdated} fotos atualizadas`);
       res.json({ success: true, data: results });
 
     } catch (error) {

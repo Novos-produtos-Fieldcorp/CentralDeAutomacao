@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { getWiseAppLabels } from "@/lib/directApiService";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
-import { createApiUrl } from '@/lib/api-config';
+import { createApiUrl } from '@/lib/api-config-supabase';
 
 interface Tag {
   id: number;

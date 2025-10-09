@@ -715,7 +715,7 @@ const ContratacaoKanban = () => {
           <div className="relative max-w-2xl">
             <input
               type="text"
-              placeholder="🔍 Buscar por nome, CPF, telefone..."
+              placeholder="Buscar por nome, CPF, telefone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-12 py-3 text-base bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-purple-300 dark:border-gray-500 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-gray-900 dark:text-gray-100 transition-all duration-300 shadow-sm"
