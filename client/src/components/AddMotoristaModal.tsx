@@ -306,16 +306,58 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
         saveUserEmail(formData.email);
       }
 
-      // If address is provided, save it
-      if (formData.cep && motorista) {
+      // Insert address if all required fields are filled
+      if (formData.logradouro && formData.cidade && formData.estado) {
         try {
+          // First, find the estado_id based on sigla_estado
+          const { data: estadoData, error: estadoError } = await supabase
+            .from('estado')
+            .select('id_estado')
+            .eq('sigla_estado', formData.estado)
+            .single();
+            
+          if (estadoError) {
+            throw new Error(`Estado "${formData.estado}" não encontrado.`);
+          }
+          
+          // Check if cidade exists
+          let cidadeId: number;
+          const { data: cidade, error: cidadeError } = await supabase
+            .from('cidade')
+            .select('id_cidade')
+            .eq('cidade', formData.cidade)
+            .eq('id_estado', estadoData.id_estado)
+            .maybeSingle();
+
+          if (cidadeError && cidadeError.code !== 'PGRST116') {
+            throw cidadeError;
+          }
+
+          if (cidade) {
+            cidadeId = cidade.id_cidade;
+          } else {
+            // Create cidade if it doesn't exist
+            const { data: newCidade, error: newCidadeError } = await supabase
+              .from('cidade')
+              .insert({
+                cidade: formData.cidade,
+                id_estado: estadoData.id_estado
+              })
+              .select()
+              .single();
+
+            if (newCidadeError) throw newCidadeError;
+            if (!newCidade) throw new Error('Erro ao criar cidade');
+            cidadeId = newCidade.id_cidade;
+          }
+
           // Check if bairro exists
           let bairroId: number;
           const { data: bairro, error: bairroError } = await supabase
             .from('bairro')
             .select('id_bairro')
             .eq('bairro', formData.bairro)
-            .eq('id_cidade', 1) // You might need to adjust this
+            .eq('id_cidade', cidadeId)
             .maybeSingle();
 
           if (bairroError && bairroError.code !== 'PGRST116') {
@@ -330,7 +372,7 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
               .from('bairro')
               .insert({
                 bairro: formData.bairro,
-                id_cidade: 1 // You might need to adjust this
+                id_cidade: cidadeId
               })
               .select()
               .single();
@@ -373,7 +415,7 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
             logradouroId = newLogradouro.id_logradouro;
           }
 
-          // Create end_motorista with proper handling of empty number
+          // Create end_motorista
           const { error: enderecoError } = await supabase
             .from('end_motorista')
             .insert({
@@ -386,8 +428,24 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
           if (enderecoError) throw enderecoError;
         } catch (error) {
           console.error('Erro ao cadastrar endereço:', error);
+          let errorMessage = 'Erro ao cadastrar endereço, mas o cadastro foi realizado';
+          
+          if (error instanceof Error) {
+            if (error.message.includes('Estado')) {
+              errorMessage = `Estado "${formData.estado}" não encontrado. Verifique a sigla do estado.`;
+            } else if (error.message.includes('cidade')) {
+              errorMessage = `Erro ao criar cidade "${formData.cidade}". Verifique os dados.`;
+            } else if (error.message.includes('bairro')) {
+              errorMessage = `Erro ao criar bairro "${formData.bairro}". Verifique os dados.`;
+            } else if (error.message.includes('logradouro')) {
+              errorMessage = `Erro ao criar logradouro "${formData.logradouro}". Verifique os dados.`;
+            } else if (error.message.includes('end_motorista')) {
+              errorMessage = 'Erro ao salvar endereço final. Verifique todos os campos.';
+            }
+          }
+          
           // Don't throw here, as address is optional
-          toast.error('Erro ao cadastrar endereço, mas o cadastro foi realizado');
+          toast.error(errorMessage);
         }
       }
 
@@ -654,7 +712,7 @@ const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProp
                 >
                   <option value="">Selecione um estado</option>
                   {estados.map(estado => (
-                    <option key={estado.id_estado} value={estado.id_estado}>
+                    <option key={estado.id_estado} value={estado.sigla_estado}>
                       {estado.sigla_estado}
                     </option>
                   ))}
