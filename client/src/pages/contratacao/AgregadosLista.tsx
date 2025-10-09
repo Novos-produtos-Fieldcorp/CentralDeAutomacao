@@ -2921,7 +2921,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             <button
                               onClick={() => handleViewDocument(motorista)}
                               className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                              title="Visualizar"
+                              title="Inspecionar agregado"
                             >
                               <FilePen size={18} />
                             </button>
