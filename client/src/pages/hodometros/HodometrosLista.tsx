@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, BarChart2, Download, X, Calendar, User, Truck, ChevronDown, ChevronUp, Eye, Clock, Camera } from 'lucide-react';
+import { Search, BarChart2, Download, X, Calendar, User, Truck, ChevronDown, ChevronUp, Eye, Clock, Camera, Gauge, Fuel } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
+import { useModuleAccess } from '../../hooks/useModuleAccess';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import { usePagination } from '../../hooks/usePagination';
@@ -70,6 +71,7 @@ interface VehicleData {
 
 const HodometrosLista = () => {
   const { companyId } = useAuth();
+  const { moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('all', true);
@@ -943,19 +945,36 @@ const HodometrosLista = () => {
                                       </div>
                                     </td>
                                     <td className="px-4 py-2 whitespace-nowrap text-center">
-                                      {reading.foto_hodometro ? (
-                                        <button
-                                          onClick={(e) => handleShowPhoto(reading.foto_hodometro, e)}
-                                          className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                                          title="Ver foto do hodômetro"
-                                        >
-                                          <Camera size={16} />
-                                        </button>
-                                      ) : (
-                                        <span className="text-gray-400 dark:text-gray-600">
-                                          <Camera size={16} className="inline-block opacity-50" />
-                                        </span>
-                                      )}
+                                      <div className="flex items-center justify-center gap-2">
+                                        {reading.foto_hodometro ? (
+                                          <button
+                                            onClick={(e) => handleShowPhoto(reading.foto_hodometro, e)}
+                                            className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                                            title="Ver foto do hodômetro"
+                                          >
+                                            <Gauge size={16} />
+                                          </button>
+                                        ) : (
+                                          <span className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50" title="Sem foto do hodômetro">
+                                            <Gauge size={16} />
+                                          </span>
+                                        )}
+                                        {moduleAccess.bomba && (
+                                          reading.bomba_gasolina?.foto_bomba ? (
+                                            <button
+                                              onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e)}
+                                              className="inline-flex items-center justify-center p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                                              title="Ver foto da bomba de gasolina"
+                                            >
+                                              <Fuel size={16} />
+                                            </button>
+                                          ) : (
+                                            <span className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50" title="Sem foto da bomba">
+                                              <Fuel size={16} />
+                                            </span>
+                                          )
+                                        )}
+                                      </div>
                                     </td>
                                   </tr>
                                 ))}
