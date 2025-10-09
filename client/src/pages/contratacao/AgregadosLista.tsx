@@ -2988,7 +2988,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             />
           )}
         </div>
-
         {/* WiseApp Bulk Sync Panel - positioned fixed in top right */}
         <WiseAppBulkSyncPanel
           onTagsSync={() => {
@@ -2997,7 +2996,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             }
           }}
         />
-
         {/* Context Menu */}
         {contextMenu.visible && contextMenu.motorista && (
           <ContextMenu

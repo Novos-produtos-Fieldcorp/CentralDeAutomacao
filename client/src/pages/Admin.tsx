@@ -180,20 +180,10 @@ const Admin = () => {
 
       // Update local state if the update was successful
       const updatedControls = [...accessControls];
-      
-      // For minuta_access, we might get the updated data in the response
-      if (field === 'minuta_access' && updatedData && updatedData.length > 0) {
-        updatedControls[index] = {
-          ...updatedControls[index],
-          minuta_access: updatedData[0].minuta_access
-        };
-      } else {
-        // For other fields or if no updated data is returned
-        updatedControls[index] = {
-          ...updatedControls[index],
-          [field]: newValue
-        };
-      }
+      updatedControls[index] = {
+        ...updatedControls[index],
+        [field]: newValue
+      };
       
       setAccessControls(updatedControls);
       console.log(`[Admin] local state updated for ${field} to ${updatedControls[index][field]}`);
@@ -439,7 +429,7 @@ const Admin = () => {
                       Resumos em Grupo
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Minuta
+                      Minutas
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Comprovantes
@@ -525,12 +515,12 @@ const Admin = () => {
                         <button
                           onClick={() => handleToggleAccess(index, 'minuta_access')}
                           className={`p-2 rounded-full ${
-                            control.hasOwnProperty('minuta_access') && control.minuta_access
+                            control.minuta_access
                               ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                               : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                           }`}
                         >
-                          {control.minuta_access ? <CheckCircle size={16} /> : <EyeOff size={16} />}
+                          <CheckCircle size={20} />
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -570,7 +560,7 @@ const Admin = () => {
                   ))}
                   {accessControls.length === 0 && (
                     <tr>
-                      <td colSpan={10} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <td colSpan={11} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                         Nenhuma conta configurada
                       </td>
                     </tr>

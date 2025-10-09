@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   BarChart2, Calendar, TrendingUp, Truck, Users, 
   AlertTriangle, Activity, FileText, Camera, X, Eye,
-  Gauge, AlertCircle, FileBarChart, ChevronDown, Lock
+  Gauge, AlertCircle, FileBarChart, ChevronDown, Lock,
+  ClipboardList, UserCheck, ImageIcon, Fuel
 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
@@ -41,6 +42,11 @@ interface DriverReadings {
 interface OperationMileage {
   name: string;
   value: number;
+}
+
+interface FilialMinutas {
+  filial: string;
+  count: number;
 }
 
 interface HodometroReading {
@@ -95,10 +101,25 @@ const HodometrosDashboard = () => {
   const [vehicleMileage, setVehicleMileage] = useState<VehicleMileage[]>([]);
   const [driverReadings, setDriverReadings] = useState<DriverReadings[]>([]);
   const [operationMileage, setOperationMileage] = useState<OperationMileage[]>([]);
+  const [filialMinutas, setFilialMinutas] = useState<FilialMinutas[]>([]);
+  const [driverMinutaBomba, setDriverMinutaBomba] = useState<DriverReadings[]>([]);
+  const [driverHodometroBomba, setDriverHodometroBomba] = useState<DriverReadings[]>([]);
+  const [showMinutaBombaView, setShowMinutaBombaView] = useState(false);
   const [totalKm, setTotalKm] = useState(0);
   const [averageKmPerDay, setAverageKmPerDay] = useState(0);
   const [totalReadings, setTotalReadings] = useState(0);
   const [todayReadings, setTodayReadings] = useState(0);
+  
+  // Minuta stats
+  const [totalMinutas, setTotalMinutas] = useState(0);
+  const [avgMinutasPerDay, setAvgMinutasPerDay] = useState(0);
+  const [avgMinutasPerDriver, setAvgMinutasPerDriver] = useState(0);
+  const [minutasWithPhotoPercent, setMinutasWithPhotoPercent] = useState(0);
+  
+  // Bomba stats
+  const [totalBomba, setTotalBomba] = useState(0);
+  const [todayBombaMinuta, setTodayBombaMinuta] = useState(0);
+  
   const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('30days', true);
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
@@ -120,8 +141,26 @@ const HodometrosDashboard = () => {
       fetchData();
       fetchTodayReadings();
       fetchInconsistencies();
+      
+      // Fetch minutas stats if user has access
+      if (moduleAccess.minuta || moduleAccess.bomba) {
+        if (moduleAccess.minuta) {
+          fetchMinutasStats();
+          fetchFilialMinutas();
+          fetchDriverMinutas();
+        }
+        fetchDriverHodometroBomba();
+      }
+      
+      // Fetch bomba stats if user has access
+      if (moduleAccess.bomba) {
+        fetchBombaStats();
+      }
+      
+      // Fetch combined today stats
+      fetchTodayBombaMinuta();
     }
-  }, [dateRange, pendingDateRange, moduleAccess.hodometros]);
+  }, [dateRange, pendingDateRange, moduleAccess.hodometros, moduleAccess.minuta, moduleAccess.bomba]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -570,6 +609,310 @@ const HodometrosDashboard = () => {
     }
   };
 
+  const fetchMinutasStats = async () => {
+    try {
+      setConnectionError(false);
+      
+      // Adjust end date to include the full day (23:59:59.999)
+      const endDateFull = dateRange.endDate ? `${dateRange.endDate}T23:59:59.999` : null;
+      
+      // Fetch minutas within date range
+      const { data, error } = await supabase
+        .from('minuta')
+        .select('id, created_at, motorista_id, foto_minuta')
+        .eq('company_id', companyId)
+        .gte('created_at', dateRange.startDate)
+        .lte('created_at', endDateFull)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      const minutas = data || [];
+      const totalMinutasCount = minutas.length;
+      
+      // Calculate unique days
+      const uniqueDays = new Set(
+        minutas.map(m => new Date(m.created_at).toISOString().split('T')[0])
+      ).size;
+      
+      // Calculate average minutas per day
+      const avgPerDay = uniqueDays > 0 ? totalMinutasCount / uniqueDays : 0;
+      
+      // Calculate unique drivers
+      const uniqueDrivers = new Set(
+        minutas.filter(m => m.motorista_id).map(m => m.motorista_id)
+      ).size;
+      
+      // Calculate average minutas per driver
+      const avgPerDriver = uniqueDrivers > 0 ? totalMinutasCount / uniqueDrivers : 0;
+      
+      // Calculate percentage of minutas with photo
+      const minutasWithPhoto = minutas.filter(m => m.foto_minuta && m.foto_minuta.trim() !== '').length;
+      const percentWithPhoto = totalMinutasCount > 0 
+        ? (minutasWithPhoto / totalMinutasCount) * 100 
+        : 0;
+      
+      setTotalMinutas(totalMinutasCount);
+      setAvgMinutasPerDay(avgPerDay);
+      setAvgMinutasPerDriver(avgPerDriver);
+      setMinutasWithPhotoPercent(percentWithPhoto);
+      
+    } catch (error) {
+      handleSupabaseError(error, 'carregar estatísticas de minutas');
+    }
+  };
+
+  const fetchBombaStats = async () => {
+    try {
+      setConnectionError(false);
+      
+      // Fetch bomba_gasolina records within date range
+      const { data, error } = await supabase
+        .from('bomba_gasolina')
+        .select('id, data')
+        .eq('company_id', companyId)
+        .gte('data', dateRange.startDate)
+        .lte('data', dateRange.endDate)
+        .order('data', { ascending: false });
+      
+      if (error) throw error;
+      
+      const bombas = data || [];
+      setTotalBomba(bombas.length);
+      
+    } catch (error) {
+      handleSupabaseError(error, 'carregar estatísticas de bomba');
+    }
+  };
+
+  const fetchTodayBombaMinuta = async () => {
+    try {
+      setConnectionError(false);
+      
+      const today = new Date().toISOString().split('T')[0];
+      const todayEnd = `${today}T23:59:59.999`;
+      
+      // Fetch today's minutas
+      let minutasCount = 0;
+      if (moduleAccess.minuta) {
+        const { count, error: minutasError } = await supabase
+          .from('minuta')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .gte('created_at', today)
+          .lte('created_at', todayEnd);
+        
+        if (!minutasError && count !== null) {
+          minutasCount = count;
+        }
+      }
+      
+      // Fetch today's bomba
+      let bombaCount = 0;
+      if (moduleAccess.bomba) {
+        const { count, error: bombaError } = await supabase
+          .from('bomba_gasolina')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .eq('data', today);
+        
+        if (!bombaError && count !== null) {
+          bombaCount = count;
+        }
+      }
+      
+      setTodayBombaMinuta(minutasCount + bombaCount);
+      
+    } catch (error) {
+      handleSupabaseError(error, 'carregar estatísticas de hoje');
+    }
+  };
+
+  const fetchFilialMinutas = async () => {
+    try {
+      setConnectionError(false);
+      
+      // Adjust end date to include the full day (23:59:59.999)
+      const endDateFull = dateRange.endDate ? `${dateRange.endDate}T23:59:59.999` : null;
+      
+      // Fetch minutas grouped by filial
+      const { data, error } = await supabase
+        .from('minuta')
+        .select(`
+          id,
+          filial_id,
+          filial:filial_id ( id, filial )
+        `)
+        .eq('company_id', companyId)
+        .gte('created_at', dateRange.startDate)
+        .lte('created_at', endDateFull)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      const minutas = data || [];
+      
+      // Group by filial
+      const filialCounts = new Map<string, number>();
+      
+      minutas.forEach((minuta: any) => {
+        const filialName = minuta.filial?.filial || 'Sem Filial';
+        filialCounts.set(filialName, (filialCounts.get(filialName) || 0) + 1);
+      });
+      
+      // Convert to array and sort by count
+      const filialArray = Array.from(filialCounts.entries())
+        .map(([filial, count]) => ({ filial, count }))
+        .sort((a, b) => b.count - a.count);
+      
+      setFilialMinutas(filialArray);
+      
+    } catch (error) {
+      handleSupabaseError(error, 'carregar minutas por filial');
+    }
+  };
+
+  const fetchDriverMinutas = async () => {
+    try {
+      setConnectionError(false);
+      
+      const endDateFull = dateRange.endDate ? `${dateRange.endDate}T23:59:59.999` : null;
+      
+      // Fetch minutas by driver
+      const minutasByDriver = new Map<number, { nome: string; count: number }>();
+      
+      if (moduleAccess.minuta) {
+        const { data: minutasData, error: minutasError } = await supabase
+          .from('minuta')
+          .select(`
+            id,
+            motorista_id,
+            motorista:motorista_id ( motorista_id, nome )
+          `)
+          .eq('company_id', companyId)
+          .gte('created_at', dateRange.startDate)
+          .lte('created_at', endDateFull);
+        
+        if (!minutasError && minutasData) {
+          minutasData.forEach((minuta: any) => {
+            if (minuta.motorista_id && minuta.motorista) {
+              const motorista = Array.isArray(minuta.motorista) ? minuta.motorista[0] : minuta.motorista;
+              const existing = minutasByDriver.get(minuta.motorista_id);
+              if (existing) {
+                existing.count++;
+              } else {
+                minutasByDriver.set(minuta.motorista_id, {
+                  nome: motorista.nome,
+                  count: 1
+                });
+              }
+            }
+          });
+        }
+      }
+      
+      // Convert to array and sort by count
+      const driverArray = Array.from(minutasByDriver.values())
+        .map(({ nome, count }) => ({ motorista_id: 0, nome, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 20); // Limit to top 20
+      
+      setDriverMinutaBomba(driverArray);
+      
+    } catch (error) {
+      handleSupabaseError(error, 'carregar minutas por motorista');
+    }
+  };
+
+  const fetchDriverHodometroBomba = async () => {
+    try {
+      setConnectionError(false);
+      
+      const endDateFull = dateRange.endDate ? `${dateRange.endDate}T23:59:59.999` : null;
+      
+      // Fetch hodometros and bomba by driver
+      const readingsByDriver = new Map<number, { nome: string; count: number }>();
+      
+      // Fetch hodometros by driver
+      const { data: hodometrosData, error: hodometrosError } = await supabase
+        .from('hodometro')
+        .select(`
+          id_hodometro,
+          motorista_id,
+          motorista:motorista_id ( motorista_id, nome )
+        `)
+        .eq('company_id', companyId)
+        .gte('created_at', dateRange.startDate)
+        .lte('created_at', endDateFull);
+      
+      if (!hodometrosError && hodometrosData) {
+        hodometrosData.forEach((hodo: any) => {
+          if (hodo.motorista_id && hodo.motorista) {
+            const motorista = Array.isArray(hodo.motorista) ? hodo.motorista[0] : hodo.motorista;
+            const existing = readingsByDriver.get(hodo.motorista_id);
+            if (existing) {
+              existing.count++;
+            } else {
+              readingsByDriver.set(hodo.motorista_id, {
+                nome: motorista.nome,
+                count: 1
+              });
+            }
+          }
+        });
+      }
+      
+      // Fetch bomba by driver (using hodometro_id to get motorista)
+      if (moduleAccess.bomba) {
+        const { data: bombaData, error: bombaError } = await supabase
+          .from('bomba_gasolina')
+          .select(`
+            id,
+            hodometro_id,
+            hodometro:hodometro_id (
+              id_hodometro,
+              motorista_id,
+              motorista:motorista_id ( motorista_id, nome )
+            )
+          `)
+          .eq('company_id', companyId)
+          .gte('data', dateRange.startDate)
+          .lte('data', dateRange.endDate);
+        
+        if (!bombaError && bombaData) {
+          bombaData.forEach((bomba: any) => {
+            if (bomba.hodometro?.motorista_id && bomba.hodometro?.motorista) {
+              const motorista = Array.isArray(bomba.hodometro.motorista) 
+                ? bomba.hodometro.motorista[0] 
+                : bomba.hodometro.motorista;
+              const motoristaId = bomba.hodometro.motorista_id;
+              const existing = readingsByDriver.get(motoristaId);
+              if (existing) {
+                existing.count++;
+              } else {
+                readingsByDriver.set(motoristaId, {
+                  nome: motorista.nome,
+                  count: 1
+                });
+              }
+            }
+          });
+        }
+      }
+      
+      // Convert to array and sort by count
+      const driverArray = Array.from(readingsByDriver.values())
+        .map(({ nome, count }) => ({ motorista_id: 0, nome, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 20); // Limit to top 20
+      
+      setDriverHodometroBomba(driverArray);
+      
+    } catch (error) {
+      handleSupabaseError(error, 'carregar hodômetro/bomba por motorista');
+    }
+  };
+
   const handleShowPhoto = (photo: string | null) => {
     if (photo) {
       setSelectedPhoto(photo);
@@ -803,17 +1146,35 @@ const HodometrosDashboard = () => {
         />
         <StatCard
           title="Total de Leituras"
-          value={totalReadings}
-          icon={Activity}
+          value={totalBomba + totalMinutas}
+          icon={Fuel}
           color="purple"
         />
         <StatCard
-          title="Leituras Hoje"
-          value={todayReadings}
-          icon={FileText}
+          title="Total de Leituras de Hoje"
+          value={todayBombaMinuta}
+          icon={ClipboardList}
           color="amber"
         />
       </div>
+
+      {/* Minuta Stats - Only visible with minuta access */}
+      {moduleAccess.minuta && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <StatCard
+            title="Média Diária de Minutas"
+            value={Math.round(avgMinutasPerDay * 10) / 10}
+            icon={ClipboardList}
+            color="blue"
+          />
+          <StatCard
+            title="Média por Motorista"
+            value={Math.round(avgMinutasPerDriver * 10) / 10}
+            icon={UserCheck}
+            color="green"
+          />
+        </div>
+      )}
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -940,44 +1301,105 @@ const HodometrosDashboard = () => {
           )}
         </div>
 
-        {/* Leituras por Motorista Chart and KM per Operation Chart */}
+        {/* Leituras por Motorista Chart with Switch */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
-            <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            Leituras por Motorista
-          </h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-medium text-black dark:text-white flex items-center gap-2">
+              <FileBarChart className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              Leituras por Motorista
+            </h3>
+            {moduleAccess.minuta && (
+              <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                <button
+                  onClick={() => setShowMinutaBombaView(false)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    !showMinutaBombaView
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Leituras
+                </button>
+                <button
+                  onClick={() => setShowMinutaBombaView(true)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    showMinutaBombaView
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Minuta
+                </button>
+              </div>
+            )}
+          </div>
           
-          {driverReadings.length > 0 ? (
-            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-              {driverReadings.map((driver, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-black dark:text-gray-400">
-                      {driver.nome}
-                    </span>
-                    <span className="text-sm font-medium text-black dark:text-white">
-                      {driver.count} {driver.count === 1 ? 'leitura' : 'leituras'}
-                    </span>
+          {showMinutaBombaView ? (
+            driverMinutaBomba.length > 0 ? (
+              <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+                {driverMinutaBomba.map((driver, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-black dark:text-gray-400">
+                        {driver.nome}
+                      </span>
+                      <span className="text-sm font-medium text-black dark:text-white">
+                        {driver.count} {driver.count === 1 ? 'leitura' : 'leituras'}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.max(
+                            5, 
+                            (driver.count / Math.max(...driverMinutaBomba.map(d => d.count), 1)) * 100
+                          )}%` 
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 bg-white dark:bg-[#1F2937] rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-orange-500 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${Math.max(
-                          5, 
-                          (driver.count / Math.max(...driverReadings.map(d => d.count), 1)) * 100
-                        )}%` 
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700 rounded-2xl shadow">
+                <Fuel className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
+                <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
+              </div>
+            )
           ) : (
-            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700 rounded-2xl shadow">
-              <FileBarChart className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
-            </div>
+            driverHodometroBomba.length > 0 ? (
+              <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+                {driverHodometroBomba.map((driver, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-black dark:text-gray-400">
+                        {driver.nome}
+                      </span>
+                      <span className="text-sm font-medium text-black dark:text-white">
+                        {driver.count} {driver.count === 1 ? 'leitura' : 'leituras'}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-white dark:bg-[#1F2937] rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-orange-500 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.max(
+                            5, 
+                            (driver.count / Math.max(...driverHodometroBomba.map(d => d.count), 1)) * 100
+                          )}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700 rounded-2xl shadow">
+                <FileBarChart className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
+                <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
+              </div>
+            )
           )}
         </div>
       </div>
@@ -1022,6 +1444,49 @@ const HodometrosDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Minutas por Filial - Only visible with minuta access */}
+      {moduleAccess.minuta && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-medium text-black dark:text-white mb-6 flex items-center gap-2">
+            <ClipboardList className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+            Minutas por Filial
+          </h3>
+          
+          {filialMinutas.length > 0 ? (
+            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+              {filialMinutas.map((item, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {item.filial}
+                    </span>
+                    <span className="text-sm font-medium text-black dark:text-white">
+                      {item.count} {item.count === 1 ? 'minuta' : 'minutas'}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Math.max(
+                          5, 
+                          (item.count / Math.max(...filialMinutas.map(m => m.count), 1)) * 100
+                        )}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700 rounded-2xl">
+              <ClipboardList className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
+              <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Inconsistencies Table */}
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
