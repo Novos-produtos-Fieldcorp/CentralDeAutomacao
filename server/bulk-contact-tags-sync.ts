@@ -256,7 +256,7 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
             const contactLabelsResponse = await fetch(`${wiseappApiUrl}/api/v1/accounts/${accountId}/contacts/${contact.id}/labels`, {
               method: 'GET',
               headers: {
-                'api_access_token': token,
+                'api_access_token': token || '',
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
               }

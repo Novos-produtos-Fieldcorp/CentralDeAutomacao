@@ -815,6 +815,9 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
           vaga={{
             ...selectedVaga,
             quantidade: selectedVaga.quantidade?.toString() || null,
+            created_at: new Date(selectedVaga.created_at),
+            updated_at: selectedVaga.updated_at ? new Date(selectedVaga.updated_at) : null,
+            dt_limite: selectedVaga.dt_limite ? new Date(selectedVaga.dt_limite) : null,
           } as Vaga}
           isOpen={isModalOpen}
           onClose={() => {
