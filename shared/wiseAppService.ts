@@ -5,6 +5,11 @@ export interface WiseAppContact {
   name: string;
   phone_number: string;
   email?: string;
+  inbox_id: number; // ✅ Campo obrigatório conforme documentação Chatwoot
+  blocked?: boolean;
+  avatar_url?: string;
+  identifier?: string;
+  additional_attributes?: object;
   custom_attributes?: {
     source: string;
     source_type: 'motorista' | 'agregado' | 'contratado';
@@ -112,12 +117,28 @@ export class WiseAppService {
    */
   async createContact(contactData: WiseAppContact): Promise<WiseAppContact | null> {
     try {
+      // Validação de campos obrigatórios
+      if (!contactData.inbox_id) {
+        throw new Error('inbox_id é obrigatório para criar contato');
+      }
+      if (!contactData.name || contactData.name.trim() === '') {
+        throw new Error('name é obrigatório para criar contato');
+      }
+      if (!contactData.phone_number || contactData.phone_number.trim() === '') {
+        throw new Error('phone_number é obrigatório para criar contato');
+      }
+
       const formattedPhone = this.formatPhoneNumber(contactData.phone_number);
       
       const payload = {
+        inbox_id: contactData.inbox_id,
         name: contactData.name,
         phone_number: formattedPhone,
         email: contactData.email,
+        blocked: contactData.blocked || false,
+        avatar_url: contactData.avatar_url,
+        identifier: contactData.identifier,
+        additional_attributes: contactData.additional_attributes,
         custom_attributes: {
           source: 'website_sync',
           ...contactData.custom_attributes
@@ -143,11 +164,20 @@ export class WiseAppService {
    */
   async updateContact(contactId: number, contactData: Partial<WiseAppContact>): Promise<WiseAppContact | null> {
     try {
+      // Validação básica
+      if (!contactId) {
+        throw new Error('contactId é obrigatório para atualizar contato');
+      }
+
       const payload: any = {};
       
       if (contactData.name) payload.name = contactData.name;
       if (contactData.phone_number) payload.phone_number = this.formatPhoneNumber(contactData.phone_number);
-      if (contactData.email) payload.email = contactData.email;
+      if (contactData.email !== undefined) payload.email = contactData.email;
+      if (contactData.blocked !== undefined) payload.blocked = contactData.blocked;
+      if (contactData.avatar_url) payload.avatar_url = contactData.avatar_url;
+      if (contactData.identifier) payload.identifier = contactData.identifier;
+      if (contactData.additional_attributes) payload.additional_attributes = contactData.additional_attributes;
       if (contactData.custom_attributes) {
         payload.custom_attributes = {
           ...contactData.custom_attributes,
@@ -158,7 +188,7 @@ export class WiseAppService {
       const response = await this.api.put(`/api/v1/accounts/${this.config.accountId}/contacts/${contactId}`, payload);
       
       if (response.data) {
-        console.log(`✓ Contato atualizado no WiseApp: ${contactData.name} (ID: ${contactId})`);
+        console.log(`✓ Contato atualizado no WiseApp: ${contactData.name || 'ID ' + contactId} (ID: ${contactId})`);
         return response.data;
       }
       
@@ -182,7 +212,7 @@ export class WiseAppService {
     company_id: number;
     cidade?: string;
     estado?: string;
-  }): Promise<{ success: boolean; contactId?: number; error?: string }> {
+  }, inboxId: number): Promise<{ success: boolean; contactId?: number; error?: string }> {
     try {
       if (!motorista.telefone) {
         throw new Error('Telefone é obrigatório para sincronização com WiseApp');
@@ -202,6 +232,7 @@ export class WiseAppService {
         name: motorista.nome,
         phone_number: formattedPhone,
         email: motorista.email,
+        inbox_id: inboxId,
         custom_attributes: {
           source: 'website_sync',
           source_type: motorista.funcao.toLowerCase() === 'agregado' ? 'agregado' : 
@@ -257,7 +288,7 @@ export class WiseAppService {
     company_id: number;
     cidade?: string;
     estado?: string;
-  }>): Promise<{
+  }>, inboxId: number): Promise<{
     totalProcessed: number;
     successful: number;
     failed: number;
@@ -272,7 +303,7 @@ export class WiseAppService {
 
     for (const motorista of motoristas) {
       try {
-        const syncResult = await this.syncMotorista(motorista);
+        const syncResult = await this.syncMotorista(motorista, inboxId);
         
         if (syncResult.success) {
           results.successful++;
