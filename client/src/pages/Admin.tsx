@@ -12,9 +12,11 @@ interface AccessControl {
   checklist_access: boolean;
   motorista_access: boolean;
   hodometro_acsess: boolean;
+  minuta_access: boolean;
   resumo_access: boolean;
   comprovante_access: boolean;
   tags_access: boolean | null;
+  bomba_gasolina_access: boolean;
   st_company: boolean;
 }
 
@@ -80,12 +82,19 @@ const Admin = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('company')
-        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, resumo_access, comprovante_access, tags_access, st_company')
+        .select('company_id, nome_company, cnpj, id_conta_wiseapp, checklist_access, motorista_access, hodometro_acsess, minuta_access, resumo_access, comprovante_access, tags_access, bomba_gasolina_access, st_company')
         .order('company_id', { ascending: true });
 
       if (error) throw error;
 
-      setAccessControls(data || []);
+      // Ensure minuta_access exists on each record for backwards compatibility
+      const normalized = (data || []).map((d: any) => ({
+        ...d,
+        minuta_access: d.hasOwnProperty('minuta_access') ? d.minuta_access : false
+      }));
+
+  setAccessControls(normalized);
+  console.log('[Admin] fetched access controls', normalized);
     } catch (error) {
       console.error('Error fetching access controls:', error);
       toast.error('Erro ao carregar controles de acesso');
@@ -108,26 +117,76 @@ const Admin = () => {
     }
 
     try {
-      // Update in Supabase immediately
-      const { error } = await supabase
-        .from('company')
-        .update({ [field]: newValue })
-        .eq('company_id', control.company_id);
+      // DEBUG: show what we're about to send
+  console.log('[Admin] updating company field', { company_id: control.company_id, field, newValue });
+
+      let updatedData = null;
+      let error = null;
+
+      if (field === 'minuta_access') {
+        // Use backend service route to bypass RLS for company updates
+        try {
+          const { createApiUrl } = await import('../lib/api-config-supabase');
+          const url = createApiUrl(`/admin/company/${control.company_id}/minuta`);
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: newValue })
+          });
+
+          // Read as text once, then try parse JSON from that text to avoid 'body stream already read'
+          const text = await resp.text();
+          let json: any = null;
+          try {
+            json = text ? JSON.parse(text) : null;
+          } catch (e) {
+            // not JSON, keep json as null
+            json = null;
+          }
+
+          if (!resp.ok) {
+            // Prefer backend json error message if available, otherwise raw text
+            const serverMessage = json?.error?.message || json?.error || text || `HTTP ${resp.status}`;
+            toast.error('Erro ao contatar backend: ' + serverMessage);
+            error = { message: serverMessage };
+          } else {
+            updatedData = json?.data ?? null;
+            error = json?.error ?? null;
+            console.log('[Admin] backend toggle minuta response', json ?? text);
+            if (json?.error) {
+              toast.error('Erro do backend: ' + (json.error.message || JSON.stringify(json.error)));
+            }
+          }
+        } catch (e) {
+          error = e;
+        }
+      } else {
+        // Update in Supabase immediately and return the updated row for inspection
+        const supRes = await supabase
+          .from('company')
+          .update({ [field]: newValue })
+          .eq('company_id', control.company_id)
+          .select();
+  updatedData = supRes.data;
+  error = supRes.error;
+  console.log('[Admin] supabase update response', { updatedData, error });
+      }
 
       if (error) {
         console.error(`Error updating ${field} for company ${control.company_id}:`, error);
-        toast.error(`Erro ao atualizar ${field}`);
+        toast.error(`Erro ao atualizar ${field}: ${error.message || String(error)}`);
         return;
       }
 
-      // Update local state only if Supabase update was successful
+      // Update local state if the update was successful
       const updatedControls = [...accessControls];
       updatedControls[index] = {
         ...updatedControls[index],
         [field]: newValue
       };
-      setAccessControls(updatedControls);
       
+      setAccessControls(updatedControls);
+      console.log(`[Admin] local state updated for ${field} to ${updatedControls[index][field]}`);
       toast.success('Configuração atualizada com sucesso');
     } catch (error) {
       console.error(`Error toggling ${field}:`, error);
@@ -141,13 +200,14 @@ const Admin = () => {
       let hasError = false;
 
       // Update each company record
-      for (const control of accessControls) {
+        for (const control of accessControls) {
         const { error } = await supabase
           .from('company')
           .update({
             checklist_access: control.checklist_access,
             motorista_access: control.motorista_access,
             hodometro_acsess: control.hodometro_acsess,
+            minuta_access: control.minuta_access,
             resumo_access: control.resumo_access,
             comprovante_access: control.comprovante_access,
             tags_access: control.tags_access
@@ -363,7 +423,13 @@ const Admin = () => {
                       Hodômetro
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Bomba
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Resumos em Grupo
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Minutas
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Comprovantes
@@ -423,9 +489,33 @@ const Admin = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <button
+                          onClick={() => handleToggleAccess(index, 'bomba_gasolina_access')}
+                          className={`p-2 rounded-full ${
+                            control.bomba_gasolina_access
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                          }`}
+                        >
+                          <CheckCircle size={20} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
                           onClick={() => handleToggleAccess(index, 'resumo_access')}
                           className={`p-2 rounded-full ${
                             control.resumo_access
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                          }`}
+                        >
+                          <CheckCircle size={20} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleToggleAccess(index, 'minuta_access')}
+                          className={`p-2 rounded-full ${
+                            control.minuta_access
                               ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                               : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                           }`}
@@ -470,7 +560,7 @@ const Admin = () => {
                   ))}
                   {accessControls.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <td colSpan={11} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                         Nenhuma conta configurada
                       </td>
                     </tr>

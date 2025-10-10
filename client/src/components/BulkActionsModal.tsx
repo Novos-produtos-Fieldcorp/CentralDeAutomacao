@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { searchWiseAppContact } from '../lib/directApiService';
-import { API_BASE_URL } from '@/lib/api-config';
+import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
 
 interface BulkActionsModalProps {
   isOpen: boolean;
@@ -122,21 +122,34 @@ const BulkActionsModal = ({
       let syncSuccessCount = 0;
       console.log(`DEBUG: Processando ${motoristaIds.length} motoristas:`, motoristaIds);
 
-      // Rate limiting inteligente + proteção contra conflitos
-      const shouldRateLimit = motoristaIds.length > 50 || accountId === '20';
-      const delayMs = shouldRateLimit ? 300 : 100; // Mais delay para evitar conflitos com operações individuais
+      // Processar em lotes menores para evitar timeout e problemas de URL longa
+      const batchSize = 25; // Reduzir tamanho do lote
+      const batches = [];
+      for (let i = 0; i < motoristaIds.length; i += batchSize) {
+        batches.push(motoristaIds.slice(i, i + batchSize));
+      }
 
-      console.log(`[BULK] Processing ${motoristaIds.length} motoristas with ${delayMs}ms delay (Account: ${accountId})`);
+      console.log(`[BULK] Processando ${batches.length} lotes de até ${batchSize} motoristas cada`);
 
-      for (let i = 0; i < motoristaIds.length; i++) {
-        const motoristaId = motoristaIds[i];
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        console.log(`[BULK] Processando lote ${batchIndex + 1}/${batches.length} com ${batch.length} motoristas`);
 
-        // Rate limiting: delay entre requisições para evitar 401
-        if (i > 0) {
-          await new Promise(resolve => setTimeout(resolve, delayMs));
+        // Rate limiting entre lotes
+        if (batchIndex > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 segundo entre lotes
         }
 
-        try {
+        // Processar motoristas do lote em paralelo (mas com delay entre cada um)
+        for (let i = 0; i < batch.length; i++) {
+          const motoristaId = batch[i];
+
+          // Rate limiting: delay entre requisições para evitar 401
+          if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, 200)); // 200ms entre requisições
+          }
+
+          try {
           console.log(`[BULK] Processando motorista ${motoristaId} (${i + 1}/${motoristaIds.length})`);
 
           // Buscar dados do motorista usando abordagem mais confiável (tabelas diretas primeiro)
@@ -263,18 +276,38 @@ const BulkActionsModal = ({
 
               if (contacts.length > 0) {
                 const contact = contacts[0];
-
-                // Aplicar tag ao contato usando rota backend direta (atômico, evita race condition)
-                console.log(`[BULK] Aplicando tag "${tagData.nome}" ao contato ${contact.id} (${motorista.nome_motorista})`);
                 
-                const tagResponse = await fetch(`${API_BASE_URL}/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                // Buscar labels existentes primeiro
+                const existingTagsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contact.id}/labels`), {
+                  method: 'GET',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'wiseapp-token': wiseAppToken,
+                    'wiseapp-account-id': accountId
+                  }
+                });
+
+                let existingTags: string[] = [];
+                if (existingTagsResponse.ok) {
+                  const existingTagsData = await existingTagsResponse.json();
+                  existingTags = existingTagsData.payload || [];
+                }
+
+                // Criar array com todas as tags (existentes + nova)
+                const allTags = [...existingTags];
+                if (!allTags.some(tag => tag.toLowerCase() === tagData.nome.toLowerCase())) {
+                  allTags.push(tagData.nome);
+                }
+
+                // Enviar array completo
+                const tagResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contact.id}/labels`), {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
                     'wiseapp-token': wiseAppToken,
                     'wiseapp-account-id': accountId
                   },
-                  body: JSON.stringify({ tagName: tagData.nome })
+                  body: JSON.stringify({ labels: allTags })
                 });
                 
                 if (!tagResponse.ok) {
@@ -296,8 +329,9 @@ const BulkActionsModal = ({
               console.error(`BULK DEBUG: Erro na busca do contato:`, searchError);
             }
           }
-        } catch (contactError) {
-          console.warn(`Erro ao processar motorista ${motoristaId}:`, contactError);
+          } catch (contactError) {
+            console.warn(`Erro ao processar motorista ${motoristaId}:`, contactError);
+          }
         }
       }
 

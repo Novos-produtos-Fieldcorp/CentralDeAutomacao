@@ -20,6 +20,7 @@ export function WiseAppSyncButton({
   const { 
     syncMotorista, 
     syncAllMotoristas, 
+    configureTestToken,
     isSyncing, 
     isBulkSyncing 
   } = useWiseAppSync();
@@ -180,6 +181,24 @@ export function WiseAppSyncButton({
         </span>
       )}
     </button>
+  );
+
+  // Botão temporário para configurar token de teste
+  const TestTokenButton = () => (
+    <button
+      onClick={configureTestToken}
+      className="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs"
+      title="Configurar token de teste"
+    >
+      🔧 Token
+    </button>
+  );
+
+  return (
+    <div className="flex items-center gap-2">
+      {button}
+      <TestTokenButton />
+    </div>
   );
 }
 

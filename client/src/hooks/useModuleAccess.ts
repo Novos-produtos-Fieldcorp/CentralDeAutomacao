@@ -7,11 +7,13 @@ interface ModuleAccess {
   checklist: boolean;
   motoristas: boolean;
   hodometros: boolean;
+  minuta: boolean;
   veiculos: boolean;
   clientes: boolean;
   resumos: boolean;
   tags: boolean;
   comprovantes: boolean;
+  bomba: boolean;
 }
 
 export const useModuleAccess = () => {
@@ -20,13 +22,14 @@ export const useModuleAccess = () => {
   const [moduleAccess, setModuleAccess] = useState<ModuleAccess>({
     checklist: true,
     motoristas: true,
-
     hodometros: true,
+    minuta: true,
     veiculos: true,
     clientes: true,
     resumos: true,
     tags: true,
     comprovantes: true,
+    bomba: false,
   });
 
   useEffect(() => {
@@ -43,7 +46,7 @@ export const useModuleAccess = () => {
         const { data: company, error: companyError } = await supabase
           .from("company")
           .select(
-            "checklist_access, motorista_access, hodometro_acsess, resumo_access, tags_access, comprovante_access",
+            "checklist_access, motorista_access, hodometro_acsess, minuta_access, resumo_access, tags_access, comprovante_access, bomba_gasolina_access",
           )
           .eq("company_id", companyId)
           .maybeSingle();
@@ -56,11 +59,13 @@ export const useModuleAccess = () => {
             motoristas: true,
         
             hodometros: true,
+            minuta: true,
             veiculos: true,
             clientes: true,
             resumos: true,
             tags: true,
             comprovantes: true,
+            bomba: false,
           });
           return;
         }
@@ -70,24 +75,27 @@ export const useModuleAccess = () => {
             checklist: company.checklist_access || false,
             motoristas: company.motorista_access || false,
             hodometros: company.hodometro_acsess || false, // Note the typo in the column name
+            minuta: company.minuta_access || false,
             veiculos: true, // Always enabled
             clientes: true, // Always enabled
             resumos: company.resumo_access || false,
             tags: company.tags_access || false,
             comprovantes: company.comprovante_access || false,
+            bomba: company.bomba_gasolina_access || false,
           });
         } else {
           // Default to all modules enabled if company data doesn't exist
           setModuleAccess({
             checklist: true,
             motoristas: true,
-        
             hodometros: true,
+            minuta: true,
             veiculos: true,
             clientes: true,
             resumos: true,
             tags: true,
             comprovantes: true,
+            bomba: false,
           });
         }
       } catch (error) {
@@ -102,11 +110,13 @@ export const useModuleAccess = () => {
           motoristas: true,
       
           hodometros: true,
+          minuta: true,
           veiculos: true,
           clientes: true,
           resumos: true,
           tags: true,
           comprovantes: true,
+          bomba: false,
         });
       } finally {
         setLoading(false);

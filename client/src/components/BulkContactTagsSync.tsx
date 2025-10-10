@@ -3,7 +3,7 @@ import { RefreshCw, Tag, Users, AlertCircle, CheckCircle, X, TrendingUp } from '
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useCompanyData } from '@/hooks/useCompanyData';
-import { API_BASE_URL } from '@/lib/api-config';
+import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
 import { queryClient } from '@/lib/queryClient';
 
 interface BulkSyncResult {
@@ -54,7 +54,7 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
       const poll = async () => {
         try {
           console.log(`[pollProgress] Checking status for job ${jobId}`);
-          const response = await fetch(`${API_BASE_URL}/wiseapp/bulk-sync-progress/${jobId}`);
+          const response = await fetch(createApiUrl(`wiseapp/bulk-sync-progress/${jobId}`));
           
           if (!response.ok) {
             console.error(`[pollProgress] Request failed: ${response.status}`);
@@ -119,10 +119,10 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
 
     try {
       setProgress('Verificando token WiseApp...');
-      console.log('[startBulkSync] Fazendo requisição para:', `${API_BASE_URL}/wiseapp/bulk-sync-contact-tags/${companyId}`);
+      console.log('[startBulkSync] Fazendo requisição para:', createApiUrl(`wiseapp/bulk-sync-contact-tags/${companyId}`));
       
       // Start the sync and get job ID for polling
-      const response = await fetch(`${API_BASE_URL}/wiseapp/bulk-sync-contact-tags/${companyId}`, {
+      const response = await fetch(createApiUrl(`wiseapp/bulk-sync-contact-tags/${companyId}`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,10 +151,8 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
         setJobId(result.jobId);
         setProgress('Sincronização iniciada. Aguardando progresso...');
         
-        // Start polling for progress - DON'T return here to avoid finally block
         const finalStatus = await pollProgress(result.jobId);
         
-        // Handle completion based on polling result
         if (finalStatus && finalStatus.status === 'completed' && finalStatus.result) {
           setSyncResult(finalStatus.result);
           if (finalStatus.result.success) {
@@ -165,11 +163,10 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
           }
         }
         
-        setIsSyncing(false); // Only set to false after polling completes
+        setIsSyncing(false);
         return;
       }
 
-      // Handle immediate result (fallback for non-progressive sync)
       const syncResult = result as BulkSyncResult;
       setSyncResult(syncResult);
       
@@ -177,8 +174,7 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
         const { summary } = syncResult;
         const successMessage = `Sincronização concluída! ${summary.successfulTags} tags sincronizadas, ${summary.newTagsCreated} novas tags criadas.`;
         toast.success(successMessage, { duration: 6000 });
-        
-        // Invalidar queries relacionadas para atualizar a UI
+
         await queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
         await queryClient.invalidateQueries({ queryKey: ['motoristas-tags'] });
         
@@ -190,8 +186,6 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
     } catch (error) {
       console.error('[startBulkSync] Erro na sincronização bulk:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      
-      // Mensagem mais clara para o usuário dependendo do tipo de erro
       let userMessage = errorMessage;
       if (errorMessage.includes('Token WiseApp não configurado')) {
         userMessage = 'Token WiseApp não encontrado. Clique em "Sincronizar Todos" na área de contatos primeiro!';

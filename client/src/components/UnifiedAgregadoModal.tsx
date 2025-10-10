@@ -1329,16 +1329,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         Adicione um novo ajudante para começar.
                       </p>
-                      <div className="mt-6">
-                        <button
-                          onClick={handleAddAjudante}
-                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          data-testid="button-add-ajudante-empty"
-                        >
-                          <Edit2 className="-ml-1 mr-2 h-5 w-5" />
-                          Adicionar Ajudante
-                        </button>
-                      </div>
                     </div>
                   )}
                 </div>

@@ -137,7 +137,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const apiKey = contextToken || (typeof localStorage !== 'undefined' ? localStorage?.getItem("wiseapp_token") : null);
 
   const api = axios.create({
-    baseURL: "/api",
+    baseURL: window.location.hostname.includes('netlify.app') 
+      ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
+      : '/api',
     headers: {
       api_access_token: apiKey,
       "Content-Type": "application/json",
@@ -320,14 +322,16 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         const apiKey = contextToken || (typeof localStorage !== 'undefined' ? localStorage?.getItem("wiseapp_token") : null);
         if (!accountId || !apiKey) return;
         const api = axios.create({
-          baseURL: "/api",
+          baseURL: window.location.hostname.includes('netlify.app') 
+            ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
+            : '/api',
           headers: {
             api_access_token: apiKey,
             "Content-Type": "application/json",
             Accept: "application/json",
           },
         });
-        const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
+        const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
         
         // Verificar se há erro de autenticação
         if (response.data?.error === "WiseApp authentication failed") {
@@ -401,7 +405,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const fetchInboxes = async (accountId: string, apiKey: string) => {
     try {
       const api = axios.create({
-        baseURL: "/api",
+        baseURL: window.location.hostname.includes('netlify.app') 
+          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
+          : '/api',
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",
@@ -409,7 +415,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         },
       });
 
-      const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
+      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
       if (response.data?.payload) {
         setInboxes(response.data.payload);
 
@@ -472,7 +478,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const loadContactInfo = async (contactId: number) => {
     try {
       const api = axios.create({
-        baseURL: "/api",
+        baseURL: window.location.hostname.includes('netlify.app') 
+          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
+          : '/api',
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",
@@ -512,7 +520,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const loadAllContactConversations = async (contactId: number) => {
     try {
       const api = axios.create({
-        baseURL: "/api",
+        baseURL: window.location.hostname.includes('netlify.app') 
+          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
+          : '/api',
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",
@@ -585,7 +595,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       }
 
       const api = axios.create({
-        baseURL: "/api",
+        baseURL: window.location.hostname.includes('netlify.app') 
+          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
+          : '/api',
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",
@@ -626,10 +638,17 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           const contactNameToUse =
             initialName || additionalInfo?.name || "Novo Contato";
           const contactEmail = initialEmail || additionalInfo?.email;
+          
+          // Validar se inbox_id está disponível
+          if (!selectedInboxId) {
+            throw new Error("Nenhuma inbox selecionada para criar o contato");
+          }
+          
           try {
             const newContactResponse = await api.post(
               `/api/v1/accounts/${accountId}/contacts`,
               {
+                inbox_id: selectedInboxId,
                 name: contactNameToUse,
                 phone_number: formattedNumber,
                 email: contactEmail,
@@ -769,7 +788,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   ) => {
     try {
       const api = axios.create({
-        baseURL: "/api",
+        baseURL: window.location.hostname.includes('netlify.app') 
+          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
+          : '/api',
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",

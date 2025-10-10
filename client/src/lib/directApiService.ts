@@ -1,6 +1,6 @@
 // Serviço para chamadas diretas sem backend Express
 import { supabase } from './supabase';
-import { API_BASE_URL } from './api-config';
+import { API_BASE_URL, createApiUrl } from './api-config-supabase';
 import { robustWiseAppFetch, clearCache } from './robustFetch';
 
 // Serviço para buscar empresa por account_id
@@ -221,7 +221,7 @@ export const wiseAppService = {
   async syncMotoristasBulkWithTags(companyId: number) {
     try {
       // Usar a rota backend que gerencia tudo
-      const response = await fetch('/api/sync-motoristas-bulk', {
+      const response = await fetch(createApiUrl('wiseapp/sync-motoristas-bulk'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -311,10 +311,10 @@ export const getWiseAppLabels = async (accountId: string, token: string, company
     }
   }
 
-  const primaryUrl = `${API_BASE_URL}/wiseapp/${finalCompanyId}/labels`;
+  const primaryUrl = createApiUrl(`wiseapp/${finalCompanyId}/labels`);
   const fallbackUrls = [
-    `${API_BASE_URL}/wiseapp/2/labels`, // Fallback para companyId 2
-    `${API_BASE_URL}/wiseapp/1/labels`  // Fallback para companyId 1
+    createApiUrl(`wiseapp/2/labels`), // Fallback para companyId 2
+    createApiUrl(`wiseapp/1/labels`)  // Fallback para companyId 1
   ].filter(url => url !== primaryUrl); // Remove duplicatas
   
   // Synchronizing tags with WiseApp
@@ -389,11 +389,11 @@ export const searchWiseAppContact = async (accountId: string, token: string, pho
     throw new Error('AccountId e token são obrigatórios para buscar contatos do WiseApp.');
   }
 
-  const primaryUrl = `${API_BASE_URL}/wiseapp/${companyId}/contacts/search?phone=${phone}`;
+  const primaryUrl = createApiUrl(`wiseapp/${companyId}/contacts/search?phone=${phone}`);
   const fallbackUrls = [
-    `${API_BASE_URL}/wiseapp/2/contacts/search?phone=${phone}`, // Fallback para companyId 2
-    `${API_BASE_URL}/wiseapp/1/contacts/search?phone=${phone}`  // Fallback para companyId 1
-  ].filter(url => url !== primaryUrl); // Remove duplicatas
+    createApiUrl(`wiseapp/2/contacts/search?phone=${phone}`),
+    createApiUrl(`wiseapp/1/contacts/search?phone=${phone}`)
+  ].filter(url => url !== primaryUrl);
   
   console.log(`Buscando contato por telefone ${phone} via backend para:`, primaryUrl);
   
@@ -401,7 +401,7 @@ export const searchWiseAppContact = async (accountId: string, token: string, pho
     return await robustWiseAppFetch(primaryUrl, {
       method: 'GET',
       cacheKey: `wiseapp-contact-${accountId}-${phone}`,
-      cacheTtl: 2 * 60 * 1000, // 2 minutos de cache para contatos
+      cacheTtl: 2 * 60 * 1000,
       fallbackUrls,
       onRetry: (attempt, error) => {
         console.log(`[WiseApp Contact] Tentativa ${attempt} falhou para telefone ${phone}: ${error.message}`);
@@ -440,7 +440,7 @@ export const applyWiseAppContactLabels = async (accountId: string, token: string
     throw new Error('AccountId, token e contactId são obrigatórios para aplicar labels.');
   }
 
-  const url = `${API_BASE_URL}/wiseapp/${companyId}/contacts/${contactId}/labels`;
+  const url = createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`);
   
   console.log(`Aplicando labels [${labelNames.join(', ')}] ao contato ${contactId}`);
   
@@ -457,11 +457,19 @@ export const applyWiseAppContactLabels = async (accountId: string, token: string
     
     const existingLabels: string[] = existingLabelsData?.payload || [];
     
-    // 2. Adicionar novas labels se não existirem
+    // 2. Adicionar novas labels se não existirem (case insensitive)
     const mergedLabels = [...existingLabels];
     for (const newLabel of labelNames) {
-      if (!mergedLabels.includes(newLabel)) {
+      // Verificar se a label já existe (case insensitive)
+      const labelExists = mergedLabels.some(existingLabel => 
+        existingLabel.toLowerCase() === newLabel.toLowerCase()
+      );
+      
+      if (!labelExists) {
         mergedLabels.push(newLabel);
+        console.log(`Adding new label "${newLabel}" to contact ${contactId}`);
+      } else {
+        console.log(`Label "${newLabel}" already exists for contact ${contactId}`);
       }
     }
     

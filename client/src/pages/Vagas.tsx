@@ -37,7 +37,10 @@ const Vagas: React.FC = () => {
       const companyId = companyData.company_id;
       
       // Then fetch dashboard data using company_id
-      const response = await fetch(`/api/vagas/dashboard/${companyId}`);
+      const apiBaseUrl = window.location.hostname.includes('netlify.app') 
+        ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
+        : '/api';
+      const response = await fetch(`${apiBaseUrl}/vagas/dashboard/${companyId}`);
       if (response.ok) {
         const data = await response.json();
         setDashboardData(data);

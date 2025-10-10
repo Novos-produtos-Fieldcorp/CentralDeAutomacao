@@ -4,7 +4,8 @@ import toast from 'react-hot-toast';
 // Removed direct API service - now using secure backend routes
 import { useAuth } from '@/context/AuthContext';
 import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
-import { createApiUrl } from '@/lib/api-config';
+import { createApiUrl, supabaseApiRequest } from '@/lib/api-config-supabase';
+import { supabase } from '@/lib/supabase';
 
 interface SyncResult {
   success: boolean;
@@ -16,8 +17,8 @@ interface BulkSyncResult {
   totalProcessed: number;
   successful: number;
   failed: number;
-  created: number;
-  photoUpdated: number;
+  tagsImportadas?: number;
+  tagsExportadas?: number;
   errors: Array<{ motorista_id: number; nome: string; error: string }>;
 }
 
@@ -25,6 +26,7 @@ interface WiseAppSyncHookReturn {
   syncMotorista: (motoristaId: number) => Promise<void>;
   syncAllMotoristas: () => Promise<void>;
   validateWiseAppConfig: () => Promise<void>;
+  configureTestToken: () => Promise<void>;
   isSyncing: boolean;
   isBulkSyncing: boolean;
   isValidating: boolean;
@@ -73,55 +75,56 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
-  // Bulk sync mutation using secure backend - EXATAMENTE IGUAL AO SINCRONIZAR TAGS (USANDO HEADERS)
-  const bulkSyncMutation = useMutation({
-    mutationFn: async () => {
-      if (!companyId) throw new Error('Company ID not found');
-      
-      // EXATAMENTE como o sincronizar tags - usar headers
-      if (!wiseAppToken) throw new Error('Configure um token WiseApp válido antes de sincronizar contatos');
-      if (!wiseAppCompanyId) throw new Error('Account ID WiseApp não encontrado');
-      
-      const response = await fetch(createApiUrl('wiseapp/sync-all-motoristas'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-token': wiseAppToken,          // EXATAMENTE como o sincronizar tags
-          'wiseapp-account-id': wiseAppCompanyId.toString()  // EXATAMENTE como o sincronizar tags
-        },
-        body: JSON.stringify({
-          companyId: companyId
-        })
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Bulk sync failed');
-      }
-      
-      return response.json();
-    },
+
+// Bulk sync mutation using Supabase Edge Function
+const bulkSyncMutation = useMutation({
+  mutationFn: async () => {
+    if (!companyId) throw new Error('Company ID not found');        
+    // Chamar Supabase Edge Function diretamente
+    const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    const requestUrl = `${supabaseUrl}/functions/v1/api/wiseapp/sync-all-motoristas`;
+    const body = { companyId: companyId };
+
+    const response = await fetch(requestUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Bulk sync failed');
+    }
+    
+    return response.json();
+  },
     onSuccess: (data) => {
-      const result = data.data as BulkSyncResult;
+      const result = data.data;
       
       // Calcular totais para notificação mais clara
-      const totalImportados = result.successful + result.created;
-      const totalNaoImportados = result.failed;
+      const totalProcessados = result.successful;
+      const totalNaoProcessados = result.failed;
+      const tagsImportadas = result.tagsImportadas || 0;
+      const tagsExportadas = result.tagsExportadas || 0;
       
-      // Notificação principal com foco em importados vs não importados
-      if (totalImportados > 0) {
-        let successMessage = `✅ ${totalImportados} contatos importados com sucesso!`;
+      // Notificação principal com foco em processados vs não processados
+      if (totalProcessados > 0) {
+        let successMessage = `✅ ${totalProcessados} contatos sincronizados com sucesso!`;
         
         // Detalhes adicionais se houver
         const detalhes = [];
-        if (result.created > 0) {
-          detalhes.push(`${result.created} novos contatos criados`);
+        if (tagsImportadas > 0) {
+          detalhes.push(`${tagsImportadas} tags importadas do WiseApp`);
         }
-        if (result.successful > 0) {
-          detalhes.push(`${result.successful} contatos já existentes sincronizados`);
-        }
-        if (result.photoUpdated > 0) {
-          detalhes.push(`${result.photoUpdated} fotos atualizadas`);
+        if (tagsExportadas > 0) {
+          detalhes.push(`${tagsExportadas} tags exportadas para o WiseApp`);
         }
         
         if (detalhes.length > 0) {
@@ -132,8 +135,8 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
       }
       
       // Notificação separada para falhas, se houver
-      if (totalNaoImportados > 0) {
-        toast.error(`❌ ${totalNaoImportados} contatos não foram importados`, { duration: 4000 });
+      if (totalNaoProcessados > 0) {
+        toast.error(`❌ ${totalNaoProcessados} contatos não foram processados`, { duration: 4000 });
       }
       
       // Se nenhum contato foi processado
@@ -145,7 +148,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
         console.warn('Erros na sincronização:', result.errors);
         
         // Check if all or most errors are due to WiseApp service being unavailable
-        const serviceUnavailableErrors = result.errors.filter(error => 
+        const serviceUnavailableErrors = result.errors.filter((error: { motorista_id: number; nome: string; error: string }) => 
           error.error.includes('temporariamente indisponível') ||
           error.error.includes('Erro interno do servidor WiseApp')
         );
@@ -158,7 +161,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
           );
         } else {
           // Show detailed errors for individual contact failures
-          result.errors.slice(0, 3).forEach(error => {
+          result.errors.slice(0, 3).forEach((error: { motorista_id: number; nome: string; error: string }) => {
             toast.error(`${error.nome}: ${error.error}`, { duration: 5000 });
           });
           
@@ -217,6 +220,59 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     }
   });
 
+  // Função para verificar token existente
+  const configureTestToken = async () => {
+    if (!companyId || !accountId) {
+      toast.error('Company ID ou Account ID não encontrado');
+      return;
+    }
+
+    try {
+      console.log('🔍 Verificando token WiseApp...', { companyId, accountId });
+      
+      // Verificar se já existe token configurado
+      const { data: existingToken, error: fetchError } = await supabase
+        .from('wiseapp_acesso')
+        .select('*')
+        .eq('company_id', companyId)
+        .limit(1);
+
+      if (fetchError) {
+        console.error('❌ Erro ao buscar token existente:', fetchError);
+        toast.error('Erro ao verificar token existente');
+        return;
+      }
+
+      console.log('📊 Resultado da busca:', { 
+        found: existingToken?.length || 0, 
+        data: existingToken 
+      });
+
+      if (existingToken && existingToken.length > 0) {
+        const token = existingToken[0];
+        console.log('✅ Token WiseApp encontrado:', {
+          email: token.email,
+          nome: token.nome,
+          has_token: !!token.access_token_wiseapp,
+          token_length: token.access_token_wiseapp?.length || 0,
+          token_preview: token.access_token_wiseapp?.substring(0, 10) + '...'
+        });
+        
+        if (token.access_token_wiseapp) {
+          toast.success(`✅ Token WiseApp configurado para ${token.email}`);
+        } else {
+          toast.error(`❌ Token vazio para ${token.email}. Configure o token.`);
+        }
+      } else {
+        console.log('❌ Nenhum token WiseApp encontrado para esta empresa');
+        toast.error('❌ Nenhum token WiseApp configurado. Use o sistema de autenticação para configurar.');
+      }
+    } catch (error) {
+      console.error('💥 Erro inesperado:', error);
+      toast.error('Erro ao verificar token');
+    }
+  };
+
   return {
     syncMotorista: async (motoristaId: number) => {
       await syncMotoristaMutation.mutateAsync(motoristaId);
@@ -227,6 +283,7 @@ export function useWiseAppSync(): WiseAppSyncHookReturn {
     validateWiseAppConfig: async () => {
       await validateConfigMutation.mutateAsync();
     },
+    configureTestToken,
     isSyncing: syncMotoristaMutation.isPending,
     isBulkSyncing: bulkSyncMutation.isPending,
     isValidating: validateConfigMutation.isPending,

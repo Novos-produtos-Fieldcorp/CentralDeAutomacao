@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { createApiUrl } from './api-config';
+import { createApiUrl } from './api-config-supabase';
 
 // Create a client
 export const queryClient = new QueryClient({
