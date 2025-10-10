@@ -2061,11 +2061,17 @@ const MotoristasLista = () => {
 
           {/* Botão Novo Motorista */}
           <button
-            onClick={() => setIsNovoMotoristaModalOpen(true)}
-            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
+            onClick={() => {
+              setIsNovoMotoristaModalOpen(true);
+              setSelectedMotorista(null);
+              setIsUnifiedModalOpen(true);
+            }}
+            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm
+            text-blue-600"
+            title="Adicionar motorista"
           >
             <Plus className="w-4 h-4" />
-            <span>Novo Motorista</span>
+            <span>Adicionar Motorista</span>
           </button>
         </div>
 
@@ -2443,7 +2449,7 @@ const MotoristasLista = () => {
                               setIsUnifiedModalOpen(true);
                             }}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                            title="Editar Motorista"
+                            title="Inspecionar motorista"
                           >
                             <FilePen size={18} />
                           </button>

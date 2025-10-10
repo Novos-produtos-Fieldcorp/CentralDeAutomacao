@@ -1942,8 +1942,6 @@ const Contratados = () => {
                         }`}
                       onContextMenu={(e) => handleContextMenu(e, motorista)}
                     >
-                      {/* No <thead> - primeira coluna do cabeçalho */}
-                      <th className="sticky left-0 z-20 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600"></th>
 
                       {/* No <tbody> - primeira coluna de cada linha */}
                       <td className="sticky left-0 z-10 px-6 py-4 whitespace-nowrap bg-white dark:bg-gray-800">
@@ -2114,7 +2112,7 @@ const Contratados = () => {
                                 }}
                                 title="Duplo clique para editar data"
                               >
-                                {new Date(motorista.integracao_data).toLocaleDateString('pt-BR')}
+                                {new Date(motorista.integracao_data + 'T00:00:00').toLocaleDateString('pt-BR')}
                               </span>
                             )
                           )}
@@ -2168,7 +2166,7 @@ const Contratados = () => {
                                 }}
                                 title="Duplo clique para editar data"
                               >
-                                {new Date(motorista.treinamento_data).toLocaleDateString('pt-BR')}
+                                {new Date(motorista.treinamento_data + 'T00:00:00').toLocaleDateString('pt-BR')}
                               </span>
                             )
                           )}

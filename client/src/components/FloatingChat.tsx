@@ -638,10 +638,17 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           const contactNameToUse =
             initialName || additionalInfo?.name || "Novo Contato";
           const contactEmail = initialEmail || additionalInfo?.email;
+          
+          // Validar se inbox_id está disponível
+          if (!selectedInboxId) {
+            throw new Error("Nenhuma inbox selecionada para criar o contato");
+          }
+          
           try {
             const newContactResponse = await api.post(
               `/api/v1/accounts/${accountId}/contacts`,
               {
+                inbox_id: selectedInboxId,
                 name: contactNameToUse,
                 phone_number: formattedNumber,
                 email: contactEmail,
