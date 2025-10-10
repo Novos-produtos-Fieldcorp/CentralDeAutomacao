@@ -488,8 +488,8 @@ const HodometroHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
         {stats.hodometroData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={stats.hodometroData}>
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'inherit' }} />
+              <YAxis tick={{ fontSize: 11, fontFamily: 'inherit' }} />
               <Tooltip content={<SimpleTooltip />} />
               <Line
                 type="monotone"
@@ -866,8 +866,8 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       <div className="h-32">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={stats.comprovantes.monthlyData}>
-            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} />
+            <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'inherit' }} />
+            <YAxis tick={{ fontSize: 11, fontFamily: 'inherit' }} />
             <Tooltip content={<SimpleTooltip />} />
             <Area
               type="monotone"
@@ -1060,8 +1060,8 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       <div className="h-32">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={stats.checklists.monthlyData}>
-            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} />
+            <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'inherit' }} />
+            <YAxis tick={{ fontSize: 11, fontFamily: 'inherit' }} />
             <Tooltip content={<ChecklistTooltip />} />
             <Bar
               dataKey="mensal"
@@ -1220,28 +1220,21 @@ const Dashboard: React.FC = () => {
         envioResumoSemanaResult,
         envioResumoMonthlyResult,
       ] = await Promise.all([
-        // Optimized count queries for motoristas - 3 categorias específicas
+        // Usar views otimizadas para contar motoristas, agregados e contratados
         supabase
-          .from("motorista")
+          .from("vw_agregados_completo")
           .select("motorista_id", { count: "exact", head: true })
-          .eq("company_id", companyId)
-          .eq("ativo", true)
-          .ilike("funcao", "%agregado%"),
+          .eq("company_id", companyId),
 
         supabase
-          .from("motorista")
+          .from("vw_motoristas_completo")
           .select("motorista_id", { count: "exact", head: true })
-          .eq("company_id", companyId)
-          .eq("ativo", true)
-          .ilike("funcao", "%motorista%"),
+          .eq("company_id", companyId),
 
-        // Contratados - buscar registros com funcao NULL (são os contratados)
         supabase
-          .from("motorista")
+          .from("vw_contratados_completo")
           .select("motorista_id", { count: "exact", head: true })
-          .eq("company_id", companyId)
-          .eq("ativo", true)
-          .is("funcao", null),
+          .eq("company_id", companyId),
 
         // Real hodometro data with correct fields - last 6 months
         supabase
@@ -1278,13 +1271,12 @@ const Dashboard: React.FC = () => {
           .order("cliente_id", { ascending: false })
           .limit(5),
 
-        // Motoristas contratados por cliente (status contratado) - só da company atual
+        // Motoristas contratados por cliente (ativo com cliente) - só da company atual
         supabase
           .from("motorista")
           .select("cliente_id")
           .eq("company_id", companyId)
           .eq("ativo", true)
-          .eq("st_cadastro", "contratado")
           .not("cliente_id", "is", null),
 
         supabase

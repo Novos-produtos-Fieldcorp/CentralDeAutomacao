@@ -244,7 +244,21 @@ const Navbar = ({ onToggle }: NavbarProps) => {
                             transition-all duration-500 relative cursor-not-allowed opacity-60
                             text-gray-400 dark:text-gray-600 select-none"
                 >
-                  <div className="flex items-center justify-center w-9 h-9">
+                  {/* Tooltip for locked items - only visible when sidebar is collapsed and hovering */}
+                  {!isExpanded && (
+                    <div className="fixed left-20 ml-1 px-3 py-1.5 bg-gray-600 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none whitespace-nowrap z-[9999] shadow-md" style={{ top: 'var(--tooltip-y, 50%)', transform: 'translateY(-50%)' }}>
+                      {item.label} (Bloqueado)
+                      <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-gray-600 rotate-45"></div>
+                    </div>
+                  )}
+                  
+                  <div 
+                    className="flex items-center justify-center w-9 h-9"
+                    onMouseEnter={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      document.documentElement.style.setProperty('--tooltip-y', `${rect.top + rect.height/2}px`);
+                    }}
+                  >
                     <item.icon className="w-5 h-5 text-gray-400 dark:text-gray-600" />
                   </div>
                   <div className={`overflow-hidden transition-all duration-500 ease-in-out flex-1 min-w-0
