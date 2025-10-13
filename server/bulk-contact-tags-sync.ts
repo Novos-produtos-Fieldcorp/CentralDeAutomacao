@@ -395,6 +395,60 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
           }
         }
 
+        // 7. Buscar TODAS as labels do WiseApp para comparar com as tags do banco
+        console.log("Fetching all labels from WiseApp to sync...");
+        const labelsResponse = await fetch(`${wiseappApiUrl}/api/v1/accounts/${accountId}/labels`, {
+          method: 'GET',
+          headers: {
+            'api_access_token': token || '',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+
+        let removedTags = 0;
+        if (labelsResponse.ok) {
+          const labelsData = await labelsResponse.json();
+          const allWiseAppLabels = labelsData.payload || labelsData || [];
+          
+          // Criar Set com os nomes de todas as labels do WiseApp
+          const wiseAppLabelNames = new Set(
+            allWiseAppLabels.map((label: any) => (label.title || label.name || '').toLowerCase())
+          );
+
+          console.log(`Found ${wiseAppLabelNames.size} labels in WiseApp`);
+          console.log(`Found ${existingTags.length} tags in local database`);
+
+          // 8. Remover tags do banco que não existem no WiseApp
+          for (const localTag of existingTags) {
+            const tagNameLower = localTag.nome.toLowerCase();
+            
+            if (!wiseAppLabelNames.has(tagNameLower)) {
+              console.log(`Removing orphaned tag from database: ${localTag.nome} (ID: ${localTag.id})`);
+              
+              // Primeiro remover associações
+              await supabaseBackend
+                .from('associacao_tags')
+                .delete()
+                .eq('tag_id', localTag.id);
+
+              // Depois remover a tag
+              const { error: deleteError } = await supabaseBackend
+                .from('tag')
+                .delete()
+                .eq('id', localTag.id);
+
+              if (!deleteError) {
+                removedTags++;
+              } else {
+                console.error(`Error removing orphaned tag ${localTag.nome}:`, deleteError);
+              }
+            }
+          }
+
+          console.log(`Removed ${removedTags} orphaned tags from database`);
+        }
+
         const result: BulkSyncResult = {
           success: true,
           summary: {
@@ -410,6 +464,9 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
         };
 
         console.log("Bulk sync completed:", result.summary);
+        if (removedTags > 0) {
+          console.log(`Additional cleanup: ${removedTags} orphaned tags removed`);
+        }
         
         // Complete job if tracking
         if (jobId && jobTracker) {

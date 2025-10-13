@@ -218,7 +218,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     }
 
     const labelData = {
-      name: tag.nome,
+      title: tag.nome,
       color: tag.cor,
       description: tag.nome
     };
