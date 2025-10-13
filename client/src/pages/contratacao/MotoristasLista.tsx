@@ -27,7 +27,7 @@ import { TableDropdown } from '../../components/TableDropdown';
 import BulkContactTagsSync from '../../components/BulkContactTagsSync';
 import { useAuth } from '../../context/AuthContext';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
-import { useWiseAppSync } from '../../hooks/useWiseAppSync';
+import { useWiseAppContactsSync } from '../../hooks/useWiseAppContactsSync';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
 import FilterTags from '../../components/FilterTags';
@@ -146,7 +146,7 @@ export interface ViewMotorista extends Omit<ViewMotoristaBase, 'nome_motorista'>
 const MotoristasLista = () => {
   const { companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const { syncAllMotoristas, isBulkSyncing } = useWiseAppSync();
+  const { syncAllMotoristas, isBulkSyncing } = useWiseAppContactsSync();
   const [motoristas, setMotoristas] = useState<ViewMotorista[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
