@@ -1036,8 +1036,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ error: "nome e company_id são obrigatórios" });
       }
 
+      // 1. Criar tag localmente
       const tag = await storage.createTag({ nome, cor, company_id });
-      res.status(201).json(tag);
+      
+      // 2. Criar tag no WiseApp automaticamente
+      const { createTagInWiseApp } = await import('./bulk-contact-tags-sync');
+      const wiseappResult = await createTagInWiseApp(company_id, nome, cor || '#3B82F6');
+      
+      if (wiseappResult.success) {
+        console.log(`[POST /api/tags] Tag criada localmente e no WiseApp: ${nome}`);
+      } else {
+        console.error(`[POST /api/tags] ERRO: Tag criada localmente, mas falhou no WiseApp: ${wiseappResult.error}`);
+      }
+      
+      res.status(201).json({
+        ...tag,
+        wiseapp_sync: wiseappResult.success,
+        wiseapp_label_id: wiseappResult.labelId
+      });
     } catch (error) {
       console.error("Erro ao criar tag:", error);
       res.status(500).json({
