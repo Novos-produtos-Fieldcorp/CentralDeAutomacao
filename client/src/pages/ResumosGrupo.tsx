@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube, Info } from 'lucide-react';
+import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube, Info, Inbox } from 'lucide-react';
 import webhookImage from '@assets/WhatsApp Image 2025-08-27 at 09.23.59_1756297551444.jpeg';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
+import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -11,6 +12,7 @@ import { ptBR } from 'date-fns/locale';
 import TimeDebugModal from '../components/TimeDebugModal';
 import { convertBrasiliaToUTC, convertUTCToBrasilia } from '../utils/time';
 import Pagination from '../components/Pagination';
+import axios from 'axios';
 
 interface GrupoResumo {
   id: number;
@@ -41,6 +43,7 @@ const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
 const ResumosGrupo = () => {
   const { query, companyId } = useCompanyData();
   const { accountId } = useAuth();
+  const { token: wiseAppToken } = useWiseAppAccess();
   const [loading, setLoading] = useState(true);
   const [grupos, setGrupos] = useState<GrupoResumo[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -71,6 +74,8 @@ const ResumosGrupo = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [paginatedEnvios, setPaginatedEnvios] = useState<EnvioResumo[]>([]);
+  const [availableInboxes, setAvailableInboxes] = useState<any[]>([]);
+  const [loadingInboxes, setLoadingInboxes] = useState(false);
 
   useEffect(() => {
     fetchGrupos();
@@ -119,6 +124,13 @@ const ResumosGrupo = () => {
     const endIndex = startIndex + pageSize;
     setPaginatedEnvios(filteredEnvios.slice(startIndex, endIndex));
   }, [filteredEnvios, currentPage, pageSize]);
+
+  useEffect(() => {
+    // Fetch inboxes when add or edit modal opens
+    if (isAddModalOpen || isEditModalOpen) {
+      fetchInboxes();
+    }
+  }, [isAddModalOpen, isEditModalOpen]);
 
   const fetchGrupos = async () => {
     try {
@@ -205,6 +217,50 @@ const ResumosGrupo = () => {
       toast.error('Erro ao carregar histórico de envios');
     } finally {
       setLoadingAllEnvios(false);
+    }
+  };
+
+  const fetchInboxes = async () => {
+    try {
+      setLoadingInboxes(true);
+      
+      if (!accountId || !wiseAppToken) {
+        toast.error('Autenticação WiseApp não encontrada');
+        return;
+      }
+
+      const api = axios.create({
+        baseURL: window.location.hostname.includes('netlify.app') 
+          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
+          : '/api',
+        headers: {
+          api_access_token: wiseAppToken,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+
+      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
+      
+      if (response.data?.error === "WiseApp authentication failed") {
+        toast.error('Falha na autenticação WiseApp');
+        setAvailableInboxes([]);
+        return;
+      }
+      
+      const inboxesData = response.data?.payload || response.data?.inboxes || response.data;
+      if (inboxesData && Array.isArray(inboxesData) && inboxesData.length > 0) {
+        setAvailableInboxes(inboxesData);
+      } else {
+        setAvailableInboxes([]);
+        toast.error('Nenhuma caixa de entrada encontrada');
+      }
+    } catch (error) {
+      console.error('Error fetching inboxes:', error);
+      toast.error('Erro ao carregar caixas de entrada');
+      setAvailableInboxes([]);
+    } finally {
+      setLoadingInboxes(false);
     }
   };
 
@@ -1162,24 +1218,40 @@ const ResumosGrupo = () => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    URL da Caixa de Entrada *
+                    Caixa de Entrada *
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsHelpModalOpen(true)}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
-                  >
-                    Onde encontro a URL?
-                  </button>
+                  {loadingInboxes && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Carregando...
+                    </span>
+                  )}
                 </div>
-                <input
-                  type="url"
-                  value={formData.url_grupo}
-                  onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="https://chat.whatsapp.com/..."
-                  required
-                />
+                {loadingInboxes ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  </div>
+                ) : availableInboxes.length > 0 ? (
+                  <select
+                    value={formData.url_grupo}
+                    onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    required
+                    data-testid="select-inbox"
+                  >
+                    <option value="">Selecione uma caixa de entrada</option>
+                    {availableInboxes.map((inbox) => (
+                      <option key={inbox.id} value={inbox.webhook_url}>
+                        {inbox.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="w-full px-3 py-2 border border-red-300 dark:border-red-600 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                    <Inbox className="w-4 h-4" />
+                    Nenhuma caixa de entrada disponível
+                  </div>
+                )}
               </div>
               
               <div>
@@ -1293,24 +1365,40 @@ const ResumosGrupo = () => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    URL da Caixa de Entrada *
+                    Caixa de Entrada *
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsHelpModalOpen(true)}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
-                  >
-                    Onde encontro a URL?
-                  </button>
+                  {loadingInboxes && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Carregando...
+                    </span>
+                  )}
                 </div>
-                <input
-                  type="url"
-                  value={formData.url_grupo}
-                  onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="https://chat.whatsapp.com/..."
-                  required
-                />
+                {loadingInboxes ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  </div>
+                ) : availableInboxes.length > 0 ? (
+                  <select
+                    value={formData.url_grupo}
+                    onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    required
+                    data-testid="select-inbox"
+                  >
+                    <option value="">Selecione uma caixa de entrada</option>
+                    {availableInboxes.map((inbox) => (
+                      <option key={inbox.id} value={inbox.webhook_url}>
+                        {inbox.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="w-full px-3 py-2 border border-red-300 dark:border-red-600 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                    <Inbox className="w-4 h-4" />
+                    Nenhuma caixa de entrada disponível
+                  </div>
+                )}
               </div>
               
               <div>
