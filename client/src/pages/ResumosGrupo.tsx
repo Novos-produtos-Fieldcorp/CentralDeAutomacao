@@ -290,12 +290,28 @@ const ResumosGrupo = () => {
       // Find the selected inbox to get its full data
       const selectedInbox = availableInboxes.find(inbox => inbox.id?.toString() === formData.url_grupo);
       
+      // Get attendant ID - if not in context, fetch from database
+      let finalAttendantId = attendantId;
+      if (!finalAttendantId && companyId) {
+        const { data: atendenteData } = await supabase
+          .from('wiseapp_acesso')
+          .select('wiseapp_acesso_id')
+          .eq('company_id', companyId)
+          .maybeSingle();
+        
+        if (atendenteData) {
+          finalAttendantId = atendenteData.wiseapp_acesso_id;
+          console.log('🔍 Attendant ID buscado do banco:', finalAttendantId);
+        }
+      }
+      
       console.log('🔍 DEBUG - Salvando grupo resumo:');
       console.log('  - formData.url_grupo (ID selecionado):', formData.url_grupo);
       console.log('  - availableInboxes:', availableInboxes);
       console.log('  - selectedInbox encontrado:', selectedInbox);
       console.log('  - inbox_id a ser salvo:', selectedInbox?.id?.toString() || null);
-      console.log('  - atendente_id a ser salvo:', attendantId || null);
+      console.log('  - atendente_id (contexto):', attendantId || null);
+      console.log('  - atendente_id (final):', finalAttendantId || null);
       
       const { data, error } = await supabase
         .from('grupo_resumo')
@@ -304,7 +320,7 @@ const ResumosGrupo = () => {
           horario: utcHorario, // Store UTC time in the database
           company_id: companyId,
           inbox_id: selectedInbox?.id?.toString() || null,
-          atendente_id: attendantId || null
+          atendente_id: finalAttendantId || null
         })
         .select()
         .single();
@@ -357,6 +373,20 @@ const ResumosGrupo = () => {
       // Find the selected inbox to get its full data
       const selectedInbox = availableInboxes.find(inbox => inbox.id?.toString() === formData.url_grupo);
       
+      // Get attendant ID - if not in context, fetch from database
+      let finalAttendantId = attendantId;
+      if (!finalAttendantId && companyId) {
+        const { data: atendenteData } = await supabase
+          .from('wiseapp_acesso')
+          .select('wiseapp_acesso_id')
+          .eq('company_id', companyId)
+          .maybeSingle();
+        
+        if (atendenteData) {
+          finalAttendantId = atendenteData.wiseapp_acesso_id;
+        }
+      }
+      
       const { error } = await supabase
         .from('grupo_resumo')
         .update({
@@ -366,7 +396,7 @@ const ResumosGrupo = () => {
           icon_name: formData.icon_name,
           color_name: formData.color_name,
           inbox_id: selectedInbox?.id?.toString() || null,
-          atendente_id: attendantId || null
+          atendente_id: finalAttendantId || null
         })
         .eq('id', selectedGrupo.id);
 
@@ -382,7 +412,7 @@ const ResumosGrupo = () => {
               icon_name: formData.icon_name,
               color_name: formData.color_name,
               inbox_id: selectedInbox?.id?.toString() || null,
-              atendente_id: attendantId || null
+              atendente_id: finalAttendantId || null
             } 
           : grupo
       ));
