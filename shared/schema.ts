@@ -651,7 +651,7 @@ export const wiseapp_acesso = pgTable("wiseapp_acesso", {
 export const grupo_resumo = pgTable("grupo_resumo", {
   id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
   nome_grupo: text("nome_grupo").notNull(),
-  url_grupo: text("url_grupo").notNull(),
+  nome_inbox: text("nome_inbox").notNull(),
   horario: text("horario").notNull(),
   ativo: boolean("ativo").notNull().default(true),
   company_id: integer("company_id").notNull().references(() => company.company_id, { onDelete: 'cascade' }),

@@ -17,7 +17,7 @@ import axios from 'axios';
 interface GrupoResumo {
   id: number;
   nome_grupo: string;
-  url_grupo: string;
+  nome_inbox: string;
   horario: string;
   ativo: boolean;
   company_id: number;
@@ -56,7 +56,7 @@ const ResumosGrupo = () => {
   const [selectedGrupo, setSelectedGrupo] = useState<GrupoResumo | null>(null);
   const [formData, setFormData] = useState({
     nome_grupo: '',
-    url_grupo: '',
+    nome_inbox: '',
     horario: '08:00',
     ativo: true,
     icon_name: 'MessagesSquare',
@@ -273,7 +273,7 @@ const ResumosGrupo = () => {
       return;
     }
     
-    if (!formData.url_grupo.trim()) {
+    if (!formData.nome_inbox.trim()) {
       toast.error('Caixa de entrada é obrigatória');
       return;
     }
@@ -288,7 +288,7 @@ const ResumosGrupo = () => {
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
       // Find the selected inbox to get its full data
-      const selectedInbox = availableInboxes.find(inbox => inbox.id?.toString() === formData.url_grupo);
+      const selectedInbox = availableInboxes.find(inbox => inbox.id?.toString() === formData.nome_inbox);
       
       // Get attendant ID - if not in context, fetch from database
       let finalAttendantId = attendantId;
@@ -306,9 +306,9 @@ const ResumosGrupo = () => {
       }
       
       console.log('🔍 DEBUG - Salvando grupo resumo:');
-      console.log('  - formData.url_grupo (ID selecionado):', formData.url_grupo);
+      console.log('  - formData.nome_inbox (ID selecionado):', formData.nome_inbox);
       console.log('  - selectedInbox encontrado:', selectedInbox);
-      console.log('  - url_grupo a ser salvo (nome):', selectedInbox?.name || formData.url_grupo);
+      console.log('  - nome_inbox a ser salvo (nome):', selectedInbox?.name || formData.nome_inbox);
       console.log('  - inbox_id a ser salvo:', selectedInbox?.id?.toString() || null);
       console.log('  - atendente_id (contexto):', attendantId || null);
       console.log('  - atendente_id (final):', finalAttendantId || null);
@@ -317,7 +317,7 @@ const ResumosGrupo = () => {
         .from('grupo_resumo')
         .insert({
           nome_grupo: formData.nome_grupo,
-          url_grupo: selectedInbox?.name || formData.url_grupo, // Save inbox name
+          nome_inbox: selectedInbox?.name || formData.nome_inbox, // Save inbox name
           horario: utcHorario, // Store UTC time in the database
           ativo: formData.ativo,
           icon_name: formData.icon_name,
@@ -360,7 +360,7 @@ const ResumosGrupo = () => {
       return;
     }
     
-    if (!formData.url_grupo.trim()) {
+    if (!formData.nome_inbox.trim()) {
       toast.error('Caixa de entrada é obrigatória');
       return;
     }
@@ -375,7 +375,7 @@ const ResumosGrupo = () => {
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
       // Find the selected inbox to get its full data
-      const selectedInbox = availableInboxes.find(inbox => inbox.id?.toString() === formData.url_grupo);
+      const selectedInbox = availableInboxes.find(inbox => inbox.id?.toString() === formData.nome_inbox);
       
       // Get attendant ID - if not in context, fetch from database
       let finalAttendantId = attendantId;
@@ -395,7 +395,7 @@ const ResumosGrupo = () => {
         .from('grupo_resumo')
         .update({
           nome_grupo: formData.nome_grupo,
-          url_grupo: selectedInbox?.name || formData.url_grupo, // Save inbox name
+          nome_inbox: selectedInbox?.name || formData.nome_inbox, // Save inbox name
           horario: utcHorario, // Store UTC time in the database
           icon_name: formData.icon_name,
           color_name: formData.color_name,
@@ -411,7 +411,7 @@ const ResumosGrupo = () => {
           ? { 
               ...grupo, 
               nome_grupo: formData.nome_grupo,
-              url_grupo: selectedInbox?.name || formData.url_grupo, // Show inbox name
+              nome_inbox: selectedInbox?.name || formData.nome_inbox, // Show inbox name
               horario: formData.horario, // Keep Brasilia time for display
               icon_name: formData.icon_name,
               color_name: formData.color_name,
@@ -545,7 +545,7 @@ const ResumosGrupo = () => {
   const resetForm = () => {
     setFormData({
       nome_grupo: '',
-      url_grupo: '',
+      nome_inbox: '',
       horario: '08:00',
       ativo: true,
       icon_name: 'MessagesSquare',
@@ -960,11 +960,18 @@ const ResumosGrupo = () => {
                         </div>
                         
                         <div className="flex items-center gap-2 mb-4">
-                          <Link2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                          <Inbox className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                           <span 
                             className="text-sm text-gray-600 dark:text-gray-400 truncate"
                           >
-                            {grupo.url_grupo}
+                            {(() => {
+                              // If nome_inbox looks like a number (old data), try to find inbox name by inbox_id
+                              if (grupo.nome_inbox && /^\d+$/.test(grupo.nome_inbox) && grupo.inbox_id) {
+                                const inbox = availableInboxes.find(i => i.id?.toString() === grupo.inbox_id);
+                                return inbox?.name || grupo.nome_inbox;
+                              }
+                              return grupo.nome_inbox;
+                            })()}
                           </span>
                         </div>
                         
@@ -975,7 +982,7 @@ const ResumosGrupo = () => {
                                 setSelectedGrupo(grupo);
                                 setFormData({
                                   nome_grupo: grupo.nome_grupo,
-                                  url_grupo: grupo.inbox_id || grupo.url_grupo, // Use inbox_id for dropdown
+                                  nome_inbox: grupo.inbox_id || grupo.nome_inbox, // Use inbox_id for dropdown
                                   horario: grupo.horario,
                                   ativo: grupo.ativo,
                                   icon_name: grupo.icon_name || 'MessagesSquare',
@@ -1292,8 +1299,8 @@ const ResumosGrupo = () => {
                   </div>
                 ) : availableInboxes.length > 0 ? (
                   <select
-                    value={formData.url_grupo}
-                    onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
+                    value={formData.nome_inbox}
+                    onChange={(e) => setFormData({ ...formData, nome_inbox: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     required
                     data-testid="select-inbox"
@@ -1439,8 +1446,8 @@ const ResumosGrupo = () => {
                   </div>
                 ) : availableInboxes.length > 0 ? (
                   <select
-                    value={formData.url_grupo}
-                    onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
+                    value={formData.nome_inbox}
+                    onChange={(e) => setFormData({ ...formData, nome_inbox: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     required
                     data-testid="select-inbox"
