@@ -741,7 +741,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(true);
 
   // Query para buscar tags da empresa
   const { data: tags = [], isLoading: tagsLoading } = useQuery<any[]>({
@@ -1969,10 +1969,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-4">
-          {/* Compact header with search and add button */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+
+      <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 p-6 rounded-xl shadow-lg border border-gray-200/70 dark:border-gray-700/70 backdrop-blur-sm">
             {/* Search bar */}
             <div className="relative flex-1">
               <input
@@ -1992,45 +1990,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 </button>
               )}
             </div>
-
-            {/* Filter toggle and add button */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`inline-flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg border transition-colors ${showAdvancedFilters || hasActiveFilters()
-                    ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-300'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
-                  }`}
-              >
-                <Filter size={16} />
-                Filtros
-                {hasActiveFilters() && (
-                  <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                    {getActiveFiltersCount()}
-                  </span>
-                )}
-                <ChevronDown className={`h-4 w-4 transition-transform ${showAdvancedFilters ? 'transform rotate-180' : ''}`} />
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowAddModal(true);
-                  setSelectedMotorista(null);
-                  setIsUnifiedModalOpen(true);
-                }}
-                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm
-                text-blue-600"
-                title="Adicionar agregado"
-              >
-                <Plus size={18} />
-                <span>Adicionar Agregado</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Advanced filters - collapsible */}
-          {showAdvancedFilters && (
-            <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="p-4">
+          {/* Compact header with search and add button */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">        
               {/* Filter Tags - Filtros aplicados como tags removíveis */}
               <FilterTags
                 statusFilter={statusFilter}
@@ -2076,7 +2038,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 cidades={cidades}
                 tiposVeiculo={tiposVeiculo}
               />
-
               {/* Filtros modernos */}
               <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
                 <div className="flex flex-wrap gap-2">
@@ -2553,6 +2514,28 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
                 </div>
 
+            {/* Filter toggle and add button */}
+            <div className="flex gap-2">
+
+
+              <button
+                onClick={() => {
+                  setShowAddModal(true);
+                  setSelectedMotorista(null);
+                  setIsUnifiedModalOpen(true);
+                }}
+                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm
+                text-blue-600"
+                title="Adicionar agregado"
+              >
+                <Plus size={18} />
+                <span>Adicionar Agregado</span>
+              </button>
+            </div>
+          </div>
+          </div>
+
+
                 {dateFilter === 'custom' && (
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -2579,11 +2562,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     </div>
                   </div>
                 )}
-              </div>
+              
             </div>
-          )}
-        </div>
+          
       </div>
+
+
+
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
           <div className="overflow-visible">
