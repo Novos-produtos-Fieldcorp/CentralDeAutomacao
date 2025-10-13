@@ -287,13 +287,13 @@ const ResumosGrupo = () => {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
-      // Find the selected inbox to get its ID
-      const selectedInbox = availableInboxes.find(inbox => inbox.webhook_url === formData.url_grupo);
+      // Find the selected inbox to get its full data
+      const selectedInbox = availableInboxes.find(inbox => inbox.id?.toString() === formData.url_grupo);
       
       console.log('🔍 DEBUG - Salvando grupo resumo:');
-      console.log('  - formData.url_grupo:', formData.url_grupo);
+      console.log('  - formData.url_grupo (ID selecionado):', formData.url_grupo);
       console.log('  - availableInboxes:', availableInboxes);
-      console.log('  - selectedInbox:', selectedInbox);
+      console.log('  - selectedInbox encontrado:', selectedInbox);
       console.log('  - inbox_id a ser salvo:', selectedInbox?.id?.toString() || null);
       console.log('  - atendente_id a ser salvo:', attendantId || null);
       
@@ -354,8 +354,8 @@ const ResumosGrupo = () => {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
-      // Find the selected inbox to get its ID
-      const selectedInbox = availableInboxes.find(inbox => inbox.webhook_url === formData.url_grupo);
+      // Find the selected inbox to get its full data
+      const selectedInbox = availableInboxes.find(inbox => inbox.id?.toString() === formData.url_grupo);
       
       const { error } = await supabase
         .from('grupo_resumo')
@@ -1266,7 +1266,7 @@ const ResumosGrupo = () => {
                   >
                     <option value="">Selecione uma caixa de entrada</option>
                     {availableInboxes.map((inbox) => (
-                      <option key={inbox.id} value={inbox.webhook_url}>
+                      <option key={inbox.id} value={inbox.id?.toString()}>
                         {inbox.name}
                       </option>
                     ))}
@@ -1413,7 +1413,7 @@ const ResumosGrupo = () => {
                   >
                     <option value="">Selecione uma caixa de entrada</option>
                     {availableInboxes.map((inbox) => (
-                      <option key={inbox.id} value={inbox.webhook_url}>
+                      <option key={inbox.id} value={inbox.id?.toString()}>
                         {inbox.name}
                       </option>
                     ))}
