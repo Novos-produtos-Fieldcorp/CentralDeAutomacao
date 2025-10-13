@@ -23,6 +23,8 @@ interface GrupoResumo {
   company_id: number;
   icon_name?: string;
   color_name?: string;
+  inbox_id?: string | null;
+  atendente_id?: number | null;
 }
 
 interface EnvioResumo {
@@ -43,7 +45,7 @@ const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
 const ResumosGrupo = () => {
   const { query, companyId } = useCompanyData();
   const { accountId } = useAuth();
-  const { token: wiseAppToken } = useWiseAppAccess();
+  const { token: wiseAppToken, attendantId } = useWiseAppAccess();
   const [loading, setLoading] = useState(true);
   const [grupos, setGrupos] = useState<GrupoResumo[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -272,7 +274,7 @@ const ResumosGrupo = () => {
     }
     
     if (!formData.url_grupo.trim()) {
-      toast.error('URL do grupo é obrigatória');
+      toast.error('Caixa de entrada é obrigatória');
       return;
     }
     
@@ -285,12 +287,17 @@ const ResumosGrupo = () => {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
+      // Find the selected inbox to get its ID
+      const selectedInbox = availableInboxes.find(inbox => inbox.webhook_url === formData.url_grupo);
+      
       const { data, error } = await supabase
         .from('grupo_resumo')
         .insert({
           ...formData,
           horario: utcHorario, // Store UTC time in the database
-          company_id: companyId
+          company_id: companyId,
+          inbox_id: selectedInbox?.id?.toString() || null,
+          atendente_id: attendantId || null
         })
         .select()
         .single();
@@ -323,7 +330,7 @@ const ResumosGrupo = () => {
     }
     
     if (!formData.url_grupo.trim()) {
-      toast.error('URL do grupo é obrigatória');
+      toast.error('Caixa de entrada é obrigatória');
       return;
     }
     
@@ -336,6 +343,9 @@ const ResumosGrupo = () => {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
+      // Find the selected inbox to get its ID
+      const selectedInbox = availableInboxes.find(inbox => inbox.webhook_url === formData.url_grupo);
+      
       const { error } = await supabase
         .from('grupo_resumo')
         .update({
@@ -343,7 +353,9 @@ const ResumosGrupo = () => {
           url_grupo: formData.url_grupo,
           horario: utcHorario, // Store UTC time in the database
           icon_name: formData.icon_name,
-          color_name: formData.color_name
+          color_name: formData.color_name,
+          inbox_id: selectedInbox?.id?.toString() || null,
+          atendente_id: attendantId || null
         })
         .eq('id', selectedGrupo.id);
 
@@ -357,7 +369,9 @@ const ResumosGrupo = () => {
               url_grupo: formData.url_grupo,
               horario: formData.horario, // Keep Brasilia time for display
               icon_name: formData.icon_name,
-              color_name: formData.color_name
+              color_name: formData.color_name,
+              inbox_id: selectedInbox?.id?.toString() || null,
+              atendente_id: attendantId || null
             } 
           : grupo
       ));
