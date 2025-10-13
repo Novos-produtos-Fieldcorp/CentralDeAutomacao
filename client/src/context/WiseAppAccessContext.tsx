@@ -175,10 +175,10 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       if (!accountId) {
         // Get from localStorage if available
         try {
-          accountId = localStorage?.getItem('account_id');
+          accountId = localStorage?.getItem('account_id') || undefined;
           console.log('🔍 [WiseAppAccess] Account ID do localStorage:', accountId);
         } catch {
-          accountId = null;
+          accountId = undefined;
         }
       }
       
@@ -276,6 +276,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
               console.log('✅ [WiseAppAccess] Token encontrado:', {
                 email: access.email,
                 nome: access.nome,
+                wiseapp_acesso_id: access.wiseapp_acesso_id,
                 token_length: access.access_token_wiseapp.length
               });
               updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome);
@@ -356,8 +357,8 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       <WiseAppTokenModal
         open={showModal}
         onClose={() => setShowModal(false)}
-        onTokenSaved={(newToken, attendantId, attendantName) => {
-          updateToken(newToken, attendantId || 0, attendantName || 'Atendente');
+        onTokenSaved={(newToken: string, newAttendantId?: number, newAttendantName?: string) => {
+          updateToken(newToken, newAttendantId || 0, newAttendantName || 'Atendente');
           setShowModal(false);
           setHasCheckedToken(true);
         }}

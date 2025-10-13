@@ -108,9 +108,9 @@ async function sendWebhook(grupo) {
   // Prepare the webhook payload with ONLY the fields you need
   const webhookData = {
     "nome_do_grupo": grupo.nome_grupo,
-    "url_do_grupo": grupo.url_grupo
+    "url_do_grupo": grupo.nome_inbox
   };
-  console.log('Sending webhook data (nome_grupo and url_grupo only):', JSON.stringify(webhookData, null, 2));
+  console.log('Sending webhook data (nome_grupo and nome_inbox only):', JSON.stringify(webhookData, null, 2));
   const response = await fetch(WEBHOOK_URL, {
     method: 'POST',
     headers: {
