@@ -323,7 +323,7 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
                 <Truck className="w-3 h-3 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.agregados}
                 </div>
                 <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
@@ -337,7 +337,7 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
                 <Users className="w-3 h-3 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.contratados}
                 </div>
                 <p className="text-xs text-green-600 dark:text-green-400 font-medium">
@@ -351,7 +351,7 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
                 <UserCheck className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.contratados}
                 </div>
                 <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
@@ -391,13 +391,13 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
         </h3>
         <div className="grid grid-cols-4 gap-2">
           <div className="text-center">
-            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               {stats.vagasAbertas}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Abertas</p>
           </div>
           <div className="text-center">
-            <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {stats.vagasPreenchidas}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -405,13 +405,13 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
             </p>
           </div>
           <div className="text-center">
-            <div className="text-sm font-bold text-red-600 dark:text-red-400">
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
               {stats.vagasVencidas}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Vencidas</p>
           </div>
           <div className="text-center">
-            <div className="text-sm font-bold text-purple-600 dark:text-purple-400">
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
               {stats.taxaPreenchimento}%
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Taxa</p>
@@ -563,7 +563,7 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
               <Building2 className="w-3 h-3 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {stats.clientes.total}
               </div>
               <p className="text-xs text-teal-600 dark:text-teal-400 font-medium">
@@ -578,7 +578,7 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
               <UserCheck className="w-3 h-3 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {stats.clientes.ativos}
               </div>
               <p className="text-xs text-green-600 dark:text-green-400 font-medium">
