@@ -276,6 +276,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
               console.log('✅ [WiseAppAccess] Token encontrado:', {
                 email: access.email,
                 nome: access.nome,
+                wiseapp_acesso_id: access.wiseapp_acesso_id,
                 token_length: access.access_token_wiseapp.length
               });
               updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome);
