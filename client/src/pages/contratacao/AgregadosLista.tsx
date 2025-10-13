@@ -199,7 +199,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
   const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
-
+  const ativoDropdownRef = useRef<HTMLDivElement>(null);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -211,6 +211,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
   const [selectAll, setSelectAll] = useState(false);
   const [documento] = useState<DocumentoMotorista | null>(null);
+  const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
 
   // Matches the type expected by DocumentViewer component
   interface EnderecoState {
@@ -570,12 +571,44 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       toast.error('Erro ao remover marcador');
     }
   };
-
+  const handleToggleStatusDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowStatusDropdown(!showStatusDropdown);
+    setShowCidadeDropdown(false);
+    setShowClienteDropdown(false);
+    setShowAtivoDropdown(false);
+    setShowTagDropdown(false);
+  };
+  const handleToggleCidadeDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowCidadeDropdown(!showCidadeDropdown);
+    setShowStatusDropdown(false);
+    setShowClienteDropdown(false);
+    setShowAtivoDropdown(false);
+    setShowTagDropdown(false);
+  };
+  const handleToggleClienteDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowClienteDropdown(!showClienteDropdown);
+    setShowStatusDropdown(false);
+    setShowCidadeDropdown(false);
+    setShowAtivoDropdown(false);
+    setShowTagDropdown(false);
+  };
+  const handleToggleAtivoDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowAtivoDropdown(!showAtivoDropdown);
+    setShowStatusDropdown(false);
+    setShowCidadeDropdown(false);
+    setShowClienteDropdown(false);
+    setShowTagDropdown(false);
+  };
   // Função para abrir/fechar dropdown de tags com carregamento lazy
   const handleToggleTagDropdown = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const isOpening = !showTagDropdown;
     setShowTagDropdown(isOpening);
+    setShowAtivoDropdown(false);
 
     // Carregar tags dos motoristas apenas quando abrir o dropdown pela primeira vez
     if (isOpening && Object.keys(motoristaTags).length === 0 && contratados.length > 0) {
@@ -642,6 +675,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (showTipoVeiculoDropdown && tipoVeiculoDropdownRef.current && !tipoVeiculoDropdownRef.current.contains(target)) {
         setShowTipoVeiculoDropdown(false);
       }
+    }
+
+    // Verifica se o clique foi fora do dropdown de ativo/inativo
+    if (showAtivoDropdown && ativoDropdownRef.current && !ativoDropdownRef.current.contains(target)) {
+      setShowAtivoDropdown(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -2477,21 +2515,55 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     </div>
                   </div>
 
-                  {/* Status Ativo Filter */}
-                  <div className="relative z-[30]">
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
-                      <CheckCircle className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <select
-                      value={ativoFilter}
-                      onChange={(e) => setAtivoFilter(e.target.value)}
-                      className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[110px]"
-                    >
-                      <option value="">Ativo</option>
-                      <option value="active">Ativo (Sim)</option>
-                      <option value="inactive">Ativo (Não)</option>
-                    </select>
+            {/* Status Ativo Filter */}
+            <div className="relative z-[50]">
+              <div className="relative group" ref={ativoDropdownRef}>
+                <button
+                  type="button"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                  onClick={handleToggleAtivoDropdown}
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>
+                      {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
+                    </span>
                   </div>
+                </button>
+
+                {showAtivoDropdown && (
+                  <div className="absolute z-[999999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Todos
+                    </div>
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('ativo');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Somente Ativos
+                    </div>
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('inativo');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Somente Desativos
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
                   {/* Período Filter */}
                   <div className="relative z-[20]">
