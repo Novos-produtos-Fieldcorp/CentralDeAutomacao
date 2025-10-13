@@ -290,6 +290,13 @@ const ResumosGrupo = () => {
       // Find the selected inbox to get its ID
       const selectedInbox = availableInboxes.find(inbox => inbox.webhook_url === formData.url_grupo);
       
+      console.log('🔍 DEBUG - Salvando grupo resumo:');
+      console.log('  - formData.url_grupo:', formData.url_grupo);
+      console.log('  - availableInboxes:', availableInboxes);
+      console.log('  - selectedInbox:', selectedInbox);
+      console.log('  - inbox_id a ser salvo:', selectedInbox?.id?.toString() || null);
+      console.log('  - atendente_id a ser salvo:', attendantId || null);
+      
       const { data, error } = await supabase
         .from('grupo_resumo')
         .insert({
@@ -303,6 +310,10 @@ const ResumosGrupo = () => {
         .single();
 
       if (error) throw error;
+      
+      console.log('✅ Grupo salvo no banco:', data);
+      console.log('  - inbox_id salvo:', data.inbox_id);
+      console.log('  - atendente_id salvo:', data.atendente_id);
       
       // Convert the UTC time back to Brasilia time for display
       const newGrupo = {
