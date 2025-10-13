@@ -307,8 +307,8 @@ const ResumosGrupo = () => {
       
       console.log('🔍 DEBUG - Salvando grupo resumo:');
       console.log('  - formData.url_grupo (ID selecionado):', formData.url_grupo);
-      console.log('  - availableInboxes:', availableInboxes);
       console.log('  - selectedInbox encontrado:', selectedInbox);
+      console.log('  - url_grupo a ser salvo (nome):', selectedInbox?.name || formData.url_grupo);
       console.log('  - inbox_id a ser salvo:', selectedInbox?.id?.toString() || null);
       console.log('  - atendente_id (contexto):', attendantId || null);
       console.log('  - atendente_id (final):', finalAttendantId || null);
@@ -316,8 +316,12 @@ const ResumosGrupo = () => {
       const { data, error } = await supabase
         .from('grupo_resumo')
         .insert({
-          ...formData,
+          nome_grupo: formData.nome_grupo,
+          url_grupo: selectedInbox?.name || formData.url_grupo, // Save inbox name
           horario: utcHorario, // Store UTC time in the database
+          ativo: formData.ativo,
+          icon_name: formData.icon_name,
+          color_name: formData.color_name,
           company_id: companyId,
           inbox_id: selectedInbox?.id?.toString() || null,
           atendente_id: finalAttendantId || null
@@ -391,7 +395,7 @@ const ResumosGrupo = () => {
         .from('grupo_resumo')
         .update({
           nome_grupo: formData.nome_grupo,
-          url_grupo: formData.url_grupo,
+          url_grupo: selectedInbox?.name || formData.url_grupo, // Save inbox name
           horario: utcHorario, // Store UTC time in the database
           icon_name: formData.icon_name,
           color_name: formData.color_name,
@@ -407,7 +411,7 @@ const ResumosGrupo = () => {
           ? { 
               ...grupo, 
               nome_grupo: formData.nome_grupo,
-              url_grupo: formData.url_grupo,
+              url_grupo: selectedInbox?.name || formData.url_grupo, // Show inbox name
               horario: formData.horario, // Keep Brasilia time for display
               icon_name: formData.icon_name,
               color_name: formData.color_name,
@@ -971,7 +975,7 @@ const ResumosGrupo = () => {
                                 setSelectedGrupo(grupo);
                                 setFormData({
                                   nome_grupo: grupo.nome_grupo,
-                                  url_grupo: grupo.url_grupo,
+                                  url_grupo: grupo.inbox_id || grupo.url_grupo, // Use inbox_id for dropdown
                                   horario: grupo.horario,
                                   ativo: grupo.ativo,
                                   icon_name: grupo.icon_name || 'MessagesSquare',
