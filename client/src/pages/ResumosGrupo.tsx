@@ -380,6 +380,13 @@ const ResumosGrupo = () => {
       // Priority: existing value > context value
       const finalAttendantId = selectedGrupo.atendente_id || attendantId || null;
       
+      console.log('🔄 ATUALIZANDO GRUPO:', {
+        grupoId: selectedGrupo.id,
+        atendenteAtual: selectedGrupo.atendente_id,
+        atendenteContexto: attendantId,
+        atendenteFinal: finalAttendantId
+      });
+      
       const { error } = await supabase
         .from('grupo_resumo')
         .update({
