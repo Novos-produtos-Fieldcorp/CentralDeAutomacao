@@ -376,31 +376,38 @@ const ResumosGrupo = () => {
       // Find the selected inbox to get its full data
       const selectedInbox = availableInboxes.find(inbox => inbox.id?.toString() === formData.nome_inbox);
       
-      // Get attendant ID - if not in context, fetch from database
-      let finalAttendantId = attendantId;
-      if (!finalAttendantId && companyId) {
-        const { data: atendenteData } = await supabase
-          .from('wiseapp_acesso')
-          .select('wiseapp_acesso_id')
-          .eq('company_id', companyId)
-          .maybeSingle();
-        
-        if (atendenteData) {
-          finalAttendantId = atendenteData.wiseapp_acesso_id;
-        }
+      // CRITICAL: Buscar o grupo atual do banco para preservar TODOS os campos
+      const { data: currentGrupo } = await supabase
+        .from('grupo_resumo')
+        .select('*')
+        .eq('id', selectedGrupo.id)
+        .single();
+      
+      console.log('🔄 ATUALIZANDO GRUPO:', {
+        grupoId: selectedGrupo.id,
+        atendenteAtualBanco: currentGrupo?.atendente_id,
+        atendenteContexto: attendantId
+      });
+      
+      // Montar o objeto de update APENAS com os campos do formulário
+      // NÃO incluir atendente_id no update para não sobrescrever
+      const updateData: any = {
+        nome_grupo: formData.nome_grupo,
+        nome_inbox: selectedInbox?.name || formData.nome_inbox,
+        horario: utcHorario,
+        icon_name: formData.icon_name,
+        color_name: formData.color_name,
+        inbox_id: selectedInbox?.id?.toString() || null
+      };
+      
+      // Se não existe atendente_id no banco, mas temos no contexto, adicionar
+      if (!currentGrupo?.atendente_id && attendantId) {
+        updateData.atendente_id = attendantId;
       }
       
       const { error } = await supabase
         .from('grupo_resumo')
-        .update({
-          nome_grupo: formData.nome_grupo,
-          nome_inbox: selectedInbox?.name || formData.nome_inbox, // Save inbox name
-          horario: utcHorario, // Store UTC time in the database
-          icon_name: formData.icon_name,
-          color_name: formData.color_name,
-          inbox_id: selectedInbox?.id?.toString() || null,
-          atendente_id: finalAttendantId || null
-        })
+        .update(updateData)
         .eq('id', selectedGrupo.id);
 
       if (error) throw error;
@@ -410,12 +417,12 @@ const ResumosGrupo = () => {
           ? { 
               ...grupo, 
               nome_grupo: formData.nome_grupo,
-              nome_inbox: selectedInbox?.name || formData.nome_inbox, // Show inbox name
-              horario: formData.horario, // Keep Brasilia time for display
+              nome_inbox: selectedInbox?.name || formData.nome_inbox,
+              horario: formData.horario,
               icon_name: formData.icon_name,
               color_name: formData.color_name,
               inbox_id: selectedInbox?.id?.toString() || null,
-              atendente_id: finalAttendantId || null
+              atendente_id: currentGrupo?.atendente_id || attendantId || null
             } 
           : grupo
       ));
