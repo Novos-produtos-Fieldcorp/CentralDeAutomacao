@@ -76,18 +76,15 @@ export function useWiseAppContactsSync(): WiseAppContactsSyncHookReturn {
   const bulkSyncMutation = useMutation({
     mutationFn: async () => {
       if (!companyId) throw new Error('Company ID not found');        
-      // Chamar Supabase Edge Function diretamente
-      const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
-      const requestUrl = `${supabaseUrl}/functions/v1/api/wiseapp/sync-all-contacts`;
+      // Usar a configuração centralizada da API
+      const requestUrl = createApiUrl('wiseapp/sync-all-contacts');
       const body = { companyId: companyId };
 
       const response = await fetch(requestUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseAnonKey}`,
           'Accept': 'application/json'
         },
         body: JSON.stringify(body)

@@ -465,11 +465,9 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(prev => ({ ...prev, [grupo.id]: true }));
       
-      // Use the hardcoded token for authorization
-      const authToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
-      
-      // Use the correct Supabase URL for edge functions
-      const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+      // Use the Supabase URL from environment
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const authToken = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const requestUrl = `${supabaseUrl}/functions/v1/manual-summary-trigger`;
       
       console.log('Making request to:', requestUrl);
