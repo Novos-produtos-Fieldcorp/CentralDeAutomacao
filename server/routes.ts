@@ -150,38 +150,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Nova rota específica para buscar inboxes com cache otimizado por company_id
+  // Rota proxy para buscar inboxes usando o token do usuário
   app.get("/api/inboxes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
       const { accountId } = req.query;
+      const userToken = req.headers['x-wiseapp-token'] as string;
       
-      console.log(`Fetching inboxes for company_id: ${companyId}, accountId: ${accountId}`);
+      console.log(`Fetching inboxes for account_id: ${accountId}`);
 
-      // Buscar token WiseApp para esta empresa
-      const token = await storage.getWiseappToken(parseInt(companyId));
-      
-      if (!token) {
-        return res.status(404).json({ 
-          error: "Token WiseApp não configurado para esta empresa" 
+      if (!accountId) {
+        return res.status(400).json({ 
+          error: "Account ID é obrigatório" 
         });
       }
 
-      // Buscar dados da empresa para validar accountId
-      const { data: companies, error: companyError } = await supabaseBackend
-        .from("company")
-        .select("id_conta_wiseapp")
-        .eq("company_id", parseInt(companyId))
-        .eq("id_conta_wiseapp", accountId)
-        .limit(1);
-
-      if (companyError || !companies || companies.length === 0) {
-        return res.status(403).json({ 
-          error: "Account ID não corresponde à empresa especificada" 
+      if (!userToken) {
+        return res.status(401).json({ 
+          error: "Token de autenticação não fornecido" 
         });
       }
 
-      // Fazer requisição para o ChatWoot
+      // Fazer requisição para o ChatWoot usando o token do usuário
       const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
       const targetUrl = `${wiseappApiUrl}/api/v1/accounts/${accountId}/inboxes`;
 
@@ -190,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await fetch(targetUrl, {
         method: 'GET',
         headers: {
-          'api_access_token': token,
+          'api_access_token': userToken,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Cache-Control': 'no-cache'

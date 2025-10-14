@@ -231,8 +231,17 @@ const ResumosGrupo = () => {
         return;
       }
 
-      // Use a rota específica do Supabase que busca o token automaticamente
-      const response = await axios.get(`/api/inboxes/${companyId}?accountId=${accountId}`);
+      if (!wiseAppToken) {
+        toast.error('Token de autenticação não encontrado');
+        return;
+      }
+
+      // Enviar o token do usuário no header da requisição
+      const response = await axios.get(`/api/inboxes/${companyId}?accountId=${accountId}`, {
+        headers: {
+          'X-WiseApp-Token': wiseAppToken
+        }
+      });
       
       if (response.data?.error) {
         toast.error(response.data.error);

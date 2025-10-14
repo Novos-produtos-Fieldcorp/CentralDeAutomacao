@@ -641,7 +641,6 @@ export const wiseapp_acesso = pgTable("wiseapp_acesso", {
   wiseapp_acesso_id: serial("wiseapp_acesso_id").primaryKey(),
   email: text("email").notNull(),
   nome: text("nome"),
-  company_id: integer("company_id").references(() => company.company_id),
   id_conta_wiseapp: numeric("id_conta_wiseapp").notNull(),
   access_token_wiseapp: text("access_token_wiseapp"),
   created_at: timestamp("created_at").defaultNow(),
