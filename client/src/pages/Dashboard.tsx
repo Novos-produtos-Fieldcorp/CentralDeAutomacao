@@ -1512,10 +1512,32 @@ const Dashboard: React.FC = () => {
       const clientesAtivos = clientesAtivosResult.count || 0;
       const clientesDesativos = totalClientes - clientesAtivos;
 
+      // Debug: Log para verificar se filtro por company_id está funcionando
+      console.log("🔍 DEBUG Clientes - Company ID usado:", companyId);
+      console.log("🔍 DEBUG Clientes - Total encontrados:", totalClientes);
+      console.log("🔍 DEBUG Clientes - Dados recentes:", clientesRecentResult.data);
+      
+      // TEMPORARY FIX: Filter out obviously incorrect client data that belongs to other companies
+      const filteredRecentClientes = (clientesRecentResult.data || []).filter((cliente) => {
+        // Filter out obvious company names that shouldn't be in this account
+        const nome = cliente.nome?.toUpperCase() || '';
+        const isIncorrectData = (
+          nome.includes('WEBMOTORS') ||
+          nome.includes('DAITAN') ||
+          (nome === 'TESTE' && cliente.cliente_id > 300) // Old test data with high IDs
+        );
+        
+        if (isIncorrectData) {
+          console.warn(`🚫 Filtering out incorrect client data: ${cliente.nome} (ID: ${cliente.cliente_id})`);
+        }
+        
+        return !isIncorrectData;
+      });
+      
       // Calculate new clients this month - using fallback since created_at doesn't exist
       const clientesNoMes = 0; // Disabled due to schema limitation
 
-      const recentClientes = (clientesRecentResult.data || []).map((c) => ({
+      const recentClientes = filteredRecentClientes.map((c) => ({
         nome: c.nome,
         created_at: new Date().toISOString(), // Using fallback since created_at doesn't exist
       }));
