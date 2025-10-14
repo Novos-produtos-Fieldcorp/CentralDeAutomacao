@@ -150,34 +150,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Nova rota específica para buscar inboxes com cache otimizado por company_id
+  // Nova rota para buscar inboxes usando apenas account_id
   app.get("/api/inboxes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
       const { accountId } = req.query;
       
-      console.log(`Fetching inboxes for company_id: ${companyId}, accountId: ${accountId}`);
+      console.log(`Fetching inboxes for account_id: ${accountId}`);
 
-      // Buscar token WiseApp para esta empresa
-      const token = await storage.getWiseappToken(parseInt(companyId));
-      
-      if (!token) {
-        return res.status(404).json({ 
-          error: "Token WiseApp não configurado para esta empresa" 
+      if (!accountId) {
+        return res.status(400).json({ 
+          error: "Account ID é obrigatório" 
         });
       }
 
-      // Buscar dados da empresa para validar accountId
-      const { data: companies, error: companyError } = await supabaseBackend
-        .from("company")
-        .select("id_conta_wiseapp")
-        .eq("company_id", parseInt(companyId))
-        .eq("id_conta_wiseapp", accountId)
-        .limit(1);
-
-      if (companyError || !companies || companies.length === 0) {
-        return res.status(403).json({ 
-          error: "Account ID não corresponde à empresa especificada" 
+      // Buscar token WiseApp diretamente usando account_id
+      const token = await storage.getWiseappTokenByAccount(accountId as string);
+      
+      if (!token) {
+        return res.status(404).json({ 
+          error: "Token WiseApp não configurado para esta conta" 
         });
       }
 
