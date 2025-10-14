@@ -404,14 +404,27 @@ export class DatabaseStorage implements IStorage {
   async getWiseappToken(companyId: number): Promise<string | null> {
     console.log(`Fetching WiseApp token for company ${companyId}`);
     try {
-      const { data, error } = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp')
+      // Primeiro buscar a company para obter id_conta_wiseapp
+      const { data: companyData, error: companyError } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
         .eq('company_id', companyId)
         .single();
       
+      if (companyError || !companyData?.id_conta_wiseapp) {
+        console.log(`No id_conta_wiseapp found for company ${companyId}`);
+        return null;
+      }
+      
+      // Agora buscar o token usando id_conta_wiseapp
+      const { data, error } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('id_conta_wiseapp', companyData.id_conta_wiseapp)
+        .single();
+      
       if (error || !data?.access_token_wiseapp) {
-        console.log(`No WiseApp token found for company ${companyId}`);
+        console.log(`No WiseApp token found for id_conta_wiseapp ${companyData.id_conta_wiseapp}`);
         return null;
       }
       
