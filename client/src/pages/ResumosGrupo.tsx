@@ -376,19 +376,9 @@ const ResumosGrupo = () => {
       // Find the selected inbox to get its full data
       const selectedInbox = availableInboxes.find(inbox => inbox.id?.toString() === formData.nome_inbox);
       
-      // Get attendant ID - if not in context, fetch from database
-      let finalAttendantId = attendantId;
-      if (!finalAttendantId && companyId) {
-        const { data: atendenteData } = await supabase
-          .from('wiseapp_acesso')
-          .select('wiseapp_acesso_id')
-          .eq('company_id', companyId)
-          .maybeSingle();
-        
-        if (atendenteData) {
-          finalAttendantId = atendenteData.wiseapp_acesso_id;
-        }
-      }
+      // PRESERVE existing atendente_id - don't overwrite it
+      // Priority: existing value > context value
+      const finalAttendantId = selectedGrupo.atendente_id || attendantId || null;
       
       const { error } = await supabase
         .from('grupo_resumo')
@@ -399,7 +389,7 @@ const ResumosGrupo = () => {
           icon_name: formData.icon_name,
           color_name: formData.color_name,
           inbox_id: selectedInbox?.id?.toString() || null,
-          atendente_id: finalAttendantId || null
+          atendente_id: finalAttendantId // Keep existing or use context value
         })
         .eq('id', selectedGrupo.id);
 
@@ -415,7 +405,7 @@ const ResumosGrupo = () => {
               icon_name: formData.icon_name,
               color_name: formData.color_name,
               inbox_id: selectedInbox?.id?.toString() || null,
-              atendente_id: finalAttendantId || null
+              atendente_id: finalAttendantId // Keep existing or use context value
             } 
           : grupo
       ));
