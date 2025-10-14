@@ -280,11 +280,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const wiseappApiUrl =
         process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
-      const apiKey =
+      let apiKey =
         req.headers["api_access_token"] || req.headers["authorization"];
 
+      // Se não houver token no header, tentar buscar do banco usando accountId da URL
       if (!apiKey) {
-        return res.status(401).json({ error: "Token de acesso não fornecido" });
+        const accountIdMatch = req.url.match(/\/accounts\/(\d+)/);
+        if (accountIdMatch) {
+          const accountId = parseInt(accountIdMatch[1]);
+          
+          // Buscar company_id baseado no accountId
+          const { data: companies } = await supabaseBackend
+            .from("company")
+            .select("company_id, id")
+            .eq("id_conta_wiseapp", accountId)
+            .limit(1);
+          
+          if (companies && companies.length > 0) {
+            const companyId = companies[0].company_id || companies[0].id;
+            
+            // Buscar token WiseApp do banco
+            const { data: tokenData } = await supabaseBackend
+              .from('wiseapp_acesso')
+              .select('access_token_wiseapp')
+              .eq('company_id', companyId)
+              .limit(1);
+            
+            if (tokenData && tokenData.length > 0 && tokenData[0].access_token_wiseapp) {
+              apiKey = tokenData[0].access_token_wiseapp;
+              console.log(`✅ Token WiseApp recuperado do banco para company_id=${companyId}`);
+            }
+          }
+        }
+      }
+
+      if (!apiKey) {
+        return res.status(401).json({ error: "Token de acesso não encontrado" });
       }
 
       // Remover /api do início da URL para fazer o proxy
