@@ -267,6 +267,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
   };
 
+  const [ativoDropdownPosition, setAtivoDropdownPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
+
   // Atualiza o endereco quando o selectedMotorista mudar
   useEffect(() => {
     if (selectedMotorista) {
@@ -597,6 +603,20 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   };
   const handleToggleAtivoDropdown = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const isOpening = !showAtivoDropdown;
+  
+    if (isOpening) {
+      // Calcular posição do dropdown
+      const buttonElement = e.currentTarget as HTMLElement;
+      const rect = buttonElement.getBoundingClientRect();
+      setAtivoDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: 192 // w-48 = 192px
+      });
+    } else {
+      setAtivoDropdownPosition(null);
+    }
     setShowAtivoDropdown(!showAtivoDropdown);
     setShowStatusDropdown(false);
     setShowCidadeDropdown(false);
@@ -680,6 +700,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     // Verifica se o clique foi fora do dropdown de ativo/inativo
     if (showAtivoDropdown && ativoDropdownRef.current && !ativoDropdownRef.current.contains(target)) {
       setShowAtivoDropdown(false);
+      setAtivoDropdownPosition(null);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -1892,8 +1913,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
 
     const ativoMatch = ativoFilter === '' ? true :
-      ativoFilter === 'active' ? motorista.ativo === true :
-        ativoFilter === 'inactive' ? motorista.ativo === false : true;
+    ativoFilter === 'ativo' ? motorista.ativo === true :
+      ativoFilter === 'inativo' ? motorista.ativo === false : true;
 
     const searchMatch = Boolean(
       (motorista.nome_motorista && motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
@@ -2034,7 +2055,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               {/* Filter Tags - Filtros aplicados como tags removíveis */}
               <FilterTags
                 statusFilter={statusFilter}
-                ativoFilter={ativoFilter === 'active' ? 'true' : ativoFilter === 'inactive' ? 'false' : ''}
+                ativoFilter={ativoFilter === 'ativo' ? 'true' : ativoFilter === 'inativo' ? 'false' : ''}
                 clienteFilter={clienteFilter}
                 cidadeFilter={cidadeFilter}
                 tagFilter={tagFilter}
@@ -2531,39 +2552,56 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </div>
                 </button>
 
-                {showAtivoDropdown && (
-                  <div className="absolute z-[999999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
+                {/* Dropdown usando createPortal */}
+                {showAtivoDropdown && ativoDropdownPosition && 
+                  createPortal(
                     <div 
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                      onClick={() => {
-                        setAtivoFilter('');
-                        setShowAtivoDropdown(false);
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600"
+                      style={{
+                        position: 'fixed',
+                        top: ativoDropdownPosition.top,
+                        left: ativoDropdownPosition.left,
+                        width: ativoDropdownPosition.width,
+                        zIndex: 9999
                       }}
                     >
-                      Todos
-                    </div>
-                    <div 
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                      onClick={() => {
-                        setAtivoFilter('ativo');
-                        setShowAtivoDropdown(false);
-                      }}
-                    >
-                      Somente Ativos
-                    </div>
-                    <div 
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                      onClick={() => {
-                        setAtivoFilter('inativo');
-                        setShowAtivoDropdown(false);
-                      }}
-                    >
-                      Somente Desativos
-                    </div>
-                  </div>
-                )}
+                      <div 
+                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                        onClick={() => {
+                          setAtivoFilter('');
+                          setShowAtivoDropdown(false);
+                          setAtivoDropdownPosition(null);
+                        }}
+                      >
+                        Todos
+                      </div>
+                      <div 
+                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                        onClick={() => {
+                          setAtivoFilter('ativo');
+                          setShowAtivoDropdown(false);
+                          setAtivoDropdownPosition(null);
+                        }}
+                      >
+                        Somente Ativos
+                      </div>
+                      <div 
+                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                        onClick={() => {
+                          setAtivoFilter('inativo');
+                          setShowAtivoDropdown(false);
+                          setAtivoDropdownPosition(null);
+                        }}
+                      >
+                        Somente Desativos
+                      </div>
+                    </div>,
+                    document.body
+                  )
+                }
               </div>
             </div>
+
 
                   {/* Período Filter */}
                   <div className="relative z-[20]">
