@@ -199,7 +199,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
   const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
-
+  const ativoDropdownRef = useRef<HTMLDivElement>(null);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -211,6 +211,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
   const [selectAll, setSelectAll] = useState(false);
   const [documento] = useState<DocumentoMotorista | null>(null);
+  const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
 
   // Matches the type expected by DocumentViewer component
   interface EnderecoState {
@@ -570,12 +571,44 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       toast.error('Erro ao remover marcador');
     }
   };
-
+  const handleToggleStatusDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowStatusDropdown(!showStatusDropdown);
+    setShowCidadeDropdown(false);
+    setShowClienteDropdown(false);
+    setShowAtivoDropdown(false);
+    setShowTagDropdown(false);
+  };
+  const handleToggleCidadeDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowCidadeDropdown(!showCidadeDropdown);
+    setShowStatusDropdown(false);
+    setShowClienteDropdown(false);
+    setShowAtivoDropdown(false);
+    setShowTagDropdown(false);
+  };
+  const handleToggleClienteDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowClienteDropdown(!showClienteDropdown);
+    setShowStatusDropdown(false);
+    setShowCidadeDropdown(false);
+    setShowAtivoDropdown(false);
+    setShowTagDropdown(false);
+  };
+  const handleToggleAtivoDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowAtivoDropdown(!showAtivoDropdown);
+    setShowStatusDropdown(false);
+    setShowCidadeDropdown(false);
+    setShowClienteDropdown(false);
+    setShowTagDropdown(false);
+  };
   // Função para abrir/fechar dropdown de tags com carregamento lazy
   const handleToggleTagDropdown = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const isOpening = !showTagDropdown;
     setShowTagDropdown(isOpening);
+    setShowAtivoDropdown(false);
 
     // Carregar tags dos motoristas apenas quando abrir o dropdown pela primeira vez
     if (isOpening && Object.keys(motoristaTags).length === 0 && contratados.length > 0) {
@@ -642,6 +675,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (showTipoVeiculoDropdown && tipoVeiculoDropdownRef.current && !tipoVeiculoDropdownRef.current.contains(target)) {
         setShowTipoVeiculoDropdown(false);
       }
+    }
+
+    // Verifica se o clique foi fora do dropdown de ativo/inativo
+    if (showAtivoDropdown && ativoDropdownRef.current && !ativoDropdownRef.current.contains(target)) {
+      setShowAtivoDropdown(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -741,7 +779,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(true);
 
   // Query para buscar tags da empresa
   const { data: tags = [], isLoading: tagsLoading } = useQuery<any[]>({
@@ -1969,10 +2007,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-4">
-          {/* Compact header with search and add button */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+
+      <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 p-6 rounded-xl shadow-lg border border-gray-200/70 dark:border-gray-700/70 backdrop-blur-sm">
             {/* Search bar */}
             <div className="relative flex-1">
               <input
@@ -1992,45 +2028,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 </button>
               )}
             </div>
-
-            {/* Filter toggle and add button */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`inline-flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg border transition-colors ${showAdvancedFilters || hasActiveFilters()
-                    ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-300'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
-                  }`}
-              >
-                <Filter size={16} />
-                Filtros
-                {hasActiveFilters() && (
-                  <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                    {getActiveFiltersCount()}
-                  </span>
-                )}
-                <ChevronDown className={`h-4 w-4 transition-transform ${showAdvancedFilters ? 'transform rotate-180' : ''}`} />
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowAddModal(true);
-                  setSelectedMotorista(null);
-                  setIsUnifiedModalOpen(true);
-                }}
-                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm
-                text-blue-600"
-                title="Adicionar agregado"
-              >
-                <Plus size={18} />
-                <span>Adicionar Agregado</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Advanced filters - collapsible */}
-          {showAdvancedFilters && (
-            <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="p-4">
+          {/* Compact header with search and add button */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">        
               {/* Filter Tags - Filtros aplicados como tags removíveis */}
               <FilterTags
                 statusFilter={statusFilter}
@@ -2076,7 +2076,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 cidades={cidades}
                 tiposVeiculo={tiposVeiculo}
               />
-
               {/* Filtros modernos */}
               <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
                 <div className="flex flex-wrap gap-2">
@@ -2516,21 +2515,55 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     </div>
                   </div>
 
-                  {/* Status Ativo Filter */}
-                  <div className="relative z-[30]">
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
-                      <CheckCircle className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <select
-                      value={ativoFilter}
-                      onChange={(e) => setAtivoFilter(e.target.value)}
-                      className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[110px]"
-                    >
-                      <option value="">Ativo</option>
-                      <option value="active">Ativo (Sim)</option>
-                      <option value="inactive">Ativo (Não)</option>
-                    </select>
+            {/* Status Ativo Filter */}
+            <div className="relative z-[50]">
+              <div className="relative group" ref={ativoDropdownRef}>
+                <button
+                  type="button"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                  onClick={handleToggleAtivoDropdown}
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>
+                      {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
+                    </span>
                   </div>
+                </button>
+
+                {showAtivoDropdown && (
+                  <div className="absolute z-[999999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Todos
+                    </div>
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('ativo');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Somente Ativos
+                    </div>
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('inativo');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Somente Desativos
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
                   {/* Período Filter */}
                   <div className="relative z-[20]">
@@ -2552,6 +2585,28 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </div>
 
                 </div>
+
+            {/* Filter toggle and add button */}
+            <div className="flex gap-2">
+
+
+              <button
+                onClick={() => {
+                  setShowAddModal(true);
+                  setSelectedMotorista(null);
+                  setIsUnifiedModalOpen(true);
+                }}
+                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm
+                text-blue-600"
+                title="Adicionar agregado"
+              >
+                <Plus size={18} />
+                <span>Adicionar Agregado</span>
+              </button>
+            </div>
+          </div>
+          </div>
+
 
                 {dateFilter === 'custom' && (
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2579,11 +2634,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     </div>
                   </div>
                 )}
-              </div>
+              
             </div>
-          )}
-        </div>
+          
       </div>
+
+
+
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
           <div className="overflow-visible">
