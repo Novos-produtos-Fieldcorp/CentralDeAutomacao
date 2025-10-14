@@ -329,22 +329,15 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
         console.log("Fetching inboxes with:", { accountId, hasToken: !!apiKey });
         
-        const response = await fetch(`/api/api/v1/accounts/${accountId}/inboxes`, {
-          method: 'GET',
-          headers: {
-            'api_access_token': apiKey,
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-          },
-        });
+        const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
         
-        if (!response.ok) {
+        if (response.status !== 200) {
           console.error("Inbox fetch failed:", response.status, response.statusText);
           setAvailableInboxes([]);
           return;
         }
         
-        const data = await response.json();
+        const data = response.data;
         console.log("Inboxes response:", data);
         
         // Verificar se há erro de autenticação
@@ -421,21 +414,14 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   const fetchInboxes = async (accountId: string, apiKey: string) => {
     try {
-      const response = await fetch(`/api/api/v1/accounts/${accountId}/inboxes`, {
-        method: 'GET',
-        headers: {
-          api_access_token: apiKey,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
+      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
 
-      if (!response.ok) {
+      if (response.status !== 200) {
         console.error("Failed to fetch inboxes:", response.status, response.statusText);
         return null;
       }
 
-      const data = await response.json();
+      const data = response.data;
       if (data?.payload) {
         setInboxes(data.payload);
 
