@@ -614,6 +614,17 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         throw new Error("Configuração inválida");
       }
 
+      const api = axios.create({
+        baseURL: window.location.hostname.includes('netlify.app') 
+          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
+          : '/api',
+        headers: {
+          api_access_token: apiKey,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+
       if (initialPhone) {
         let formattedNumber = formatPhoneNumber(initialPhone);
         if (!formattedNumber.startsWith("+")) {
@@ -629,21 +640,16 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
         let contactToUse: Contact | undefined;
         try {
-          const searchResponse = await fetch(
-            `/api/api/v1/accounts/${accountId}/contacts/search?q=${digitsOnly}`,
+          const searchResponse = await api.get(
+            `/api/v1/accounts/${accountId}/contacts/search`,
             {
-              headers: {
-                api_access_token: apiKey,
-                "Content-Type": "application/json",
-                Accept: "application/json",
+              params: {
+                q: digitsOnly,
               },
-            }
+            },
           );
-          if (searchResponse.ok) {
-            const data = await searchResponse.json();
-            if (data?.payload?.[0]) {
-              contactToUse = data.payload[0];
-            }
+          if (searchResponse.data?.payload?.[0]) {
+            contactToUse = searchResponse.data.payload[0];
           }
         } catch (error) {
           // Error searching for contact
@@ -659,32 +665,24 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           }
           
           try {
-            const newContactResponse = await fetch(
-              `/api/api/v1/accounts/${accountId}/contacts`,
+            const newContactResponse = await api.post(
+              `/api/v1/accounts/${accountId}/contacts`,
               {
-                method: 'POST',
-                headers: {
-                  api_access_token: apiKey,
-                  "Content-Type": "application/json",
-                  Accept: "application/json",
+                inbox_id: selectedInboxId,
+                name: contactNameToUse,
+                phone_number: formattedNumber,
+                email: contactEmail,
+                custom_attributes: {
+                  source: "web_chat",
+                  source_type: sourceType || "web",
+                  ...additionalInfo,
                 },
-                body: JSON.stringify({
-                  inbox_id: selectedInboxId,
-                  name: contactNameToUse,
-                  phone_number: formattedNumber,
-                  email: contactEmail,
-                  custom_attributes: {
-                    source: "web_chat",
-                    source_type: sourceType || "web",
-                    ...additionalInfo,
-                  },
-                }),
-              }
+              },
             );
-            if (!newContactResponse.ok) {
+            if (!newContactResponse.data) {
               throw new Error("Não foi possível criar o contato");
             }
-            contactToUse = await newContactResponse.json();
+            contactToUse = newContactResponse.data;
           } catch (error) {
             console.error("Erro ao criar contato:", error);
             throw new Error("Falha ao criar novo contato");
@@ -693,24 +691,14 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         if (contactToUse) {
           try {
             // Buscar conversas existentes para o contato e inbox
-            const conversationsResponse = await fetch(
-              `/api/api/v1/accounts/${accountId}/contacts/${contactToUse.id}/conversations`,
-              {
-                headers: {
-                  api_access_token: apiKey,
-                  "Content-Type": "application/json",
-                  Accept: "application/json",
-                },
-              }
+            const conversationsResponse = await api.get(
+              `/api/v1/accounts/${accountId}/contacts/${contactToUse.id}/conversations`,
             );
             let existingConversation = null;
-            if (conversationsResponse.ok) {
-              const data = await conversationsResponse.json();
-              if (data?.payload) {
-                existingConversation = data.payload.find(
-                  (conv: any) => conv.inbox_id === inboxId,
-                );
-              }
+            if (conversationsResponse.data?.payload) {
+              existingConversation = conversationsResponse.data.payload.find(
+                (conv: any) => conv.inbox_id === inboxId,
+              );
             }
             if (existingConversation) {
               // Se já existe conversa, abrir ela
@@ -750,25 +738,17 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               });
             } else {
               // Se não existe, criar nova conversa
-              const newConversationResponse = await fetch(
-                `/api/api/v1/accounts/${accountId}/conversations`,
+              const newConversationResponse = await api.post(
+                `/api/v1/accounts/${accountId}/conversations`,
                 {
-                  method: 'POST',
-                  headers: {
-                    api_access_token: apiKey,
-                    "Content-Type": "application/json",
-                    Accept: "application/json",
-                  },
-                  body: JSON.stringify({
-                    inbox_id: inboxId.toString(),
-                    contact_id: contactToUse.id.toString(),
-                  }),
-                }
+                  inbox_id: inboxId.toString(),
+                  contact_id: contactToUse.id.toString(),
+                },
               );
-              if (!newConversationResponse.ok) {
+              if (!newConversationResponse.data) {
                 throw new Error("Não foi possível criar a conversa");
               }
-              const conversationToUse = await newConversationResponse.json();
+              const conversationToUse = newConversationResponse.data;
               setContact({
                 id: contactToUse.id,
                 name: contactToUse.name || initialName || formattedNumber,
@@ -827,30 +807,38 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     perPage: number = 20,
   ) => {
     try {
-      const response = await fetch(
-        `/api/api/v1/accounts/${accountId}/conversations/${conversationId}/messages?page=${page}&per_page=${perPage}`,
+      const api = axios.create({
+        baseURL: window.location.hostname.includes('netlify.app') 
+          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
+          : '/api',
+        headers: {
+          api_access_token: apiKey,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+
+      const response = await api.get(
+        `/api/v1/accounts/${accountId}/conversations/${conversationId}/messages`,
         {
-          headers: {
-            api_access_token: apiKey || '',
-            "Content-Type": "application/json",
-            Accept: "application/json",
+          params: {
+            page,
+            per_page: perPage,
           },
-        }
+        },
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data?.payload) {
-          const formattedMessages = data.payload.map((msg: any) => ({
-            id: msg.id,
-            content: msg.content,
-            created_at: msg.created_at,
-            message_type: msg.message_type,
-            content_type: msg.content_type || "text",
-            status: msg.status || "sent",
-            attachments: msg.attachments || [],
-            sender: msg.sender,
-          }));
+      if (response.data?.payload) {
+        const formattedMessages = response.data.payload.map((msg: any) => ({
+          id: msg.id,
+          content: msg.content,
+          created_at: msg.created_at,
+          message_type: msg.message_type,
+          content_type: msg.content_type || "text",
+          status: msg.status || "sent",
+          attachments: msg.attachments || [],
+          sender: msg.sender,
+        }));
 
         setMessages((prevMessages) => {
           if (page === 1) {
@@ -881,8 +869,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }, 100);
 
         return {
-          meta: data.meta,
-          hasMore: data.payload.length === perPage,
+          meta: response.data.meta,
+          hasMore: response.data.payload.length === perPage,
         };
       }
     } catch (error) {
