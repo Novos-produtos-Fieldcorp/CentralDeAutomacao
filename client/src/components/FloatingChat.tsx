@@ -130,6 +130,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   const [lastMessageId, setLastMessageId] = useState<number | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
+  const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
+  const [pendingContactName, setPendingContactName] = useState<string | null>(null);
 
   const { token: contextToken } = useWiseAppAccess();
   const accountId =
@@ -625,8 +627,16 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         },
       });
 
-      if (initialPhone) {
-        let formattedNumber = formatPhoneNumber(initialPhone);
+      // Usar dados pendentes ou dados iniciais
+      const phoneToUse = pendingPhoneNumber || initialPhone;
+      const nameToUse = pendingContactName || initialName;
+
+      if (phoneToUse) {
+        // Limpar dados pendentes após uso
+        setPendingPhoneNumber(null);
+        setPendingContactName(null);
+        
+        let formattedNumber = formatPhoneNumber(phoneToUse);
         if (!formattedNumber.startsWith("+")) {
           formattedNumber = `+${formattedNumber}`;
         }
@@ -656,7 +666,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
         if (!contactToUse) {
           const contactNameToUse =
-            initialName || additionalInfo?.name || "Novo Contato";
+            nameToUse || additionalInfo?.name || "Novo Contato";
           const contactEmail = initialEmail || additionalInfo?.email;
           
           // Validar se inbox_id está disponível
@@ -704,7 +714,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               // Se já existe conversa, abrir ela
               setContact({
                 id: contactToUse.id,
-                name: contactToUse.name || initialName || formattedNumber,
+                name: contactToUse.name || nameToUse || formattedNumber,
                 phone_number: contactToUse.phone_number,
                 thumbnail: contactToUse.thumbnail || "",
                 source_id: contactToUse.contact_inboxes?.[0]?.source_id || "",
@@ -751,7 +761,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               const conversationToUse = newConversationResponse.data;
               setContact({
                 id: contactToUse.id,
-                name: contactToUse.name || initialName || formattedNumber,
+                name: contactToUse.name || nameToUse || formattedNumber,
                 phone_number: contactToUse.phone_number,
                 thumbnail: contactToUse.thumbnail || "",
                 source_id: contactToUse.contact_inboxes?.[0]?.source_id || "",
@@ -917,6 +927,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         throw new Error("Token WiseApp não encontrado");
       }
 
+      // Armazenar dados pendentes para criar o contato após selecionar a inbox
+      setPendingPhoneNumber(phoneNumber);
+      setPendingContactName(contactName || null);
+
       // Carregar inboxes e mostrar o seletor
       await fetchInboxes(accountId, apiKey);
       setShowInboxSelector(true);
@@ -1018,6 +1032,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const handleInboxSelect = async (inboxId: number) => {
     try {
       setSelectedInboxId(inboxId);
+      setShowInboxSelector(false);
+      setLoading(true);
+      
       const response = await api.get(
         `/api/v1/accounts/${accountId}/inboxes/${inboxId}`,
       );
@@ -1039,9 +1056,11 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
       setActiveConversation(conversation);
       setMessages([]);
+      setLoading(false);
     } catch (error) {
       console.error("Error selecting inbox:", error);
       handleError(error);
+      setLoading(false);
     }
   };
 
