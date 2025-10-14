@@ -226,26 +226,16 @@ const ResumosGrupo = () => {
     try {
       setLoadingInboxes(true);
       
-      if (!accountId || !wiseAppToken) {
-        toast.error('Autenticação WiseApp não encontrada');
+      if (!accountId || !companyId) {
+        toast.error('Informações de autenticação não encontradas');
         return;
       }
 
-      const api = axios.create({
-        baseURL: window.location.hostname.includes('netlify.app') 
-          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
-          : '/api',
-        headers: {
-          api_access_token: wiseAppToken,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
-
-      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
+      // Use a rota específica do Supabase que busca o token automaticamente
+      const response = await axios.get(`/api/inboxes/${companyId}?accountId=${accountId}`);
       
-      if (response.data?.error === "WiseApp authentication failed") {
-        toast.error('Falha na autenticação WiseApp');
+      if (response.data?.error) {
+        toast.error(response.data.error);
         setAvailableInboxes([]);
         return;
       }
