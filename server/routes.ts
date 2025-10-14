@@ -150,11 +150,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Nova rota para buscar inboxes usando apenas account_id
+  // Rota proxy para buscar inboxes usando o token do usuário
   app.get("/api/inboxes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
       const { accountId } = req.query;
+      const userToken = req.headers['x-wiseapp-token'] as string;
       
       console.log(`Fetching inboxes for account_id: ${accountId}`);
 
@@ -164,16 +165,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar token WiseApp diretamente usando account_id
-      const token = await storage.getWiseappTokenByAccount(accountId as string);
-      
-      if (!token) {
-        return res.status(404).json({ 
-          error: "Token WiseApp não configurado para esta conta" 
+      if (!userToken) {
+        return res.status(401).json({ 
+          error: "Token de autenticação não fornecido" 
         });
       }
 
-      // Fazer requisição para o ChatWoot
+      // Fazer requisição para o ChatWoot usando o token do usuário
       const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
       const targetUrl = `${wiseappApiUrl}/api/v1/accounts/${accountId}/inboxes`;
 
@@ -182,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await fetch(targetUrl, {
         method: 'GET',
         headers: {
-          'api_access_token': token,
+          'api_access_token': userToken,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Cache-Control': 'no-cache'
