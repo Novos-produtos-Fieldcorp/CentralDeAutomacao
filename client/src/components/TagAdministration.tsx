@@ -229,7 +229,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     }
 
     const labelData = {
-      name: tag.nome,
+      title: tag.nome,
       color: tag.cor,
       description: tag.nome
     };
@@ -296,7 +296,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
       if (labelsResponse.ok) {
         const labels = await labelsResponse.json();
-        const wiseAppLabel = labels.find((label: any) => label.name === tag.nome);
+        const wiseAppLabel = labels.find((label: any) => label.title === tag.nome);
 
         if (wiseAppLabel) {
           // Deletar a label no WiseApp
@@ -382,7 +382,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       if (fetchError) throw fetchError;
 
       // 3. Sincronização bidirecional
-      const wiseAppLabelNames = new Set(wiseAppLabels.map((label: any) => label.name.toLowerCase()));
+      const wiseAppLabelNames = new Set(wiseAppLabels.map((label: any) => label.title.toLowerCase()));
       const localTagNames = new Map(localTags?.map(tag => [tag.nome.toLowerCase(), tag]) || []);
 
       let added = 0;
@@ -390,11 +390,11 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
       // Adicionar tags que existem no WiseApp mas não localmente
       for (const label of wiseAppLabels) {
-        if (!localTagNames.has(label.name.toLowerCase())) {
+        if (!localTagNames.has(label.title.toLowerCase())) {
           const { error: insertError } = await supabase
             .from('tag')
             .insert({
-              nome: label.name,
+              nome: label.title,
               cor: label.color || '#3B82F6',
               company_id: companyId,
               limite_max: null,
