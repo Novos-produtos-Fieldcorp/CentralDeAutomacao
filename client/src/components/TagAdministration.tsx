@@ -213,8 +213,19 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
   // Função para criar tag no WiseApp usando a rota do backend (estrita)
   const createWiseAppTag = async (tag: Tag) => {
-    if (!accountId || !wiseAppToken) {
-      throw new Error('Token WiseApp ou Account ID não disponível');
+    if (!wiseAppToken) {
+      throw new Error('Token WiseApp não disponível');
+    }
+
+    // Buscar o id_conta_wiseapp correto para este company_id
+    const { data: company, error: companyError } = await supabase
+      .from('company')
+      .select('id_conta_wiseapp')
+      .eq('company_id', tag.company_id)
+      .single();
+
+    if (companyError || !company?.id_conta_wiseapp) {
+      throw new Error('Account ID da empresa não encontrado. Configure o id_conta_wiseapp na tabela company.');
     }
 
     const labelData = {
@@ -231,7 +242,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       headers: {
         'Content-Type': 'application/json',
         'wiseapp-token': wiseAppToken,
-        'wiseapp-account-id': accountId
+        'wiseapp-account-id': company.id_conta_wiseapp
       },
       body: JSON.stringify(labelData),
       signal: controller.signal
@@ -252,9 +263,21 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
   // Função para deletar tag no WiseApp usando a rota do backend
   const deleteWiseAppTag = async (tag: Tag) => {
-    if (!accountId || !wiseAppToken) return;
+    if (!wiseAppToken) return;
 
     try {
+      // Buscar o id_conta_wiseapp correto para este company_id
+      const { data: company, error: companyError } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
+        .eq('company_id', tag.company_id)
+        .single();
+
+      if (companyError || !company?.id_conta_wiseapp) {
+        console.error('Account ID da empresa não encontrado');
+        return;
+      }
+
       // Primeiro buscar todas as labels do WiseApp para encontrar o ID correto
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -264,7 +287,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         headers: {
           'Content-Type': 'application/json',
           'wiseapp-token': wiseAppToken,
-          'wiseapp-account-id': accountId
+          'wiseapp-account-id': company.id_conta_wiseapp
         },
         signal: controller.signal
       });
@@ -285,7 +308,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
             headers: {
               'Content-Type': 'application/json',
               'wiseapp-token': wiseAppToken,
-              'wiseapp-account-id': accountId
+              'wiseapp-account-id': company.id_conta_wiseapp
             },
             signal: deleteController.signal
           });
@@ -313,8 +336,19 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   // Função para sincronizar tags do WiseApp para o banco local (bidirecional)
   const syncWiseAppToLocal = useMutation({
     mutationFn: async () => {
-      if (!accountId || !wiseAppToken) {
-        throw new Error('Token WiseApp ou Account ID não disponível');
+      if (!wiseAppToken) {
+        throw new Error('Token WiseApp não disponível');
+      }
+
+      // Buscar o id_conta_wiseapp correto para este company_id
+      const { data: company, error: companyError } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
+        .eq('company_id', companyId)
+        .single();
+
+      if (companyError || !company?.id_conta_wiseapp) {
+        throw new Error('Account ID da empresa não encontrado. Configure o id_conta_wiseapp na tabela company.');
       }
 
       // 1. Buscar tags do WiseApp
@@ -326,7 +360,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         headers: {
           'Content-Type': 'application/json',
           'wiseapp-token': wiseAppToken,
-          'wiseapp-account-id': accountId
+          'wiseapp-account-id': company.id_conta_wiseapp
         },
         signal: controller.signal
       });
