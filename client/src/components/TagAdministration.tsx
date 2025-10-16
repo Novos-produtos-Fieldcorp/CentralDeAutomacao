@@ -382,7 +382,11 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       if (fetchError) throw fetchError;
 
       // 3. Sincronização bidirecional
-      const wiseAppLabelNames = new Set(wiseAppLabels.map((label: any) => label.title.toLowerCase()));
+      const wiseAppLabelNames = new Set(
+        wiseAppLabels
+          .filter((label: any) => label.title) // Filtrar labels sem title
+          .map((label: any) => label.title.toLowerCase())
+      );
       const localTagNames = new Map(localTags?.map(tag => [tag.nome.toLowerCase(), tag]) || []);
 
       let added = 0;
@@ -390,6 +394,8 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
       // Adicionar tags que existem no WiseApp mas não localmente
       for (const label of wiseAppLabels) {
+        if (!label.title) continue; // Pular se não tiver title
+        
         if (!localTagNames.has(label.title.toLowerCase())) {
           const { error: insertError } = await supabase
             .from('tag')
