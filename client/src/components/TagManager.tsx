@@ -111,26 +111,33 @@ export function TagManager({ companyId }: TagManagerProps) {
 
       const existingTagNames = new Set(existingTags?.map(tag => tag.nome.toLowerCase()) || []);
       
-      // Criar set de nomes de tags do WiseApp
+      // Criar set de nomes de tags do WiseApp (WiseApp usa campo 'title')
       const wiseAppTagNames = new Set(wiseAppTagsData.map((tag: any) => 
-        (tag.name || tag.title || 'Tag').toLowerCase()
+        (tag.title || 'Tag').toLowerCase()
       ));
+
+      console.log('🔍 [SYNC] Tags do WiseApp:', wiseAppTagsData.length, wiseAppTagsData.map((t: any) => t.title));
+      console.log('🔍 [SYNC] Tags do banco:', existingTags?.length, existingTags?.map(t => t.nome));
 
       // Identificar tags para remover (existem localmente mas não no WiseApp)
       const tagsToDelete = existingTags?.filter(tag => 
         !wiseAppTagNames.has(tag.nome.toLowerCase())
       ) || [];
 
+      console.log('➖ [SYNC] Tags para remover do banco:', tagsToDelete.map(t => t.nome));
+
       // Preparar tags para inserção (apenas as que não existem)
       const tagsToInsert = wiseAppTagsData
-        .filter((tag: any) => !existingTagNames.has((tag.name || tag.title || 'Tag').toLowerCase()))
+        .filter((tag: any) => !existingTagNames.has((tag.title || 'Tag').toLowerCase()))
         .map((tag: any) => ({
-          nome: tag.name || tag.title || 'Tag',
+          nome: tag.title || 'Tag',
           cor: tag.color || '#3B82F6',
           company_id: companyId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));
+
+      console.log('➕ [SYNC] Tags para adicionar no banco:', tagsToInsert.map(t => t.nome));
 
       // Processing tags for insertion and deletion
       let syncMessage = '';
