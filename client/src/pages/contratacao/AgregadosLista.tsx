@@ -828,42 +828,31 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   // Função para sincronizar tag via proxy backend
   const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
-    if (!companyId) return;
+    if (!companyId || !wiseAppToken) return;
 
     try {
-      // 1. Buscar todas as tags existentes
-      const labelsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/labels`), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId || '',
-          'wiseapp-token': wiseAppToken || ''
-        }
-      });
+      // Buscar o id_conta_wiseapp correto para este company_id
+      const { data: company, error: companyError } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
+        .eq('company_id', companyId)
+        .single();
 
-      if (!labelsResponse.ok) {
-        // Erro ao buscar tags
+      if (companyError || !company?.id_conta_wiseapp) {
+        console.error('Account ID da empresa não encontrado');
         return;
       }
 
-      const labels = await labelsResponse.json();
-      const existingTag = labels.find((label: any) =>
-        label.name.toLowerCase() === tagData.nome.toLowerCase()
-      );
+      const wiseAppAccountId = String(company.id_conta_wiseapp);
 
-      if (!existingTag) {
-        // Tag não encontrada
-        return;
-      }
-
-      // 2. Buscar o motorista para obter o telefone
+      // 1. Buscar o motorista para obter o telefone
       const motorista = contratados.find(m => m.motorista_id === motoristaId);
       if (!motorista?.telefone) {
         console.warn('Telefone do motorista não encontrado para sincronização');
         return;
       }
 
-      // 3. Buscar o contato pelo telefone (sem +55 como funciona na individual)
+      // 2. Buscar o contato pelo telefone (sem +55 como funciona na individual)
       const phoneStr = String(motorista.telefone);
       const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
 
@@ -871,8 +860,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId || '',
-          'wiseapp-token': wiseAppToken || ''
+          'wiseapp-account-id': wiseAppAccountId,
+          'wiseapp-token': wiseAppToken
         }
       });
 
@@ -889,17 +878,37 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         return;
       }
 
-      // 4. Aplicar a tag existente ao contato específico
+      // 3. Buscar as tags existentes do contato
+      const existingTagsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'wiseapp-token': wiseAppToken,
+          'wiseapp-account-id': wiseAppAccountId
+        }
+      });
+
+      let existingTags: string[] = [];
+      if (existingTagsResponse.ok) {
+        const existingTagsData = await existingTagsResponse.json();
+        existingTags = existingTagsData.payload || [];
+      }
+
+      // 4. Criar array com todas as tags (existentes + nova)
+      const allTags = [...existingTags];
+      if (!allTags.some(tag => tag.toLowerCase() === tagData.nome.toLowerCase())) {
+        allTags.push(tagData.nome);
+      }
+
+      // 5. Aplicar array completo de tags ao contato
       const applyTagResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId || '',
-          'wiseapp-token': wiseAppToken || ''
+          'wiseapp-account-id': wiseAppAccountId,
+          'wiseapp-token': wiseAppToken
         },
-        body: JSON.stringify({
-          tagName: existingTag.name
-        })
+        body: JSON.stringify({ labels: allTags })
       });
 
       if (applyTagResponse.ok) {
@@ -916,9 +925,23 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   // Função para remover tag via proxy backend
   const removeTagFromWiseApp = async (motoristaId: number, tagData: any) => {
-    if (!companyId) return;
+    if (!companyId || !wiseAppToken) return;
 
     try {
+      // Buscar o id_conta_wiseapp correto para este company_id
+      const { data: company, error: companyError } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
+        .eq('company_id', companyId)
+        .single();
+
+      if (companyError || !company?.id_conta_wiseapp) {
+        console.error('Account ID da empresa não encontrado');
+        return;
+      }
+
+      const wiseAppAccountId = String(company.id_conta_wiseapp);
+
       // 1. Buscar o motorista para obter o telefone
       const motorista = contratados.find(m => m.motorista_id === motoristaId);
       if (!motorista?.telefone) {
@@ -933,8 +956,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId || '',
-          'wiseapp-token': wiseAppToken || ''
+          'wiseapp-account-id': wiseAppAccountId,
+          'wiseapp-token': wiseAppToken
         }
       });
 
@@ -956,8 +979,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId || '',
-          'wiseapp-token': wiseAppToken || ''
+          'wiseapp-account-id': wiseAppAccountId,
+          'wiseapp-token': wiseAppToken
         }
       });
 
@@ -979,8 +1002,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId || '',
-          'wiseapp-token': wiseAppToken || ''
+          'wiseapp-account-id': wiseAppAccountId,
+          'wiseapp-token': wiseAppToken
         },
         body: JSON.stringify({
           labels: updatedLabels

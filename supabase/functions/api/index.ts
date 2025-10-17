@@ -232,6 +232,74 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     }
   }
 
+  // Delete WiseApp label
+  if (path.match(/^\/wiseapp\/(\d+)\/labels\/(\d+)$/) && method === 'DELETE') {
+    const match = path.match(/^\/wiseapp\/(\d+)\/labels\/(\d+)$/)
+    const companyId = match![1]
+    const labelId = match![2]
+    
+    console.log('Debug: Deletando label para company_id:', companyId, 'label_id:', labelId);
+    
+    // Buscar token da empresa
+    let { data: tokenData, error: tokenError } = await supabase
+      .from('wiseapp_acesso')
+      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+      .eq('id_conta_wiseapp', companyId)
+      .not('access_token_wiseapp', 'is', null)
+      .single()
+
+    if (tokenError || !tokenData) {
+      console.log('Debug: Token não encontrado para company:', companyId);
+      return new Response(JSON.stringify({
+        error: 'Token WiseApp não configurado para esta empresa',
+        details: tokenError?.message || 'Nenhum token encontrado'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
+
+    // Delete label in WiseApp
+    const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels/${labelId}`
+    
+    try {
+      const response = await fetch(wiseAppUrl, {
+        method: 'DELETE',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        return new Response(JSON.stringify({
+          error: `Erro ao deletar label do WiseApp: ${response.status}`,
+          details: errorText
+        }), {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'Erro ao deletar label do WiseApp',
+        details: error.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
   // Create WiseApp label
   if (path.match(/^\/wiseapp\/(\d+)\/labels$/) && method === 'POST') {
     const match = path.match(/^\/wiseapp\/(\d+)\/labels$/)

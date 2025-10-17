@@ -111,10 +111,24 @@ const BulkActionsModal = ({
 
   // Função para aplicar tag aos contatos no WiseApp (usando serviços existentes)
   const applyTagToWiseAppContacts = async (tagData: any, motoristaIds: number[]) => {
-    if (!accountId || !wiseAppToken) {
+    if (!wiseAppToken || !companyId) {
       console.log('Token WiseApp ou dados não disponíveis para sincronização');
       return;
     }
+
+    // Buscar o id_conta_wiseapp correto para este company_id
+    const { data: company, error: companyError } = await supabase
+      .from('company')
+      .select('id_conta_wiseapp')
+      .eq('company_id', companyId)
+      .single();
+
+    if (companyError || !company?.id_conta_wiseapp) {
+      console.error('Account ID da empresa não encontrado. Configure o id_conta_wiseapp na tabela company.');
+      return;
+    }
+
+    const wiseAppAccountId = String(company.id_conta_wiseapp);
 
     try {
       console.log(`Aplicando tag "${tagData.nome}" aos contatos no WiseApp para ${motoristaIds.length} motoristas...`);
@@ -269,7 +283,7 @@ const BulkActionsModal = ({
 
             try {
               // Buscar contato no WiseApp usando o serviço existente
-              const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId);
+              const searchData = await searchWiseAppContact(wiseAppAccountId, wiseAppToken, formattedPhone);
 
               // Corrigir estrutura de dados (descoberta: searchData é array direto)
               const contacts = Array.isArray(searchData) ? searchData : (searchData?.payload || []);
@@ -283,7 +297,7 @@ const BulkActionsModal = ({
                   headers: {
                     'Content-Type': 'application/json',
                     'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': accountId
+                    'wiseapp-account-id': wiseAppAccountId
                   }
                 });
 
@@ -305,7 +319,7 @@ const BulkActionsModal = ({
                   headers: {
                     'Content-Type': 'application/json',
                     'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': accountId
+                    'wiseapp-account-id': wiseAppAccountId
                   },
                   body: JSON.stringify({ labels: allTags })
                 });
