@@ -316,6 +316,10 @@ export const getWiseAppLabels = async (accountId: string, token: string, company
     createApiUrl(`wiseapp/1/labels`)  // Fallback para companyId 1
   ].filter(url => url !== primaryUrl); // Remove duplicatas
   
+  console.log('🌐 [getWiseAppLabels] URL primária:', primaryUrl);
+  console.log('🌐 [getWiseAppLabels] AccountId:', accountId);
+  console.log('🌐 [getWiseAppLabels] CompanyId:', finalCompanyId);
+  
   // Synchronizing tags with WiseApp
   // Making request via backend
   
@@ -326,15 +330,14 @@ export const getWiseAppLabels = async (accountId: string, token: string, company
       cacheTtl: 5 * 60 * 1000, // 5 minutos de cache
       fallbackUrls,
       onRetry: (attempt, error) => {
-        // WiseApp request retry attempt failed
+        console.warn(`🔄 [getWiseAppLabels] Tentativa ${attempt} falhou:`, error.message);
       },
       onFallback: (url, error) => {
-        // Using alternative URL for WiseApp request
+        console.warn(`🔀 [getWiseAppLabels] Usando URL alternativa ${url}:`, error.message);
       }
     }, accountId, token);
 
-    // Response received successfully
-    // Response data processed
+    console.log('✅ [getWiseAppLabels] Resposta do WiseApp recebida:', data);
     return data;
   } catch (error) {
     console.error('Erro na requisição via backend (todas as tentativas falharam):', error);
