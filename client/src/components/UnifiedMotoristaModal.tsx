@@ -1115,6 +1115,7 @@ const UnifiedMotoristaModal = ({
                   <MotoristaTagsManager 
                     motoristaId={motorista.motorista_id}
                     companyId={motorista.company_id || 2}
+                    conversationId={motorista.conversation_id}
                   />
                 </div>
               ) : (

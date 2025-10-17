@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, Tag as TagIcon, Edit, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { getWiseAppLabels } from "@/lib/directApiService";
+import { getWiseAppLabels, syncContactTagsFromWiseApp } from "@/lib/directApiService";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
 import { supabase } from "@/lib/supabase";
@@ -27,11 +27,13 @@ interface WiseAppTag {
 interface MotoristaTagsManagerProps {
   motoristaId: number;
   companyId: number;
+  conversationId?: string | null;
 }
 
 export function MotoristaTagsManager({
   motoristaId,
   companyId,
+  conversationId,
 }: MotoristaTagsManagerProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
@@ -83,6 +85,42 @@ export function MotoristaTagsManager({
     },
     enabled: !!companyId,
   });
+
+  // Sincronizar tags do WiseApp automaticamente quando conversationId estiver disponível
+  useEffect(() => {
+    const syncWiseAppTags = async () => {
+      if (!conversationId || !accountId || !wiseAppToken || !companyId) {
+        return;
+      }
+
+      try {
+        const contactId = parseInt(conversationId);
+        if (isNaN(contactId)) {
+          console.warn('conversation_id inválido:', conversationId);
+          return;
+        }
+
+        console.log(`🔄 Sincronizando tags do WiseApp para contato ${contactId}...`);
+        
+        await syncContactTagsFromWiseApp(
+          contactId,
+          motoristaId,
+          companyId,
+          accountId,
+          wiseAppToken
+        );
+
+        // Atualizar as tags após sincronização
+        queryClient.invalidateQueries({ queryKey: ["motorista-tags", motoristaId] });
+        
+        console.log(`✅ Tags do WiseApp sincronizadas com sucesso para motorista ${motoristaId}`);
+      } catch (error) {
+        console.warn('Erro ao sincronizar tags do WiseApp (não crítico):', error);
+      }
+    };
+
+    syncWiseAppTags();
+  }, [conversationId, accountId, wiseAppToken, companyId, motoristaId, queryClient]);
 
   // Verificar limite de associados por tag
   const checkTagLimit = async (
