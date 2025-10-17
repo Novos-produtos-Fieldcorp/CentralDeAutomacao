@@ -253,13 +253,15 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
             // Cache company data
             cacheData('wiseapp_company_cache', { companyId: company.company_id });
             
-            // Check if there's a token for this company
-            console.log('🔍 [WiseAppAccess] Buscando token para company_id:', company.company_id);
+            // Check if there's a token for this account (get most recent)
+            console.log('🔍 [WiseAppAccess] Buscando token MAIS RECENTE para id_conta_wiseapp:', accountId);
             
             const { data: access, error: accessError } = await supabase
               .from('wiseapp_acesso')
               .select('wiseapp_acesso_id, access_token_wiseapp, nome, email')
-              .eq('company_id', company.company_id)
+              .eq('id_conta_wiseapp', accountId)
+              .order('created_at', { ascending: false })
+              .limit(1)
               .maybeSingle();
 
             console.log('📊 [WiseAppAccess] Resultado da busca:', {
