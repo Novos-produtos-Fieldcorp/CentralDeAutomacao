@@ -128,7 +128,7 @@ const BulkActionsModal = ({
       return;
     }
 
-    const wiseAppAccountId = company.id_conta_wiseapp;
+    const wiseAppAccountId = String(company.id_conta_wiseapp);
 
     try {
       console.log(`Aplicando tag "${tagData.nome}" aos contatos no WiseApp para ${motoristaIds.length} motoristas...`);

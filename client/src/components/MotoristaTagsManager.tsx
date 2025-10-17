@@ -159,9 +159,11 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         // Sincronizar via backend seguro (usando a mesma lógica do BulkActionsModal)
         if (motorista.telefone && accountId && wiseAppToken) {
           try {
+            const wiseAppAccountId = String(accountId);
+            
             // Buscar contato no WiseApp primeiro
             const formattedPhone = motorista.telefone.replace(/\D/g, '');
-            const searchResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?phone=${formattedPhone}`, {
+            const searchResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${wiseAppAccountId}/contacts/search?phone=${formattedPhone}`, {
               method: 'GET',
               headers: {
                 'api_access_token': wiseAppToken,
@@ -182,7 +184,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                   headers: {
                     'Content-Type': 'application/json',
                     'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': accountId
+                    'wiseapp-account-id': wiseAppAccountId
                   }
                 });
 
@@ -204,7 +206,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                   headers: {
                     'Content-Type': 'application/json',
                     'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': accountId
+                    'wiseapp-account-id': wiseAppAccountId
                   },
                   body: JSON.stringify({ labels: allTags })
                 });
@@ -276,9 +278,11 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
         // Sincronizar via backend seguro (usando a mesma lógica do BulkActionsModal)
         if (motorista.telefone && accountId && wiseAppToken) {
           try {
+            const wiseAppAccountId = String(accountId);
+            
             // Buscar contato no WiseApp primeiro
             const formattedPhone = motorista.telefone.replace(/\D/g, '');
-            const searchResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?phone=${formattedPhone}`, {
+            const searchResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${wiseAppAccountId}/contacts/search?phone=${formattedPhone}`, {
               method: 'GET',
               headers: {
                 'api_access_token': wiseAppToken,
@@ -299,7 +303,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                   headers: {
                     'Content-Type': 'application/json',
                     'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': accountId
+                    'wiseapp-account-id': wiseAppAccountId
                   }
                 });
 

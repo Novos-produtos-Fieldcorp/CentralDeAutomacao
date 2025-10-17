@@ -843,7 +843,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         return;
       }
 
-      const wiseAppAccountId = company.id_conta_wiseapp;
+      const wiseAppAccountId = String(company.id_conta_wiseapp);
 
       // 1. Buscar o motorista para obter o telefone
       const motorista = contratados.find(m => m.motorista_id === motoristaId);
@@ -940,7 +940,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         return;
       }
 
-      const wiseAppAccountId = company.id_conta_wiseapp;
+      const wiseAppAccountId = String(company.id_conta_wiseapp);
 
       // 1. Buscar o motorista para obter o telefone
       const motorista = contratados.find(m => m.motorista_id === motoristaId);
