@@ -160,12 +160,6 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
       if (!tagData) throw new Error("Tag não encontrada");
 
-      // PRIMEIRO: Deletar do WiseApp
-      if (accountId && wiseAppToken) {
-        await deleteWiseAppTag(tagData); // Se falhar, vai lançar erro e parar aqui
-      }
-
-      // DEPOIS: Remover todas as associações
       const { error: deleteAssociationsError } = await supabase
         .from("associacao_tags")
         .delete()
@@ -173,13 +167,16 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
       if (deleteAssociationsError) throw deleteAssociationsError;
 
-      // POR ÚLTIMO: Deletar a tag do banco local
       const { error: deleteTagError } = await supabase
         .from("tag")
         .delete()
         .eq("id", tagId);
 
       if (deleteTagError) throw deleteTagError;
+
+      if (accountId && wiseAppToken) {
+        await deleteWiseAppTag(tagData);
+      }
 
       return { success: true, tagData };
     },
@@ -416,7 +413,11 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       }
 
       const wiseAppLabels = await response.json();
-      console.log('🔍 [SYNC] Tags do WiseApp:', wiseAppLabels.length, wiseAppLabels.map((l: any) => l.title));
+      console.log(
+        "🔍 [SYNC] Tags do WiseApp:",
+        wiseAppLabels.length,
+        wiseAppLabels.map((l: any) => l.title),
+      );
 
       // 2. Buscar tags locais atuais
       const { data: localTags, error: fetchError } = await supabase
@@ -425,7 +426,11 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         .eq("company_id", companyId);
 
       if (fetchError) throw fetchError;
-      console.log('🔍 [SYNC] Tags do banco:', localTags?.length, localTags?.map(t => t.nome));
+      console.log(
+        "🔍 [SYNC] Tags do banco:",
+        localTags?.length,
+        localTags?.map((t) => t.nome),
+      );
 
       // 3. Sincronização bidirecional
       const wiseAppLabelNames = new Set(
@@ -445,7 +450,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         if (!label.title) continue; // Pular se não tiver title
 
         if (!localTagNames.has(label.title.toLowerCase())) {
-          console.log('➕ [SYNC] Adicionando tag do WiseApp:', label.title);
+          console.log("➕ [SYNC] Adicionando tag do WiseApp:", label.title);
           const { error: insertError } = await supabase.from("tag").insert({
             nome: label.title,
             cor: label.color || "#3B82F6",
@@ -462,7 +467,10 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       // Remover tags locais que não existem mais no WiseApp
       for (const [tagName, tag] of localTagNames) {
         if (!wiseAppLabelNames.has(tagName)) {
-          console.log('➖ [SYNC] Removendo tag do banco (não existe no WiseApp):', tagName);
+          console.log(
+            "➖ [SYNC] Removendo tag do banco (não existe no WiseApp):",
+            tagName,
+          );
           // Primeiro remover associações
           await supabase.from("associacao_tags").delete().eq("tag_id", tag.id);
 
@@ -475,8 +483,8 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           if (!deleteError) removed++;
         }
       }
-      
-      console.log('✅ [SYNC] Sincronização concluída:', { added, removed });
+
+      console.log("✅ [SYNC] Sincronização concluída:", { added, removed });
 
       return { added, removed };
     },
