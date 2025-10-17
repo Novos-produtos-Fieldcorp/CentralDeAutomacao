@@ -372,12 +372,12 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   // Função para sincronizar tags do WiseApp para o banco local (bidirecional)
   const syncWiseAppToLocal = useMutation({
     mutationFn: async () => {
-      console.log('🚀🚀🚀 [SYNC] INICIANDO SINCRONIZAÇÃO!!!');
-      console.log('[SYNC] Token disponível?', !!wiseAppToken);
-      console.log('[SYNC] Company ID:', companyId);
-      
+      console.log("🚀🚀🚀 [SYNC] INICIANDO SINCRONIZAÇÃO!!!");
+      console.log("[SYNC] Token disponível?", !!wiseAppToken);
+      console.log("[SYNC] Company ID:", companyId);
+
       if (!wiseAppToken) {
-        console.error('❌ [SYNC] Token WiseApp não disponível');
+        console.error("❌ [SYNC] Token WiseApp não disponível");
         throw new Error("Token WiseApp não disponível");
       }
 
@@ -514,18 +514,18 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleSyncClick = async () => {
-    console.log('🔘 [SYNC] Botão de sincronizar clicado!');
+    console.log("🔘 [SYNC] Botão de sincronizar clicado!");
     if (isSyncing) {
-      console.log('⏸️ [SYNC] Já está sincronizando, ignorando...');
+      console.log("⏸️ [SYNC] Já está sincronizando, ignorando...");
       return;
     }
     setIsSyncing(true);
-    console.log('▶️ [SYNC] Iniciando sincronização...');
+    console.log("▶️ [SYNC] Iniciando sincronização...");
     try {
       await syncWiseAppToLocal.mutateAsync();
     } finally {
       setIsSyncing(false);
-      console.log('⏹️ [SYNC] Sincronização finalizada');
+      console.log("⏹️ [SYNC] Sincronização finalizada");
     }
   };
 

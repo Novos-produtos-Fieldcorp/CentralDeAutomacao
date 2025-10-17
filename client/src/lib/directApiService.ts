@@ -310,10 +310,10 @@ export const getWiseAppLabels = async (accountId: string, token: string, company
     }
   }
 
-  const primaryUrl = createApiUrl(`wiseapp/${finalCompanyId}/labels`);
+  const primaryUrl = createApiUrl(`wiseapp/${accountId}/labels`);
   const fallbackUrls = [
-    createApiUrl(`wiseapp/2/labels`), // Fallback para companyId 2
-    createApiUrl(`wiseapp/1/labels`)  // Fallback para companyId 1
+    createApiUrl(`wiseapp/5/labels`), // Fallback para accountId 5
+    createApiUrl(`wiseapp/1/labels`)  // Fallback para accountId 1
   ].filter(url => url !== primaryUrl); // Remove duplicatas
   
   console.log('🌐 [getWiseAppLabels] URL primária:', primaryUrl);
