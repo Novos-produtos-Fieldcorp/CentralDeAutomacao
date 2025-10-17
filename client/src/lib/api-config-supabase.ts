@@ -3,7 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isLocalDev = window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1' ||
+                   window.location.hostname.includes('replit.dev');  // Replit também usa backend local
 const isNetlify = window.location.hostname.includes('netlify.app');
 
 if (!supabaseUrl || !supabaseAnonKey) {
