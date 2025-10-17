@@ -51,10 +51,6 @@ Preferred communication style: Simple, everyday language.
   - Contact labels: Uses `/contacts/` endpoint (NOT `/conversations/`) with payload `{labels: ["tag1", "tag2"]}`
   - Fixed in: TagAdministration, TagManager, BulkActionsModal (GET/POST), MotoristaTagsManager (GET/POST/DELETE)
   - Backend routes: `/api/wiseapp/:companyId/contacts/:contactId/labels` (GET/POST/DELETE) fully implemented
-  - **Automatic Tag Sync**: 
-    - `searchWiseAppContactWithTags()` automatically syncs WiseApp contact tags to local database when searching contacts, creating tags if needed and associating them to motoristas in background
-    - `MotoristaTagsManager` component automatically fetches and syncs tags from WiseApp when motorista has `conversation_id` (contact ID) saved, using endpoint `https://chat.wiseapp360.com/api/v1/accounts/{accountId}/contacts/{contactId}/labels`
-    - Auto-sync runs on component mount when `conversation_id` is available, keeping local tags in sync with WiseApp without manual intervention
 
 ## External Dependencies
 

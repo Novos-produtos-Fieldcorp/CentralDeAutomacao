@@ -1354,7 +1354,6 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   <MotoristaTagsManager 
                     motoristaId={motorista.motorista_id}
                     companyId={motorista.company_id || 1}
-                    conversationId={motorista.conversation_id}
                   />
                 </div>
               )}

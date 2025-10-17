@@ -6,7 +6,7 @@ import type { Cliente } from '../types/database';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
-import { searchWiseAppContact, searchWiseAppContactWithTags } from '../lib/directApiService';
+import { searchWiseAppContact } from '../lib/directApiService';
 import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
 
 interface BulkActionsModalProps {
@@ -282,14 +282,8 @@ const BulkActionsModal = ({
             const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
 
             try {
-              // Buscar contato no WiseApp E sincronizar tags automaticamente
-              const searchData = await searchWiseAppContactWithTags(
-                wiseAppAccountId, 
-                wiseAppToken, 
-                formattedPhone,
-                motoristaId,
-                companyId || 0
-              );
+              // Buscar contato no WiseApp usando o serviço existente
+              const searchData = await searchWiseAppContact(wiseAppAccountId, wiseAppToken, formattedPhone);
 
               // Corrigir estrutura de dados (descoberta: searchData é array direto)
               const contacts = Array.isArray(searchData) ? searchData : (searchData?.payload || []);
