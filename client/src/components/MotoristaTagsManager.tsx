@@ -339,7 +339,7 @@ export function MotoristaTagsManager({
 
                 // Remover tag do contato usando rota que preserva outras tags
                 const tagResponse = await fetch(
-                  `/api/wiseapp/${companyId}/contacts/${contact.id}/labels/${tagId}`,
+                  `/api/${wiseAppAccountId}/contacts/${contact.id}/labels/${tagId}`,
                   {
                     method: "DELETE",
                     headers: {
@@ -420,7 +420,7 @@ export function MotoristaTagsManager({
       queryClient.invalidateQueries({
         queryKey: ["motorista-tags", motoristaId],
       });
-      queryClient.invalidateQueries({ queryKey: ["local-tags", companyId] });
+      queryClient.invalidateQueries({ queryKey: ["local-tags", accountId] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       queryClient.invalidateQueries({ queryKey: ["all-tags"] });
       toast.success("Marcador atualizado com sucesso!");
@@ -457,7 +457,7 @@ export function MotoristaTagsManager({
       queryClient.invalidateQueries({
         queryKey: ["motorista-tags", motoristaId],
       });
-      queryClient.invalidateQueries({ queryKey: ["local-tags", companyId] });
+      queryClient.invalidateQueries({ queryKey: ["local-tags", accountId] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       queryClient.invalidateQueries({ queryKey: ["all-tags"] });
       toast.success("Marcador deletado com sucesso!");
