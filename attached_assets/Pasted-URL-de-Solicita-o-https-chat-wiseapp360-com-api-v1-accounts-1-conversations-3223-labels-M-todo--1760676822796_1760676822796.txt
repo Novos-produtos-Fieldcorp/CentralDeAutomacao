@@ -1,0 +1,92 @@
+URL de Solicitação
+https://chat.wiseapp360.com/api/v1/accounts/1/conversations/3223/labels
+Método de Solicitação
+POST
+Código de Status
+200 OK
+Endereço Remoto
+5.161.187.222:443
+Política de referenciador
+strict-origin-when-cross-origin
+access-token
+fUSPFIDfDWM9ZBt8VJmLhQ
+authorization
+Bearer eyJhY2Nlc3MtdG9rZW4iOiJmVVNQRklEZkRXTTlaQnQ4VkptTGhRIiwidG9rZW4tdHlwZSI6IkJlYXJlciIsImNsaWVudCI6Imc4TGxzQW54cEo1OEpwSldtYUNJZ3ciLCJleHBpcnkiOiIxNzYyMjYxMjUzIiwidWlkIjoia2V2ZW4ubWF0ZXVzQGZpZWxkY29ycC5jb20uYnIifQ==
+cache-control
+max-age=0, private, must-revalidate
+client
+g8LlsAnxpJ58JpJWmaCIgw
+content-length
+27
+content-type
+application/json; charset=utf-8
+date
+Fri, 17 Oct 2025 04:53:32 GMT
+etag
+W/"0fac1b4575da4c9486aa037fe2e6f18c"
+expiry
+1762261253
+set-cookie
+_chatwoot_session=GgzVm%2FE3UP40JVIhAk%2BngKZsHzLxzU%2Fqh64JYXYlgkvOGNlTVscGbOZT5BuGbwAJJvrszAxaz0L7O5vTwYE3jxhrvqZ6y3rimy%2BLXktRmL0LDMrooseVlD%2B5Z9owKsMYAseqDP0RHRbypN4ealpRJCqvfOQeV%2F4aQyvD9RY1PvEYD83tw%2BA1az9lFBzL7RKnW9uc%2BipOTgvhuNKV4DLvCyn0ZHZr5VoRKMa25Bv25gnGlFSjVP1n9bvqeO5P4gp5OJxXO1k3Vrj8Zzd2Tt17onhHPMmz7OcHAHEKMBwRQYPjvBABYhhlJ33ZSXcQfeB9sQyfSQ2ijtrQUGrpA7qszy7rHAgTvbLS4kzWZfGVNAlPhSAt5rwKPdf2U%2B21xsUTGm37x2NIyeYl--YuZ1JSQV1irVON2G--bxgV9zeb7TGvhRjqsuQYeA%3D%3D; path=/; secure; httponly; samesite=lax
+strict-transport-security
+max-age=63072000; includeSubDomains
+token-type
+Bearer
+uid
+keven.mateus@fieldcorp.com.br
+x-frame-options
+ALLOWALL
+x-request-id
+c93afb04-9adb-49f9-9456-9d3b4eeed109
+x-runtime
+0.046125
+:authority
+chat.wiseapp360.com
+:method
+POST
+:path
+/api/v1/accounts/1/conversations/3223/labels
+:scheme
+https
+accept
+application/json, text/plain, */*
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+pt-BR,pt;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6
+access-token
+fUSPFIDfDWM9ZBt8VJmLhQ
+client
+g8LlsAnxpJ58JpJWmaCIgw
+content-length
+26
+content-type
+application/json
+cookie
+cw_conversation=eyJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VfaWQiOiI1NWNmMGI3NS02YzYxLTQ4YjMtYmVmOS05NTY3NDEwZWFhOWQiLCJpbmJveF9pZCI6Nzh9.geDYFNXp7lZAPci6AkK1zgxLa3xAqf0FsoKPYO-uqMw; cw_user_x9tUpeaa5E5A8Uqd9zwcy5Dd=77ca22f173d299bac4f3100124e998a0; cw_d_session_info={%22access-token%22:%22fUSPFIDfDWM9ZBt8VJmLhQ%22%2C%22authorization%22:%22Bearer%20eyJhY2Nlc3MtdG9rZW4iOiJmVVNQRklEZkRXTTlaQnQ4VkptTGhRIiwidG9rZW4tdHlwZSI6IkJlYXJlciIsImNsaWVudCI6Imc4TGxzQW54cEo1OEpwSldtYUNJZ3ciLCJleHBpcnkiOiIxNzYyMjYxMjUzIiwidWlkIjoia2V2ZW4ubWF0ZXVzQGZpZWxkY29ycC5jb20uYnIifQ==%22%2C%22cache-control%22:%22max-age=0%2C%20private%2C%20must-revalidate%22%2C%22client%22:%22g8LlsAnxpJ58JpJWmaCIgw%22%2C%22content-length%22:%221097%22%2C%22content-type%22:%22application/json%3B%20charset=utf-8%22%2C%22date%22:%22Thu%2C%2004%20Sep%202025%2013:00:53%20GMT%22%2C%22etag%22:%22W/%5C%2208ae5ab4396ec4a0060d907ab4b17dcc%5C%22%22%2C%22expiry%22:%221762261253%22%2C%22strict-transport-security%22:%22max-age=63072000%3B%20includeSubDomains%22%2C%22token-type%22:%22Bearer%22%2C%22uid%22:%22keven.mateus@fieldcorp.com.br%22%2C%22x-frame-options%22:%22ALLOWALL%22%2C%22x-request-id%22:%221c0c89c5-f7ea-4d58-bb3a-ee5acc9ec13b%22%2C%22x-runtime%22:%220.229199%22}; _ugeuid=80cdda0f-4e2b-4d67-985b-1d622be51f51; _chatwoot_session=0cuwVjticDC3xqhFpjf%2FG5jA0JTf5XnD0X8E%2BBu7QoBlEIBkANmZaek9lQR2Vus7OFZPol%2F9ugXmMRAKt8dTkj8a9tNovXeLiGSQBaGOKZiJGimKxUPQi%2FSiGamEQQ%2FP%2BJYnpoTQ1WxMcTp9TmwWsK6he65LP%2BbQVLW0vIWwPQRLIQHWUPRPE10J13Pox3CijQOA1fSgqHjnNWN70LOs%2BPgaOXL%2BDPPO8EVXsB%2FtaRFlmQJ4tizJ3OaOdDGbLFv0N%2FhE7YdcqLFRdAm5l24%2BNOh78g26aFYR7qOzKZgE7OfqOkFRAD5wbexB2hejne2zofjAGjvNr4lEWjUsqEkUT%2FWr2h4Ljp9nLWxWgicnDsbS7zW6XMEWpMoufIbHGPjYjfyClUK7mXtF--V9iMjIVFU6LK6HeL--u%2Fp2nm1xE0k7qFnuVZikYg%3D%3D
+expiry
+1762261253
+origin
+https://chat.wiseapp360.com
+priority
+u=1, i
+referer
+https://chat.wiseapp360.com/app/accounts/1/conversations/3223
+sec-ch-ua
+"Microsoft Edge";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"Windows"
+sec-fetch-dest
+empty
+sec-fetch-mode
+cors
+sec-fetch-site
+same-origin
+token-type
+Bearer
+uid
+keven.mateus@fieldcorp.com.br
+user-agent
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0

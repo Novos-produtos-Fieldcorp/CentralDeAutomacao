@@ -44,12 +44,13 @@ Preferred communication style: Simple, everyday language.
 - **WiseApp Token Authentication**: Email-based authentication - user provides email once, system saves to localStorage and retrieves token from `wiseapp_acesso` table by email for all subsequent operations.
 - **WiseApp Tag Operations**: All tag operations (create, delete, sync, assign individual/bulk) now correctly use:
   - `wiseapp-account-id` header: Always converted to String from `id_conta_wiseapp` for proper WiseApp account routing
-  - API URLs: Use `accountId` for WiseApp API calls, `companyId` for backend routing
+  - API URLs: MUST include `companyId` in path: `/api/wiseapp/${companyId}/contacts/${contactId}/labels`
   - Account isolation: Backend uses `wiseapp-account-id` header to route requests to correct WiseApp account
   - Bidirectional sync: Syncs FROM WiseApp TO local DB (adds what's in WiseApp but not in DB, removes what's in DB but not in WiseApp)
-  - Label structure: WiseApp API uses `name` field for tag names (stored as `nome` in Supabase)
-  - Fixed in: TagAdministration, TagManager, BulkActionsModal, MotoristaTagsManager, AgregadosLista, MotoristasLista
-  - Supabase Edge Functions: Added DELETE `/wiseapp/:companyId/labels/:labelId` route (requires deployment)
+  - Label structure: WiseApp API uses `name` field for tag names when reading, accepts `labels` array when writing
+  - Contact labels: Uses `/contacts/` endpoint (NOT `/conversations/`) with payload `{labels: ["tag1", "tag2"]}`
+  - Fixed in: TagAdministration, TagManager, BulkActionsModal (GET/POST), MotoristaTagsManager (GET/POST/DELETE)
+  - Backend routes: `/api/wiseapp/:companyId/contacts/:contactId/labels` (GET/POST/DELETE) fully implemented
 
 ## External Dependencies
 
