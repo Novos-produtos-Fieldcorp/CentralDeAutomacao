@@ -344,7 +344,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
     const deleteResponse = await fetch(
       createApiUrl(
-        `wiseapp/${company.id_conta_wiseapp}/labels/${wiseAppLabel.id}`,
+        `wiseapp/${tag.company_id}/labels/${wiseAppLabel.id}`,
       ),
       {
         method: "DELETE",
