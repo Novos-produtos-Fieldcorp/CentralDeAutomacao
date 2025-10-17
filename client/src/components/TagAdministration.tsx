@@ -258,7 +258,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     const response = await fetch(
-      createApiUrl(`wiseapp/${company.id_conta_wiseapp}/labels`),
+      createApiUrl(`wiseapp/${tag.company_id}/labels`),
       {
         method: "POST",
         headers: {
@@ -310,7 +310,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     const labelsResponse = await fetch(
-      createApiUrl(`wiseapp/${company.id_conta_wiseapp}/labels`),
+      createApiUrl(`wiseapp/${tag.company_id}/labels`),
       {
         method: "GET",
         headers: {
@@ -347,7 +347,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
     const deleteResponse = await fetch(
       createApiUrl(
-        `wiseapp/${company.id_conta_wiseapp}/labels/${wiseAppLabel.id}`,
+        `wiseapp/${tag.company_id}/labels/${wiseAppLabel.id}`,
       ),
       {
         method: "DELETE",
