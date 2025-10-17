@@ -175,10 +175,10 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       if (!accountId) {
         // Get from localStorage if available
         try {
-          accountId = localStorage?.getItem('account_id');
+          accountId = localStorage?.getItem('account_id') || undefined;
           console.log('🔍 [WiseAppAccess] Account ID do localStorage:', accountId);
         } catch {
-          accountId = null;
+          accountId = undefined;
         }
       }
       
