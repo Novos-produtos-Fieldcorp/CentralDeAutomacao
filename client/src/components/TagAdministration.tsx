@@ -136,7 +136,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     },
     onSuccess: () => {
       // Invalidar todas as queries relacionadas a tags
-      queryClient.invalidateQueries({ queryKey: ["local-tags", companyId] });
+      queryClient.invalidateQueries({ queryKey: ["local-tags", accountId] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       queryClient.invalidateQueries({ queryKey: ["all-tags"] });
       toast.success("Marcador atualizado com sucesso!");
@@ -182,7 +182,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     },
     onSuccess: async () => {
       // Invalidar todas as queries relacionadas a tags
-      queryClient.invalidateQueries({ queryKey: ["local-tags", companyId] });
+      queryClient.invalidateQueries({ queryKey: ["local-tags", accountId] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       queryClient.invalidateQueries({ queryKey: ["all-tags"] });
       toast.success("Marcador deletado do WiseApp e banco local!");
@@ -494,7 +494,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       return { added, removed };
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["local-tags", companyId] });
+      queryClient.invalidateQueries({ queryKey: ["local-tags", accountId] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       queryClient.invalidateQueries({ queryKey: ["all-tags"] });
 
