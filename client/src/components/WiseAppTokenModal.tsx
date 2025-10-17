@@ -5,7 +5,7 @@ import { Lock } from 'lucide-react';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onTokenSaved: (token: string) => void;
+  onTokenSaved: (token: string, attendantId?: number, attendantName?: string) => void;
   companyId: number | null;
 }
 

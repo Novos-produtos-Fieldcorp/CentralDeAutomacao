@@ -3,78 +3,44 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Detectar ambiente
 const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const isNetlify = window.location.hostname.includes('netlify.app');
-
-// Usar Supabase Functions em produção
-const forceExpressBackend = false;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const API_BASE_URL = isLocalDev ? '/api' : `${supabaseUrl}/functions/v1`;
 
-// Configuração híbrida: usar API local em desenvolvimento, Supabase Functions em produção
-export const API_BASE_URL = forceExpressBackend ? '/api' : (isNetlify ? `${supabaseUrl}/functions/v1` : '/api');
-
-console.log('Hybrid API Configuration:', {
+console.log('🔧 API Configuration (Supabase Only):', {
   hostname: window.location.hostname,
-  environment: forceExpressBackend ? 'Express Backend' : (isNetlify ? 'Netlify (Supabase Functions)' : isLocalDev ? 'Local (Express API)' : 'Unknown'),
+  environment: isLocalDev ? 'Local Development (Express Proxy)' : 'Production (Supabase Edge Functions)',
   apiBaseUrl: API_BASE_URL,
   supabaseUrl,
-  hasAnonKey: !!supabaseAnonKey,
-  forceExpressBackend
+  hasAnonKey: !!supabaseAnonKey
 });
 
 export const createApiUrl = (path: string) => {
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
   
-  // Usar backend Express quando necessário
-  if (forceExpressBackend) {
-    // Se já tem prefixo wiseapp/, usar diretamente
-    if (cleanPath.startsWith('wiseapp/')) {
-      return `${API_BASE_URL}/${cleanPath}`;
-    }
-    // Para rotas de sincronização sem prefixo, adicionar wiseapp/
-    if (cleanPath.includes('sync-') || cleanPath.includes('bulk-sync-')) {
-      return `${API_BASE_URL}/wiseapp/${cleanPath}`;
-    }
-    // Para outras rotas WiseApp, adicionar prefixo 'wiseapp'
-    return `${API_BASE_URL}/wiseapp/${cleanPath}`;
-  }
-  
-  // Em desenvolvimento local
   if (isLocalDev) {
-    // Se já tem prefixo wiseapp/, usar diretamente
     if (cleanPath.startsWith('wiseapp/')) {
       return `${API_BASE_URL}/${cleanPath}`;
     }
-    // Para rotas de sincronização sem prefixo, adicionar wiseapp/
     if (cleanPath.includes('sync-') || cleanPath.includes('bulk-sync-')) {
       return `${API_BASE_URL}/wiseapp/${cleanPath}`;
     }
-    // Para outras rotas WiseApp, adicionar prefixo 'wiseapp'
     return `${API_BASE_URL}/wiseapp/${cleanPath}`;
   }
   
-  // Em produção (Netlify), usar Supabase Functions com prefixo api/
-  if (isNetlify) {
-    // Se já tem prefixo wiseapp/, usar diretamente
-    if (cleanPath.startsWith('wiseapp/')) {
-      return `${API_BASE_URL}/api/${cleanPath}`;
-    }
-    // Para rotas de sincronização sem prefixo, adicionar wiseapp/
-    if (cleanPath.includes('sync-') || cleanPath.includes('bulk-sync-')) {
-      return `${API_BASE_URL}/api/wiseapp/${cleanPath}`;
-    }
-    // Para outras rotas WiseApp, adicionar prefixo 'api/wiseapp'
+  if (cleanPath.startsWith('wiseapp/')) {
+    return `${API_BASE_URL}/api/${cleanPath}`;
+  }
+  if (cleanPath.includes('sync-') || cleanPath.includes('bulk-sync-')) {
     return `${API_BASE_URL}/api/wiseapp/${cleanPath}`;
   }
-  
-  // Fallback
-  return `${API_BASE_URL}/${cleanPath}`;
+  return `${API_BASE_URL}/api/${cleanPath}`;
 };
 
 export const supabaseApiRequest = async (url: string, options: RequestInit = {}) => {
