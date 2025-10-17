@@ -8,11 +8,9 @@ import {
   Save,
   X,
   AlertTriangle,
-  RefreshCw,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
-import { getWiseAppLabels } from "@/lib/directApiService";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
 import { createApiUrl } from "@/lib/api-config-supabase";
@@ -41,7 +39,6 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   const { accountId } = useAuth();
   const { token: wiseAppToken } = useWiseAppAccess();
 
-  // Query para buscar todas as tags da empresa
   const { data: tags = [], isLoading } = useQuery<Tag[]>({
     queryKey: ["local-tags", companyId],
     queryFn: async () => {
@@ -103,7 +100,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       // Forçar refetch das queries
       await queryClient.refetchQueries({ queryKey: ["local-tags", companyId] });
 
-      toast.success("Marcador criado no WiseApp e sincronizado localmente!");
+      toast.success("Marcador criado e sincronizado com o Wiseapp!");
       setIsCreateModalOpen(false);
     },
     onError: (error: any) => {
@@ -111,7 +108,6 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     },
   });
 
-  // Mutation para atualizar tag
   const updateTagMutation = useMutation({
     mutationFn: async ({
       tagId,
@@ -135,7 +131,6 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       return data[0];
     },
     onSuccess: () => {
-      // Invalidar todas as queries relacionadas a tags
       queryClient.invalidateQueries({ queryKey: ["local-tags", accountId] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       queryClient.invalidateQueries({ queryKey: ["all-tags"] });
@@ -148,10 +143,8 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     },
   });
 
-  // Mutation para deletar tag
   const deleteTagMutation = useMutation({
     mutationFn: async (tagId: number) => {
-      // Buscar dados da tag antes de deletar
       const { data: tagData } = await supabase
         .from("tag")
         .select("*")
@@ -181,11 +174,10 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       return { success: true, tagData };
     },
     onSuccess: async () => {
-      // Invalidar todas as queries relacionadas a tags
       queryClient.invalidateQueries({ queryKey: ["local-tags", accountId] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       queryClient.invalidateQueries({ queryKey: ["all-tags"] });
-      toast.success("Marcador deletado do WiseApp e banco local!");
+      toast.success("Marcador deletado com sucesso!");
     },
     onError: (error: any) => {
       toast.error(error.message || "Erro ao deletar marcador");
@@ -227,13 +219,11 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     setDeletingTag(null);
   };
 
-  // Função para criar tag no WiseApp usando a rota do backend (estrita)
   const createWiseAppTag = async (tag: Tag) => {
     if (!wiseAppToken) {
       throw new Error("Token WiseApp não disponível");
     }
 
-    // Buscar o id_conta_wiseapp correto para este company_id
     const { data: company, error: companyError } = await supabase
       .from("company")
       .select("id_conta_wiseapp")
@@ -247,7 +237,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     }
 
     const labelData = {
-      name: tag.nome, // WiseApp usa 'name' não 'title'
+      name: tag.nome,
       color: tag.cor,
     };
 
@@ -278,20 +268,18 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         );
       }
       throw new Error(
-        `Erro ao criar tag no WiseApp: ${response.status} - ${errorData}`,
+        `Erro ao criar Marcador: ${response.status} - ${errorData}`,
       );
     }
 
     return response.json();
   };
 
-  // Função para deletar tag no WiseApp usando a rota do backend
   const deleteWiseAppTag = async (tag: Tag) => {
     if (!wiseAppToken) {
       throw new Error("Token WiseApp não disponível");
     }
 
-    // Buscar o id_conta_wiseapp correto para este company_id
     const { data: company, error: companyError } = await supabase
       .from("company")
       .select("id_conta_wiseapp")
@@ -302,7 +290,6 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       throw new Error("Account ID da empresa não encontrado");
     }
 
-    // Primeiro buscar todas as labels do WiseApp para encontrar o ID correto
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
@@ -324,21 +311,17 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     if (!labelsResponse.ok) {
       const errorData = await labelsResponse.text();
       throw new Error(
-        `Erro ao buscar labels do WiseApp: ${labelsResponse.status} - ${errorData}`,
+        `Erro ao buscar Marcadores: ${labelsResponse.status} - ${errorData}`,
       );
     }
 
     const labels = await labelsResponse.json();
-    const wiseAppLabel = labels.find((label: any) => label.name === tag.nome); // WiseApp usa 'name' não 'title'
+    const wiseAppLabel = labels.find((label: any) => label.name === tag.nome);
 
     if (!wiseAppLabel) {
-      console.log(
-        "Tag não encontrada no WiseApp, pode já ter sido deletada - continuando...",
-      );
-      return; // Não é erro crítico, tag pode já ter sido deletada manualmente
+      return;
     }
 
-    // Deletar a label no WiseApp
     const deleteController = new AbortController();
     const deleteTimeoutId = setTimeout(() => deleteController.abort(), 10000);
 
@@ -365,19 +348,11 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         `Erro ao deletar tag do WiseApp: ${deleteResponse.status} - ${errorData}`,
       );
     }
-
-    console.log("✅ Tag deletada do WiseApp com sucesso");
   };
 
-  // Função para sincronizar tags do WiseApp para o banco local (bidirecional)
   const syncWiseAppToLocal = useMutation({
     mutationFn: async () => {
-      console.log("🚀🚀🚀 [SYNC] INICIANDO SINCRONIZAÇÃO!!!");
-      console.log("[SYNC] Token disponível?", !!wiseAppToken);
-      console.log("[SYNC] Company ID:", companyId);
-
       if (!wiseAppToken) {
-        console.error("❌ [SYNC] Token WiseApp não disponível");
         throw new Error("Token WiseApp não disponível");
       }
 
@@ -394,7 +369,6 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         );
       }
 
-      // 1. Buscar tags do WiseApp
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -414,17 +388,11 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`Erro ao buscar tags do WiseApp: ${response.status}`);
+        throw new Error(`Erro ao buscar Marcadores: ${response.status}`);
       }
 
       const wiseAppLabels = await response.json();
-      console.log(
-        "🔍 [SYNC] Tags do WiseApp:",
-        wiseAppLabels.length,
-        wiseAppLabels.map((l: any) => l.title),
-      );
 
-      // 2. Buscar tags locais atuais
       const { data: localTags, error: fetchError } = await supabase
         .from("tag")
         .select("*")
@@ -437,10 +405,9 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         localTags?.map((t) => t.nome),
       );
 
-      // 3. Sincronização bidirecional
       const wiseAppLabelNames = new Set(
         wiseAppLabels
-          .filter((label: any) => label.title) // Filtrar labels sem title
+          .filter((label: any) => label.title)
           .map((label: any) => label.title.toLowerCase()),
       );
       const localTagNames = new Map(
@@ -450,12 +417,10 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       let added = 0;
       let removed = 0;
 
-      // Adicionar tags que existem no WiseApp mas não localmente
       for (const label of wiseAppLabels) {
-        if (!label.title) continue; // Pular se não tiver title
+        if (!label.title) continue;
 
         if (!localTagNames.has(label.title.toLowerCase())) {
-          console.log("➕ [SYNC] Adicionando tag do WiseApp:", label.title);
           const { error: insertError } = await supabase.from("tag").insert({
             nome: label.title,
             cor: label.color || "#3B82F6",
@@ -469,17 +434,14 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         }
       }
 
-      // Remover tags locais que não existem mais no WiseApp
       for (const [tagName, tag] of localTagNames) {
         if (!wiseAppLabelNames.has(tagName)) {
           console.log(
             "➖ [SYNC] Removendo tag do banco (não existe no WiseApp):",
             tagName,
           );
-          // Primeiro remover associações
           await supabase.from("associacao_tags").delete().eq("tag_id", tag.id);
 
-          // Depois remover a tag
           const { error: deleteError } = await supabase
             .from("tag")
             .delete()
@@ -489,8 +451,6 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         }
       }
 
-      console.log("✅ [SYNC] Sincronização concluída:", { added, removed });
-
       return { added, removed };
     },
     onSuccess: (result) => {
@@ -499,10 +459,10 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       queryClient.invalidateQueries({ queryKey: ["all-tags"] });
 
       if (result.added === 0 && result.removed === 0) {
-        toast.success("Tags já estão sincronizadas!");
+        toast.success("Marcadores já estão sincronizados!");
       } else {
         toast.success(
-          `Sincronizado! ${result.added} adicionadas, ${result.removed} removidas`,
+          `Sincronizado! ${result.added} adicionados, ${result.removed} removidos`,
         );
       }
     },
@@ -516,23 +476,20 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   const handleSyncClick = async () => {
     console.log("🔘 [SYNC] Botão de sincronizar clicado!");
     if (isSyncing) {
-      console.log("⏸️ [SYNC] Já está sincronizando, ignorando...");
       return;
     }
     setIsSyncing(true);
-    console.log("▶️ [SYNC] Iniciando sincronização...");
     try {
       await syncWiseAppToLocal.mutateAsync();
     } finally {
       setIsSyncing(false);
-      console.log("⏹️ [SYNC] Sincronização finalizada");
     }
   };
 
   if (isLoading) {
     return (
       <div className="text-center py-4 text-gray-600 dark:text-gray-400">
-        Carregando tags...
+        Carregando marcadores...
       </div>
     );
   }
