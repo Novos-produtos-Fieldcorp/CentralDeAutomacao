@@ -42,7 +42,11 @@ Preferred communication style: Simple, everyday language.
 - **Secure WiseApp Proxy**: All WiseApp API operations are routed through Supabase Edge Functions for secure token management and consistent API behavior.
 - **Database Architecture**: Exclusively uses Supabase; local Replit database is disabled.
 - **WiseApp Token Authentication**: Email-based authentication - user provides email once, system saves to localStorage and retrieves token from `wiseapp_acesso` table by email for all subsequent operations.
-- **WiseApp Tag Operations**: All tag operations (create, delete, sync, assign individual/bulk) now consistently convert `id_conta_wiseapp` or `accountId` to String before sending in `wiseapp-account-id` header, ensuring correct account routing in WiseApp API. Fixed in: TagAdministration, BulkActionsModal, MotoristaTagsManager, AgregadosLista, MotoristasLista.
+- **WiseApp Tag Operations**: All tag operations (create, delete, sync, assign individual/bulk) now correctly use:
+  - `wiseapp-account-id` header: Always converted to String from `id_conta_wiseapp` for proper account routing
+  - API URLs: Use generic routes (e.g., `wiseapp/labels`, `wiseapp/contacts/{id}/labels`) without company_id in path
+  - Account isolation: Backend uses `wiseapp-account-id` header to route requests to correct WiseApp account
+  - Fixed in: TagAdministration, BulkActionsModal, MotoristaTagsManager, AgregadosLista, MotoristasLista
 
 ## External Dependencies
 

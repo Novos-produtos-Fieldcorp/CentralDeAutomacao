@@ -292,7 +292,7 @@ const BulkActionsModal = ({
                 const contact = contacts[0];
                 
                 // Buscar labels existentes primeiro
-                const existingTagsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contact.id}/labels`), {
+                const existingTagsResponse = await fetch(createApiUrl(`wiseapp/contacts/${contact.id}/labels`), {
                   method: 'GET',
                   headers: {
                     'Content-Type': 'application/json',
@@ -314,7 +314,7 @@ const BulkActionsModal = ({
                 }
 
                 // Enviar array completo
-                const tagResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contact.id}/labels`), {
+                const tagResponse = await fetch(createApiUrl(`wiseapp/contacts/${contact.id}/labels`), {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
