@@ -424,7 +424,6 @@ export const WiseAppAccessProvider = ({
         open={showModal}
         onClose={() => setShowModal(false)}
         onTokenSaved={(newToken: string) => {
-          s;
           // Token salvo, atualizar context
           setToken(newToken);
           cacheData("wiseapp_token_cache", { token: newToken });

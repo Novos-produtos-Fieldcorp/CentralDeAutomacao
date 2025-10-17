@@ -237,7 +237,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       headers: {
         'Content-Type': 'application/json',
         'wiseapp-token': wiseAppToken,
-        'wiseapp-account-id': company.id_conta_wiseapp
+        'wiseapp-account-id': String(company.id_conta_wiseapp)
       },
       body: JSON.stringify(labelData),
       signal: controller.signal
@@ -282,7 +282,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       headers: {
         'Content-Type': 'application/json',
         'wiseapp-token': wiseAppToken,
-        'wiseapp-account-id': company.id_conta_wiseapp
+        'wiseapp-account-id': String(company.id_conta_wiseapp)
       },
       signal: controller.signal
     });
@@ -311,7 +311,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       headers: {
         'Content-Type': 'application/json',
         'wiseapp-token': wiseAppToken,
-        'wiseapp-account-id': company.id_conta_wiseapp
+        'wiseapp-account-id': String(company.id_conta_wiseapp)
       },
       signal: deleteController.signal
     });
@@ -353,7 +353,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         headers: {
           'Content-Type': 'application/json',
           'wiseapp-token': wiseAppToken,
-          'wiseapp-account-id': company.id_conta_wiseapp
+          'wiseapp-account-id': String(company.id_conta_wiseapp)
         },
         signal: controller.signal
       });
