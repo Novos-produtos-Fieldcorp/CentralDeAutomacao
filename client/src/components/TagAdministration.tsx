@@ -225,14 +225,14 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     }
 
     const labelData = {
-      name: tag.nome,
+      title: tag.nome,
       color: tag.cor
     };
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch(createApiUrl(`wiseapp/labels`), {
+    const response = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels`), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -277,7 +277,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    const labelsResponse = await fetch(createApiUrl(`wiseapp/labels`), {
+    const labelsResponse = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels`), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -295,7 +295,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     }
 
     const labels = await labelsResponse.json();
-    const wiseAppLabel = labels.find((label: any) => label.name === tag.nome);
+    const wiseAppLabel = labels.find((label: any) => label.title === tag.nome);
 
     if (!wiseAppLabel) {
       console.log('Tag não encontrada no WiseApp, pode já ter sido deletada - continuando...');
@@ -306,7 +306,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     const deleteController = new AbortController();
     const deleteTimeoutId = setTimeout(() => deleteController.abort(), 10000);
 
-    const deleteResponse = await fetch(createApiUrl(`wiseapp/labels/${wiseAppLabel.id}`), {
+    const deleteResponse = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels/${wiseAppLabel.id}`), {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -348,7 +348,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      const response = await fetch(createApiUrl(`wiseapp/labels`), {
+      const response = await fetch(createApiUrl(`wiseapp/${companyId}/labels`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -377,8 +377,8 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       // 3. Sincronização bidirecional
       const wiseAppLabelNames = new Set(
         wiseAppLabels
-          .filter((label: any) => label.name) // Filtrar labels sem name
-          .map((label: any) => label.name.toLowerCase())
+          .filter((label: any) => label.title) // Filtrar labels sem title
+          .map((label: any) => label.title.toLowerCase())
       );
       const localTagNames = new Map(localTags?.map(tag => [tag.nome.toLowerCase(), tag]) || []);
 
@@ -387,13 +387,13 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
       // Adicionar tags que existem no WiseApp mas não localmente
       for (const label of wiseAppLabels) {
-        if (!label.name) continue; // Pular se não tiver name
+        if (!label.title) continue; // Pular se não tiver title
         
-        if (!localTagNames.has(label.name.toLowerCase())) {
+        if (!localTagNames.has(label.title.toLowerCase())) {
           const { error: insertError } = await supabase
             .from('tag')
             .insert({
-              nome: label.name,
+              nome: label.title,
               cor: label.color || '#3B82F6',
               company_id: companyId,
               limite_max: null,

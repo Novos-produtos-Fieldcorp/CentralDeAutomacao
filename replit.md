@@ -43,11 +43,11 @@ Preferred communication style: Simple, everyday language.
 - **Database Architecture**: Exclusively uses Supabase; local Replit database is disabled.
 - **WiseApp Token Authentication**: Email-based authentication - user provides email once, system saves to localStorage and retrieves token from `wiseapp_acesso` table by email for all subsequent operations.
 - **WiseApp Tag Operations**: All tag operations (create, delete, sync, assign individual/bulk) now correctly use:
-  - `wiseapp-account-id` header: Always converted to String from `id_conta_wiseapp` for proper account routing
-  - API URLs: Use generic routes (e.g., `wiseapp/labels`, `wiseapp/contacts/{id}/labels`) without company_id in path
+  - `wiseapp-account-id` header: Always converted to String from `id_conta_wiseapp` for proper WiseApp account routing
+  - API URLs: Include company_id in path for backend routing (e.g., `wiseapp/${companyId}/labels`)
   - Account isolation: Backend uses `wiseapp-account-id` header to route requests to correct WiseApp account
   - Bidirectional sync: Compares WiseApp labels with local tags, adds missing tags from WiseApp, removes tags not in WiseApp
-  - Label structure: Uses `name` field (not `title`) for tag names, matching WiseApp API response format
+  - Label structure: Uses `title` field for tag names in WiseApp API (stored as `nome` in Supabase)
   - Fixed in: TagAdministration, BulkActionsModal, MotoristaTagsManager, AgregadosLista, MotoristasLista
 
 ## External Dependencies
