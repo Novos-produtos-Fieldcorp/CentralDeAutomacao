@@ -51,6 +51,7 @@ Preferred communication style: Simple, everyday language.
   - Contact labels: Uses `/contacts/` endpoint (NOT `/conversations/`) with payload `{labels: ["tag1", "tag2"]}`
   - Fixed in: TagAdministration, TagManager, BulkActionsModal (GET/POST), MotoristaTagsManager (GET/POST/DELETE)
   - Backend routes: `/api/wiseapp/:companyId/contacts/:contactId/labels` (GET/POST/DELETE) fully implemented
+  - **Automatic Tag Sync**: `searchWiseAppContactWithTags()` automatically syncs WiseApp contact tags to local database when searching contacts, creating tags if needed and associating them to motoristas in background
 
 ## External Dependencies
 

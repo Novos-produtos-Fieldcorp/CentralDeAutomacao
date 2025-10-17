@@ -24,7 +24,7 @@ import { TableDropdown } from '../../components/TableDropdown';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
 import { useAuth } from '../../context/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { searchWiseAppContact, applyWiseAppContactLabels, getWiseAppLabels } from '../../lib/directApiService';
+import { searchWiseAppContact, searchWiseAppContactWithTags, applyWiseAppContactLabels, getWiseAppLabels } from '../../lib/directApiService';
 
 // Interface para a view de contratados
 export interface ViewContratado {
@@ -927,8 +927,14 @@ const Contratados = () => {
     if (!motorista.telefone) return;
 
     try {
-      // Buscar o contato no WiseApp
-      const searchData = await searchWiseAppContact(accountId || '', wiseAppToken || '', motorista.telefone);
+      // Buscar o contato no WiseApp E sincronizar tags automaticamente
+      const searchData = await searchWiseAppContactWithTags(
+        accountId || '', 
+        wiseAppToken || '', 
+        motorista.telefone,
+        motorista.motorista_id,
+        companyId
+      );
       const contacts = searchData.payload || [];
 
       if (contacts.length === 0) return;
@@ -989,8 +995,14 @@ const Contratados = () => {
 
     setIsApplyingTag(true);
     try {
-      // Primeiro, buscar o contato no WiseApp pelo telefone
-      const searchData = await searchWiseAppContact(accountId || '', wiseAppToken || '', selectedMotorista.telefone);
+      // Buscar o contato no WiseApp E sincronizar tags automaticamente
+      const searchData = await searchWiseAppContactWithTags(
+        accountId || '', 
+        wiseAppToken || '', 
+        selectedMotorista.telefone,
+        selectedMotorista.motorista_id || 0,
+        companyId
+      );
       const contacts = searchData.payload || [];
 
       if (contacts.length === 0) {

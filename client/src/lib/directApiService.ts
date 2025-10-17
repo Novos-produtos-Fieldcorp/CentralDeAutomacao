@@ -491,6 +491,118 @@ export const getWiseAppContact = async (
   return response.json();
 };
 
+// Sincronizar tags de um contato do WiseApp para o banco local
+export const syncContactTagsFromWiseApp = async (
+  contactId: number,
+  motoristaId: number,
+  companyId: number,
+  accountId: string,
+  token: string,
+) => {
+  try {
+    // 1. Buscar tags do contato no WiseApp
+    const url = createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'wiseapp-token': token,
+        'wiseapp-account-id': String(accountId)
+      }
+    });
+
+    if (!response.ok) {
+      console.warn(`Não foi possível buscar tags do contato ${contactId}`);
+      return;
+    }
+
+    const data = await response.json();
+    const wiseAppTags = data.payload || [];
+    
+    if (wiseAppTags.length === 0) {
+      console.log(`Contato ${contactId} não tem tags no WiseApp`);
+      return;
+    }
+
+    console.log(`✅ Tags encontradas no WiseApp para contato ${contactId}:`, wiseAppTags);
+
+    // 2. Para cada tag do WiseApp, garantir que existe no banco e associar ao motorista
+    const { supabase } = await import('./supabase');
+    
+    for (const tagName of wiseAppTags) {
+      // Buscar ou criar a tag no banco
+      const { data: existingTag } = await supabase
+        .from('tag')
+        .select('tag_id')
+        .eq('nome', tagName)
+        .eq('company_id', companyId)
+        .single();
+
+      let tagId = existingTag?.tag_id;
+
+      // Se não existe, criar
+      if (!tagId) {
+        const { data: newTag } = await supabase
+          .from('tag')
+          .insert({
+            nome: tagName,
+            company_id: companyId,
+            cor: '#3B82F6' // Cor padrão azul
+          })
+          .select('tag_id')
+          .single();
+        
+        tagId = newTag?.tag_id;
+        console.log(`✅ Tag "${tagName}" criada no banco com ID ${tagId}`);
+      }
+
+      // Associar tag ao motorista se ainda não estiver associada
+      if (tagId) {
+        const { error: assocError } = await supabase
+          .from('associacao_tags')
+          .upsert({
+            motorista_id: motoristaId,
+            tag_id: tagId
+          }, {
+            onConflict: 'motorista_id,tag_id',
+            ignoreDuplicates: true
+          });
+
+        if (!assocError) {
+          console.log(`✅ Tag "${tagName}" sincronizada para motorista ${motoristaId}`);
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('Erro ao sincronizar tags (não crítico):', error);
+  }
+};
+
+// Buscar contato por telefone e sincronizar tags automaticamente
+export const searchWiseAppContactWithTags = async (
+  accountId: string,
+  token: string,
+  phone: string,
+  motoristaId: number,
+  companyId: number,
+) => {
+  // 1. Buscar o contato
+  const contacts = await searchWiseAppContact(accountId, token, phone);
+  const contactList = Array.isArray(contacts) ? contacts : (contacts?.payload || []);
+  
+  // 2. Se encontrou contato, sincronizar tags
+  if (contactList.length > 0) {
+    const contact = contactList[0];
+    console.log(`📋 Sincronizando tags do contato ${contact.id} automaticamente...`);
+    
+    // Sincronizar tags em background (não bloquear a resposta)
+    syncContactTagsFromWiseApp(contact.id, motoristaId, companyId, accountId, token)
+      .catch(err => console.warn('Erro ao sincronizar tags:', err));
+  }
+  
+  return contacts;
+};
+
 // Aplicar labels a um contato preservando existentes com retry robusto
 export const applyWiseAppContactLabels = async (
   accountId: string,
