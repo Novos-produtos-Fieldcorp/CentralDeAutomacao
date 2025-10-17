@@ -374,11 +374,14 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       if (!response.ok) {
         const errorText = await response.text()
         console.log(`WiseApp API response: ${response.status} - ${errorText}`)
+        console.log(`Payload sent:`, JSON.stringify(wiseAppPayload))
+        console.log(`Account ID used:`, accountId)
+        console.log(`Token length:`, token?.length || 0)
         
         // Se a tag já existe (422), buscar a tag existente
         if (response.status === 422) {
           try {
-            console.log('Tag já existe, buscando tag existente...')
+            console.log('Tag já existe (422), buscando tag existente...')
             
             // Buscar todas as tags para encontrar a existente
             const listResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
@@ -391,6 +394,7 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
             
             if (listResponse.ok) {
               const listData = await listResponse.json()
+              console.log(`Total labels found:`, listData.payload?.length || 0)
               const existingLabel = listData.payload?.find((label: any) => 
                 label.title.toLowerCase() === wiseAppPayload.title.toLowerCase()
               )
@@ -407,16 +411,31 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
                   status: 200,
                   headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 })
+              } else {
+                console.log('Tag não encontrada na lista mesmo com 422. Possível erro de validação.')
               }
+            } else {
+              console.log(`Failed to list labels: ${listResponse.status}`)
             }
           } catch (searchError) {
             console.error('Erro ao buscar tag existente:', searchError)
           }
         }
         
+        // Return detailed error with WiseApp response
+        let errorDetails = errorText
+        try {
+          const parsedError = JSON.parse(errorText)
+          errorDetails = JSON.stringify(parsedError, null, 2)
+        } catch {
+          // If not JSON, use as is
+        }
+        
         return new Response(JSON.stringify({
           error: `Erro ao criar label no WiseApp: ${response.status}`,
-          details: errorText
+          details: errorDetails,
+          payload: wiseAppPayload,
+          accountId: accountId
         }), {
           status: response.status,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
