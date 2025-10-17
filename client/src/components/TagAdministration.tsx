@@ -230,8 +230,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
     const labelData = {
       title: tag.nome,
-      color: tag.cor,
-      description: tag.nome
+      color: tag.cor
     };
 
     const controller = new AbortController();
@@ -473,15 +472,6 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           Administração de Marcadores
         </h3>
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleSyncClick}
-            disabled={isSyncing || !wiseAppToken}
-            className="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-700 dark:hover:bg-green-600 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Sincronizar tags do WiseApp para o banco local"
-          >
-            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? 'Sincronizando...' : 'Sincronizar WiseApp'}
-          </button>
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-2 transition-colors"
