@@ -43,6 +43,7 @@ import { format, subMonths, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { dashboardApi } from "../lib/apiService";
 import AccessTooltip from "../components/AccessTooltip";
+import LockedModuleOverlay from "../components/LockedModuleOverlay";
 import { supabase } from "../lib/supabase";
 
 // Checklist types
@@ -272,16 +273,8 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access - CENTRALIZADO */}
-      {!hasAccess && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-contratacao">
-          <AccessTooltip module="motoristas">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
-              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-            </div>
-          </AccessTooltip>
-        </div>
-      )}
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && <LockedModuleOverlay module="motoristas" />}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -437,16 +430,8 @@ const HodometroHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access - CENTRALIZADO */}
-      {!hasAccess && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-hodometros">
-          <AccessTooltip module="hodometro">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
-              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-            </div>
-          </AccessTooltip>
-        </div>
-      )}
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && <LockedModuleOverlay module="hodometro" />}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -518,16 +503,8 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access - CENTRALIZADO */}
-      {!hasAccess && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-clientes">
-          <AccessTooltip module="resumo">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
-              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-            </div>
-          </AccessTooltip>
-        </div>
-      )}
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && <LockedModuleOverlay module="resumo" />}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -706,16 +683,8 @@ const VeiculosHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access - CENTRALIZADO */}
-      {!hasAccess && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-veiculos">
-          <AccessTooltip module="resumo">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
-              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-            </div>
-          </AccessTooltip>
-        </div>
-      )}
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && <LockedModuleOverlay module="resumo" />}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -811,16 +780,8 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access - CENTRALIZADO */}
-      {!hasAccess && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-comprovantes">
-          <AccessTooltip module="comprovantes">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
-              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-            </div>
-          </AccessTooltip>
-        </div>
-      )}
+      {/* Lock overlay for restricted access */}
+      {!hasAccess && <LockedModuleOverlay module="comprovantes" />}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -891,15 +852,7 @@ const ResumoGrupoHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       !hasAccess ? "opacity-60" : ""
     }`}>
       {/* Lock overlay for restricted access */}
-      {!hasAccess && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-resumo-grupo">
-          <AccessTooltip module="resumo">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
-              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-            </div>
-          </AccessTooltip>
-        </div>
-      )}
+      {!hasAccess && <LockedModuleOverlay module="resumo" />}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -979,15 +932,7 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       !hasAccess ? "opacity-60" : ""
     }`}>
       {/* Lock overlay for restricted access */}
-      {!hasAccess && (
-        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-checklist">
-          <AccessTooltip module="checklist">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
-              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-            </div>
-          </AccessTooltip>
-        </div>
-      )}
+      {!hasAccess && <LockedModuleOverlay module="checklist" />}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
