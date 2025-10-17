@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -130,10 +130,16 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       if (error) throw error;
       return data[0];
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["local-tags", accountId] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      queryClient.invalidateQueries({ queryKey: ["all-tags"] });
+    onSuccess: async () => {
+      // Invalidar e refetch para garantir atualização imediata
+      await queryClient.invalidateQueries({ queryKey: ["local-tags", companyId] });
+      await queryClient.invalidateQueries({ queryKey: ["tags"] });
+      await queryClient.invalidateQueries({ queryKey: ["all-tags"] });
+      await queryClient.invalidateQueries({ queryKey: ["motorista-tags"] });
+      
+      // Forçar refetch imediato
+      await queryClient.refetchQueries({ queryKey: ["local-tags", companyId] });
+      
       toast.success("Marcador atualizado com sucesso!");
       setIsEditModalOpen(false);
       setEditingTag(null);
@@ -174,9 +180,15 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       return { success: true, tagData };
     },
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ["local-tags", accountId] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      queryClient.invalidateQueries({ queryKey: ["all-tags"] });
+      // Invalidar e refetch para garantir atualização imediata
+      await queryClient.invalidateQueries({ queryKey: ["local-tags", companyId] });
+      await queryClient.invalidateQueries({ queryKey: ["tags"] });
+      await queryClient.invalidateQueries({ queryKey: ["all-tags"] });
+      await queryClient.invalidateQueries({ queryKey: ["motorista-tags"] });
+      
+      // Forçar refetch imediato
+      await queryClient.refetchQueries({ queryKey: ["local-tags", companyId] });
+      
       toast.success("Marcador deletado com sucesso!");
     },
     onError: (error: any) => {
@@ -840,6 +852,15 @@ function EditTagModal({
     cor: tag.cor,
     limite_max: tag.limite_max || "",
   });
+
+  // Atualizar formData quando a tag mudar
+  useEffect(() => {
+    setFormData({
+      nome: tag.nome,
+      cor: tag.cor,
+      limite_max: tag.limite_max || "",
+    });
+  }, [tag]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -54,6 +54,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 17, 2025 - Fixed Tag Limit Update UI Refresh
+- **Issue**: After updating the maximum limit of associates for a tag, the card didn't update without page reload
+- **Root Causes**:
+  1. `EditTagModal` wasn't updating `formData` when `tag` prop changed
+  2. `updateTagMutation` was invalidating queries with wrong key (`accountId` instead of `companyId`)
+  3. `deleteTagMutation` had the same key mismatch issue
+- **Fixes Applied**:
+  1. Added `useEffect` to `EditTagModal` to sync `formData` with `tag` prop changes
+  2. Changed query invalidation from `["local-tags", accountId]` to `["local-tags", companyId]` in both update and delete mutations
+  3. Added `refetchQueries` to force immediate UI update after mutations
+- **Files Modified**: `client/src/components/TagAdministration.tsx`
+- **Impact**: Tag cards now update immediately when limit is changed, no reload needed
+
 ### October 17, 2025 - Fixed Tag Assignment (Individual & Bulk)
 - **Issue**: Tag assignment to contacts was failing in both individual and bulk operations
 - **Root Causes**: 
