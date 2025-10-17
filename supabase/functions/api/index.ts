@@ -344,7 +344,19 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     }
 
     const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
-    const requestBody = await req.text()
+    
+    // Parse request body and transform to WiseApp format
+    const requestData = await req.json()
+    console.log('Request body received:', requestData)
+    
+    // Transform frontend format {name, color} to WiseApp format {title, color, description}
+    const wiseAppPayload = {
+      title: requestData.name,
+      color: requestData.color || '#3B82F6',
+      description: requestData.description || ''
+    }
+    
+    console.log('Transformed payload for WiseApp:', wiseAppPayload)
 
     // Create label in WiseApp
     const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`
@@ -356,17 +368,75 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
           'api_access_token': token,
           'Content-Type': 'application/json'
         },
-        body: requestBody
+        body: JSON.stringify(wiseAppPayload)
       })
 
-      const responseData = await response.text()
-
-      return new Response(responseData, {
-        status: response.status,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': response.headers.get('Content-Type') || 'application/json'
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.log(`WiseApp API response: ${response.status} - ${errorText}`)
+        
+        // Se a tag já existe (422), buscar a tag existente
+        if (response.status === 422) {
+          try {
+            console.log('Tag já existe, buscando tag existente...')
+            
+            // Buscar todas as tags para encontrar a existente
+            const listResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
+              method: 'GET',
+              headers: {
+                'api_access_token': token,
+                'Content-Type': 'application/json',
+              }
+            })
+            
+            if (listResponse.ok) {
+              const listData = await listResponse.json()
+              const existingLabel = listData.payload?.find((label: any) => 
+                label.title.toLowerCase() === wiseAppPayload.title.toLowerCase()
+              )
+              
+              if (existingLabel) {
+                console.log('Tag existente encontrada:', existingLabel)
+                const label = {
+                  id: existingLabel.id,
+                  name: existingLabel.title,
+                  color: existingLabel.color,
+                  description: existingLabel.description
+                }
+                return new Response(JSON.stringify({ success: true, label, message: 'Tag já existia no WiseApp' }), {
+                  status: 200,
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                })
+              }
+            }
+          } catch (searchError) {
+            console.error('Erro ao buscar tag existente:', searchError)
+          }
         }
+        
+        return new Response(JSON.stringify({
+          error: `Erro ao criar label no WiseApp: ${response.status}`,
+          details: errorText
+        }), {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const data = await response.json()
+      console.log('WiseApp label created successfully:', data)
+      
+      // Transform response to our format
+      const label = data.payload ? {
+        id: data.payload.id,
+        name: data.payload.title,
+        color: data.payload.color,
+        description: data.payload.description
+      } : data
+
+      return new Response(JSON.stringify({ success: true, label }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
 
     } catch (error) {

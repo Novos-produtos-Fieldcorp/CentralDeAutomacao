@@ -52,6 +52,18 @@ Preferred communication style: Simple, everyday language.
   - Fixed in: TagAdministration, TagManager, BulkActionsModal (GET/POST), MotoristaTagsManager (GET/POST/DELETE)
   - Backend routes: `/api/wiseapp/:companyId/contacts/:contactId/labels` (GET/POST/DELETE) fully implemented
 
+## Recent Changes
+
+### October 17, 2025 - Fixed Tag Creation in Netlify Deployment
+- **Issue**: Tag creation was failing with 422 error on Netlify deployment when using Supabase Edge Functions
+- **Root Cause**: Supabase Edge Function was not transforming request body format from `{name, color}` to WiseApp API format `{title, color, description}`
+- **Fix**: Updated `supabase/functions/api/index.ts` POST `/wiseapp/:companyId/labels` handler to:
+  - Parse request body as JSON and transform field names
+  - Handle duplicate tags (422 error) by fetching existing tag
+  - Return properly formatted responses
+- **Files Modified**: `supabase/functions/api/index.ts`
+- **Deployment**: Requires Supabase Edge Function redeployment with `supabase functions deploy api`
+
 ## External Dependencies
 
 ### Core Framework & Development
