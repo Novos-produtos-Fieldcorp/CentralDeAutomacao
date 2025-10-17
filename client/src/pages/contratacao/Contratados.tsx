@@ -999,7 +999,7 @@ const Contratados = () => {
       const searchData = await searchWiseAppContactWithTags(
         accountId || '', 
         wiseAppToken || '', 
-        String(selectedMotorista.telefone),
+        selectedMotorista.telefone,
         selectedMotorista.motorista_id || 0,
         companyId
       );
