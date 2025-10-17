@@ -8,37 +8,37 @@ interface ModuleInfo {
 
 const moduleConfig: Record<string, ModuleInfo> = {
   hodometro: {
-    title: '📊 Hodômetro Automatizado',
+    title: 'Hodômetro Automatizado',
     description: 'Controle quilometragem, consumo e custos operacionais automaticamente',
     whatsappMessage: 'Olá! Gostaria de contratar o módulo de Hodômetro Automatizado'
   },
   checklist: {
-    title: '🚀 Checklist Automatizado',
+    title: 'Checklist Automatizado',
     description: 'Automatize suas inspeções e verificações de veículos com checklists digitais',
     whatsappMessage: 'Olá! Gostaria de contratar o módulo de Checklist'
   },
   vagas: {
-    title: '💼 Sistema de Vagas',
+    title: 'Sistema de Vagas',
     description: 'Gerencie processos de contratação e vagas abertas de forma eficiente',
     whatsappMessage: 'Olá! Gostaria de contratar o módulo de Vagas e Contratação'
   },
   motoristas: {
-    title: '👥 Gestão de Motoristas',
+    title: 'Gestão de Motoristas',
     description: 'Controle completo de documentos, histórico e performance dos motoristas',
     whatsappMessage: 'Olá! Gostaria de contratar o módulo de Motoristas'
   },
   resumo: {
-    title: '📱 Resumo WhatsApp',
+    title: 'Resumo WhatsApp',
     description: 'Envie resumos automáticos via WhatsApp para seus grupos e contatos',
     whatsappMessage: 'Olá! Gostaria de contratar o módulo de Resumo em Grupo'
   },
   comprovantes: {
-    title: '📄 Comprovantes Digitais',
+    title: 'Comprovantes Digitais',
     description: 'Gerencie e organize todos os comprovantes de forma digital e segura',
     whatsappMessage: 'Olá! Gostaria de contratar o módulo de Comprovantes'
   },
   tags: {
-    title: '🏷️ Tags e Marcadores',
+    title: 'Tags e Marcadores',
     description: 'Organize e categorize seus contatos com tags personalizadas',
     whatsappMessage: 'Olá! Gostaria de contratar o módulo de Tags'
   }
@@ -82,7 +82,7 @@ const LockedModuleOverlay = ({ module, contactNumber = '5511999999999' }: Locked
         className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
         data-testid={`button-contact-${module}`}
       >
-        💬 Falar com Atendente
+        Falar com Atendente
       </a>
     </div>
   );
