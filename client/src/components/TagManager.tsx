@@ -79,7 +79,10 @@ export function TagManager({ companyId }: TagManagerProps) {
       // Buscar tags do WiseApp usando função robusta
       // Synchronizing tags with WiseApp
       const wiseAppLabelsResponse = await getWiseAppLabels(accountId || '', wiseAppToken || '', companyId);
+      console.log('📦 [SYNC] Resposta do WiseApp (RAW):', wiseAppLabelsResponse);
       const wiseAppTagsData = wiseAppLabelsResponse.payload || wiseAppLabelsResponse || [];
+      console.log('📦 [SYNC] Tags extraídas:', wiseAppTagsData);
+      console.log('📦 [SYNC] Primeira tag:', wiseAppTagsData[0]);
       // Tags found from WiseApp
       // WiseApp labels retrieved
 
