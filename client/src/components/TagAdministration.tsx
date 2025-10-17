@@ -247,7 +247,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     }
 
     const labelData = {
-      name: tag.nome,  // WiseApp usa 'name' não 'title'
+      name: tag.nome, // WiseApp usa 'name' não 'title'
       color: tag.cor,
     };
 
@@ -329,7 +329,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     }
 
     const labels = await labelsResponse.json();
-    const wiseAppLabel = labels.find((label: any) => label.name === tag.nome);  // WiseApp usa 'name' não 'title'
+    const wiseAppLabel = labels.find((label: any) => label.name === tag.nome); // WiseApp usa 'name' não 'title'
 
     if (!wiseAppLabel) {
       console.log(
@@ -344,7 +344,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
     const deleteResponse = await fetch(
       createApiUrl(
-        `wiseapp/${tag.company_id}/labels/${wiseAppLabel.id}`,
+        `wiseapp/${company.id_conta_wiseapp}/labels/${wiseAppLabel.id}`,
       ),
       {
         method: "DELETE",
