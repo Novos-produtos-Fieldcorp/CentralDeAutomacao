@@ -46,6 +46,8 @@ Preferred communication style: Simple, everyday language.
   - `wiseapp-account-id` header: Always converted to String from `id_conta_wiseapp` for proper account routing
   - API URLs: Use generic routes (e.g., `wiseapp/labels`, `wiseapp/contacts/{id}/labels`) without company_id in path
   - Account isolation: Backend uses `wiseapp-account-id` header to route requests to correct WiseApp account
+  - Bidirectional sync: Compares WiseApp labels with local tags, adds missing tags from WiseApp, removes tags not in WiseApp
+  - Label structure: Uses `name` field (not `title`) for tag names, matching WiseApp API response format
   - Fixed in: TagAdministration, BulkActionsModal, MotoristaTagsManager, AgregadosLista, MotoristasLista
 
 ## External Dependencies
