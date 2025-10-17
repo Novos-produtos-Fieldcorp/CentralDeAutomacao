@@ -323,7 +323,7 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
                 <Truck className="w-3 h-3 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.agregados}
                 </div>
                 <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
@@ -337,7 +337,7 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
                 <Users className="w-3 h-3 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.contratados}
                 </div>
                 <p className="text-xs text-green-600 dark:text-green-400 font-medium">
@@ -351,7 +351,7 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
                 <UserCheck className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.contratados}
                 </div>
                 <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
@@ -391,13 +391,13 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
         </h3>
         <div className="grid grid-cols-4 gap-2">
           <div className="text-center">
-            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               {stats.vagasAbertas}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Abertas</p>
           </div>
           <div className="text-center">
-            <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {stats.vagasPreenchidas}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -405,13 +405,13 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
             </p>
           </div>
           <div className="text-center">
-            <div className="text-sm font-bold text-red-600 dark:text-red-400">
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
               {stats.vagasVencidas}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Vencidas</p>
           </div>
           <div className="text-center">
-            <div className="text-sm font-bold text-purple-600 dark:text-purple-400">
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
               {stats.taxaPreenchimento}%
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Taxa</p>
@@ -563,7 +563,7 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
               <Building2 className="w-3 h-3 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {stats.clientes.total}
               </div>
               <p className="text-xs text-teal-600 dark:text-teal-400 font-medium">
@@ -578,7 +578,7 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
               <UserCheck className="w-3 h-3 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {stats.clientes.ativos}
               </div>
               <p className="text-xs text-green-600 dark:text-green-400 font-medium">
@@ -1512,10 +1512,32 @@ const Dashboard: React.FC = () => {
       const clientesAtivos = clientesAtivosResult.count || 0;
       const clientesDesativos = totalClientes - clientesAtivos;
 
+      // Debug: Log para verificar se filtro por company_id está funcionando
+      console.log("🔍 DEBUG Clientes - Company ID usado:", companyId);
+      console.log("🔍 DEBUG Clientes - Total encontrados:", totalClientes);
+      console.log("🔍 DEBUG Clientes - Dados recentes:", clientesRecentResult.data);
+      
+      // TEMPORARY FIX: Filter out obviously incorrect client data that belongs to other companies
+      const filteredRecentClientes = (clientesRecentResult.data || []).filter((cliente) => {
+        // Filter out obvious company names that shouldn't be in this account
+        const nome = cliente.nome?.toUpperCase() || '';
+        const isIncorrectData = (
+          nome.includes('WEBMOTORS') ||
+          nome.includes('DAITAN') ||
+          (nome === 'TESTE' && cliente.cliente_id > 300) // Old test data with high IDs
+        );
+        
+        if (isIncorrectData) {
+          console.warn(`🚫 Filtering out incorrect client data: ${cliente.nome} (ID: ${cliente.cliente_id})`);
+        }
+        
+        return !isIncorrectData;
+      });
+      
       // Calculate new clients this month - using fallback since created_at doesn't exist
       const clientesNoMes = 0; // Disabled due to schema limitation
 
-      const recentClientes = (clientesRecentResult.data || []).map((c) => ({
+      const recentClientes = filteredRecentClientes.map((c) => ({
         nome: c.nome,
         created_at: new Date().toISOString(), // Using fallback since created_at doesn't exist
       }));

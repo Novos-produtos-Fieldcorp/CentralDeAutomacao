@@ -254,8 +254,7 @@ export const wiseAppService = {
       };
     }
 
-    // Testar acesso ao WiseApp via backend proxy
-    const testUrl = `/api/api/v1/accounts/${companyId}/inboxes`;
+    const testUrl = `/api/v1/accounts/${companyId}/inboxes`;
 
     try {
       const testResponse = await fetch(testUrl, {
@@ -286,7 +285,7 @@ export const wiseAppService = {
 };
 
 // Funções para WiseApp API via backend proxy
-const CHAT_API_URL = '/api/api/v1'; // Use backend proxy instead of direct API
+const CHAT_API_URL = '/api/v1'; // Use backend proxy instead of direct API
 
 // Buscar todas as labels da conta via backend existente com retry robusto
 export const getWiseAppLabels = async (accountId: string, token: string, companyId?: number) => {

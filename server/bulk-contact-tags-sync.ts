@@ -93,6 +93,67 @@ async function getWiseAppToken(companyId: number): Promise<string | null> {
   }
 }
 
+// Função para criar tag no WiseApp
+export async function createTagInWiseApp(companyId: number, tagName: string, tagColor: string = '#3B82F6'): Promise<{ success: boolean; labelId?: number; error?: string }> {
+  try {
+    // Buscar token WiseApp
+    const token = await getWiseAppToken(companyId);
+    if (!token) {
+      return { success: false, error: 'Token WiseApp não configurado' };
+    }
+
+    // Buscar account_id da empresa
+    const { data: company, error: companyError } = await supabaseBackend
+      .from('company')
+      .select('id_conta_wiseapp')
+      .eq('company_id', companyId)
+      .single();
+
+    if (companyError || !company) {
+      return { success: false, error: 'Empresa não encontrada' };
+    }
+
+    const accountId = company.id_conta_wiseapp;
+    
+    // Verificar se account_id está configurado
+    if (!accountId) {
+      return { success: false, error: 'ID da conta WiseApp não configurado para esta empresa' };
+    }
+    const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
+
+    // Criar label no WiseApp
+    const response = await fetch(`${wiseappApiUrl}/api/v1/accounts/${accountId}/labels`, {
+      method: 'POST',
+      headers: {
+        'api_access_token': token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        title: tagName,
+        color: tagColor,
+        description: `Tag criada pela central: ${tagName}`
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[createTagInWiseApp] Erro ao criar label no WiseApp:`, errorText);
+      return { success: false, error: `Erro ${response.status}: ${errorText}` };
+    }
+
+    const result = await response.json();
+    const labelId = result.id || result.payload?.id;
+    
+    console.log(`[createTagInWiseApp] Tag criada no WiseApp com sucesso: ${tagName} (ID: ${labelId})`);
+    return { success: true, labelId };
+
+  } catch (error) {
+    console.error(`[createTagInWiseApp] Erro inesperado:`, error);
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
+  }
+}
+
 // Função principal de sincronização bulk de tags de contatos
 export async function bulkSyncContactTags(req: Request, res: Response): Promise<void> {
   try {
@@ -187,7 +248,7 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
           }
         });
 
-        // 5. Criar todas as tags localmente (se não existirem)
+        // 5. Buscar tags existentes da empresa
         const existingTagsQuery = await supabaseBackend
           .from('tag')
           .select('nome, id')
@@ -197,31 +258,12 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
         const existingTagNames = new Set(existingTags.map(tag => tag.nome.toLowerCase()));
         const tagNameToIdMap = new Map<string, number>();
         existingTags.forEach(tag => tagNameToIdMap.set(tag.nome.toLowerCase(), tag.id));
-
-        // Criar tags que não existem
-        const tagsToCreate = allLabels
-          .filter((label: any) => !existingTagNames.has((label.title || label.name || '').toLowerCase()))
-          .map((label: any) => ({
-            nome: label.title || label.name || 'Tag',
-            cor: label.color || '#3B82F6',
-            company_id: parseInt(companyId),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }));
-
-        if (tagsToCreate.length > 0) {
-          console.log(`Creating ${tagsToCreate.length} new tags locally...`);
-          const { data: newTags, error: createTagsError } = await supabaseBackend
-            .from('tag')
-            .insert(tagsToCreate)
-            .select('id, nome');
-
-          if (createTagsError) {
-            console.error('Error creating tags:', createTagsError);
-          } else {
-            newTags?.forEach(tag => tagNameToIdMap.set(tag.nome.toLowerCase(), tag.id));
-          }
-        }
+        
+        // Set para coletar labels únicas encontradas nos contatos dos motoristas
+        const labelsFromMotoristas = new Set<string>();
+        
+        // Contador de tags realmente criadas
+        let actualNewTagsCreated = 0;
 
         // 6. Processar cada contato e suas tags
         for (const contact of contacts) {
@@ -269,6 +311,32 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
               for (const label of contactLabels) {
                 try {
                   const tagName = (label.title || label.name || '').toLowerCase();
+                  
+                  // Adicionar label ao Set de labels dos motoristas
+                  labelsFromMotoristas.add(tagName);
+                  
+                  // Criar tag localmente se ainda não existir
+                  if (!existingTagNames.has(tagName)) {
+                    const { data: newTag, error: createTagError } = await supabaseBackend
+                      .from('tag')
+                      .insert({
+                        nome: label.title || label.name || 'Tag',
+                        cor: label.color || '#3B82F6',
+                        company_id: parseInt(companyId),
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                      })
+                      .select('id, nome')
+                      .single();
+
+                    if (!createTagError && newTag) {
+                      tagNameToIdMap.set(newTag.nome.toLowerCase(), newTag.id);
+                      existingTagNames.add(tagName);
+                      actualNewTagsCreated++; // Incrementar contador de tags criadas
+                      console.log(`Created new tag: ${newTag.nome} (ID: ${newTag.id})`);
+                    }
+                  }
+                  
                   const localTagId = tagNameToIdMap.get(tagName);
 
                   if (localTagId) {
@@ -327,21 +395,78 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
           }
         }
 
+        // 7. Buscar TODAS as labels do WiseApp para comparar com as tags do banco
+        console.log("Fetching all labels from WiseApp to sync...");
+        const labelsResponse = await fetch(`${wiseappApiUrl}/api/v1/accounts/${accountId}/labels`, {
+          method: 'GET',
+          headers: {
+            'api_access_token': token || '',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+
+        let removedTags = 0;
+        if (labelsResponse.ok) {
+          const labelsData = await labelsResponse.json();
+          const allWiseAppLabels = labelsData.payload || labelsData || [];
+          
+          // Criar Set com os nomes de todas as labels do WiseApp
+          const wiseAppLabelNames = new Set(
+            allWiseAppLabels.map((label: any) => (label.title || label.name || '').toLowerCase())
+          );
+
+          console.log(`Found ${wiseAppLabelNames.size} labels in WiseApp`);
+          console.log(`Found ${existingTags.length} tags in local database`);
+
+          // 8. Remover tags do banco que não existem no WiseApp
+          for (const localTag of existingTags) {
+            const tagNameLower = localTag.nome.toLowerCase();
+            
+            if (!wiseAppLabelNames.has(tagNameLower)) {
+              console.log(`Removing orphaned tag from database: ${localTag.nome} (ID: ${localTag.id})`);
+              
+              // Primeiro remover associações
+              await supabaseBackend
+                .from('associacao_tags')
+                .delete()
+                .eq('tag_id', localTag.id);
+
+              // Depois remover a tag
+              const { error: deleteError } = await supabaseBackend
+                .from('tag')
+                .delete()
+                .eq('id', localTag.id);
+
+              if (!deleteError) {
+                removedTags++;
+              } else {
+                console.error(`Error removing orphaned tag ${localTag.nome}:`, deleteError);
+              }
+            }
+          }
+
+          console.log(`Removed ${removedTags} orphaned tags from database`);
+        }
+
         const result: BulkSyncResult = {
           success: true,
           summary: {
             totalContacts: contacts.length,
             processedContacts,
-            totalLabels: allLabels.length,
+            totalLabels: labelsFromMotoristas.size,
             successfulTags,
             failedTags,
-            newTagsCreated: tagsToCreate.length
+            newTagsCreated: actualNewTagsCreated
           },
           errors: errors.length > 0 ? errors.slice(0, 10) : [], // Limitar erros retornados
           syncedTags: syncedTags.length > 0 ? syncedTags.slice(0, 20) : [] // Limitar tags sincronizadas retornadas
         };
 
         console.log("Bulk sync completed:", result.summary);
+        if (removedTags > 0) {
+          console.log(`Additional cleanup: ${removedTags} orphaned tags removed`);
+        }
         
         // Complete job if tracking
         if (jobId && jobTracker) {
@@ -396,37 +521,24 @@ export async function bulkSyncContactTags(req: Request, res: Response): Promise<
 
       console.log(`Found ${contacts.length} contacts in WiseApp`);
 
-      // 2. Buscar todas as labels do WiseApp
-      console.log("Fetching all labels from WiseApp...");
+      // 2. Não buscar TODAS as labels do WiseApp - apenas as dos contatos dos motoristas
+      // Isso evita criar tags de outras empresas compartilhando a mesma conta WiseApp
+      console.log("Preparando para processar contatos e suas labels específicas...");
       
       if (jobId && jobTracker) {
         jobTracker.updateJobProgress(jobId, {
-          currentStep: 'Buscando labels do WiseApp...',
-          message: 'Obtendo todas as tags disponíveis'
+          currentStep: 'Preparando processamento...',
+          message: 'Pronto para processar contatos e tags'
         });
       }
-      const labelsResponse = await fetch(`${wiseappApiUrl}/api/v1/accounts/${accountId}/labels`, {
-        method: 'GET',
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
-
-      if (!labelsResponse.ok) {
-        throw new Error(`Erro ao buscar labels: ${labelsResponse.status}`);
-      }
-
-      const labelsData = await labelsResponse.json();
-      const allLabels = labelsData.payload || labelsData || [];
-
-      console.log(`Found ${allLabels.length} labels in WiseApp`);
+      
+      // Inicializar array vazio - tags serão coletadas durante o processamento dos contatos
+      const allLabels: any[] = [];
 
       // If job tracking is enabled, return jobId immediately and continue processing
       if (jobId && jobTracker) {
         // Create job with initial data
-        jobTracker.createJob(jobId, contacts.length, allLabels.length);
+        jobTracker.createJob(jobId, contacts.length, 0); // 0 labels initially, will be counted during processing
         
         // Return jobId for polling
         res.json({ 

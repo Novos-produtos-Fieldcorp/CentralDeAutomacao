@@ -6,26 +6,13 @@
   NODE_VERSION = "18"
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-  included_files = ["netlify/functions/**"]
+# Não usar funções Netlify - apenas Supabase Edge Functions
+# [functions]
+#   directory = "netlify/functions"
+#   node_bundler = "esbuild"
+#   included_files = ["netlify/functions/**"]
 
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api-native/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/test/*"
-  to = "/.netlify/functions/test/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/functions/v1/sync-motoristas-bulk"
-  to = "/.netlify/functions/sync-motoristas-bulk"
-  status = 200
-
+# Redirecionamento SPA - todas as rotas vão para index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"

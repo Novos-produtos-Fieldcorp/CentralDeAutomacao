@@ -130,6 +130,8 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   const [lastMessageId, setLastMessageId] = useState<number | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout>();
+  const [pendingPhoneNumber, setPendingPhoneNumber] = useState<string | null>(null);
+  const [pendingContactName, setPendingContactName] = useState<string | null>(null);
 
   const { token: contextToken } = useWiseAppAccess();
   const accountId =
@@ -137,9 +139,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const apiKey = contextToken || (typeof localStorage !== 'undefined' ? localStorage?.getItem("wiseapp_token") : null);
 
   const api = axios.create({
-    baseURL: window.location.hostname.includes('netlify.app') 
-      ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
-      : '/api',
+    baseURL: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`,
     headers: {
       api_access_token: apiKey,
       "Content-Type": "application/json",
@@ -320,46 +320,56 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         const accountId =
           searchParams.get("account_id") || (typeof localStorage !== 'undefined' ? localStorage?.getItem("account_id") : null);
         const apiKey = contextToken || (typeof localStorage !== 'undefined' ? localStorage?.getItem("wiseapp_token") : null);
-        if (!accountId || !apiKey) return;
-        const api = axios.create({
-          baseURL: window.location.hostname.includes('netlify.app') 
-            ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
-            : '/api',
-          headers: {
-            api_access_token: apiKey,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        });
+        
+        if (!accountId || !apiKey) {
+          console.warn("Missing accountId or apiKey for inbox fetch");
+          setAvailableInboxes([]);
+          return;
+        }
+
+        console.log("Fetching inboxes with:", { accountId, hasToken: !!apiKey });
+        
         const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
         
-        // Verificar se há erro de autenticação
-        if (response.data?.error === "WiseApp authentication failed") {
-          console.warn("WiseApp authentication failed:", response.data.message);
+        if (response.status !== 200) {
+          console.error("Inbox fetch failed:", response.status, response.statusText);
           setAvailableInboxes([]);
           return;
         }
         
-        // O servidor retorna os dados diretamente, não em response.data.payload
-        const inboxesData = response.data?.payload || response.data?.inboxes || response.data;
+        const data = response.data;
+        console.log("Inboxes response:", data);
+        
+        // Verificar se há erro de autenticação
+        if (data?.error === "WiseApp authentication failed") {
+          console.warn("WiseApp authentication failed:", data.message);
+          setAvailableInboxes([]);
+          return;
+        }
+        
+        // O servidor retorna os dados diretamente, não em data.payload
+        const inboxesData = data?.payload || data?.inboxes || data;
         if (inboxesData && Array.isArray(inboxesData) && inboxesData.length > 0) {
           const allInboxes = inboxesData.map((inbox: any) => ({
             ...inbox,
             isOpen: true, // ou lógica de horário se quiser
           }));
+          console.log("Setting available inboxes:", allInboxes.length);
           setAvailableInboxes(allInboxes);
           setShowInboxSelector(true);
           setSelectedInboxId(null); // Não seleciona automaticamente
         } else {
           // No inboxes found or empty response
+          console.warn("No inboxes found in response");
           setAvailableInboxes([]);
         }
       } catch (error) {
+        console.error("Error fetching inboxes:", error);
         setAvailableInboxes([]);
       }
     };
     if (showChat) fetchInboxes();
-  }, [showChat]);
+  }, [showChat, contextToken]);
 
   const handleError = (error: unknown) => {
     console.error("Error:", error);
@@ -404,20 +414,16 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
   const fetchInboxes = async (accountId: string, apiKey: string) => {
     try {
-      const api = axios.create({
-        baseURL: window.location.hostname.includes('netlify.app') 
-          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
-          : '/api',
-        headers: {
-          api_access_token: apiKey,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
-
       const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
-      if (response.data?.payload) {
-        setInboxes(response.data.payload);
+
+      if (response.status !== 200) {
+        console.error("Failed to fetch inboxes:", response.status, response.statusText);
+        return null;
+      }
+
+      const data = response.data;
+      if (data?.payload) {
+        setInboxes(data.payload);
 
         const isInboxOpen = (inbox: any) => {
           const now = new Date();
@@ -447,7 +453,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           return currentTime >= openTime && currentTime <= closeTime;
         };
 
-        const allInboxes = response.data.payload.map((inbox: any) => ({
+        const allInboxes = data.payload.map((inbox: any) => ({
           ...inbox,
           isOpen: isInboxOpen(inbox),
         }));
@@ -478,9 +484,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const loadContactInfo = async (contactId: number) => {
     try {
       const api = axios.create({
-        baseURL: window.location.hostname.includes('netlify.app') 
-          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
-          : '/api',
+        baseURL: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`,
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",
@@ -520,9 +524,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const loadAllContactConversations = async (contactId: number) => {
     try {
       const api = axios.create({
-        baseURL: window.location.hostname.includes('netlify.app') 
-          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
-          : '/api',
+        baseURL: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`,
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",
@@ -595,9 +597,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       }
 
       const api = axios.create({
-        baseURL: window.location.hostname.includes('netlify.app') 
-          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
-          : '/api',
+        baseURL: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`,
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",
@@ -605,8 +605,16 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         },
       });
 
-      if (initialPhone) {
-        let formattedNumber = formatPhoneNumber(initialPhone);
+      // Usar dados pendentes ou dados iniciais
+      const phoneToUse = pendingPhoneNumber || initialPhone;
+      const nameToUse = pendingContactName || initialName;
+
+      if (phoneToUse) {
+        // Limpar dados pendentes após uso
+        setPendingPhoneNumber(null);
+        setPendingContactName(null);
+        
+        let formattedNumber = formatPhoneNumber(phoneToUse);
         if (!formattedNumber.startsWith("+")) {
           formattedNumber = `+${formattedNumber}`;
         }
@@ -636,11 +644,11 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
         if (!contactToUse) {
           const contactNameToUse =
-            initialName || additionalInfo?.name || "Novo Contato";
+            nameToUse || additionalInfo?.name || "Novo Contato";
           const contactEmail = initialEmail || additionalInfo?.email;
           
-          // Validar se inbox_id está disponível
-          if (!selectedInboxId) {
+          // Validar se inbox_id está disponível (usar o parâmetro inboxId ao invés do state)
+          if (!inboxId) {
             throw new Error("Nenhuma inbox selecionada para criar o contato");
           }
           
@@ -648,7 +656,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             const newContactResponse = await api.post(
               `/api/v1/accounts/${accountId}/contacts`,
               {
-                inbox_id: selectedInboxId,
+                inbox_id: inboxId,
                 name: contactNameToUse,
                 phone_number: formattedNumber,
                 email: contactEmail,
@@ -684,7 +692,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               // Se já existe conversa, abrir ela
               setContact({
                 id: contactToUse.id,
-                name: contactToUse.name || initialName || formattedNumber,
+                name: contactToUse.name || nameToUse || formattedNumber,
                 phone_number: contactToUse.phone_number,
                 thumbnail: contactToUse.thumbnail || "",
                 source_id: contactToUse.contact_inboxes?.[0]?.source_id || "",
@@ -731,7 +739,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
               const conversationToUse = newConversationResponse.data;
               setContact({
                 id: contactToUse.id,
-                name: contactToUse.name || initialName || formattedNumber,
+                name: contactToUse.name || nameToUse || formattedNumber,
                 phone_number: contactToUse.phone_number,
                 thumbnail: contactToUse.thumbnail || "",
                 source_id: contactToUse.contact_inboxes?.[0]?.source_id || "",
@@ -788,9 +796,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   ) => {
     try {
       const api = axios.create({
-        baseURL: window.location.hostname.includes('netlify.app') 
-          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
-          : '/api',
+        baseURL: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`,
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",
@@ -897,6 +903,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         throw new Error("Token WiseApp não encontrado");
       }
 
+      // Armazenar dados pendentes para criar o contato após selecionar a inbox
+      setPendingPhoneNumber(phoneNumber);
+      setPendingContactName(contactName || null);
+
       // Carregar inboxes e mostrar o seletor
       await fetchInboxes(accountId, apiKey);
       setShowInboxSelector(true);
@@ -998,6 +1008,9 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const handleInboxSelect = async (inboxId: number) => {
     try {
       setSelectedInboxId(inboxId);
+      setShowInboxSelector(false);
+      setLoading(true);
+      
       const response = await api.get(
         `/api/v1/accounts/${accountId}/inboxes/${inboxId}`,
       );
@@ -1019,9 +1032,11 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
       setActiveConversation(conversation);
       setMessages([]);
+      setLoading(false);
     } catch (error) {
       console.error("Error selecting inbox:", error);
       handleError(error);
+      setLoading(false);
     }
   };
 

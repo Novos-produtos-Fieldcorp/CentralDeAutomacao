@@ -398,14 +398,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               {veiculo.marca} {veiculo.modelo} • {veiculo.placa}
                             </span>
                           </div>
-                          <button
-                            onClick={() => setIsEditVeiculoModalOpen(true)}
-                            className="p-1 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 
-                                      rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            title="Editar Veículo"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
+
                         </div>
                       )}
                     </div>

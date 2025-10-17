@@ -69,47 +69,28 @@ export function WiseAppContactsSyncButton({
       
       if (!foundToken) {
         console.log('[captureAndSaveToken] Nenhum token encontrado no localStorage');
-        
-        // Listar todas as chaves do localStorage para debug
-        const allKeys = Object.keys(localStorage);
-        console.log('[captureAndSaveToken] Chaves disponíveis no localStorage:', allKeys);
         return false;
       }
       
-      if (!companyId || !accountId) {
-        console.error('[captureAndSaveToken] company_id ou account_id não definidos:', { companyId, accountId });
-        return false;
-      }
-      
-      console.log(`[captureAndSaveToken] Salvando token no banco (key: ${foundKey}, token length: ${foundToken.length})`);
+      console.log(`[captureAndSaveToken] Token encontrado: ${foundToken.substring(0, 10)}...`);
       
       // Salvar token no banco de dados
-      const tokenData = {
-        company_id: companyId,
-        access_token_wiseapp: foundToken,
-        nome: 'Token Automático Capturado',
-        email: 'auto@sistema.com',
-        id_conta_wiseapp: accountId
-      };
-      
-      console.log('[captureAndSaveToken] Dados a serem salvos:', {
-        ...tokenData,
-        access_token_wiseapp: `${foundToken.substring(0, 10)}...`
-      });
-      
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('wiseapp_acesso')
-        .upsert(tokenData, {
-          onConflict: 'company_id'
-        })
-        .select();
+        .upsert({
+          company_id: companyId,
+          access_token_wiseapp: foundToken,
+          email: 'auto-captured',
+          nome: 'Token Capturado Automaticamente',
+          updated_at: new Date().toISOString()
+        });
       
       if (error) {
         console.error('[captureAndSaveToken] Erro ao salvar token:', error);
         return false;
       }
       
-      console.log('[captureAndSaveToken] ✅ Token salvo com sucesso!', data);
+      console.log('[captureAndSaveToken] Token salvo com sucesso!');
       return true;
       
     } catch (error) {

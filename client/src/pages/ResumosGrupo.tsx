@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube, Info } from 'lucide-react';
+import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube, Info, Inbox } from 'lucide-react';
 import webhookImage from '@assets/WhatsApp Image 2025-08-27 at 09.23.59_1756297551444.jpeg';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useAuth } from '../context/AuthContext';
+import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -11,16 +12,19 @@ import { ptBR } from 'date-fns/locale';
 import TimeDebugModal from '../components/TimeDebugModal';
 import { convertBrasiliaToUTC, convertUTCToBrasilia } from '../utils/time';
 import Pagination from '../components/Pagination';
+import axios from 'axios';
 
 interface GrupoResumo {
   id: number;
   nome_grupo: string;
-  url_grupo: string;
+  nome_inbox: string;
   horario: string;
   ativo: boolean;
   company_id: number;
   icon_name?: string;
   color_name?: string;
+  inbox_id?: string | null;
+  atendente_id?: number | null;
 }
 
 interface EnvioResumo {
@@ -41,6 +45,7 @@ const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
 const ResumosGrupo = () => {
   const { query, companyId } = useCompanyData();
   const { accountId } = useAuth();
+  const { token: wiseAppToken, attendantId } = useWiseAppAccess();
   const [loading, setLoading] = useState(true);
   const [grupos, setGrupos] = useState<GrupoResumo[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -51,7 +56,7 @@ const ResumosGrupo = () => {
   const [selectedGrupo, setSelectedGrupo] = useState<GrupoResumo | null>(null);
   const [formData, setFormData] = useState({
     nome_grupo: '',
-    url_grupo: '',
+    nome_inbox: '',
     horario: '08:00',
     ativo: true,
     icon_name: 'MessagesSquare',
@@ -71,6 +76,8 @@ const ResumosGrupo = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [paginatedEnvios, setPaginatedEnvios] = useState<EnvioResumo[]>([]);
+  const [availableInboxes, setAvailableInboxes] = useState<any[]>([]);
+  const [loadingInboxes, setLoadingInboxes] = useState(false);
 
   useEffect(() => {
     fetchGrupos();
@@ -119,6 +126,13 @@ const ResumosGrupo = () => {
     const endIndex = startIndex + pageSize;
     setPaginatedEnvios(filteredEnvios.slice(startIndex, endIndex));
   }, [filteredEnvios, currentPage, pageSize]);
+
+  useEffect(() => {
+    // Fetch inboxes when add or edit modal opens
+    if (isAddModalOpen || isEditModalOpen) {
+      fetchInboxes();
+    }
+  }, [isAddModalOpen, isEditModalOpen]);
 
   const fetchGrupos = async () => {
     try {
@@ -208,6 +222,49 @@ const ResumosGrupo = () => {
     }
   };
 
+  const fetchInboxes = async () => {
+    try {
+      setLoadingInboxes(true);
+      
+      if (!accountId || !companyId) {
+        toast.error('Informações de autenticação não encontradas');
+        return;
+      }
+
+      if (!wiseAppToken) {
+        toast.error('Token de autenticação não encontrado');
+        return;
+      }
+
+      // Enviar o token do usuário no header da requisição
+      const response = await axios.get(`/api/inboxes/${companyId}?accountId=${accountId}`, {
+        headers: {
+          'X-WiseApp-Token': wiseAppToken
+        }
+      });
+      
+      if (response.data?.error) {
+        toast.error(response.data.error);
+        setAvailableInboxes([]);
+        return;
+      }
+      
+      const inboxesData = response.data?.payload || response.data?.inboxes || response.data;
+      if (inboxesData && Array.isArray(inboxesData) && inboxesData.length > 0) {
+        setAvailableInboxes(inboxesData);
+      } else {
+        setAvailableInboxes([]);
+        toast.error('Nenhuma caixa de entrada encontrada');
+      }
+    } catch (error) {
+      console.error('Error fetching inboxes:', error);
+      toast.error('Erro ao carregar caixas de entrada');
+      setAvailableInboxes([]);
+    } finally {
+      setLoadingInboxes(false);
+    }
+  };
+
   const handleAddGrupo = async () => {
     // Validar campos obrigatórios
     if (!formData.nome_grupo.trim()) {
@@ -215,8 +272,8 @@ const ResumosGrupo = () => {
       return;
     }
     
-    if (!formData.url_grupo.trim()) {
-      toast.error('URL do grupo é obrigatória');
+    if (!formData.nome_inbox.trim()) {
+      toast.error('Caixa de entrada é obrigatória');
       return;
     }
     
@@ -229,17 +286,53 @@ const ResumosGrupo = () => {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
+      // Find the selected inbox to get its full data
+      const selectedInbox = availableInboxes.find(inbox => inbox.id?.toString() === formData.nome_inbox);
+      
+      // Get attendant ID - if not in context, fetch from database
+      let finalAttendantId = attendantId;
+      if (!finalAttendantId && companyId) {
+        const { data: atendenteData } = await supabase
+          .from('wiseapp_acesso')
+          .select('wiseapp_acesso_id')
+          .eq('company_id', companyId)
+          .maybeSingle();
+        
+        if (atendenteData) {
+          finalAttendantId = atendenteData.wiseapp_acesso_id;
+          console.log('🔍 Attendant ID buscado do banco:', finalAttendantId);
+        }
+      }
+      
+      console.log('🔍 DEBUG - Salvando grupo resumo:');
+      console.log('  - formData.nome_inbox (ID selecionado):', formData.nome_inbox);
+      console.log('  - selectedInbox encontrado:', selectedInbox);
+      console.log('  - nome_inbox a ser salvo (nome):', selectedInbox?.name || formData.nome_inbox);
+      console.log('  - inbox_id a ser salvo:', selectedInbox?.id?.toString() || null);
+      console.log('  - atendente_id (contexto):', attendantId || null);
+      console.log('  - atendente_id (final):', finalAttendantId || null);
+      
       const { data, error } = await supabase
         .from('grupo_resumo')
         .insert({
-          ...formData,
+          nome_grupo: formData.nome_grupo,
+          nome_inbox: selectedInbox?.name || formData.nome_inbox, // Save inbox name
           horario: utcHorario, // Store UTC time in the database
-          company_id: companyId
+          ativo: formData.ativo,
+          icon_name: formData.icon_name,
+          color_name: formData.color_name,
+          company_id: companyId,
+          inbox_id: selectedInbox?.id?.toString() || null,
+          atendente_id: finalAttendantId || null
         })
         .select()
         .single();
 
       if (error) throw error;
+      
+      console.log('✅ Grupo salvo no banco:', data);
+      console.log('  - inbox_id salvo:', data.inbox_id);
+      console.log('  - atendente_id salvo:', data.atendente_id);
       
       // Convert the UTC time back to Brasilia time for display
       const newGrupo = {
@@ -266,8 +359,8 @@ const ResumosGrupo = () => {
       return;
     }
     
-    if (!formData.url_grupo.trim()) {
-      toast.error('URL do grupo é obrigatória');
+    if (!formData.nome_inbox.trim()) {
+      toast.error('Caixa de entrada é obrigatória');
       return;
     }
     
@@ -280,15 +373,41 @@ const ResumosGrupo = () => {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
+      // Find the selected inbox to get its full data
+      const selectedInbox = availableInboxes.find(inbox => inbox.id?.toString() === formData.nome_inbox);
+      
+      // CRITICAL: Buscar o grupo atual do banco para preservar TODOS os campos
+      const { data: currentGrupo } = await supabase
+        .from('grupo_resumo')
+        .select('*')
+        .eq('id', selectedGrupo.id)
+        .single();
+      
+      console.log('🔄 ATUALIZANDO GRUPO:', {
+        grupoId: selectedGrupo.id,
+        atendenteAtualBanco: currentGrupo?.atendente_id,
+        atendenteContexto: attendantId
+      });
+      
+      // Montar o objeto de update APENAS com os campos do formulário
+      // NÃO incluir atendente_id no update para não sobrescrever
+      const updateData: any = {
+        nome_grupo: formData.nome_grupo,
+        nome_inbox: selectedInbox?.name || formData.nome_inbox,
+        horario: utcHorario,
+        icon_name: formData.icon_name,
+        color_name: formData.color_name,
+        inbox_id: selectedInbox?.id?.toString() || null
+      };
+      
+      // Se não existe atendente_id no banco, mas temos no contexto, adicionar
+      if (!currentGrupo?.atendente_id && attendantId) {
+        updateData.atendente_id = attendantId;
+      }
+      
       const { error } = await supabase
         .from('grupo_resumo')
-        .update({
-          nome_grupo: formData.nome_grupo,
-          url_grupo: formData.url_grupo,
-          horario: utcHorario, // Store UTC time in the database
-          icon_name: formData.icon_name,
-          color_name: formData.color_name
-        })
+        .update(updateData)
         .eq('id', selectedGrupo.id);
 
       if (error) throw error;
@@ -298,10 +417,12 @@ const ResumosGrupo = () => {
           ? { 
               ...grupo, 
               nome_grupo: formData.nome_grupo,
-              url_grupo: formData.url_grupo,
-              horario: formData.horario, // Keep Brasilia time for display
+              nome_inbox: selectedInbox?.name || formData.nome_inbox,
+              horario: formData.horario,
               icon_name: formData.icon_name,
-              color_name: formData.color_name
+              color_name: formData.color_name,
+              inbox_id: selectedInbox?.id?.toString() || null,
+              atendente_id: currentGrupo?.atendente_id || attendantId || null
             } 
           : grupo
       ));
@@ -360,11 +481,9 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(prev => ({ ...prev, [grupo.id]: true }));
       
-      // Use the hardcoded token for authorization
-      const authToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
-      
-      // Use the correct Supabase URL for edge functions
-      const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+      // Use the Supabase URL from environment
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const authToken = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const requestUrl = `${supabaseUrl}/functions/v1/manual-summary-trigger`;
       
       console.log('Making request to:', requestUrl);
@@ -430,7 +549,7 @@ const ResumosGrupo = () => {
   const resetForm = () => {
     setFormData({
       nome_grupo: '',
-      url_grupo: '',
+      nome_inbox: '',
       horario: '08:00',
       ativo: true,
       icon_name: 'MessagesSquare',
@@ -845,11 +964,18 @@ const ResumosGrupo = () => {
                         </div>
                         
                         <div className="flex items-center gap-2 mb-4">
-                          <Link2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                          <Inbox className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                           <span 
                             className="text-sm text-gray-600 dark:text-gray-400 truncate"
                           >
-                            {grupo.url_grupo}
+                            {(() => {
+                              // If nome_inbox looks like a number (old data), try to find inbox name by inbox_id
+                              if (grupo.nome_inbox && /^\d+$/.test(grupo.nome_inbox) && grupo.inbox_id) {
+                                const inbox = availableInboxes.find(i => i.id?.toString() === grupo.inbox_id);
+                                return inbox?.name || grupo.nome_inbox;
+                              }
+                              return grupo.nome_inbox;
+                            })()}
                           </span>
                         </div>
                         
@@ -860,7 +986,7 @@ const ResumosGrupo = () => {
                                 setSelectedGrupo(grupo);
                                 setFormData({
                                   nome_grupo: grupo.nome_grupo,
-                                  url_grupo: grupo.url_grupo,
+                                  nome_inbox: grupo.inbox_id || grupo.nome_inbox, // Use inbox_id for dropdown
                                   horario: grupo.horario,
                                   ativo: grupo.ativo,
                                   icon_name: grupo.icon_name || 'MessagesSquare',
@@ -1161,25 +1287,50 @@ const ResumosGrupo = () => {
               
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    URL da Caixa de Entrada *
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Caixa de Entrada *
+                    <div className="relative group">
+                      <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                        <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-1.5 px-2 shadow-lg whitespace-nowrap">
+                          Caixa de entrada onde está o grupo
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                        </div>
+                      </div>
+                    </div>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsHelpModalOpen(true)}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
-                  >
-                    Onde encontro a URL?
-                  </button>
+                  {loadingInboxes && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Carregando...
+                    </span>
+                  )}
                 </div>
-                <input
-                  type="url"
-                  value={formData.url_grupo}
-                  onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="https://chat.whatsapp.com/..."
-                  required
-                />
+                {loadingInboxes ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  </div>
+                ) : availableInboxes.length > 0 ? (
+                  <select
+                    value={formData.nome_inbox}
+                    onChange={(e) => setFormData({ ...formData, nome_inbox: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    required
+                    data-testid="select-inbox"
+                  >
+                    <option value="">Selecione uma caixa de entrada</option>
+                    {availableInboxes.map((inbox) => (
+                      <option key={inbox.id} value={inbox.id?.toString()}>
+                        {inbox.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="w-full px-3 py-2 border border-red-300 dark:border-red-600 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                    <Inbox className="w-4 h-4" />
+                    Nenhuma caixa de entrada disponível
+                  </div>
+                )}
               </div>
               
               <div>
@@ -1292,25 +1443,50 @@ const ResumosGrupo = () => {
               
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    URL da Caixa de Entrada *
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Caixa de Entrada *
+                    <div className="relative group">
+                      <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                        <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-1.5 px-2 shadow-lg whitespace-nowrap">
+                          Caixa de entrada onde está o grupo
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                        </div>
+                      </div>
+                    </div>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsHelpModalOpen(true)}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
-                  >
-                    Onde encontro a URL?
-                  </button>
+                  {loadingInboxes && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Carregando...
+                    </span>
+                  )}
                 </div>
-                <input
-                  type="url"
-                  value={formData.url_grupo}
-                  onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="https://chat.whatsapp.com/..."
-                  required
-                />
+                {loadingInboxes ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  </div>
+                ) : availableInboxes.length > 0 ? (
+                  <select
+                    value={formData.nome_inbox}
+                    onChange={(e) => setFormData({ ...formData, nome_inbox: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    required
+                    data-testid="select-inbox"
+                  >
+                    <option value="">Selecione uma caixa de entrada</option>
+                    {availableInboxes.map((inbox) => (
+                      <option key={inbox.id} value={inbox.id?.toString()}>
+                        {inbox.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="w-full px-3 py-2 border border-red-300 dark:border-red-600 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                    <Inbox className="w-4 h-4" />
+                    Nenhuma caixa de entrada disponível
+                  </div>
+                )}
               </div>
               
               <div>

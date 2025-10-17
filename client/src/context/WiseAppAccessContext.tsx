@@ -175,10 +175,10 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       if (!accountId) {
         // Get from localStorage if available
         try {
-          accountId = localStorage?.getItem('account_id');
+          accountId = localStorage?.getItem('account_id') || undefined;
           console.log('🔍 [WiseAppAccess] Account ID do localStorage:', accountId);
         } catch {
-          accountId = null;
+          accountId = undefined;
         }
       }
       
@@ -253,13 +253,13 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
             // Cache company data
             cacheData('wiseapp_company_cache', { companyId: company.company_id });
             
-            // Check if there's a token for this company
-            console.log('🔍 [WiseAppAccess] Buscando token para company_id:', company.company_id);
+            // Check if there's a token for this account
+            console.log('🔍 [WiseAppAccess] Buscando token para account_id:', accountId);
             
             const { data: access, error: accessError } = await supabase
               .from('wiseapp_acesso')
               .select('wiseapp_acesso_id, access_token_wiseapp, nome, email')
-              .eq('company_id', company.company_id)
+              .eq('id_conta_wiseapp', accountId)
               .maybeSingle();
 
             console.log('📊 [WiseAppAccess] Resultado da busca:', {
@@ -276,6 +276,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
               console.log('✅ [WiseAppAccess] Token encontrado:', {
                 email: access.email,
                 nome: access.nome,
+                wiseapp_acesso_id: access.wiseapp_acesso_id,
                 token_length: access.access_token_wiseapp.length
               });
               updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome);
@@ -356,8 +357,8 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       <WiseAppTokenModal
         open={showModal}
         onClose={() => setShowModal(false)}
-        onTokenSaved={(newToken, attendantId, attendantName) => {
-          updateToken(newToken, attendantId || 0, attendantName || 'Atendente');
+        onTokenSaved={(newToken: string, newAttendantId?: number, newAttendantName?: string) => {
+          updateToken(newToken, newAttendantId || 0, newAttendantName || 'Atendente');
           setShowModal(false);
           setHasCheckedToken(true);
         }}

@@ -114,6 +114,8 @@ const Contratados = () => {
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
   const [showFuncaoDropdown, setShowFuncaoDropdown] = useState(false);
+  const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
+  const ativoDropdownRef = useRef<HTMLDivElement>(null);
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{[key: number]: boolean}>({});
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
@@ -199,6 +201,10 @@ const Contratados = () => {
       if (showStatusDropdown && statusDropdownRef.current && !statusDropdownRef.current.contains(target)) {
         setShowStatusDropdown(false);
       }
+      if (showAtivoDropdown && ativoDropdownRef.current && !ativoDropdownRef.current.contains(target)) {
+        setShowAtivoDropdown(false);
+      }
+
       if (showClienteDropdown && clienteDropdownRef.current && !clienteDropdownRef.current.contains(target)) {
         setShowClienteDropdown(false);
       }
@@ -649,6 +655,8 @@ const Contratados = () => {
     }
   };
 
+
+
   const clearFilter = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'funcao') => {
     switch (filterType) {
       case 'status':
@@ -759,6 +767,7 @@ const Contratados = () => {
       if (showCidadeDropdown) setShowCidadeDropdown(false);
       if (showTipoVeiculoDropdown) setShowTipoVeiculoDropdown(false);
       if (showFuncaoDropdown) setShowFuncaoDropdown(false);
+      if (showAtivoDropdown) setShowAtivoDropdown(false);
   
       // Mantém a lógica para fechar os dropdowns de tags das linhas
       if (Object.values(tagDropdownOpen).some(isOpen => isOpen)) {
@@ -1245,6 +1254,18 @@ const Contratados = () => {
       setUpdatingStatus(null);
     }
   };
+
+  const handleToggleAtivoDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowAtivoDropdown(!showAtivoDropdown);
+    setShowStatusDropdown(false);
+    setShowClienteDropdown(false);
+    setShowCidadeDropdown(false);
+    setShowTipoVeiculoDropdown(false);
+    setShowFuncaoDropdown(false);
+    setShowTagsDropdown(false);
+  };
+
 
   const getMotoristaCity = (motorista: ViewContratado): string | null => {
     // Usa o campo nome_cidade que já está disponível no ViewContratado
@@ -1829,21 +1850,55 @@ const Contratados = () => {
                     </div>
                   </div>
 
-                  {/* Status Ativo Filter */}
-                  <div className="relative z-[20]">
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
-                      <CheckCircle className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <select
-                      value={ativoFilter}
-                      onChange={(e) => setAtivoFilter(e.target.value)}
-                      className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[110px]"
-                    >
-                      <option value="">Ativo</option>
-                      <option value="active">Ativo (Sim)</option>
-                      <option value="inactive">Ativo (Não)</option>
-                    </select>
+            {/* Status Ativo Filter */}
+            <div className="relative z-[50]">
+              <div className="relative group" ref={ativoDropdownRef}>
+                <button
+                  type="button"
+                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                  onClick={handleToggleAtivoDropdown}
+                >
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>
+                      {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
+                    </span>
                   </div>
+                </button>
+
+                {showAtivoDropdown && (
+                  <div className="absolute z-[999999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Todos
+                    </div>
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('ativo');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Somente Ativos
+                    </div>
+                    <div 
+                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                      onClick={() => {
+                        setAtivoFilter('inativo');
+                        setShowAtivoDropdown(false);
+                      }}
+                    >
+                      Somente Desativos
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
                   {/* Date Filter */}
                   <div className="relative z-[10]">
