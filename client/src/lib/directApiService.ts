@@ -307,6 +307,22 @@ export const getWiseAppLabels = async (
 
   // Determinar companyId dinamicamente se não fornecido
   let finalCompanyId = accountId;
+  let CompanyId = finalCompanyId;
+  if (!finalCompanyId) {
+    try {
+      const { data: companyData } = await supabase
+        .from("company")
+        .select("company_id")
+        .eq("id_conta_wiseapp", accountId)
+        .single();
+      CompanyId = companyData?.company_id;
+    } catch (error) {
+      console.warn(
+        "Não foi possível determinar companyId, usando fallback 2:",
+        error,
+      );
+    }
+  }
 
   const primaryUrl = createApiUrl(`wiseapp/${accountId}/labels`);
   const fallbackUrls = [].filter((url) => url !== primaryUrl);
@@ -317,7 +333,7 @@ export const getWiseAppLabels = async (
       {
         method: "GET",
         cacheKey: `wiseapp-labels-${accountId}-${finalCompanyId}`,
-        cacheTtl: 5 * 60 * 1000,
+        cacheTtl: 5 * 60 * 1000, // 5 minutos de cache
         fallbackUrls,
         onRetry: (attempt, error) => {
           console.warn(
@@ -349,7 +365,7 @@ export const getWiseAppLabels = async (
       const { data: cachedTags } = await supabase
         .from("tag")
         .select("*")
-        .eq("company_id", finalCompanyId)
+        .eq("company_id", CompanyId)
         .order("nome");
 
       if (cachedTags && cachedTags.length > 0) {
@@ -399,7 +415,6 @@ export const searchWiseAppContact = async (
   accountId: string,
   token: string,
   phone: string,
-  companyId: number = 2,
 ) => {
   if (!accountId || !token) {
     throw new Error(
@@ -408,7 +423,7 @@ export const searchWiseAppContact = async (
   }
 
   const primaryUrl = createApiUrl(
-    `wiseapp/${companyId}/contacts/search?phone=${phone}`,
+    `wiseapp/${accountId}/contacts/search?phone=${phone}`,
   );
   const fallbackUrls = [
     createApiUrl(`wiseapp/2/contacts/search?phone=${phone}`),
@@ -490,7 +505,7 @@ export const applyWiseAppContactLabels = async (
     );
   }
 
-  const url = createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`);
+  const url = createApiUrl(`wiseapp/${accountId}/contacts/${contactId}/labels`);
 
   console.log(
     `Aplicando labels [${labelNames.join(", ")}] ao contato ${contactId}`,

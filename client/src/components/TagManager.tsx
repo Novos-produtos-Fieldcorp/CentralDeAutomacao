@@ -114,33 +114,33 @@ export function TagManager({ companyId }: TagManagerProps) {
 
       const existingTagNames = new Set(existingTags?.map(tag => tag.nome.toLowerCase()) || []);
       
-      // Criar set de nomes de tags do WiseApp (WiseApp usa campo 'title')
+      // Criar set de nomes de tags do WiseApp (WiseApp usa campo 'name')
       const wiseAppTagNames = new Set(wiseAppTagsData.map((tag: any) => 
-        (tag.title || 'Tag').toLowerCase()
+        (tag.name || 'Tag').toLowerCase()
       ));
 
-      console.log('🔍 [SYNC] Tags do WiseApp:', wiseAppTagsData.length, wiseAppTagsData.map((t: any) => t.title));
-      console.log('🔍 [SYNC] Tags do banco:', existingTags?.length, existingTags?.map(t => t.nome));
+      console.log('🔍 [SYNC] Tags do WiseApp:', wiseAppTagsData.length, wiseAppTagsData.map((t: any) => t.name));
+      console.log('🔍 [SYNC] Tags do banco:', existingTags?.length, existingTags?.map((t: any) => t.nome));
 
       // Identificar tags para remover (existem localmente mas não no WiseApp)
       const tagsToDelete = existingTags?.filter(tag => 
         !wiseAppTagNames.has(tag.nome.toLowerCase())
       ) || [];
 
-      console.log('➖ [SYNC] Tags para remover do banco:', tagsToDelete.map(t => t.nome));
+      console.log('➖ [SYNC] Tags para remover do banco:', tagsToDelete.map((t: any) => t.nome));
 
       // Preparar tags para inserção (apenas as que não existem)
       const tagsToInsert = wiseAppTagsData
-        .filter((tag: any) => !existingTagNames.has((tag.title || 'Tag').toLowerCase()))
+        .filter((tag: any) => !existingTagNames.has((tag.name || 'Tag').toLowerCase()))
         .map((tag: any) => ({
-          nome: tag.title || 'Tag',
+          nome: tag.name || 'Tag',
           cor: tag.color || '#3B82F6',
           company_id: companyId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));
 
-      console.log('➕ [SYNC] Tags para adicionar no banco:', tagsToInsert.map(t => t.nome));
+      console.log('➕ [SYNC] Tags para adicionar no banco:', tagsToInsert.map((t: any) => t.nome));
 
       // Processing tags for insertion and deletion
       let syncMessage = '';

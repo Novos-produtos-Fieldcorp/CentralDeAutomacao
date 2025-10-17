@@ -247,7 +247,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     }
 
     const labelData = {
-      title: tag.nome,
+      name: tag.nome,  // WiseApp usa 'name' não 'title'
       color: tag.cor,
     };
 
@@ -329,7 +329,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     }
 
     const labels = await labelsResponse.json();
-    const wiseAppLabel = labels.find((label: any) => label.title === tag.nome);
+    const wiseAppLabel = labels.find((label: any) => label.name === tag.nome);  // WiseApp usa 'name' não 'title'
 
     if (!wiseAppLabel) {
       console.log(
