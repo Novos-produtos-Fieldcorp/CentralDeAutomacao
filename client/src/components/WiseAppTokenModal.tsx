@@ -40,7 +40,8 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
 
       if (existing) {
         if (existing.access_token_wiseapp) {
-          // Remove localStorage dependency for Netlify compatibility
+          // Salvar email no localStorage para uso posterior
+          localStorage.setItem('wiseapp_user_email', email);
           onTokenSaved(existing.access_token_wiseapp);
           onClose();
         } else {
@@ -118,7 +119,8 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
 
       if (updateError) throw updateError;
 
-      // Remove localStorage dependency for Netlify compatibility
+      // Salvar email no localStorage para uso posterior
+      localStorage.setItem('wiseapp_user_email', email);
       onTokenSaved(token);
       onClose();
     } catch (err) {

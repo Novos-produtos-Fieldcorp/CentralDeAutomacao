@@ -253,17 +253,23 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
             // Cache company data
             cacheData('wiseapp_company_cache', { companyId: company.company_id });
             
-            // Check if there's a token for this account
-            console.log('🔍 [WiseAppAccess] Buscando token para id_conta_wiseapp:', accountId);
+            // Check if there's a token for the user's email
+            const userEmail = localStorage.getItem('wiseapp_user_email');
+            console.log('🔍 [WiseAppAccess] Buscando token para email:', userEmail);
             
-            const { data: accessList } = await supabase
+            if (!userEmail) {
+              console.log('❌ [WiseAppAccess] Email não encontrado, mostrando modal');
+              setShowModal(true);
+              setIsLoading(false);
+              setHasCheckedToken(true);
+              return;
+            }
+            
+            const { data: access, error: accessError } = await supabase
               .from('wiseapp_acesso')
               .select('wiseapp_acesso_id, access_token_wiseapp, nome, email')
-              .eq('id_conta_wiseapp', accountId)
-              .limit(1);
-            
-            const access = accessList?.[0] || null;
-            const accessError = null;
+              .eq('email', userEmail)
+              .maybeSingle();
 
             console.log('📊 [WiseAppAccess] Resultado da busca:', {
               error: accessError,
@@ -359,8 +365,10 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       <WiseAppTokenModal
         open={showModal}
         onClose={() => setShowModal(false)}
-        onTokenSaved={(newToken, attendantId, attendantName) => {
-          updateToken(newToken, attendantId || 0, attendantName || 'Atendente');
+        onTokenSaved={(newToken: string) => {
+          // Token salvo, atualizar context
+          setToken(newToken);
+          cacheData('wiseapp_token_cache', { token: newToken });
           setShowModal(false);
           setHasCheckedToken(true);
         }}
