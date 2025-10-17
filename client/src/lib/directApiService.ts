@@ -351,7 +351,7 @@ export const getWiseAppLabels = async (accountId: string, token: string, company
         console.warn('WiseApp indisponível, usando tags locais como fallback');
         return cachedTags.map(tag => ({
           id: tag.id,
-          name: tag.nome,
+          title: tag.nome,  // WiseApp usa 'title', não 'name'
           color: tag.cor,
           description: ''
         }));
