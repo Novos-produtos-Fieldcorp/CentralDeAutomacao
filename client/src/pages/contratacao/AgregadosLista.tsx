@@ -879,6 +879,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
 
       // 3. Buscar as tags existentes do contato
+      console.log(`📋 Buscando tags existentes do contato ${contactId}...`);
       const existingTagsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`), {
         method: 'GET',
         headers: {
@@ -892,6 +893,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (existingTagsResponse.ok) {
         const existingTagsData = await existingTagsResponse.json();
         existingTags = existingTagsData.payload || [];
+        console.log(`✅ Tags existentes:`, existingTags);
+      } else {
+        const errorText = await existingTagsResponse.text();
+        console.error(`❌ Erro ao buscar tags existentes: ${existingTagsResponse.status}`, errorText);
       }
 
       // 4. Criar array com todas as tags (existentes + nova)
@@ -912,14 +917,16 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       });
 
       if (applyTagResponse.ok) {
-        // Tag aplicada com sucesso
+        console.log('✅ Tag aplicada com sucesso no WiseApp');
       } else {
         const errorText = await applyTagResponse.text();
-        console.error(`Erro ao aplicar tag ao contato: ${applyTagResponse.status} - ${errorText}`);
+        console.error(`❌ Erro ao aplicar tag ao contato WiseApp: ${applyTagResponse.status}`, errorText);
+        toast.error(`Erro ao sincronizar tag com WiseApp: ${applyTagResponse.status}`);
       }
 
     } catch (error) {
-      // Erro não crítico na sincronização
+      console.error('❌ Erro na sincronização com WiseApp:', error);
+      toast.error('Erro ao sincronizar tag com WiseApp');
     }
   };
 

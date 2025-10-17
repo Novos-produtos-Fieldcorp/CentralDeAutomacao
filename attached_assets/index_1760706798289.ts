@@ -344,19 +344,16 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     }
 
     const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
-    
-    // Parse request body and transform to WiseApp format
-    const requestData = await req.json()
-    console.log('Request body received:', requestData)
-    
-    // Transform frontend format {name, color} to WiseApp format {title, color, description}
-    const wiseAppPayload = {
-      title: requestData.name,
-      color: requestData.color || '#3B82F6',
-      description: requestData.description || ''
+    const requestBody = await req.json()
+
+    // Transform frontend data format to WiseApp API format
+    const payload = {
+      title: requestBody.nome || requestBody.name,
+      description: requestBody.descricao || requestBody.description || '',
+      color: requestBody.cor || requestBody.color || '#3B82F6'
     }
-    
-    console.log('Transformed payload for WiseApp:', wiseAppPayload)
+
+    console.log('Payload transformado para WiseApp:', JSON.stringify(payload));
 
     // Create label in WiseApp
     const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`
@@ -368,94 +365,17 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
           'api_access_token': token,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(wiseAppPayload)
+        body: JSON.stringify(payload)
       })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.log(`WiseApp API response: ${response.status} - ${errorText}`)
-        console.log(`Payload sent:`, JSON.stringify(wiseAppPayload))
-        console.log(`Account ID used:`, accountId)
-        console.log(`Token length:`, token?.length || 0)
-        
-        // Se a tag já existe (422), buscar a tag existente
-        if (response.status === 422) {
-          try {
-            console.log('Tag já existe (422), buscando tag existente...')
-            
-            // Buscar todas as tags para encontrar a existente
-            const listResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`, {
-              method: 'GET',
-              headers: {
-                'api_access_token': token,
-                'Content-Type': 'application/json',
-              }
-            })
-            
-            if (listResponse.ok) {
-              const listData = await listResponse.json()
-              console.log(`Total labels found:`, listData.payload?.length || 0)
-              const existingLabel = listData.payload?.find((label: any) => 
-                label.title.toLowerCase() === wiseAppPayload.title.toLowerCase()
-              )
-              
-              if (existingLabel) {
-                console.log('Tag existente encontrada:', existingLabel)
-                const label = {
-                  id: existingLabel.id,
-                  name: existingLabel.title,
-                  color: existingLabel.color,
-                  description: existingLabel.description
-                }
-                return new Response(JSON.stringify({ success: true, label, message: 'Tag já existia no WiseApp' }), {
-                  status: 200,
-                  headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                })
-              } else {
-                console.log('Tag não encontrada na lista mesmo com 422. Possível erro de validação.')
-              }
-            } else {
-              console.log(`Failed to list labels: ${listResponse.status}`)
-            }
-          } catch (searchError) {
-            console.error('Erro ao buscar tag existente:', searchError)
-          }
-        }
-        
-        // Return detailed error with WiseApp response
-        let errorDetails = errorText
-        try {
-          const parsedError = JSON.parse(errorText)
-          errorDetails = JSON.stringify(parsedError, null, 2)
-        } catch {
-          // If not JSON, use as is
-        }
-        
-        return new Response(JSON.stringify({
-          error: `Erro ao criar label no WiseApp: ${response.status}`,
-          details: errorDetails,
-          payload: wiseAppPayload,
-          accountId: accountId
-        }), {
-          status: response.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
+      const responseData = await response.text()
 
-      const data = await response.json()
-      console.log('WiseApp label created successfully:', data)
-      
-      // Transform response to our format
-      const label = data.payload ? {
-        id: data.payload.id,
-        name: data.payload.title,
-        color: data.payload.color,
-        description: data.payload.description
-      } : data
-
-      return new Response(JSON.stringify({ success: true, label }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      return new Response(responseData, {
+        status: response.status,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': response.headers.get('Content-Type') || 'application/json'
+        }
       })
 
     } catch (error) {
@@ -547,105 +467,6 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     }
   }
 
-  // Get labels from contact
-  if (path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/) && method === 'GET') {
-    const match = path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/)
-    const companyId = match![1]
-    const contactId = match![2]
-    
-    console.log('Debug: Buscando labels para company_id:', companyId, 'contact_id:', contactId);
-    
-    // Buscar o id_conta_wiseapp da empresa primeiro
-    const { data: companyData, error: companyError } = await supabase
-      .from('company')
-      .select('id_conta_wiseapp')
-      .eq('company_id', companyId)
-      .single()
-
-    if (companyError || !companyData?.id_conta_wiseapp) {
-      console.log('Debug: Account ID da empresa não encontrado');
-      return new Response(JSON.stringify({
-        error: 'Account ID da empresa não encontrado',
-        details: companyError?.message || 'company.id_conta_wiseapp não existe'
-      }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    const wiseAppAccountId = companyData.id_conta_wiseapp
-
-    // Buscar token
-    let { data: tokenData, error: tokenError } = await supabase
-      .from('wiseapp_acesso')
-      .select('access_token_wiseapp, id_conta_wiseapp')
-      .eq('id_conta_wiseapp', wiseAppAccountId)
-      .not('access_token_wiseapp', 'is', null)
-      .single()
-
-    if (tokenError || !tokenData) {
-      const fallbackResult = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp, id_conta_wiseapp')
-        .not('access_token_wiseapp', 'is', null)
-        .limit(1)
-        .single()
-      
-      if (fallbackResult.data) {
-        tokenData = fallbackResult.data
-        tokenError = fallbackResult.error
-      }
-    }
-
-    if (tokenError || !tokenData) {
-      return new Response(JSON.stringify({
-        error: 'Token WiseApp não configurado',
-        details: tokenError?.message || 'Nenhum token encontrado'
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
-    const url = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`
-    
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        return new Response(JSON.stringify({
-          error: `WiseApp API error: ${response.status}`,
-          details: errorText
-        }), {
-          status: response.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      const data = await response.json()
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-
-    } catch (error) {
-      return new Response(JSON.stringify({
-        error: 'Erro ao buscar labels',
-        details: error.message
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-  }
-
   // Apply labels to contact
   if (path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/) && method === 'POST') {
     const match = path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/)
@@ -654,31 +475,11 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     
     console.log('Debug: Aplicando labels para company_id:', companyId, 'contact_id:', contactId);
     
-    // Buscar o id_conta_wiseapp da empresa primeiro
-    const { data: companyData, error: companyError } = await supabase
-      .from('company')
-      .select('id_conta_wiseapp')
-      .eq('company_id', companyId)
-      .single()
-
-    if (companyError || !companyData?.id_conta_wiseapp) {
-      console.log('Debug: Account ID da empresa não encontrado');
-      return new Response(JSON.stringify({
-        error: 'Account ID da empresa não encontrado',
-        details: companyError?.message || 'company.id_conta_wiseapp não existe'
-      }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    const wiseAppAccountId = companyData.id_conta_wiseapp
-
-    // Agora buscar token usando o id_conta_wiseapp correto
+    // Primeiro tentar buscar token específico da empresa
     let { data: tokenData, error: tokenError } = await supabase
       .from('wiseapp_acesso')
       .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-      .eq('id_conta_wiseapp', wiseAppAccountId)
+      .eq('id_conta_wiseapp', companyId)
       .not('access_token_wiseapp', 'is', null)
       .single()
 
@@ -695,14 +496,14 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       if (fallbackResult.data) {
         tokenData = fallbackResult.data
         tokenError = fallbackResult.error
-        console.log('Debug: Usando token fallback com account ID:', tokenData.id_conta_wiseapp);
+        console.log('Debug: Usando token fallback para empresa:', companyId);
       }
     }
 
     if (tokenError || !tokenData) {
       console.log('Debug: Nenhum token encontrado. Erro:', tokenError);
       return new Response(JSON.stringify({
-        error: 'Token WiseApp não configurado',
+        error: 'Token e Account ID obrigatórios',
         details: tokenError?.message || 'Nenhum token encontrado'
       }), {
         status: 401,
@@ -711,8 +512,6 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     }
 
     const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
-    console.log('Debug: Usando account ID:', accountId, 'para contact ID:', contactId);
-    
     const requestBody = await req.json()
     
     const url = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`

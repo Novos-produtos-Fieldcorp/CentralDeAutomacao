@@ -52,6 +52,44 @@ Preferred communication style: Simple, everyday language.
   - Fixed in: TagAdministration, TagManager, BulkActionsModal (GET/POST), MotoristaTagsManager (GET/POST/DELETE)
   - Backend routes: `/api/wiseapp/:companyId/contacts/:contactId/labels` (GET/POST/DELETE) fully implemented
 
+## Recent Changes
+
+### October 17, 2025 - Fixed Tag Limit Update UI Refresh
+- **Issue**: After updating the maximum limit of associates for a tag, the card didn't update without page reload
+- **Root Causes**:
+  1. `EditTagModal` wasn't updating `formData` when `tag` prop changed
+  2. `updateTagMutation` was invalidating queries with wrong key (`accountId` instead of `companyId`)
+  3. `deleteTagMutation` had the same key mismatch issue
+- **Fixes Applied**:
+  1. Added `useEffect` to `EditTagModal` to sync `formData` with `tag` prop changes
+  2. Changed query invalidation from `["local-tags", accountId]` to `["local-tags", companyId]` in both update and delete mutations
+  3. Added `refetchQueries` to force immediate UI update after mutations
+- **Files Modified**: `client/src/components/TagAdministration.tsx`
+- **Impact**: Tag cards now update immediately when limit is changed, no reload needed
+
+### October 17, 2025 - Fixed Tag Assignment (Individual & Bulk)
+- **Issue**: Tag assignment to contacts was failing in both individual and bulk operations
+- **Root Causes**: 
+  1. Edge Function was incorrectly mapping `companyId` (from URL) to `id_conta_wiseapp` when searching for WiseApp tokens
+  2. Missing GET route for `/wiseapp/:companyId/contacts/:contactId/labels` preventing label retrieval
+- **Fixes Applied**:
+  1. **GET `/wiseapp/:companyId/contacts/:contactId/labels`**: Added new route to retrieve contact labels from WiseApp
+  2. **POST `/wiseapp/:companyId/contacts/:contactId/labels`**: Fixed to first query `company` table for `id_conta_wiseapp`, then use that to find WiseApp token
+  3. Both routes now properly handle company-to-account ID mapping and include comprehensive error logging
+- **Files Modified**: `supabase/functions/api/index.ts`
+- **Impact**: Individual tag assignment, bulk tag assignment, and tag synchronization now work correctly
+- **Deployment**: Requires Supabase Edge Function redeployment with `supabase functions deploy api`
+
+### October 17, 2025 - Fixed Tag Creation in Netlify Deployment  
+- **Issue**: Tag creation was failing with 422 error on Netlify deployment when using Supabase Edge Functions
+- **Root Cause**: Supabase Edge Function was not transforming request body format from `{name, color}` to WiseApp API format `{title, color, description}`
+- **Fix**: Updated `supabase/functions/api/index.ts` POST `/wiseapp/:companyId/labels` handler to:
+  - Parse request body as JSON and transform field names
+  - Handle duplicate tags (422 error) by fetching existing tag
+  - Return properly formatted responses
+- **Files Modified**: `supabase/functions/api/index.ts`
+- **Deployment**: Requires Supabase Edge Function redeployment with `supabase functions deploy api`
+
 ## External Dependencies
 
 ### Core Framework & Development

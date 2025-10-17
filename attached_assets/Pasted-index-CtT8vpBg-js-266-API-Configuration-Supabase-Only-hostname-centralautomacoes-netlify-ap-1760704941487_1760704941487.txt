@@ -1,0 +1,43 @@
+index-CtT8vpBg.js:266 🔧 API Configuration (Supabase Only): {hostname: 'centralautomacoes.netlify.app', environment: 'Production (Supabase Edge Functions)', apiBaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1', supabaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co', hasAnonKey: true}
+index-CtT8vpBg.js:265 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+uv @ index-CtT8vpBg.js:265
+eme @ index-CtT8vpBg.js:266
+_initSupabaseAuthClient @ index-CtT8vpBg.js:266
+rme @ index-CtT8vpBg.js:266
+pY @ index-CtT8vpBg.js:266
+(anonymous) @ index-CtT8vpBg.js:266
+index-CtT8vpBg.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-CtT8vpBg.js:1116 🔍 [WiseAppAccess] Account ID da URL: undefined
+index-CtT8vpBg.js:1116 🔍 [WiseAppAccess] Account ID do localStorage: 20
+index-CtT8vpBg.js:1116 🔍 [WiseAppAccess] Buscando dados frescos do banco...
+index-CtT8vpBg.js:1116 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 20
+index-CtT8vpBg.js:1116 📊 [WiseAppAccess] Resultado da busca da empresa: {error: null, data: {…}}
+index-CtT8vpBg.js:1116 ✅ [WiseAppAccess] Empresa encontrada: {company_id: 5}
+index-CtT8vpBg.js:1116 🔍 [WiseAppAccess] Buscando token para email: gabriel.mauro@fieldcorp.com.br
+index-CtT8vpBg.js:1116 📊 [WiseAppAccess] Resultado da busca: {error: null, data: {…}, has_token: true}
+index-CtT8vpBg.js:1116 ✅ [WiseAppAccess] Token encontrado: {email: 'gabriel.mauro@fieldcorp.com.br', nome: 'Gabriel Mauro', wiseapp_acesso_id: 8, token_length: 24}
+index-CtT8vpBg.js:2025 Criando tag com dados: {nome: 'testehojeteste', cor: '#3B82F6', limite_max: null, company_id: 5}
+index-CtT8vpBg.js:2025  POST https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels 422 (Unprocessable Content)
+j @ index-CtT8vpBg.js:2025
+await in j
+mutationFn @ index-CtT8vpBg.js:2025
+fn @ index-CtT8vpBg.js:51
+y @ index-CtT8vpBg.js:51
+start @ index-CtT8vpBg.js:51
+execute @ index-CtT8vpBg.js:51
+await in execute
+mutate @ index-CtT8vpBg.js:51
+(anonymous) @ index-CtT8vpBg.js:51
+b @ index-CtT8vpBg.js:2025
+u @ index-CtT8vpBg.js:2025
+tde @ index-CtT8vpBg.js:37
+ade @ index-CtT8vpBg.js:37
+nde @ index-CtT8vpBg.js:37
+mD @ index-CtT8vpBg.js:37
+iG @ index-CtT8vpBg.js:37
+(anonymous) @ index-CtT8vpBg.js:37
+hF @ index-CtT8vpBg.js:40
+BW @ index-CtT8vpBg.js:37
+rC @ index-CtT8vpBg.js:37
+QT @ index-CtT8vpBg.js:37
+bde @ index-CtT8vpBg.js:37
