@@ -1386,8 +1386,9 @@ const MotoristasLista = () => {
       (motorista.nome_cidade && cidadeFilter.includes(motorista.nome_cidade));
 
     // Lógica para filtro de ativo/inativo (seleção única)
-    const ativoMatch = !ativoFilter || 
-      (ativoFilter === 'ativo' ? motorista.ativo === true : motorista.ativo === false);
+    const ativoMatch = ativoFilter === '' ? true :
+    ativoFilter === 'ativo' ? motorista.ativo === true :
+      ativoFilter === 'inativo' ? motorista.ativo === false : true;
 
     // Lógica para filtro de tags (multiseleção)
     let tagMatch = true;
@@ -1593,7 +1594,7 @@ const MotoristasLista = () => {
         {/* Filter Tags - Filtros aplicados como tags removíveis */}
         <FilterTags
           statusFilter={statusFilter}
-          ativoFilter={ativoFilter}
+          ativoFilter={ativoFilter === 'ativo' ? 'true' : ativoFilter === 'inativo' ? 'false' : ''}
           clienteFilter={clienteFilter}
           cidadeFilter={cidadeFilter}
           tagFilter={tagFilter}
@@ -2012,7 +2013,15 @@ const MotoristasLista = () => {
                 </button>
 
                 {showAtivoDropdown && (
-                  <div className="absolute z-[999999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
+                  <div
+                  className="bg-white dark:bg-gray-700 shadow-2xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                  style={{
+                    position: 'absolute',
+                    bottom: '100%',
+                    left: 0,
+                    marginBottom: '4px',
+                    zIndex: 999999
+                  }}>
                     <div 
                       className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
                       onClick={() => {

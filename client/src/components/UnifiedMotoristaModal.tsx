@@ -1034,54 +1034,131 @@ const UnifiedMotoristaModal = ({
                   </div>
                   
                   {ajudantes.length > 0 ? (
-                    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                      <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {ajudantes.map((ajudante) => (
-                          <li key={ajudante.id_ajudante} className="px-4 py-4 sm:px-6">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <div className="ml-4">
-                                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                    {ajudante.nome}
-                                  </p>
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'CPF não informado'}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={() => handleEditAjudante(ajudante)}
-                                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                >
-                                  <Edit2 className="w-4 h-4 mr-1" />
-                                  Editar
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteAjudante(ajudante)}
-                                  className="inline-flex items-center px-3 py-1.5 border border-red-300 dark:border-red-600 shadow-sm text-xs font-medium rounded-md text-red-700 dark:text-red-200 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                >
-                                  <X className="w-4 h-4 mr-1" />
-                                  Excluir
-                                </button>
-                              </div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+  <div className="space-y-6">
+    {ajudantes.map((ajudante) => (
+      <div key={ajudante.id_ajudante} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        {/* Header com nome e ações */}
+        <div className="dark:bg-gray-750 px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-[#1f2937]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  {ajudante.nome}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Ajudante
+                </p>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handleEditAjudante(ajudante)}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Edit2 className="w-4 h-4 mr-2" />
+                Editar
+              </button>
+              <button
+                onClick={() => handleDeleteAjudante(ajudante)}
+                className="inline-flex items-center px-3 py-2 border border-red-300 dark:border-red-600 shadow-sm text-sm font-medium rounded-md text-red-700 dark:text-red-200 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Informações detalhadas */}
+        <div className="px-6 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Informações Pessoais */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-1">
+                Informações Pessoais
+              </h4>
+              <div className="space-y-2">
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">CPF</span>
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'Não informado'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">Telefone</span>
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {ajudante.telefone || 'Não informado'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">Gênero</span>
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {ajudante.genero === 'M' ? 'Masculino' : ajudante.genero === 'F' ? 'Feminino' : 'Não informado'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Documentação */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-1">
+                Documentação
+              </h4>
+              <div className="space-y-2">
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">RG</span>
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {ajudante.nr_rg || 'Não informado'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">Órgão Expedidor</span>
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {ajudante.orgao_expedidor || 'Não informado'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">Data de Emissão</span>
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {ajudante.data_emissao ? new Date(ajudante.data_emissao).toLocaleDateString('pt-BR') : 'Não informado'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Filiação */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-1">
+                Filiação
+              </h4>
+              <div className="space-y-2">
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">Nome do Pai</span>
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {ajudante.nome_pai || 'Não informado'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 block">Nome da Mãe</span>
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {ajudante.nome_mae || 'Não informado'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
                   ) : (
                     <div className="text-center py-12">
-                      <Users className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                        Nenhum ajudante encontrado
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Use o botão "Adicionar Ajudante" no cabeçalho para começar.
-                      </p>
+                      <User className="mx-auto h-12 w-12 text-gray-400" />
+                      <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">Nenhum ajudante</h3>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Comece adicionando um ajudante.</p>
                     </div>
                   )}
                 </div>

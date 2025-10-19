@@ -1093,6 +1093,151 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       </div>
                     </div>
                   )}
+                  {/* Documentos do Dono do Veículo - apenas para agregados */}
+                  {motorista.funcao === 'Agregado' && proprietarioVeiculo && (
+                    <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg mt-6">
+                      <div className="px-4 py-5 sm:px-6">
+                        <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                          Documentos do Dono do Veículo
+                        </h3>
+                      </div>
+                      <div className="border-t border-gray-200 dark:border-gray-700">
+                        <dl>
+                          {/* CNH do Dono do Veículo */}
+                          {proprietarioVeiculo.pessoaFisica?.foto_documento && (
+                            <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                CNH
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-4">
+                                    <div className="flex items-center">
+                                      <button
+                                        onClick={() => openDocumentInNewTab(proprietarioVeiculo.pessoaFisica?.foto_documento)}
+                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                      >
+                                        <FileText className="w-5 h-5 mr-2" />
+                                        {isPdf(proprietarioVeiculo.pessoaFisica?.foto_documento) ? 'Ver PDF' : 'Ver Imagem'}
+                                      </button>
+                                      {!isPdf(proprietarioVeiculo.pessoaFisica?.foto_documento) && (
+                                        <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                          <img 
+                                            src={proprietarioVeiculo.pessoaFisica?.foto_documento} 
+                                            alt="CNH Preview" 
+                                            className="w-full h-full object-cover cursor-pointer"
+                                            onClick={() => setActiveDocument(proprietarioVeiculo.pessoaFisica?.foto_documento)}
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                    <div>
+                                      <span className="block text-xs text-gray-500 dark:text-gray-400">Número da CNH</span>
+                                      <span className="block font-semibold text-gray-900 dark:text-white">
+                                        {proprietarioVeiculo.pessoaFisica?.nr_registro_cnh || 'Não informado'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="block text-xs text-gray-500 dark:text-gray-400">Categoria</span>
+                                      <span className="block font-semibold text-gray-900 dark:text-white">
+                                        {proprietarioVeiculo.pessoaFisica?.categoria_cnh || 'Não informado'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="block text-xs text-gray-500 dark:text-gray-400">Validade</span>
+                                      <span className="block font-semibold text-gray-900 dark:text-white">
+                                        {proprietarioVeiculo.pessoaFisica?.validade_cnh ? formatDate(proprietarioVeiculo.pessoaFisica.validade_cnh) : 'Não informado'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="block text-xs text-gray-500 dark:text-gray-400">UF</span>
+                                      <span className="block font-semibold text-gray-900 dark:text-white">
+                                        {proprietarioVeiculo.pessoaFisica?.uf_cnh || 'Não informado'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="block text-xs text-gray-500 dark:text-gray-400">Nome do Pai</span>
+                                      <span className="block font-semibold text-gray-900 dark:text-white">
+                                        {proprietarioVeiculo.pessoaFisica?.nome_pai || 'Não informado'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="block text-xs text-gray-500 dark:text-gray-400">Nome da Mãe</span>
+                                      <span className="block font-semibold text-gray-900 dark:text-white">
+                                        {proprietarioVeiculo.pessoaFisica?.nome_mae || 'Não informado'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </dd>
+                            </div>
+                          )}
+
+                          {/* Comprovante de Residência do Dono do Veículo */}
+                          {proprietarioVeiculo.pessoaFisica?.comprovante_residencia && (
+                            <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                Comprovante de Residência
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
+                                <div className="flex items-center">
+                                  <button
+                                    onClick={() => openDocumentInNewTab(proprietarioVeiculo.pessoaFisica?.comprovante_residencia)}
+                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                  >
+                                    <FileText className="w-5 h-5 mr-2" />
+                                    {isPdf(proprietarioVeiculo.pessoaFisica?.comprovante_residencia) ? 'Ver PDF' : 'Ver Imagem'}
+                                  </button>
+                                  {!isPdf(proprietarioVeiculo.pessoaFisica?.comprovante_residencia) && (
+                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={proprietarioVeiculo.pessoaFisica?.comprovante_residencia} 
+                                        alt="Comprovante Preview" 
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() => setActiveDocument(proprietarioVeiculo.pessoaFisica?.comprovante_residencia)}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </dd>
+                            </div>
+                          )}
+
+                          {/* Documentos da Pessoa Jurídica */}
+                          {proprietarioVeiculo.pessoaJuridica?.comprovante_residencia && (
+                            <div className="bg-gray-50 dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                              <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                Comprovante de Endereço
+                              </dt>
+                              <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2 flex items-center">
+                                <div className="flex items-center">
+                                  <button
+                                    onClick={() => openDocumentInNewTab(proprietarioVeiculo.pessoaJuridica?.comprovante_residencia)}
+                                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                                  >
+                                    <FileText className="w-5 h-5 mr-2" />
+                                    {isPdf(proprietarioVeiculo.pessoaJuridica?.comprovante_residencia) ? 'Ver PDF' : 'Ver Imagem'}
+                                  </button>
+                                  {!isPdf(proprietarioVeiculo.pessoaJuridica?.comprovante_residencia) && (
+                                    <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                                      <img 
+                                        src={proprietarioVeiculo.pessoaJuridica?.comprovante_residencia} 
+                                        alt="Comprovante Preview" 
+                                        className="w-full h-full object-cover cursor-pointer"
+                                        onClick={() => setActiveDocument(proprietarioVeiculo.pessoaJuridica?.comprovante_residencia)}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </dd>
+                            </div>
+                          )}
+                        </dl>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : activeTab === 'ajudantes' ? (
                 <div className="space-y-6">
@@ -1185,22 +1330,37 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     Documentação
                                   </h4>
                                   <div className="space-y-2">
+                                    {/* CNH */}
+                                    <div>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Número da CNH</span>
+                                      <span className="text-sm text-gray-900 dark:text-white">
+                                        {ajudante.cnh_ajudante?.nr_registro || 'Não informado'}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Categoria CNH</span>
+                                      <span className="text-sm text-gray-900 dark:text-white">
+                                        {ajudante.cnh_ajudante?.categoria || 'Não informado'}
+                                      </span>
+                                    </div>
+                                    
+                                    {/* RG */}
                                     <div>
                                       <span className="text-xs text-gray-500 dark:text-gray-400 block">RG</span>
                                       <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nr_rg || 'Não informado'}
+                                        {ajudante.rg_ajudante?.nr_rg || 'Não informado'}
                                       </span>
                                     </div>
                                     <div>
                                       <span className="text-xs text-gray-500 dark:text-gray-400 block">Órgão Expedidor</span>
                                       <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.orgao_expedidor || 'Não informado'}
+                                        {ajudante.rg_ajudante?.orgao_expedidor || 'Não informado'}
                                       </span>
                                     </div>
                                     <div>
                                       <span className="text-xs text-gray-500 dark:text-gray-400 block">Data de Emissão</span>
                                       <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.data_emissao ? new Date(ajudante.data_emissao).toLocaleDateString('pt-BR') : 'Não informado'}
+                                        {ajudante.rg_ajudante?.data_emissao ? new Date(ajudante.rg_ajudante.data_emissao).toLocaleDateString('pt-BR') : 'Não informado'}
                                       </span>
                                     </div>
                                   </div>
