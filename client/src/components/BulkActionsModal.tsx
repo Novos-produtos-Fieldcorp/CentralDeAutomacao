@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Users, Building2, Tag } from 'lucide-react';
+import { X, Loader2, Users, Building2, Tag, Clock, RefreshCw, CheckCircle2, TrendingUp } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import toast from 'react-hot-toast';
 import type { Cliente } from '../types/database';
@@ -665,45 +665,72 @@ const BulkActionsModal = ({
 
           {/* Barra de Progresso */}
           {submitting && actionType === 'tags' && totalItems > 0 && (
-            <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <div className="flex justify-between items-center text-sm">
-                <span className="font-medium text-blue-900 dark:text-blue-100">
-                  Processando marcadores...
-                </span>
-                <span className="text-blue-700 dark:text-blue-300">
-                  {processedItems} / {totalItems}
-                </span>
-              </div>
-              
-              {/* Barra de progresso */}
-              <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-3 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 transition-all duration-300 ease-out flex items-center justify-end pr-2"
-                  style={{ width: `${progress}%` }}
-                >
-                  <span className="text-xs font-bold text-white drop-shadow-sm">
-                    {progress}%
+            <div className="space-y-4 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-100 dark:border-blue-900/50 shadow-sm">
+              {/* Header com status */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  {progress === 100 ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 animate-in zoom-in duration-300" />
+                  ) : (
+                    <RefreshCw className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
+                  )}
+                  <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                    {progress === 100 ? 'Processamento concluído' : 'Processando marcadores'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <TrendingUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                    {processedItems} / {totalItems}
                   </span>
                 </div>
               </div>
               
-              {/* Tempo estimado */}
-              <div className="flex justify-between items-center text-xs text-blue-700 dark:text-blue-300">
-                <span>
-                  {estimatedTimeLeft !== null && estimatedTimeLeft > 0 ? (
-                    <>
-                      ⏱️ Tempo estimado: {estimatedTimeLeft < 60 
-                        ? `${estimatedTimeLeft}s` 
-                        : `${Math.floor(estimatedTimeLeft / 60)}min ${estimatedTimeLeft % 60}s`
-                      }
-                    </>
-                  ) : (
-                    '⏱️ Calculando tempo restante...'
-                  )}
-                </span>
-                <span className="font-medium">
-                  {progress === 100 ? '✅ Concluído!' : '🔄 Processando...'}
-                </span>
+              {/* Barra de progresso moderna */}
+              <div className="relative" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-valuetext={`${processedItems} de ${totalItems} itens processados`}>
+                <div className="w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 dark:from-blue-400 dark:via-blue-500 dark:to-indigo-500 transition-all duration-500 ease-out rounded-full relative"
+                    style={{ width: `${progress}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                  </div>
+                </div>
+                {progress > 0 && (
+                  <div 
+                    className="absolute -top-1 px-2 py-0.5 bg-blue-600 dark:bg-blue-500 text-white text-xs font-bold rounded shadow-lg transition-all duration-500 ease-out whitespace-nowrap"
+                    style={{ 
+                      left: `${progress}%`,
+                      transform: `translateX(${progress < 10 ? '0%' : progress > 90 ? '-100%' : '-50%'})`
+                    }}
+                  >
+                    {progress}%
+                  </div>
+                )}
+              </div>
+              
+              {/* Tempo estimado com ícone */}
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>
+                    {estimatedTimeLeft !== null && estimatedTimeLeft > 0 ? (
+                      <span className="font-medium">
+                        {estimatedTimeLeft < 60 
+                          ? `${estimatedTimeLeft}s restantes` 
+                          : `${Math.floor(estimatedTimeLeft / 60)}min ${estimatedTimeLeft % 60}s restantes`
+                        }
+                      </span>
+                    ) : (
+                      <span className="text-gray-500 dark:text-gray-500">Calculando...</span>
+                    )}
+                  </span>
+                </div>
+                {progress === 100 && (
+                  <span className="text-green-600 dark:text-green-400 font-semibold animate-in fade-in slide-in-from-right duration-300">
+                    Finalizado
+                  </span>
+                )}
               </div>
             </div>
           )}
