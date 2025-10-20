@@ -35,11 +35,27 @@ const BulkActionsModal = ({
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [tags, setTags] = useState<any[]>([]);
   const [availableTagSlots, setAvailableTagSlots] = useState<number>(0);
+  
+  // Estados para barra de progresso
+  const [progress, setProgress] = useState(0);
+  const [processedItems, setProcessedItems] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const [estimatedTimeLeft, setEstimatedTimeLeft] = useState<number | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
 
   // Buscar tags quando o modal abrir para ação de tags
   useEffect(() => {
     if (isOpen && actionType === 'tags' && companyId) {
       fetchTags();
+    }
+    
+    // Reset progress states when modal closes
+    if (!isOpen) {
+      setProgress(0);
+      setProcessedItems(0);
+      setTotalItems(0);
+      setEstimatedTimeLeft(null);
+      setStartTime(null);
     }
   }, [isOpen, actionType, companyId]);
 
@@ -116,6 +132,14 @@ const BulkActionsModal = ({
       return;
     }
 
+    // Inicializar barra de progresso
+    const total = motoristaIds.length;
+    const startedAt = Date.now(); // Usar variável local para cálculos
+    setTotalItems(total);
+    setProcessedItems(0);
+    setProgress(0);
+    setStartTime(startedAt);
+
     // Buscar o id_conta_wiseapp correto para este company_id
     const { data: company, error: companyError } = await supabase
       .from('company')
@@ -134,6 +158,7 @@ const BulkActionsModal = ({
       console.log(`Aplicando tag "${tagData.nome}" aos contatos no WiseApp para ${motoristaIds.length} motoristas...`);
 
       let syncSuccessCount = 0;
+      let processedCount = 0;
       console.log(`DEBUG: Processando ${motoristaIds.length} motoristas:`, motoristaIds);
 
       // Processar em lotes menores para evitar timeout e problemas de URL longa
@@ -345,6 +370,21 @@ const BulkActionsModal = ({
           }
           } catch (contactError) {
             console.warn(`Erro ao processar motorista ${motoristaId}:`, contactError);
+          } finally {
+            // Atualizar progresso
+            processedCount++;
+            const currentProgress = Math.round((processedCount / total) * 100);
+            setProgress(currentProgress);
+            setProcessedItems(processedCount);
+            
+            // Calcular tempo estimado restante usando variável local
+            if (processedCount > 0) {
+              const elapsed = Date.now() - startedAt;
+              const avgTimePerItem = elapsed / processedCount;
+              const remainingItems = total - processedCount;
+              const estimatedMs = avgTimePerItem * remainingItems;
+              setEstimatedTimeLeft(Math.ceil(estimatedMs / 1000)); // em segundos
+            }
           }
         }
       }
@@ -622,6 +662,51 @@ const BulkActionsModal = ({
               )}
             </p>
           </div>
+
+          {/* Barra de Progresso */}
+          {submitting && actionType === 'tags' && totalItems > 0 && (
+            <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex justify-between items-center text-sm">
+                <span className="font-medium text-blue-900 dark:text-blue-100">
+                  Processando marcadores...
+                </span>
+                <span className="text-blue-700 dark:text-blue-300">
+                  {processedItems} / {totalItems}
+                </span>
+              </div>
+              
+              {/* Barra de progresso */}
+              <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-3 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-400 dark:to-blue-500 transition-all duration-300 ease-out flex items-center justify-end pr-2"
+                  style={{ width: `${progress}%` }}
+                >
+                  <span className="text-xs font-bold text-white drop-shadow-sm">
+                    {progress}%
+                  </span>
+                </div>
+              </div>
+              
+              {/* Tempo estimado */}
+              <div className="flex justify-between items-center text-xs text-blue-700 dark:text-blue-300">
+                <span>
+                  {estimatedTimeLeft !== null && estimatedTimeLeft > 0 ? (
+                    <>
+                      ⏱️ Tempo estimado: {estimatedTimeLeft < 60 
+                        ? `${estimatedTimeLeft}s` 
+                        : `${Math.floor(estimatedTimeLeft / 60)}min ${estimatedTimeLeft % 60}s`
+                      }
+                    </>
+                  ) : (
+                    '⏱️ Calculando tempo restante...'
+                  )}
+                </span>
+                <span className="font-medium">
+                  {progress === 100 ? '✅ Concluído!' : '🔄 Processando...'}
+                </span>
+              </div>
+            </div>
+          )}
 
           {actionType === 'status' ? (
             <div>
