@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Users, Building2, Tag } from 'lucide-react';
+import { X, Loader2, Users, Building2, Tag, Clock, RefreshCw, CheckCircle2, TrendingUp } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import toast from 'react-hot-toast';
 import type { Cliente } from '../types/database';
@@ -35,11 +35,27 @@ const BulkActionsModal = ({
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [tags, setTags] = useState<any[]>([]);
   const [availableTagSlots, setAvailableTagSlots] = useState<number>(0);
+  
+  // Estados para barra de progresso
+  const [progress, setProgress] = useState(0);
+  const [processedItems, setProcessedItems] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const [estimatedTimeLeft, setEstimatedTimeLeft] = useState<number | null>(null);
+  const [startTime, setStartTime] = useState<number | null>(null);
 
   // Buscar tags quando o modal abrir para ação de tags
   useEffect(() => {
     if (isOpen && actionType === 'tags' && companyId) {
       fetchTags();
+    }
+    
+    // Reset progress states when modal closes
+    if (!isOpen) {
+      setProgress(0);
+      setProcessedItems(0);
+      setTotalItems(0);
+      setEstimatedTimeLeft(null);
+      setStartTime(null);
     }
   }, [isOpen, actionType, companyId]);
 
@@ -116,6 +132,14 @@ const BulkActionsModal = ({
       return;
     }
 
+    // Inicializar barra de progresso
+    const total = motoristaIds.length;
+    const startedAt = Date.now(); // Usar variável local para cálculos
+    setTotalItems(total);
+    setProcessedItems(0);
+    setProgress(0);
+    setStartTime(startedAt);
+
     // Buscar o id_conta_wiseapp correto para este company_id
     const { data: company, error: companyError } = await supabase
       .from('company')
@@ -134,6 +158,7 @@ const BulkActionsModal = ({
       console.log(`Aplicando tag "${tagData.nome}" aos contatos no WiseApp para ${motoristaIds.length} motoristas...`);
 
       let syncSuccessCount = 0;
+      let processedCount = 0;
       console.log(`DEBUG: Processando ${motoristaIds.length} motoristas:`, motoristaIds);
 
       // Processar em lotes menores para evitar timeout e problemas de URL longa
@@ -345,6 +370,21 @@ const BulkActionsModal = ({
           }
           } catch (contactError) {
             console.warn(`Erro ao processar motorista ${motoristaId}:`, contactError);
+          } finally {
+            // Atualizar progresso
+            processedCount++;
+            const currentProgress = Math.round((processedCount / total) * 100);
+            setProgress(currentProgress);
+            setProcessedItems(processedCount);
+            
+            // Calcular tempo estimado restante usando variável local
+            if (processedCount > 0) {
+              const elapsed = Date.now() - startedAt;
+              const avgTimePerItem = elapsed / processedCount;
+              const remainingItems = total - processedCount;
+              const estimatedMs = avgTimePerItem * remainingItems;
+              setEstimatedTimeLeft(Math.ceil(estimatedMs / 1000)); // em segundos
+            }
           }
         }
       }
@@ -622,6 +662,78 @@ const BulkActionsModal = ({
               )}
             </p>
           </div>
+
+          {/* Barra de Progresso */}
+          {submitting && actionType === 'tags' && totalItems > 0 && (
+            <div className="space-y-4 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-100 dark:border-blue-900/50 shadow-sm">
+              {/* Header com status */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  {progress === 100 ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 animate-in zoom-in duration-300" />
+                  ) : (
+                    <RefreshCw className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
+                  )}
+                  <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                    {progress === 100 ? 'Processamento concluído' : 'Processando marcadores'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <TrendingUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                    {processedItems} / {totalItems}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Barra de progresso moderna */}
+              <div className="relative" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-valuetext={`${processedItems} de ${totalItems} itens processados`}>
+                <div className="w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 dark:from-blue-400 dark:via-blue-500 dark:to-indigo-500 transition-all duration-500 ease-out rounded-full relative"
+                    style={{ width: `${progress}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                  </div>
+                </div>
+                {progress > 0 && (
+                  <div 
+                    className="absolute -top-1 px-2 py-0.5 bg-blue-600 dark:bg-blue-500 text-white text-xs font-bold rounded shadow-lg transition-all duration-500 ease-out whitespace-nowrap"
+                    style={{ 
+                      left: `${progress}%`,
+                      transform: `translateX(${progress < 10 ? '0%' : progress > 90 ? '-100%' : '-50%'})`
+                    }}
+                  >
+                    {progress}%
+                  </div>
+                )}
+              </div>
+              
+              {/* Tempo estimado com ícone */}
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>
+                    {estimatedTimeLeft !== null && estimatedTimeLeft > 0 ? (
+                      <span className="font-medium">
+                        {estimatedTimeLeft < 60 
+                          ? `${estimatedTimeLeft}s restantes` 
+                          : `${Math.floor(estimatedTimeLeft / 60)}min ${estimatedTimeLeft % 60}s restantes`
+                        }
+                      </span>
+                    ) : (
+                      <span className="text-gray-500 dark:text-gray-500">Calculando...</span>
+                    )}
+                  </span>
+                </div>
+                {progress === 100 && (
+                  <span className="text-green-600 dark:text-green-400 font-semibold animate-in fade-in slide-in-from-right duration-300">
+                    Finalizado
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {actionType === 'status' ? (
             <div>
