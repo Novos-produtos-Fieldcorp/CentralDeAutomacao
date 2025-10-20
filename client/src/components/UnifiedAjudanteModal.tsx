@@ -864,13 +864,18 @@ const UnifiedAjudanteModal = ({
                       name="nr_registro"
                       value={formData.nr_registro}
                       onChange={(e) => {
-                        const formattedValue = formatCnhInput(e.target.value);
-                        const validation = validateCnhNumber(formattedValue);
-                        
-                        setFormData(prev => ({ ...prev, nr_registro: formattedValue }));
-                        
-                        if (formattedValue && !validation.isValid && validation.error) {
-                          toast.error(validation.error);
+                        const value = e.target.value.replace(/\D/g, ''); // Remove não numéricos
+                        if (value.length <= 11) { // Limita a 11 caracteres
+                          setFormData(prev => ({ ...prev, nr_registro: value }));
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const cnh = e.target.value.replace(/\D/g, '');
+                        if (cnh.length === 11) {
+                          const validation = validateCnhNumber(cnh);
+                          if (!validation.isValid && validation.error) {
+                            toast.error(validation.error);
+                          }
                         }
                       }}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"

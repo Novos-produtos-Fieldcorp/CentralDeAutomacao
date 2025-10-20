@@ -55,12 +55,12 @@ Deno.serve(async (req) => {
       // Prepare the webhook payload with required fields including company_id and group_id
       const webhookData = {
         nome_do_grupo: grupo.nome_grupo,
-        url_do_grupo: grupo.nome_inbox,
+        url_do_grupo: grupo.url_grupo,
         company_id: grupo.company_id,
         group_id: grupo.id,
       };
       console.log(
-        "Sending webhook data (nome_grupo, nome_inbox, company_id, and group_id):",
+        "Sending webhook data (nome_grupo, url_grupo, company_id, and group_id):",
         JSON.stringify(webhookData, null, 2),
       );
       // Send the webhook

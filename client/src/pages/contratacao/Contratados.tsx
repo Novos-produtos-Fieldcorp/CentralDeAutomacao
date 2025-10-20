@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Tag, CheckCircle, Calendar, Tags, Plus } from 'lucide-react';
 import WhatsAppAvatar from '../../components/WhatsAppAvatar';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database'; // Adicionando tipos necessários
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
-import FilterTags from '../../components/FilterTags';
 import DocumentViewer from '../../components/DocumentViewer';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
 import EditMotoristaModal from '../../components/EditMotoristaModal';
@@ -243,7 +243,6 @@ const Contratados = () => {
 
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false); 
   const [isApplyingTag, setIsApplyingTag] = useState(false);
   const [editingDate, setEditingDate] = useState<{ type: 'integracao' | 'treinamento' | 'cadastro', motoristaId: number } | null>(null);
   const [tempDate, setTempDate] = useState<string>('');
@@ -252,21 +251,21 @@ const Contratados = () => {
   // Funções auxiliares para filtros
   const hasActiveFilters = () => {
     return statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 ||
-      ativoFilter !== '' || tipoVeiculoFilter.length > 0 || funcaoFilter.length > 0 || 
-      dateFilter !== 'all' || tagFilter.length > 0;
+      ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all' || tagFilter.length > 0;
   };
 
+
+  const [ativoDropdownPosition, setAtivoDropdownPosition] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
+
+
   const getActiveFiltersCount = () => {
-    return [
-      statusFilter.length > 0 ? 1 : 0, 
-      cidadeFilter.length > 0 ? 1 : 0, 
-      clienteFilter.length > 0 ? 1 : 0,
-      ativoFilter !== '' ? 1 : 0, 
-      tipoVeiculoFilter.length > 0 ? 1 : 0, 
-      funcaoFilter.length > 0 ? 1 : 0,
-      dateFilter !== 'all' ? 1 : 0, 
-      tagFilter.length > 0 ? 1 : 0
-    ].reduce((a, b) => a + b, 0);
+    return [statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0,
+    ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0,
+    tagFilter.length > 0 ? 1 : 0].reduce((a, b) => a + b, 0);
   };
 
   const convertToMotorista = (contratado: ViewContratado | null): MotoristaWithAddress | null => {
@@ -1267,6 +1266,20 @@ const Contratados = () => {
 
   const handleToggleAtivoDropdown = (e: React.MouseEvent) => {
     e.stopPropagation();
+    const isOpening = !showAtivoDropdown;
+
+    if (isOpening) {
+      // Calcular posição do dropdown
+      const buttonElement = e.currentTarget as HTMLElement;
+      const rect = buttonElement.getBoundingClientRect();
+      setAtivoDropdownPosition({
+        top: rect.bottom + 4, // Para aparecer abaixo do botão
+        left: rect.left,
+        width: 192 // w-48 = 192px
+      });
+    } else {
+      setAtivoDropdownPosition(null);
+    }
     setShowAtivoDropdown(!showAtivoDropdown);
     setShowStatusDropdown(false);
     setShowClienteDropdown(false);
@@ -1440,7 +1453,7 @@ const Contratados = () => {
               </button>
 
               <button
-                onClick={() => setIsAddModalOpen(true)}
+                onClick={() => setShowAddModal(true)}
                 className="inline-flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                 title="Novo Contratado"
               >
@@ -1452,88 +1465,6 @@ const Contratados = () => {
           {/* Advanced filters - collapsible */}
           {showAdvancedFilters && (
             <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-
-              {/* Filtros ativos */}
-              {hasActiveFilters() && (
-                  <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Filter className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Filtros ativos ({getActiveFiltersCount()})
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setStatusFilter([]);
-                          setCidadeFilter([]);
-                          setClienteFilter([]);
-                          setAtivoFilter('');
-                          setTipoVeiculoFilter([]);
-                          setFuncaoFilter([]);
-                          setTagFilter([]);
-                          setDateFilter('all');
-                        }}
-                        className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        Limpar todos
-                      </button>
-                    </div>
-                    
-                    <FilterTags
-                      statusFilter={statusFilter}
-                      ativoFilter={ativoFilter === 'ativo' ? 'true' : ativoFilter === 'inativo' ? 'false' : ''}
-                      clienteFilter={clienteFilter}
-                      cidadeFilter={cidadeFilter}
-                      tagFilter={tagFilter}
-                      tipoVeiculoFilter={tipoVeiculoFilter}
-                      funcaoFilter={funcaoFilter}
-                      dateFilter={dateFilter}
-                      customDateRange={customDateRange}
-                      onRemoveStatus={(status) => {
-                        setStatusFilter(statusFilter.filter(s => s !== status));
-                      }}
-                      onRemoveAtivo={() => {
-                        setAtivoFilter('');
-                      }}
-                      onRemoveCliente={(clienteId) => {
-                        setClienteFilter(clienteFilter.filter(c => c !== clienteId));
-                      }}
-                      onRemoveCidade={(cidade) => {
-                        setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
-                      }}
-                      onRemoveTag={(tagId) => {
-                        setTagFilter(tagFilter.filter(t => t !== tagId));
-                      }}
-                      onRemoveTipoVeiculo={(tipo) => {
-                        setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== tipo));
-                      }}
-                      onRemoveFuncao={(funcao) => {
-                        setFuncaoFilter(funcaoFilter.filter(f => f !== funcao));
-                      }}
-                      onRemoveDate={() => {
-                        setDateFilter('all');
-                      }}
-                      onClearAll={() => {
-                        setStatusFilter([]);
-                        setCidadeFilter([]);
-                        setClienteFilter([]);
-                        setAtivoFilter('');
-                        setTipoVeiculoFilter([]);
-                        setFuncaoFilter([]);
-                        setTagFilter([]);
-                        setDateFilter('all');
-                      }}
-                      clientes={clientes}
-                      tags={tags}
-                      cidades={cidades}
-                      tiposVeiculo={tiposVeiculo}
-                      funcoes={funcoes}
-                    />
-                  </div>
-              )}
-
-
               {/* Filtros modernos */}
               <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
                 <div className="flex flex-wrap gap-2">
@@ -1958,38 +1889,52 @@ const Contratados = () => {
                   </div>
                 </button>
 
-                {showAtivoDropdown && (
-                  <div className="absolute z-[999999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
+                {/* Dropdown usando createPortal */}
+                {showAtivoDropdown && ativoDropdownPosition && 
+                  createPortal(
                     <div 
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                      onClick={() => {
-                        setAtivoFilter('');
-                        setShowAtivoDropdown(false);
+                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600"
+                      style={{
+                        position: 'fixed',
+                        top: ativoDropdownPosition.top,
+                        left: ativoDropdownPosition.left,
+                        width: ativoDropdownPosition.width,
+                        zIndex: 9999
                       }}
                     >
-                      Todos
-                    </div>
-                    <div 
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                      onClick={() => {
-                        setAtivoFilter('ativo');
-                        setShowAtivoDropdown(false);
-                      }}
-                    >
-                      Somente Ativos
-                    </div>
-                    <div 
-                      className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                      onClick={() => {
-                        setAtivoFilter('inativo');
-                        setShowAtivoDropdown(false);
-                      }}
-                    >
-                      Somente Desativos
-                    </div>
-                  </div>
+                      <div 
+                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                        onClick={() => {
+                          setAtivoFilter('');
+                          setShowAtivoDropdown(false);
+                          setAtivoDropdownPosition(null);
+                        }}
+                      >
+                        Todos
+                      </div>
+                      <div 
+                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                        onClick={() => {
+                          setAtivoFilter('ativo');
+                          setShowAtivoDropdown(false);
+                          setAtivoDropdownPosition(null);
+                        }}
+                      >
+                        Somente Ativos
+                      </div>
+                      <div 
+                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                        onClick={() => {
+                          setAtivoFilter('inativo');
+                          setShowAtivoDropdown(false);
+                          setAtivoDropdownPosition(null);
+                        }}
+                      >
+                        Somente Desativos
+                      </div>
+                    </div>,
+                    document.body
                 )}
-
               </div>
             </div>
 
@@ -2494,16 +2439,6 @@ const Contratados = () => {
         onClose={() => setIsUnifiedModalOpen(false)}
         motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : null}
         onSuccess={fetchContratados}
-      />
-            {/* Modal para adicionar novo contratado */}
-      <UnifiedMotoristaModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        motorista={null} // null para indicar que é um novo motorista
-        onSuccess={() => {
-          fetchContratados();
-          setIsAddModalOpen(false);
-        }}
       />
 
       <DocumentViewer

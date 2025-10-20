@@ -9,12 +9,9 @@ export interface FilterTagsProps {
   tagFilter?: string[];
   tipoVeiculoFilter?: string[];
   dateFilter?: string;
-  funcaoFilter?: string[];
-  funcoes?: string[];
   customDateRange?: {
     startDate: string | null;
     endDate: string | null;
-    
   };
   onRemoveStatus?: (status: string) => void;
   onRemoveAtivo?: () => void;
@@ -24,7 +21,6 @@ export interface FilterTagsProps {
   onRemoveTipoVeiculo?: (tipo: string) => void;
   onRemoveDate?: () => void;
   onClearAll?: () => void;
-  onRemoveFuncao?: (funcao: string) => void;
   
   // Data para labels personalizados
   clientes?: Array<{ cliente_id: number; nome_cliente: string }>;
@@ -61,8 +57,6 @@ const FilterTags: React.FC<FilterTagsProps> = ({
   tipoVeiculoFilter = [],
   dateFilter = 'all',
   customDateRange,
-  funcaoFilter = [],
-  funcoes = [],
   onRemoveStatus,
   onRemoveAtivo,
   onRemoveCliente,
@@ -71,7 +65,6 @@ const FilterTags: React.FC<FilterTagsProps> = ({
   onRemoveTipoVeiculo,
   onRemoveDate,
   onClearAll,
-  onRemoveFuncao,
   clientes = [],
   tags = [],
   cidades = [],
@@ -84,7 +77,6 @@ const FilterTags: React.FC<FilterTagsProps> = ({
     cidadeFilter.length > 0 ||
     tagFilter.length > 0 ||
     tipoVeiculoFilter.length > 0 ||
-    funcaoFilter.length > 0 ||
     (dateFilter !== 'all' && dateFilter !== '');
 
   if (!hasFilters) {
@@ -280,29 +272,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
             )}
           </div>
         )}
-        {funcaoFilter.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {funcaoFilter.map((funcao) => (
-              <div
-                key={funcao}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
-                data-testid={`filter-tag-funcao-${funcao}`}
-              >
-                <User className="h-3 w-3" />
-                <span>{funcao === 'sem_funcao' ? 'Sem função' : funcao}</span>
-                {onRemoveFuncao && (
-                  <button
-                    onClick={() => onRemoveFuncao(funcao)}
-                    className="hover:bg-black/10 dark:hover:bg-white/10 rounded-sm p-0.5 transition-colors"
-                    data-testid="remove-funcao"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+
         {/* Clear All Button */}
         {hasFilters && onClearAll && (
           <button
@@ -318,8 +288,5 @@ const FilterTags: React.FC<FilterTagsProps> = ({
     </div>
   );
 };
-
-
-
 
 export default FilterTags;

@@ -61,17 +61,16 @@ const DriverMileageChart: React.FC<DriverMileageChartProps> = ({ data, driverNam
               angle={-45} 
               textAnchor="end" 
               height={60} 
-              tick={{ fontSize: 11, fontFamily: 'inherit' }}
+              tick={{ fontSize: 12 }}
               stroke="#9CA3AF"
             />
             <YAxis 
               tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
-              tick={{ fontSize: 11, fontFamily: 'inherit' }}
               stroke="#9CA3AF"
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend 
-              wrapperStyle={{ bottom: 0, fontSize: 11, fontFamily: 'inherit' }}
+              wrapperStyle={{ bottom: 0 }}
               formatter={() => 'Quilômetros Rodados'}
             />
             <Bar 
