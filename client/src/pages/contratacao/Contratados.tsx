@@ -11,6 +11,7 @@ import EditMotoristaModal from '../../components/EditMotoristaModal';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import BulkActionsModal from '../../components/BulkActionsModal';
 import BulkDeleteConfirmationModal from '../../components/BulkDeleteConfirmationModal';
+import MassMessageWithChatModal from '../../components/MassMessageWithChatModal';
 import MassMessageModal from '../../components/MassMessageModal';
 import toast from 'react-hot-toast';
 import { useFloatingChat } from '../../hooks/useFloatingChat';
@@ -128,6 +129,7 @@ const Contratados = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isBulkActionsModalOpen, setIsBulkActionsModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [isMassMessageWithChatModalOpen, setIsMassMessageWithChatModalOpen] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
   const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
   const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
@@ -903,7 +905,11 @@ const Contratados = () => {
   };
 
   const handleMassMessage = () => {
-    setIsMassMessageModalOpen(true);
+    if (selectedItems.size === 0) {
+      toast.error('Selecione pelo menos um motorista');
+      return;
+    }
+    setIsMassMessageWithChatModalOpen(true);
   };
 
   const handleApplyTagsBulk = async (tagIds: string[]) => {
@@ -2534,6 +2540,20 @@ const Contratados = () => {
         message="Tem certeza que deseja excluir todos os motoristas selecionados? Esta ação não pode ser desfeita."
         itemCount={selectedItems.size}
         itemType="motorista"
+      />
+      {/* Modal de Escolha entre Chat e Mensagem em Massa */}
+      <MassMessageWithChatModal
+        isOpen={isMassMessageWithChatModalOpen}
+        onClose={() => setIsMassMessageWithChatModalOpen(false)}
+        numbers={Array.from(selectedItems)
+          .map(id => {
+            const motorista = contratados.find(m => m.motorista_id === id);
+            return motorista?.telefone ? motorista.telefone.toString() : '';
+          })
+          .filter(num => num !== '')}
+        motoristas={Array.from(selectedItems)
+          .map(id => contratados.find(m => m.motorista_id === id))
+          .filter(m => m !== undefined)}
       />
 
       <MassMessageModal
