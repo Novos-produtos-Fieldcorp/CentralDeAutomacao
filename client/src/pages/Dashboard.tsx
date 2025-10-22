@@ -536,6 +536,9 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
         <div className="flex items-center gap-3">
           {/* Total */}
           <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-teal-100 dark:bg-teal-900/30 rounded flex items-center justify-center">
+              <Users className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+            </div>
             <div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {stats.clientes.total}
