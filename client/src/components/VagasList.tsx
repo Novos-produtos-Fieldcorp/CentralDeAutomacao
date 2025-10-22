@@ -726,6 +726,9 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                   Operação
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Tipo Contrato
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Quantidade
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -770,6 +773,12 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
                       {(vaga as any).operacao_nome || '-'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center text-sm text-gray-900 dark:text-white">
+                      <Briefcase size={16} className="mr-1 text-gray-400" />
+                      {vaga.tipo_contrato || '-'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
