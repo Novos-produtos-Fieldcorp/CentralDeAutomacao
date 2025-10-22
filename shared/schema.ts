@@ -516,6 +516,7 @@ export const vaga = pgTable("vaga", {
   dias_trabalho: text("dias_trabalho").array(),
   horario: text("horario"),
   dt_limite: timestamp("dt_limite"),
+  tipo_contrato: text("tipo_contrato"),
   company_id: integer("company_id").references(() => company.company_id),
   unidade_id: bigint("unidade_id", { mode: "number" }).references(() => unidade.id),
   operacao_id: bigint("operacao_id", { mode: "number" }).references(() => operacao.id),
