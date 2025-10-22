@@ -536,9 +536,6 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
         <div className="flex items-center gap-3">
           {/* Total */}
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-teal-100 dark:bg-teal-900/30 rounded flex items-center justify-center">
-              <Building2 className="w-3 h-3 text-teal-600 dark:text-teal-400" />
-            </div>
             <div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {stats.clientes.total}
@@ -807,9 +804,6 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
 
       {/* KPI Principal */}
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-          <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
-        </div>
         <div>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
             {stats.comprovantes.totalMensal}
@@ -960,9 +954,6 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       <div className="flex gap-3 mb-3">
         {/* KPI Principal */}
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-            <ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          </div>
           <div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {stats.checklists.totalMensal}
