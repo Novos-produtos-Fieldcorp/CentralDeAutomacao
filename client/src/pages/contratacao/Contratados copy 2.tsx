@@ -5,7 +5,6 @@ import WhatsAppAvatar from '../../components/WhatsAppAvatar';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database'; // Adicionando tipos necessários
 import { formatCPF, formatPhone, formatDate } from '../../utils/format';
-import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 import DocumentViewer from '../../components/DocumentViewer';
 import DocumentUploadModal from '../../components/DocumentUploadModal';
 import EditMotoristaModal from '../../components/EditMotoristaModal';
@@ -135,7 +134,6 @@ const Contratados = () => {
   const [bulkActionType, setBulkActionType] = useState<'status' | 'client'>('status');
   const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
-  const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
   const [documento] = useState<DocumentoMotorista | null>(null);
   const [endereco, setEndereco] = useState<{
@@ -420,40 +418,18 @@ const Contratados = () => {
         setFuncoes([]);
         return;
       }
-  
-      // STEP 2: Buscar detalhes separadamente para motoristas e agregados
-      const [motoristasData, agregadosData] = await Promise.all([
-        // Buscar dados completos de motoristas
-        supabase
-          .from('vw_contratados_completo')
-          .select('*')
-          .in('motorista_id', paginatedIds)
-          .eq('company_id', companyId)
-          .eq('st_cadastro', 'contratado')
-          .eq('funcao', 'Motorista')
-          .order('data_cadastro', { ascending: false }),
-        
-        // Buscar dados completos de agregados
-        supabase
-          .from('vw_agregados_completo')
-          .select('*')
-          .in('motorista_id', paginatedIds)
-          .eq('company_id', companyId)
-          .eq('st_cadastro', 'contratado')
-          .eq('funcao', 'Agregado')
-          .order('data_cadastro', { ascending: false })
-      ]);
-  
-      if (motoristasData.error) throw motoristasData.error;
-      if (agregadosData.error) throw agregadosData.error;
-  
-      // Combinar e processar os dados
-      const allData = [
-        ...(motoristasData.data || []),
-        ...(agregadosData.data || [])
-      ];
-  
-      // Agrupar ajudantes por motorista_id
+
+      // STEP 2: Buscar detalhes completos apenas dos IDs paginados
+      const { data: detailedData, error: detailsError } = await supabase
+        .from('vw_contratados_completo')
+        .select('*')
+        .in('motorista_id', paginatedIds)
+        .eq('company_id', companyId)
+        .order('data_cadastro', { ascending: false });
+
+      if (detailsError) throw detailsError;
+
+      // Agrupar ajudantes por motorista_id após buscar detalhes
       const contratadosAgrupadosMap = new Map();
       allData.forEach(contratado => {
         if (!contratadosAgrupadosMap.has(contratado.motorista_id)) {
@@ -561,13 +537,7 @@ const Contratados = () => {
   const handleViewDocument = async (motorista: ViewContratado) => {
     try {
       setSelectedMotorista(motorista);
-
-      // Verificar se é agregado para usar o modal correto
-      if (motorista.funcao === 'Agregado') {
-        setIsUnifiedAgregadoModalOpen(true);
-      } else {
-        setIsUnifiedModalOpen(true);
-      }
+      setIsUnifiedModalOpen(true);
     } catch (error) {
       toast.error('Erro ao carregar detalhes do documento');
     }
@@ -2437,32 +2407,6 @@ const Contratados = () => {
         motorista={selectedMotorista ? convertToMotorista(selectedMotorista) : null}
         onSuccess={fetchContratados}
       />
-            {/* modal de agregado */}
-      {selectedMotorista && selectedMotorista.funcao === 'Agregado' && (
-        <UnifiedAgregadoModal
-          isOpen={isUnifiedAgregadoModalOpen}
-          onClose={() => setIsUnifiedAgregadoModalOpen(false)}
-          motorista={{
-            ...selectedMotorista,
-            motorista_id: selectedMotorista.motorista_id || 0,
-            nome: selectedMotorista.nome_motorista || '',
-            cpf: selectedMotorista.cpf || '',
-            telefone: selectedMotorista.telefone ? Number(selectedMotorista.telefone) : null,
-            email: selectedMotorista.email || null,
-            dt_nascimento: selectedMotorista.dt_nascimento || '',
-            genero: selectedMotorista.genero || '',
-            funcao: selectedMotorista.funcao || '',
-            origem_usuario: selectedMotorista.origem_usuario || '',
-            st_cadastro: selectedMotorista.st_cadastro || 'cadastrado',
-            autorizacao_lgpd: selectedMotorista.autorizacao_lgpd || 'N',
-            company_id: selectedMotorista.company_id || 0,
-            data_cadastro: selectedMotorista.data_cadastro || new Date().toISOString(),
-            cliente_id: selectedMotorista.cliente_id || 0,
-            ativo: selectedMotorista.ativo || false,
-            conversation_id: selectedMotorista.conversation_id || ''
-          }}
-        />
-      )}
 
       <DocumentViewer
         isOpen={isDocumentViewerOpen}
