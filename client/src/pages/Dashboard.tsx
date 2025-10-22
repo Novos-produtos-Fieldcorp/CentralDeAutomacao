@@ -331,7 +331,7 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {stats.contratados}
+                  {stats.outros}
                 </div>
                 <p className="text-xs text-green-600 dark:text-green-400 font-medium">
                   Motoristas
@@ -713,9 +713,6 @@ const VeiculosHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
 
       {/* Total */}
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-          <Truck className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-        </div>
         <div>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
             {stats.veiculos.total}
@@ -1216,12 +1213,11 @@ const Dashboard: React.FC = () => {
           .order("cliente_id", { ascending: false })
           .limit(5),
 
-        // Motoristas contratados por cliente (ativo com cliente) - só da company atual
+        // Motoristas contratados por cliente - usar view para dados corretos
         supabase
-          .from("motorista")
+          .from("vw_contratados_completo")
           .select("cliente_id")
           .eq("company_id", companyId)
-          .eq("ativo", true)
           .not("cliente_id", "is", null),
 
         supabase
