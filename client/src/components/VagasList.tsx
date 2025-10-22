@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus, LayoutGrid, LayoutList } from 'lucide-react';
+import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus, LayoutGrid, LayoutList, Briefcase } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { Vaga } from '@shared/schema';
@@ -726,6 +726,9 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                   Operação
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Tipo Contrato
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Quantidade
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -770,6 +773,12 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
                       {(vaga as any).operacao_nome || '-'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center text-sm text-gray-900 dark:text-white">
+                      <Briefcase size={16} className="mr-1 text-gray-400" />
+                      {vaga.tipo_contrato || '-'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -893,6 +902,12 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                   <Clock size={16} className="mr-2 text-gray-400" />
                   <span>{(vaga as any).operacao_nome || '-'}</span>
                 </div>
+                {vaga.tipo_contrato && (
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                    <Briefcase size={16} className="mr-2 text-gray-400" />
+                    <span>{vaga.tipo_contrato}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center text-gray-600 dark:text-gray-300">
                     <Users size={16} className="mr-2 text-gray-400" />

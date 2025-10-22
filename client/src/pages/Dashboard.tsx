@@ -331,7 +331,7 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {stats.contratados}
+                  {stats.outros}
                 </div>
                 <p className="text-xs text-green-600 dark:text-green-400 font-medium">
                   Motoristas
@@ -537,7 +537,7 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
           {/* Total */}
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-teal-100 dark:bg-teal-900/30 rounded flex items-center justify-center">
-              <Building2 className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+              <Users className="w-3 h-3 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -713,9 +713,6 @@ const VeiculosHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
 
       {/* Total */}
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-          <Truck className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-        </div>
         <div>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
             {stats.veiculos.total}
@@ -810,9 +807,6 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
 
       {/* KPI Principal */}
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-          <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
-        </div>
         <div>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
             {stats.comprovantes.totalMensal}
@@ -963,9 +957,6 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       <div className="flex gap-3 mb-3">
         {/* KPI Principal */}
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-            <ClipboardList className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          </div>
           <div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {stats.checklists.totalMensal}
@@ -1216,12 +1207,11 @@ const Dashboard: React.FC = () => {
           .order("cliente_id", { ascending: false })
           .limit(5),
 
-        // Motoristas contratados por cliente (ativo com cliente) - só da company atual
+        // Motoristas contratados por cliente - usar view para dados corretos
         supabase
-          .from("motorista")
+          .from("vw_contratados_completo")
           .select("cliente_id")
           .eq("company_id", companyId)
-          .eq("ativo", true)
           .not("cliente_id", "is", null),
 
         supabase
