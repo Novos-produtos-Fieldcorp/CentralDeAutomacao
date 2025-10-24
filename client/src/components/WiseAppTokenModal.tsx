@@ -52,7 +52,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       } else {
         // Email doesn't exist, require attendant name in token step
         setRequiresAttendantName(true);
-        setStep('tutorial');
+        
         // Get account_id from URL or use default for serverless compatibility
         let accountId;
         try {
@@ -61,21 +61,15 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
           throw new Error('Account ID não encontrado - acesse via URL com account_id');
         }
 
-        const { data: companyData, error: companyError } = await supabase
-          .from('company')
-          .select('company_id')
-          .eq('id_conta_wiseapp', accountId)
-          .single();
-
-        if (companyError || !companyData) {
-          throw new Error('Erro ao buscar o companyId ou company não encontrado.');
-        }
-
+        // Insert initial record without name (will be added when token is saved)
         const { error: insertError } = await supabase
           .from('wiseapp_acesso')
-          .insert([{ email, nome: attendantName, company_id: companyData.company_id, id_conta_wiseapp: accountId, access_token_wiseapp: null }]);
+          .insert([{ email, id_conta_wiseapp: accountId, access_token_wiseapp: null }]);
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Erro ao inserir registro:', insertError);
+          throw insertError;
+        }
 
         setStep('tutorial');
       }
