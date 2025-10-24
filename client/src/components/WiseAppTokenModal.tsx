@@ -120,13 +120,11 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
 
     try {
-      // Validar o token (usa /api em ambos os ambientes)
+      // Validar o token usando Supabase Edge Function
       console.log('🔐 Validando token...');
       
-      // Usar /api/validate-wiseapp-token em todos os ambientes
-      // Em dev: Express backend
-      // Em prod: Netlify Function via redirect
-      const validationUrl = '/api/validate-wiseapp-token';
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+      const validationUrl = `${supabaseUrl}/functions/v1/validate-wiseapp-token`;
       
       console.log('🌍 Ambiente:', window.location.hostname);
       console.log('🔗 URL de validação:', validationUrl);
