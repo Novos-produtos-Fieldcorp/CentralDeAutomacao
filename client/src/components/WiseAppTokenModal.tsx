@@ -120,23 +120,26 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
 
     try {
-      // Validar o token com a API do WiseApp (Chatwoot)
+      // Validar o token através do backend (evita CORS)
       console.log('🔐 Validando token...');
-      const validationResponse = await fetch('https://chat.wiseapp360.com/api/v1/profile', {
-        method: 'GET',
+      const validationResponse = await fetch('/api/validate-wiseapp-token', {
+        method: 'POST',
         headers: {
-          'api_access_token': token,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ token }),
       });
 
-      if (!validationResponse.ok) {
+      const validationData = await validationResponse.json();
+
+      if (!validationResponse.ok || !validationData.valid) {
         if (validationResponse.status === 401) {
           throw new Error('Token inválido. Por favor, verifique se copiou o token corretamente.');
         }
         throw new Error('Não foi possível validar o token. Tente novamente.');
       }
 
-      const userData = await validationResponse.json();
+      const userData = validationData.userData;
       console.log('✅ Token válido:', userData);
 
       // Atualizar com nome apenas se foi fornecido ou se é obrigatório
