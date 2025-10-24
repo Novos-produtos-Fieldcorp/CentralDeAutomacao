@@ -120,10 +120,32 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
 
     try {
+      // Validar o token com a API do WiseApp (Chatwoot)
+      console.log('🔐 Validando token...');
+      const validationResponse = await fetch('https://chat.wiseapp360.com/api/v1/profile', {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+        },
+      });
+
+      if (!validationResponse.ok) {
+        if (validationResponse.status === 401) {
+          throw new Error('Token inválido. Por favor, verifique se copiou o token corretamente.');
+        }
+        throw new Error('Não foi possível validar o token. Tente novamente.');
+      }
+
+      const userData = await validationResponse.json();
+      console.log('✅ Token válido:', userData);
+
       // Atualizar com nome apenas se foi fornecido ou se é obrigatório
       const updateData: any = { access_token_wiseapp: token };
       if (attendantName || requiresAttendantName) {
         updateData.nome = attendantName;
+      } else if (userData.name) {
+        // Se não foi fornecido nome mas a API retornou, usar o nome da API
+        updateData.nome = userData.name;
       }
 
       const { error: updateError } = await supabase
@@ -137,9 +159,16 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       localStorage.setItem('wiseapp_user_email', email);
       onTokenSaved(token);
       onClose();
-    } catch (err) {
-      setError('Erro ao salvar o token.');
-      console.error(err);
+    } catch (err: any) {
+      console.error('Erro ao salvar token:', err);
+      
+      if (err.message.includes('Token inválido')) {
+        setError(err.message);
+      } else if (err.message.includes('validar')) {
+        setError(err.message);
+      } else {
+        setError('Erro ao salvar o token. Tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
