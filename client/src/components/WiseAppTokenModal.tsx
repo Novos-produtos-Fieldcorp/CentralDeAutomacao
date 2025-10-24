@@ -120,9 +120,12 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
 
     try {
-      // Validar o token através do backend (evita CORS)
+      // Validar o token através da Supabase Edge Function (evita CORS)
       console.log('🔐 Validando token...');
-      const validationResponse = await fetch('/api/validate-wiseapp-token', {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const validationUrl = `${supabaseUrl}/functions/v1/validate-wiseapp-token`;
+      
+      const validationResponse = await fetch(validationUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

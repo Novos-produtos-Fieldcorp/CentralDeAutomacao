@@ -54,6 +54,26 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 24, 2025 - Fixed WiseApp Token Validation (CORS Issue in Netlify)
+- **Issue**: After Netlify deployment, token validation was returning 404 error because backend API routes don't exist in static hosting
+- **Root Cause**: 
+  1. Netlify hosts only static files (SPA)
+  2. Backend Express routes `/api/*` are not deployed to Netlify
+  3. Catch-all redirect (`/*` → `/index.html`) captures all routes including API calls
+- **Solution Implemented**:
+  1. Created Supabase Edge Function: `validate-wiseapp-token`
+  2. Frontend now uses Edge Function for token validation in production
+  3. Maintains Express route for local development
+  4. Server-to-server validation avoids CORS issues
+- **Files Created/Modified**:
+  - `supabase/functions/validate-wiseapp-token/index.ts` (NEW)
+  - `client/src/components/WiseAppTokenModal.tsx` (UPDATED)
+  - `SOLUCAO_VALIDACAO_TOKEN.md` (NEW - comprehensive documentation)
+  - `DEPLOY_VALIDATE_TOKEN_FUNCTION.md` (NEW - deployment instructions)
+- **Deployment Required**: Must deploy Supabase Edge Function with `supabase functions deploy validate-wiseapp-token`
+- **Impact**: Token validation now works in both development (Replit) and production (Netlify) without CORS errors
+- **Technical Flow**: Frontend → Supabase Edge Function → Chatwoot API → Response back to frontend
+
 ### October 17, 2025 - Fixed Tag Limit Update UI Refresh
 - **Issue**: After updating the maximum limit of associates for a tag, the card didn't update without page reload
 - **Root Causes**:
