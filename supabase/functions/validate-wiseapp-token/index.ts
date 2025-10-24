@@ -11,7 +11,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token } = await req.json();
+    const body = await req.json();
+    let { token } = body;
     
     if (!token) {
       return new Response(
@@ -23,7 +24,12 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Remove espaços extras do token (problema comum ao copiar/colar)
+    token = token.trim();
+    
     console.log('🔐 Validando token WiseApp...');
+    console.log('Token length:', token.length);
+    console.log('Token start:', token.substring(0, 10) + '...');
 
     // Validate token against Chatwoot API
     const wiseappApiUrl = 'https://chat.wiseapp360.com';
@@ -36,11 +42,16 @@ Deno.serve(async (req) => {
     });
 
     if (!response.ok) {
+      console.error('❌ Chatwoot retornou erro:', response.status);
+      const errorText = await response.text();
+      console.error('Resposta:', errorText);
+      
       if (response.status === 401) {
         return new Response(
           JSON.stringify({ 
             valid: false,
-            error: 'Token inválido' 
+            error: 'Token inválido',
+            details: `Chatwoot retornou 401: ${errorText}`
           }),
           { 
             status: 401,
@@ -51,7 +62,9 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           valid: false,
-          error: 'Erro ao validar token' 
+          error: 'Erro ao validar token',
+          statusCode: response.status,
+          details: errorText
         }),
         { 
           status: response.status,
