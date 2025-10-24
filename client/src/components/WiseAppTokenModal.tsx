@@ -120,10 +120,18 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
 
     try {
-      // Validar o token através da Supabase Edge Function (evita CORS)
+      // Validar o token (usa Express local em dev, Edge Function em produção)
       console.log('🔐 Validando token...');
+      
+      // Detectar ambiente: Netlify usa hostname específico, Replit/local usa rota Express
+      const isNetlify = window.location.hostname.includes('netlify.app');
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const validationUrl = `${supabaseUrl}/functions/v1/validate-wiseapp-token`;
+      const validationUrl = isNetlify 
+        ? `${supabaseUrl}/functions/v1/validate-wiseapp-token`
+        : '/api/validate-wiseapp-token';
+      
+      console.log('🌍 Ambiente:', isNetlify ? 'Produção (Netlify)' : 'Desenvolvimento');
+      console.log('🔗 URL de validação:', validationUrl);
       
       const validationResponse = await fetch(validationUrl, {
         method: 'POST',
