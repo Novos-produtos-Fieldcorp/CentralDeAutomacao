@@ -1,0 +1,4 @@
+event_message,event_type,function_id,id,level,timestamp
+booted (time: 22ms),Boot,ac216cd4-3751-489c-b9dd-8599638168ed,53af1ecf-79ff-44cc-b141-de84bd41e230,log,1761333952667000
+booted (time: 28ms),Boot,ac216cd4-3751-489c-b9dd-8599638168ed,94f8e78d-b593-4e0f-8631-75ecf2b91336,log,1761333947201000
+booted (time: 27ms),Boot,ac216cd4-3751-489c-b9dd-8599638168ed,b65a6ca9-eff9-46f9-81d6-666774baefdd,log,1761333892297000
