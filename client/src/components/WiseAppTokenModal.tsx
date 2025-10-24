@@ -57,26 +57,46 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
         let accountId;
         try {
           accountId = localStorage?.getItem('account_id');
-        } catch {
+          console.log('🔍 Account ID do localStorage:', accountId);
+        } catch (err) {
+          console.error('Erro ao acessar localStorage:', err);
           throw new Error('Account ID não encontrado - acesse via URL com account_id');
         }
+
+        if (!accountId) {
+          console.error('❌ Account ID está vazio ou null');
+          throw new Error('Account ID não encontrado. Por favor, acesse o sistema via URL com account_id.');
+        }
+
+        const accountIdNum = Number(accountId);
+        console.log('📝 Tentando inserir registro com:', { email, id_conta_wiseapp: accountIdNum });
 
         // Insert initial record without name (will be added when token is saved)
         const { error: insertError } = await supabase
           .from('wiseapp_acesso')
-          .insert([{ email, id_conta_wiseapp: accountId, access_token_wiseapp: null }]);
+          .insert([{ email, id_conta_wiseapp: accountIdNum, access_token_wiseapp: null }]);
 
         if (insertError) {
-          console.error('Erro ao inserir registro:', insertError);
+          console.error('❌ Erro ao inserir registro:', insertError);
           throw insertError;
         }
 
+        console.log('✅ Registro criado com sucesso');
         setStep('tutorial');
       }
-    } catch (err) {
-      setError('Erro ao verificar/criar acesso.');
+    } catch (err: any) {
+      console.error('Erro detalhado:', err);
+      
+      // Mensagem de erro mais específica
+      if (err?.message?.includes('Account ID')) {
+        setError(err.message);
+      } else if (err?.code === '23502') {
+        setError('Dados obrigatórios não foram fornecidos. Verifique se o account_id está configurado.');
+      } else {
+        setError('Erro ao verificar/criar acesso. Tente novamente.');
+      }
+      
       setRequiresAttendantName(false); // Reset on error
-      console.error(err);
     } finally {
       setLoading(false);
     }

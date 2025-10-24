@@ -1,0 +1,60 @@
+injected.js:204  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/wiseapp_acesso?select=wiseapp_acesso_id%2Cemail%2Cnome%2Caccess_token_wiseapp&email=eq.testetemp%40gmail.com 406 (Not Acceptable)
+apply @ injected.js:204
+(anonymous) @ @supabase_supabase-js.js?v=bb6a62c3:4404
+(anonymous) @ @supabase_supabase-js.js?v=bb6a62c3:4425
+fulfilled @ @supabase_supabase-js.js?v=bb6a62c3:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=bb6a62c3:4390
+(anonymous) @ @supabase_supabase-js.js?v=bb6a62c3:4392
+__awaiter8 @ @supabase_supabase-js.js?v=bb6a62c3:4374
+(anonymous) @ @supabase_supabase-js.js?v=bb6a62c3:4415
+then @ @supabase_supabase-js.js?v=bb6a62c3:90
+injected.js:204  POST https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/wiseapp_acesso?columns=%22email%22%2C%22id_conta_wiseapp%22%2C%22access_token_wiseapp%22 400 (Bad Request)
+apply @ injected.js:204
+(anonymous) @ @supabase_supabase-js.js?v=bb6a62c3:4404
+(anonymous) @ @supabase_supabase-js.js?v=bb6a62c3:4425
+fulfilled @ @supabase_supabase-js.js?v=bb6a62c3:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=bb6a62c3:4390
+(anonymous) @ @supabase_supabase-js.js?v=bb6a62c3:4392
+__awaiter8 @ @supabase_supabase-js.js?v=bb6a62c3:4374
+(anonymous) @ @supabase_supabase-js.js?v=bb6a62c3:4415
+then @ @supabase_supabase-js.js?v=bb6a62c3:90
+injected.js:27 Erro ao inserir registro: {code: '23502', details: null, hint: null, message: 'null value in column "id_conta_wiseapp" of relation "wiseapp_acesso" violates not-null constraint'}
+(anonymous) @ injected.js:27
+handleEmailSubmit @ WiseAppTokenModal.tsx:70
+await in handleEmailSubmit
+callCallback2 @ chunk-276SZO74.js?v=bb6a62c3:3674
+invokeGuardedCallbackDev @ chunk-276SZO74.js?v=bb6a62c3:3699
+invokeGuardedCallback @ chunk-276SZO74.js?v=bb6a62c3:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-276SZO74.js?v=bb6a62c3:3736
+executeDispatch @ chunk-276SZO74.js?v=bb6a62c3:7014
+processDispatchQueueItemsInOrder @ chunk-276SZO74.js?v=bb6a62c3:7034
+processDispatchQueue @ chunk-276SZO74.js?v=bb6a62c3:7043
+dispatchEventsForPlugins @ chunk-276SZO74.js?v=bb6a62c3:7051
+(anonymous) @ chunk-276SZO74.js?v=bb6a62c3:7174
+batchedUpdates$1 @ chunk-276SZO74.js?v=bb6a62c3:18913
+batchedUpdates @ chunk-276SZO74.js?v=bb6a62c3:3579
+dispatchEventForPluginEventSystem @ chunk-276SZO74.js?v=bb6a62c3:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-276SZO74.js?v=bb6a62c3:5478
+dispatchEvent @ chunk-276SZO74.js?v=bb6a62c3:5472
+dispatchDiscreteEvent @ chunk-276SZO74.js?v=bb6a62c3:5449
+injected.js:27 {code: '23502', details: null, hint: null, message: 'null value in column "id_conta_wiseapp" of relation "wiseapp_acesso" violates not-null constraint'}
+(anonymous) @ injected.js:27
+handleEmailSubmit @ WiseAppTokenModal.tsx:79
+await in handleEmailSubmit
+callCallback2 @ chunk-276SZO74.js?v=bb6a62c3:3674
+invokeGuardedCallbackDev @ chunk-276SZO74.js?v=bb6a62c3:3699
+invokeGuardedCallback @ chunk-276SZO74.js?v=bb6a62c3:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-276SZO74.js?v=bb6a62c3:3736
+executeDispatch @ chunk-276SZO74.js?v=bb6a62c3:7014
+processDispatchQueueItemsInOrder @ chunk-276SZO74.js?v=bb6a62c3:7034
+processDispatchQueue @ chunk-276SZO74.js?v=bb6a62c3:7043
+dispatchEventsForPlugins @ chunk-276SZO74.js?v=bb6a62c3:7051
+(anonymous) @ chunk-276SZO74.js?v=bb6a62c3:7174
+batchedUpdates$1 @ chunk-276SZO74.js?v=bb6a62c3:18913
+batchedUpdates @ chunk-276SZO74.js?v=bb6a62c3:3579
+dispatchEventForPluginEventSystem @ chunk-276SZO74.js?v=bb6a62c3:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-276SZO74.js?v=bb6a62c3:5478
+dispatchEvent @ chunk-276SZO74.js?v=bb6a62c3:5472
+dispatchDiscreteEvent @ chunk-276SZO74.js?v=bb6a62c3:5449
