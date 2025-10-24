@@ -120,17 +120,15 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
 
     try {
-      // Validar o token (usa Express local em dev, Edge Function em produção)
+      // Validar o token (usa /api em ambos os ambientes)
       console.log('🔐 Validando token...');
       
-      // Detectar ambiente: Netlify usa hostname específico, Replit/local usa rota Express
-      const isNetlify = window.location.hostname.includes('netlify.app');
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const validationUrl = isNetlify 
-        ? `${supabaseUrl}/functions/v1/validate-wiseapp-token`
-        : '/api/validate-wiseapp-token';
+      // Usar /api/validate-wiseapp-token em todos os ambientes
+      // Em dev: Express backend
+      // Em prod: Netlify Function via redirect
+      const validationUrl = '/api/validate-wiseapp-token';
       
-      console.log('🌍 Ambiente:', isNetlify ? 'Produção (Netlify)' : 'Desenvolvimento');
+      console.log('🌍 Ambiente:', window.location.hostname);
       console.log('🔗 URL de validação:', validationUrl);
       
       const validationResponse = await fetch(validationUrl, {

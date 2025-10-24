@@ -1,0 +1,110 @@
+// Validate WiseApp token by calling profile endpoint
+// Assumptions:
+// - Client sends token via Authorization header as `Bearer <token>` or in JSON body as { token }
+// - Function performs a simple validity check: 200 OK with expected fields => valid; otherwise invalid
+// - No external dependencies; uses Deno.serve and fetch
+// - Does not log sensitive tokens
+
+interface ValidationResult {
+  valid: boolean
+  status: number
+  error?: string
+  profile?: unknown
+}
+
+const WISEAPP_PROFILE_URL = 'https://chat.wiseapp360.com/api/v1/profile'
+
+function extractToken(req: Request): string | null {
+  // 1) Try Bearer token from Authorization header
+  const auth = req.headers.get('authorization') || req.headers.get('Authorization')
+  if (auth && auth.toLowerCase().startsWith('bearer ')) {
+    return auth.slice(7).trim()
+  }
+  return null
+}
+
+async function readTokenFromBody(req: Request): Promise<string | null> {
+  try {
+    const contentType = req.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) {
+      const body = await req.json().catch(() => null) as { token?: string } | null
+      if (body?.token) return body.token
+    }
+  } catch (_) {
+    // ignore body parsing errors
+  }
+  return null
+}
+
+async function validateToken(token: string): Promise<ValidationResult> {
+  try {
+    const resp = await fetch(WISEAPP_PROFILE_URL, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        // WiseApp expects the token in this custom header
+        'api_access_token': token,
+      },
+    })
+
+    const status = resp.status
+    const text = await resp.text()
+    let payload: unknown = undefined
+    try {
+      payload = text ? JSON.parse(text) : undefined
+    } catch {
+      // non-JSON response
+      payload = text
+    }
+
+    if (resp.ok) {
+      return { valid: true, status, profile: payload }
+    }
+
+    return {
+      valid: false,
+      status,
+      error: typeof payload === 'string' ? payload : (payload as any)?.message || 'Invalid token',
+    }
+  } catch (e) {
+    return { valid: false, status: 0, error: e instanceof Error ? e.message : 'Network error' }
+  }
+}
+
+console.info('validate-wiseapp-token function started')
+
+Deno.serve(async (req: Request) => {
+  const url = new URL(req.url)
+  // Only allow POST and GET for flexibility (GET expects Bearer token header)
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  // Extract token from Authorization header or JSON body
+  let token = extractToken(req)
+  if (!token && req.method === 'POST') {
+    token = await readTokenFromBody(req)
+  }
+
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Missing token. Provide Bearer token in Authorization header or in JSON body as { "token": "..." }' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  const result = await validateToken(token)
+  const responseBody: ValidationResult = result
+
+  return new Response(JSON.stringify(responseBody), {
+    status: result.valid ? 200 : (result.status || 400),
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+      'Connection': 'keep-alive',
+    },
+  })
+})

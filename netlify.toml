@@ -6,11 +6,17 @@
   NODE_VERSION = "18"
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
-# Não usar funções Netlify - apenas Supabase Edge Functions
-# [functions]
-#   directory = "netlify/functions"
-#   node_bundler = "esbuild"
-#   included_files = ["netlify/functions/**"]
+# Netlify Functions para validação de token
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  included_files = ["netlify/functions/**"]
+
+# API redirects - functions first
+[[redirects]]
+  from = "/api/validate-wiseapp-token"
+  to = "/.netlify/functions/validate-wiseapp-token"
+  status = 200
 
 # Redirecionamento SPA - todas as rotas vão para index.html
 [[redirects]]
