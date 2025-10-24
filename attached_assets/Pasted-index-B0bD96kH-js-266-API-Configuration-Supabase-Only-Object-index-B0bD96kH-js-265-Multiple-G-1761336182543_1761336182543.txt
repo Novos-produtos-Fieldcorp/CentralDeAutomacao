@@ -1,0 +1,48 @@
+index-B0bD96kH.js:266 🔧 API Configuration (Supabase Only): Object
+index-B0bD96kH.js:265 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+fv @ index-B0bD96kH.js:265
+index-B0bD96kH.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-B0bD96kH.js:1116 🔍 [WiseAppAccess] Account ID da URL: 1
+index-B0bD96kH.js:1116 🔍 [WiseAppAccess] Buscando dados frescos do banco...
+index-B0bD96kH.js:1116 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 1
+index-B0bD96kH.js:1116 📊 [WiseAppAccess] Resultado da busca da empresa: Object
+index-B0bD96kH.js:1116 ✅ [WiseAppAccess] Empresa encontrada: Object
+index-B0bD96kH.js:1116 🔍 [WiseAppAccess] Buscando token para email: null
+index-B0bD96kH.js:1116 ❌ [WiseAppAccess] Email não encontrado, mostrando modal
+ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/veiculo?select=veiculo_id%2Cmarca_veiculo%2Cplaca&company_id=eq.2&order=veiculo_id.desc&limit=3:1  Failed to load resource: the server responded with a status of 400 ()
+index-B0bD96kH.js:1212 🔍 DEBUG Clientes - Company ID usado: 2
+index-B0bD96kH.js:1212 🔍 DEBUG Clientes - Total encontrados: 6
+index-B0bD96kH.js:1212 🔍 DEBUG Clientes - Dados recentes: Array(5)
+index-B0bD96kH.js:1212 🚫 Filtering out incorrect client data: teste (ID: 327)
+(anonymous) @ index-B0bD96kH.js:1212
+index-B0bD96kH.js:1212 🚫 Filtering out incorrect client data: teste (ID: 324)
+(anonymous) @ index-B0bD96kH.js:1212
+index-B0bD96kH.js:1212 🚫 Filtering out incorrect client data: teste (ID: 323)
+(anonymous) @ index-B0bD96kH.js:1212
+index-B0bD96kH.js:1212 Dashboard data loaded: Object
+ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/wiseapp_acesso?select=wiseapp_acesso_id%2Cemail%2Cnome%2Caccess_token_wiseapp&email=eq.testetemp%40gmail.com:1  Failed to load resource: the server responded with a status of 406 ()
+index-B0bD96kH.js:1116 🔍 Account ID do localStorage: 1
+index-B0bD96kH.js:1116 📝 Tentando inserir registro com: Object
+index-B0bD96kH.js:1116 ✅ Registro criado com sucesso
+index-B0bD96kH.js:1116 🔐 Validando token...
+index-B0bD96kH.js:1116 🌍 Ambiente: fix-credentials--centralautomacoes.netlify.app
+index-B0bD96kH.js:1116 🔗 URL de validação: /api/validate-wiseapp-token
+/api/validate-wiseapp-token:1  Failed to load resource: the server responded with a status of 404 ()
+index-B0bD96kH.js:1116 Erro ao salvar token: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+b @ index-B0bD96kH.js:1116
+ingesteer.services-prod.nsvcs.net/rum_collection:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+rum:1  Uncaught (in promise) TypeError: Failed to fetch
+    at Q (rum:1:5196)
+    at rum:1:11100
+index-B0bD96kH.js:1116 🔐 Validando token...
+index-B0bD96kH.js:1116 🌍 Ambiente: fix-credentials--centralautomacoes.netlify.app
+index-B0bD96kH.js:1116 🔗 URL de validação: /api/validate-wiseapp-token
+/api/validate-wiseapp-token:1  Failed to load resource: the server responded with a status of 404 ()
+index-B0bD96kH.js:1116 Erro ao salvar token: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+b @ index-B0bD96kH.js:1116
+index-B0bD96kH.js:1116 🔐 Validando token...
+index-B0bD96kH.js:1116 🌍 Ambiente: fix-credentials--centralautomacoes.netlify.app
+index-B0bD96kH.js:1116 🔗 URL de validação: /api/validate-wiseapp-token
+/api/validate-wiseapp-token:1  Failed to load resource: the server responded with a status of 404 ()
+index-B0bD96kH.js:1116 Erro ao salvar token: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+b @ index-B0bD96kH.js:1116
