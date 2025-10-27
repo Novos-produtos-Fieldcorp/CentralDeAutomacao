@@ -67,8 +67,12 @@ Preferred communication style: Simple, everyday language.
      - Only saves token to database if validation succeeds
 - **Security**: Prevents storage of invalid/fake tokens that would cause API failures
 - **User Experience**: Clear error messages guide users to correct token input
-- **Files Modified**: `supabase/functions/api/index.ts`, `client/src/components/WiseAppTokenModal.tsx`
-- **Deployment Required**: Edge Function must be deployed with `supabase functions deploy api`
+- **Files Modified**: 
+  - `supabase/functions/api/index.ts` (Edge Function route for Netlify deployment)
+  - `server/routes.ts` (Express route for local development)
+  - `client/src/components/WiseAppTokenModal.tsx` (Frontend validation integration)
+- **Local Development**: Works immediately via Express proxy
+- **Production Deployment**: Edge Function must be deployed with `supabase functions deploy api`
 
 ### October 27, 2025 - Fixed WiseApp Authentication Not Saving to Database
 - **Issue**: WiseApp authentication was not creating new records in `wiseapp_acesso` table
