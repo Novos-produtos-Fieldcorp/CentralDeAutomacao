@@ -12,7 +12,7 @@ import type { Romaneio as RomaneioType } from '@shared/schema';
 
 interface RomaneioWithRelations extends RomaneioType {
   motorista?: { motorista_id: number; nome: string; cpf: string } | null;
-  veiculo?: { veiculo_id: number; placa: string; marca_veiculo: string } | null;
+  veiculo?: { veiculo_id: number; placa: string; marca: string } | null;
 }
 
 const HodometrosRomaneio: React.FC = () => {
@@ -49,7 +49,7 @@ const HodometrosRomaneio: React.FC = () => {
           id_veiculo,
           foto_romaneio,
           motorista:id_motorista ( motorista_id, nome, cpf ),
-          veiculo:id_veiculo ( veiculo_id, placa, marca_veiculo )
+          veiculo:id_veiculo ( veiculo_id, placa, marca )
         `)
         .eq('id_company', companyId)
         .gte('created_at', start)
@@ -115,7 +115,7 @@ const HodometrosRomaneio: React.FC = () => {
       (r.motorista?.nome || '').toLowerCase().includes(s) ||
       (r.motorista?.cpf || '').includes(s) ||
       (r.veiculo?.placa || '').toLowerCase().includes(s) ||
-      (r.veiculo?.marca_veiculo || '').toLowerCase().includes(s)
+      (r.veiculo?.marca || '').toLowerCase().includes(s)
     );
   });
 
@@ -137,7 +137,7 @@ const HodometrosRomaneio: React.FC = () => {
         'Motorista': r.motorista?.nome || 'Não informado',
         'CPF': r.motorista?.cpf || 'Não informado',
         'Veículo': r.veiculo?.placa || 'Não informado',
-        'Marca/Modelo': r.veiculo?.marca_veiculo || 'Não informado',
+        'Marca/Modelo': r.veiculo?.marca || 'Não informado',
         'Tem Foto': r.foto_romaneio ? 'Sim' : 'Não'
       }));
 
@@ -310,7 +310,7 @@ const HodometrosRomaneio: React.FC = () => {
                         {romaneio.veiculo?.placa || 'Não informado'}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400" data-testid={`text-marca-${romaneio.id}`}>
-                        {romaneio.veiculo?.marca_veiculo || '-'}
+                        {romaneio.veiculo?.marca || '-'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
