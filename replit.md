@@ -58,13 +58,14 @@ Preferred communication style: Simple, everyday language.
 - **Issue**: System was accepting any token without validation, allowing invalid or fake tokens to be saved
 - **Solution Implemented**:
   1. **Backend Validation Endpoint**: Created POST `/wiseapp/validate-token` in Edge Function
-     - Validates token by calling WiseApp API `/api/v1/accounts/{accountId}/profile`
+     - Validates token by calling WiseApp API `/api/v1/profile` endpoint
      - Returns `{valid: true/false, error?: string}` without mentioning ChatWoot
      - Handles network errors, timeouts, and invalid credentials gracefully
   2. **Frontend Integration**: Updated `WiseAppTokenModal` to validate before saving
      - Calls validation endpoint with token and accountId before database INSERT/UPDATE
      - Shows user-friendly error messages: "Token de acesso inválido" or "Erro ao conectar com servidor"
      - Only saves token to database if validation succeeds
+- **Bug Fix**: Corrected WiseApp API endpoint from `/api/v1/accounts/{accountId}/profile` (404 error) to `/api/v1/profile` (correct endpoint)
 - **Security**: Prevents storage of invalid/fake tokens that would cause API failures
 - **User Experience**: Clear error messages guide users to correct token input
 - **Files Modified**: 

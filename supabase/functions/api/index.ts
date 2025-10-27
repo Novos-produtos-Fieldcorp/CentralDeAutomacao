@@ -124,9 +124,9 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       }
 
       // Try to fetch profile from WiseApp API to validate token
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/profile`
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/profile`
       
-      console.log(`🔍 Validando token para account ${accountId}...`)
+      console.log(`🔍 Validando token...`)
       
       const response = await fetch(wiseAppUrl, {
         method: 'GET',
@@ -149,7 +149,7 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
 
       const profileData = await response.json()
       
-      console.log(`✅ Token validado com sucesso para account ${accountId}`)
+      console.log(`✅ Token validado com sucesso!`)
       
       return new Response(JSON.stringify({
         valid: true,
