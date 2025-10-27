@@ -282,6 +282,16 @@ export const bomba_gasolina = pgTable("bomba_gasolina", {
   hodometro_id: bigint("hodometro_id", { mode: "number" }).references(() => hodometro.id_hodometro),
 });
 
+// Romaneio table (real structure from database)
+export const romaneio = pgTable("romaneio", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
+  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  id_company: bigint("id_company", { mode: "number" }).references(() => company.company_id),
+  id_motorista: bigint("id_motorista", { mode: "number" }).references(() => motorista.motorista_id),
+  id_veiculo: bigint("id_veiculo", { mode: "number" }).references(() => veiculo.veiculo_id),
+  foto_romaneio: text("foto_romaneio"),
+});
+
 // Relations
 export const motoristaRelations = relations(motorista, ({ one, many }) => ({
   company: one(company, {
@@ -401,6 +411,11 @@ export const insertHodometroSchema = createInsertSchema(hodometro).omit({
   id_hodometro: true,
 });
 
+export const insertRomaneioSchema = createInsertSchema(romaneio).omit({
+  id: true,
+  created_at: true,
+});
+
 export const insertComentarioSchema = createInsertSchema(comentario).omit({
   id: true,
   created_at: true,
@@ -448,6 +463,8 @@ export type Veiculo = typeof veiculo.$inferSelect;
 export type InsertVeiculo = z.infer<typeof insertVeiculoSchema>;
 export type Hodometro = typeof hodometro.$inferSelect;
 export type InsertHodometro = z.infer<typeof insertHodometroSchema>;
+export type Romaneio = typeof romaneio.$inferSelect;
+export type InsertRomaneio = z.infer<typeof insertRomaneioSchema>;
 export type DocumentoMotorista = typeof documento_motorista.$inferSelect;
 export type DocumentoAjudante = typeof documento_ajudante.$inferSelect;
 export type DocumentoVeiculo = typeof documento_veiculo.$inferSelect;
