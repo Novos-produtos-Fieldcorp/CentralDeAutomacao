@@ -54,6 +54,21 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 27, 2025 - Fixed Romaneios Database Column Name Mismatch
+- **Issue**: Romaneios list was failing with error "column veiculo_1.marca_veiculo does not exist" (HTTP 400)
+- **Root Cause**: Component was querying `marca_veiculo` column, but Supabase production database has column named `marca`
+- **Fixes Applied**:
+  1. Updated interface `RomaneioWithRelations` to use `marca` instead of `marca_veiculo`
+  2. Fixed Supabase select query: `veiculo:id_veiculo ( veiculo_id, placa, marca )`
+  3. Updated search filter to use `r.veiculo?.marca`
+  4. Updated Excel export to use `r.veiculo?.marca`
+  5. Updated table rendering to use `romaneio.veiculo?.marca`
+  6. Created `romaneio` table in local development database for testing
+- **Database Schema**: Romaneios table structure confirmed with proper foreign keys to `company`, `motorista`, and `veiculo` tables
+- **Files Modified**: `client/src/pages/hodometros/HodometrosRomaneio.tsx`
+- **Impact**: Romaneios feature now loads correctly from Supabase production database
+- **Note**: App uses Supabase exclusively; local database is only for development/testing reference
+
 ### October 27, 2025 - Added WiseApp Token Validation
 - **Issue**: System was accepting any token without validation, allowing invalid or fake tokens to be saved
 - **Solution Implemented**:
