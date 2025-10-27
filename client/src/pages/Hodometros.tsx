@@ -48,7 +48,7 @@ const Hodometros = () => {
     { path: '/hodometros/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/hodometros/relatorio', icon: Gauge, label: 'Leituras' },
     ...(moduleAccess.minuta ? [{ path: '/hodometros/minuta', icon: ClipboardList, label: 'Minutas' }] : []),
-    { path: '/hodometros/romaneio', icon: FileText, label: 'Romaneios' },
+    ...(moduleAccess.romaneio ? [{ path: '/hodometros/romaneio', icon: FileText, label: 'Romaneios' }] : []),
     { path: '/hodometros/lista', icon: ClipboardList, label: 'Relatórios' }
   ];
 
@@ -109,7 +109,7 @@ const Hodometros = () => {
             <Route path="dashboard" element={<HodometrosDashboard />} />
             <Route path="relatorio" element={<HodometrosRelatorio />} />
             {moduleAccess.minuta && <Route path="minuta" element={<HodometrosMinuta />} />}
-            <Route path="romaneio" element={<HodometrosRomaneio />} />
+            {moduleAccess.romaneio && <Route path="romaneio" element={<HodometrosRomaneio />} />}
             <Route path="lista" element={<HodometrosLista />} />
           </Routes>
         </div>

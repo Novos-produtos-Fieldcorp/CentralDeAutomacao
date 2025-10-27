@@ -8,6 +8,7 @@ interface ModuleAccess {
   motoristas: boolean;
   hodometros: boolean;
   minuta: boolean;
+  romaneio: boolean;
   veiculos: boolean;
   clientes: boolean;
   resumos: boolean;
@@ -24,6 +25,7 @@ export const useModuleAccess = () => {
     motoristas: true,
     hodometros: true,
     minuta: true,
+    romaneio: false,
     veiculos: true,
     clientes: true,
     resumos: true,
@@ -46,7 +48,7 @@ export const useModuleAccess = () => {
         const { data: company, error: companyError } = await supabase
           .from("company")
           .select(
-            "checklist_access, motorista_access, hodometro_acsess, minuta_access, resumo_access, tags_access, comprovante_access, bomba_gasolina_access",
+            "checklist_access, motorista_access, hodometro_acsess, minuta_access, romaneio_access, resumo_access, tags_access, comprovante_access, bomba_gasolina_access",
           )
           .eq("company_id", companyId)
           .maybeSingle();
@@ -57,9 +59,9 @@ export const useModuleAccess = () => {
           setModuleAccess({
             checklist: true,
             motoristas: true,
-        
             hodometros: true,
             minuta: true,
+            romaneio: false,
             veiculos: true,
             clientes: true,
             resumos: true,
@@ -76,6 +78,7 @@ export const useModuleAccess = () => {
             motoristas: company.motorista_access || false,
             hodometros: company.hodometro_acsess || false, // Note the typo in the column name
             minuta: company.minuta_access || false,
+            romaneio: company.romaneio_access || false,
             veiculos: true, // Always enabled
             clientes: true, // Always enabled
             resumos: company.resumo_access || false,
@@ -90,6 +93,7 @@ export const useModuleAccess = () => {
             motoristas: true,
             hodometros: true,
             minuta: true,
+            romaneio: false,
             veiculos: true,
             clientes: true,
             resumos: true,
@@ -108,9 +112,9 @@ export const useModuleAccess = () => {
         setModuleAccess({
           checklist: true,
           motoristas: true,
-      
           hodometros: true,
           minuta: true,
+          romaneio: false,
           veiculos: true,
           clientes: true,
           resumos: true,
