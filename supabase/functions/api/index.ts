@@ -107,6 +107,70 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Validate WiseApp token
+  if (path === '/wiseapp/validate-token' && method === 'POST') {
+    try {
+      const body = await req.json()
+      const { token, accountId } = body
+
+      if (!token || !accountId) {
+        return new Response(JSON.stringify({
+          valid: false,
+          error: 'Token e ID da conta são obrigatórios'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Try to fetch profile from WiseApp API to validate token
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/profile`
+      
+      console.log(`🔍 Validando token para account ${accountId}...`)
+      
+      const response = await fetch(wiseAppUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        console.log(`❌ Token inválido - API retornou ${response.status}`)
+        return new Response(JSON.stringify({
+          valid: false,
+          error: 'Token de acesso inválido ou expirado'
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const profileData = await response.json()
+      
+      console.log(`✅ Token validado com sucesso para account ${accountId}`)
+      
+      return new Response(JSON.stringify({
+        valid: true,
+        profile: profileData
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+
+    } catch (error) {
+      console.error('❌ Erro ao validar token:', error)
+      return new Response(JSON.stringify({
+        valid: false,
+        error: 'Erro ao conectar com o servidor de autenticação'
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
   if (path.match(/^\/wiseapp\/(\d+)\/token$/) && method === 'GET') {
     const match = path.match(/^\/wiseapp\/(\d+)\/token$/)
     const companyId = match![1]

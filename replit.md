@@ -54,6 +54,22 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 27, 2025 - Added WiseApp Token Validation
+- **Issue**: System was accepting any token without validation, allowing invalid or fake tokens to be saved
+- **Solution Implemented**:
+  1. **Backend Validation Endpoint**: Created POST `/wiseapp/validate-token` in Edge Function
+     - Validates token by calling WiseApp API `/api/v1/accounts/{accountId}/profile`
+     - Returns `{valid: true/false, error?: string}` without mentioning ChatWoot
+     - Handles network errors, timeouts, and invalid credentials gracefully
+  2. **Frontend Integration**: Updated `WiseAppTokenModal` to validate before saving
+     - Calls validation endpoint with token and accountId before database INSERT/UPDATE
+     - Shows user-friendly error messages: "Token de acesso inválido" or "Erro ao conectar com servidor"
+     - Only saves token to database if validation succeeds
+- **Security**: Prevents storage of invalid/fake tokens that would cause API failures
+- **User Experience**: Clear error messages guide users to correct token input
+- **Files Modified**: `supabase/functions/api/index.ts`, `client/src/components/WiseAppTokenModal.tsx`
+- **Deployment Required**: Edge Function must be deployed with `supabase functions deploy api`
+
 ### October 27, 2025 - Fixed WiseApp Authentication Not Saving to Database
 - **Issue**: WiseApp authentication was not creating new records in `wiseapp_acesso` table
 - **Root Causes**:

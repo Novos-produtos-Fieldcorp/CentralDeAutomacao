@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Lock } from 'lucide-react';
+import { createApiUrl } from '@/lib/api-config-supabase';
 
 interface Props {
   open: boolean;
@@ -63,6 +64,28 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
   };
 
+  const validateToken = async (token: string, accountId: string): Promise<{ valid: boolean; error?: string }> => {
+    try {
+      const response = await fetch(createApiUrl('/wiseapp/validate-token'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, accountId }),
+      });
+
+      if (!response.ok) {
+        return { valid: false, error: 'Erro ao validar token' };
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Erro ao validar token:', error);
+      return { valid: false, error: 'Erro ao conectar com o servidor' };
+    }
+  };
+
   const handleTokenSubmit = async () => {
     setLoading(true);
     setError('');
@@ -81,13 +104,25 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
 
     try {
+      // Validar token antes de salvar
+      const accountId = localStorage?.getItem('account_id');
+      if (!accountId) {
+        throw new Error('Account ID não encontrado - acesse via URL com account_id');
+      }
+
+      console.log('🔍 Validando token antes de salvar...');
+      const validationResult = await validateToken(token, accountId);
+
+      if (!validationResult.valid) {
+        setError(validationResult.error || 'Token de acesso inválido. Verifique se você copiou corretamente.');
+        setLoading(false);
+        return;
+      }
+
+      console.log('✅ Token validado com sucesso!');
+
       if (requiresAttendantName) {
         // NOVO USUÁRIO: Fazer INSERT com nome, email, token e id_conta_wiseapp
-        const accountId = localStorage?.getItem('account_id');
-        if (!accountId) {
-          throw new Error('Account ID não encontrado - acesse via URL com account_id');
-        }
-
         const { error: insertError } = await supabase
           .from('wiseapp_acesso')
           .insert([{ 
@@ -117,8 +152,8 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       localStorage.setItem('wiseapp_user_email', email);
       onTokenSaved(token);
       onClose();
-    } catch (err) {
-      setError('Erro ao salvar o token.');
+    } catch (err: any) {
+      setError(err.message || 'Erro ao salvar o token.');
       console.error(err);
     } finally {
       setLoading(false);
