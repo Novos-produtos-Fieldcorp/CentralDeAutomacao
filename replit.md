@@ -54,6 +54,42 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 27, 2025 - Added WiseApp Token Validation
+- **Issue**: System was accepting any token without validation, allowing invalid or fake tokens to be saved
+- **Solution Implemented**:
+  1. **Backend Validation Endpoint**: Created POST `/wiseapp/validate-token` in Edge Function
+     - Validates token by calling WiseApp API `/api/v1/profile` endpoint
+     - Returns `{valid: true/false, error?: string}` without mentioning ChatWoot
+     - Handles network errors, timeouts, and invalid credentials gracefully
+  2. **Frontend Integration**: Updated `WiseAppTokenModal` to validate before saving
+     - Calls validation endpoint with token and accountId before database INSERT/UPDATE
+     - Shows user-friendly error messages: "Token de acesso inválido" or "Erro ao conectar com servidor"
+     - Only saves token to database if validation succeeds
+- **Bug Fix**: Corrected WiseApp API endpoint from `/api/v1/accounts/{accountId}/profile` (404 error) to `/api/v1/profile` (correct endpoint)
+- **Security**: Prevents storage of invalid/fake tokens that would cause API failures
+- **User Experience**: Clear error messages guide users to correct token input
+- **Files Modified**: 
+  - `supabase/functions/api/index.ts` (Edge Function route for Netlify deployment)
+  - `server/routes.ts` (Express route for local development)
+  - `client/src/components/WiseAppTokenModal.tsx` (Frontend validation integration)
+- **Local Development**: Works immediately via Express proxy
+- **Production Deployment**: Edge Function must be deployed with `supabase functions deploy api`
+
+### October 27, 2025 - Fixed WiseApp Authentication Not Saving to Database
+- **Issue**: WiseApp authentication was not creating new records in `wiseapp_acesso` table
+- **Root Causes**:
+  1. `handleEmailSubmit` was trying to INSERT record before user provided name and token (attendantName was empty)
+  2. INSERT statement included non-existent column `company_id` (table only has `id_conta_wiseapp`)
+  3. Wrong flow: INSERT happened in email step instead of token step
+- **Fixes Applied**:
+  1. Removed premature INSERT from `handleEmailSubmit` - now only checks if email exists
+  2. Moved INSERT logic to `handleTokenSubmit` when `requiresAttendantName=true` (new user)
+  3. Fixed INSERT to use correct columns: `email`, `nome`, `id_conta_wiseapp`, `access_token_wiseapp`
+  4. Kept UPDATE logic in `handleTokenSubmit` for existing users (`requiresAttendantName=false`)
+- **Table Structure**: `wiseapp_acesso` has: `wiseapp_acesso_id`, `email`, `id_conta_wiseapp`, `access_token_wiseapp`, `created_at`, `nome`
+- **Files Modified**: `client/src/components/WiseAppTokenModal.tsx`
+- **Impact**: New users can now authenticate and have records properly saved to database
+
 ### October 17, 2025 - Fixed Tag Limit Update UI Refresh
 - **Issue**: After updating the maximum limit of associates for a tag, the card didn't update without page reload
 - **Root Causes**:
