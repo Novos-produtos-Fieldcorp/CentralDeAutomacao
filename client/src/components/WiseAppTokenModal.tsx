@@ -53,31 +53,6 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
         // Email doesn't exist, require attendant name in token step
         setRequiresAttendantName(true);
         setStep('tutorial');
-        // Get account_id from URL or use default for serverless compatibility
-        let accountId;
-        try {
-          accountId = localStorage?.getItem('account_id');
-        } catch {
-          throw new Error('Account ID não encontrado - acesse via URL com account_id');
-        }
-
-        const { data: companyData, error: companyError } = await supabase
-          .from('company')
-          .select('company_id')
-          .eq('id_conta_wiseapp', accountId)
-          .single();
-
-        if (companyError || !companyData) {
-          throw new Error('Erro ao buscar o companyId ou company não encontrado.');
-        }
-
-        const { error: insertError } = await supabase
-          .from('wiseapp_acesso')
-          .insert([{ email, nome: attendantName, company_id: companyData.company_id, id_conta_wiseapp: accountId, access_token_wiseapp: null }]);
-
-        if (insertError) throw insertError;
-
-        setStep('tutorial');
       }
     } catch (err) {
       setError('Erro ao verificar/criar acesso.');
@@ -106,18 +81,37 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
 
     try {
-      // Atualizar com nome apenas se foi fornecido ou se é obrigatório
-      const updateData: any = { access_token_wiseapp: token };
-      if (attendantName || requiresAttendantName) {
-        updateData.nome = attendantName;
+      if (requiresAttendantName) {
+        // NOVO USUÁRIO: Fazer INSERT com nome, email, token e id_conta_wiseapp
+        const accountId = localStorage?.getItem('account_id');
+        if (!accountId) {
+          throw new Error('Account ID não encontrado - acesse via URL com account_id');
+        }
+
+        const { error: insertError } = await supabase
+          .from('wiseapp_acesso')
+          .insert([{ 
+            email, 
+            nome: attendantName, 
+            id_conta_wiseapp: parseInt(accountId), 
+            access_token_wiseapp: token 
+          }]);
+
+        if (insertError) throw insertError;
+      } else {
+        // USUÁRIO EXISTENTE: Fazer UPDATE apenas do token (e nome se fornecido)
+        const updateData: any = { access_token_wiseapp: token };
+        if (attendantName) {
+          updateData.nome = attendantName;
+        }
+
+        const { error: updateError } = await supabase
+          .from('wiseapp_acesso')
+          .update(updateData)
+          .eq('email', email);
+
+        if (updateError) throw updateError;
       }
-
-      const { error: updateError } = await supabase
-        .from('wiseapp_acesso')
-        .update(updateData)
-        .eq('email', email);
-
-      if (updateError) throw updateError;
 
       // Salvar email no localStorage para uso posterior
       localStorage.setItem('wiseapp_user_email', email);

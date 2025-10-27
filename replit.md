@@ -54,6 +54,21 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 27, 2025 - Fixed WiseApp Authentication Not Saving to Database
+- **Issue**: WiseApp authentication was not creating new records in `wiseapp_acesso` table
+- **Root Causes**:
+  1. `handleEmailSubmit` was trying to INSERT record before user provided name and token (attendantName was empty)
+  2. INSERT statement included non-existent column `company_id` (table only has `id_conta_wiseapp`)
+  3. Wrong flow: INSERT happened in email step instead of token step
+- **Fixes Applied**:
+  1. Removed premature INSERT from `handleEmailSubmit` - now only checks if email exists
+  2. Moved INSERT logic to `handleTokenSubmit` when `requiresAttendantName=true` (new user)
+  3. Fixed INSERT to use correct columns: `email`, `nome`, `id_conta_wiseapp`, `access_token_wiseapp`
+  4. Kept UPDATE logic in `handleTokenSubmit` for existing users (`requiresAttendantName=false`)
+- **Table Structure**: `wiseapp_acesso` has: `wiseapp_acesso_id`, `email`, `id_conta_wiseapp`, `access_token_wiseapp`, `created_at`, `nome`
+- **Files Modified**: `client/src/components/WiseAppTokenModal.tsx`
+- **Impact**: New users can now authenticate and have records properly saved to database
+
 ### October 17, 2025 - Fixed Tag Limit Update UI Refresh
 - **Issue**: After updating the maximum limit of associates for a tag, the card didn't update without page reload
 - **Root Causes**:
