@@ -8,14 +8,9 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import Pagination from '../../components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import * as XLSX from 'xlsx';
+import type { Romaneio as RomaneioType } from '@shared/schema';
 
-interface Romaneio {
-  id: number;
-  created_at: string;
-  id_company: number | null;
-  id_motorista: number | null;
-  id_veiculo: number | null;
-  foto_romaneio: string | null;
+interface RomaneioWithRelations extends RomaneioType {
   motorista?: { motorista_id: number; nome: string; cpf: string } | null;
   veiculo?: { veiculo_id: number; placa: string; marca_veiculo: string } | null;
 }
@@ -24,7 +19,7 @@ const HodometrosRomaneio: React.FC = () => {
   const { companyId } = useAuth();
   const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange } = useDateRange('30days', true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [romaneios, setRomaneios] = useState<Romaneio[]>([]);
+  const [romaneios, setRomaneios] = useState<RomaneioWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingRomaneios, setLoadingRomaneios] = useState(false);
   const [errorRomaneios, setErrorRomaneios] = useState<string | null>(null);
@@ -75,7 +70,7 @@ const HodometrosRomaneio: React.FC = () => {
         ...item,
         motorista: Array.isArray(item.motorista) ? item.motorista[0] : item.motorista,
         veiculo: Array.isArray(item.veiculo) ? item.veiculo[0] : item.veiculo,
-      })) as Romaneio[];
+      })) as RomaneioWithRelations[];
 
       setRomaneios(formatted);
 
@@ -170,16 +165,16 @@ const HodometrosRomaneio: React.FC = () => {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <div data-testid="status-loading-page"><LoadingSpinner /></div>;
 
   if (errorRomaneios) return (
     <div className="bg-white dark:bg-[#1B2537] p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
       <div className="flex items-center gap-3 text-red-500 mb-4">
         <AlertCircle size={24} />
-        <h3 className="text-lg font-medium">Erro ao carregar Romaneios</h3>
+        <h3 className="text-lg font-medium" data-testid="text-error-title">Erro ao carregar Romaneios</h3>
       </div>
-      <p className="text-gray-600 dark:text-gray-400 mb-4">{errorRomaneios}</p>
-      <button onClick={() => fetchRomaneios()} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Tentar novamente</button>
+      <p className="text-gray-600 dark:text-gray-400 mb-4" data-testid="text-error-message">{errorRomaneios}</p>
+      <button onClick={() => fetchRomaneios()} data-testid="button-retry" className="px-4 py-2 bg-blue-600 text-white rounded-lg">Tentar novamente</button>
     </div>
   );
 
@@ -206,8 +201,7 @@ const HodometrosRomaneio: React.FC = () => {
             className="inline-flex items-center px-4 py-2.5 bg-white dark:bg-[#1B2537] text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             <Calendar className="h-5 w-5 mr-2" />
-            {periodType === 'today' && 'Hoje'}
-            {periodType === '7days' && 'Últimos 7 dias'}
+            {periodType === '1day' && 'Hoje'}
             {periodType === '15days' && 'Últimos 15 dias'}
             {periodType === '30days' && 'Últimos 30 dias'}
             {periodType === 'custom' && 'Personalizado'}
@@ -216,10 +210,9 @@ const HodometrosRomaneio: React.FC = () => {
           {showPeriodDropdown && (
             <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-[#1B2537] rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
               <div className="p-2">
-                <button onClick={() => { updatePeriod('today'); setShowPeriodDropdown(false); }} className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-700 dark:text-gray-300">Hoje</button>
-                <button onClick={() => { updatePeriod('7days'); setShowPeriodDropdown(false); }} className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-700 dark:text-gray-300">Últimos 7 dias</button>
-                <button onClick={() => { updatePeriod('15days'); setShowPeriodDropdown(false); }} className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-700 dark:text-gray-300">Últimos 15 dias</button>
-                <button onClick={() => { updatePeriod('30days'); setShowPeriodDropdown(false); }} className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-700 dark:text-gray-300">Últimos 30 dias</button>
+                <button onClick={() => { updatePeriod('1day'); setShowPeriodDropdown(false); }} data-testid="button-period-1day" className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-700 dark:text-gray-300">Hoje</button>
+                <button onClick={() => { updatePeriod('15days'); setShowPeriodDropdown(false); }} data-testid="button-period-15days" className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-700 dark:text-gray-300">Últimos 15 dias</button>
+                <button onClick={() => { updatePeriod('30days'); setShowPeriodDropdown(false); }} data-testid="button-period-30days" className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-700 dark:text-gray-300">Últimos 30 dias</button>
                 
                 <div className="border-t border-gray-200 dark:border-gray-600 my-2"></div>
                 
@@ -283,13 +276,13 @@ const HodometrosRomaneio: React.FC = () => {
             <tbody className="bg-white dark:bg-[#1B2537] divide-y divide-gray-200 dark:divide-gray-700">
               {loadingRomaneios ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center">
+                  <td colSpan={4} className="px-6 py-8 text-center" data-testid="status-loading">
                     <LoadingSpinner />
                   </td>
                 </tr>
               ) : paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400" data-testid="text-empty-state">
                     Nenhum romaneio encontrado
                   </td>
                 </tr>
@@ -297,26 +290,26 @@ const HodometrosRomaneio: React.FC = () => {
                 paginatedData.map((romaneio) => (
                   <tr key={romaneio.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" data-testid={`row-romaneio-${romaneio.id}`}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
+                      <div className="text-sm text-gray-900 dark:text-white" data-testid={`text-date-${romaneio.id}`}>
                         {romaneio.created_at ? new Date(romaneio.created_at).toLocaleDateString('pt-BR') : '-'}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="text-sm text-gray-500 dark:text-gray-400" data-testid={`text-time-${romaneio.id}`}>
                         {romaneio.created_at ? new Date(romaneio.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white" data-testid={`text-motorista-${romaneio.id}`}>
                         {romaneio.motorista?.nome || 'Não informado'}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="text-sm text-gray-500 dark:text-gray-400" data-testid={`text-cpf-${romaneio.id}`}>
                         {romaneio.motorista?.cpf || '-'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white" data-testid={`text-placa-${romaneio.id}`}>
                         {romaneio.veiculo?.placa || 'Não informado'}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="text-sm text-gray-500 dark:text-gray-400" data-testid={`text-marca-${romaneio.id}`}>
                         {romaneio.veiculo?.marca_veiculo || '-'}
                       </div>
                     </td>
@@ -352,8 +345,16 @@ const HodometrosRomaneio: React.FC = () => {
       </div>
 
       {showPhotoModal && selectedPhoto && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={() => setShowPhotoModal(false)}>
-          <div className="relative max-w-4xl max-h-[90vh] bg-white dark:bg-gray-800 rounded-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" 
+          onClick={() => setShowPhotoModal(false)}
+          data-testid="overlay-photo-modal"
+        >
+          <div 
+            className="relative max-w-4xl max-h-[90vh] bg-white dark:bg-gray-800 rounded-lg overflow-hidden" 
+            onClick={(e) => e.stopPropagation()}
+            data-testid="container-photo-modal"
+          >
             <button
               onClick={() => setShowPhotoModal(false)}
               data-testid="button-close-photo-modal"
