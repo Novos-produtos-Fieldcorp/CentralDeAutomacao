@@ -638,13 +638,17 @@ const HodometrosDashboard = () => {
       // Calculate average minutas per day
       const avgPerDay = uniqueDays > 0 ? totalMinutasCount / uniqueDays : 0;
       
-      // Calculate unique drivers
-      const uniqueDrivers = new Set(
-        minutas.filter(m => m.motorista_id).map(m => m.motorista_id)
-      ).size;
-      
-      // Calculate average minutas per driver
-      const avgPerDriver = uniqueDrivers > 0 ? totalMinutasCount / uniqueDrivers : 0;
+      // Only calculate average per driver if bomba module is not active (metric won't be displayed)
+      let avgPerDriver = 0;
+      if (!moduleAccess.bomba) {
+        // Calculate unique drivers
+        const uniqueDrivers = new Set(
+          minutas.filter(m => m.motorista_id).map(m => m.motorista_id)
+        ).size;
+        
+        // Calculate average minutas per driver
+        avgPerDriver = uniqueDrivers > 0 ? totalMinutasCount / uniqueDrivers : 0;
+      }
       
       // Calculate percentage of minutas with photo
       const minutasWithPhoto = minutas.filter(m => m.foto_minuta && m.foto_minuta.trim() !== '').length;
@@ -1160,19 +1164,21 @@ const HodometrosDashboard = () => {
 
       {/* Minuta Stats - Only visible with minuta access */}
       {moduleAccess.minuta && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className={`grid grid-cols-1 ${!moduleAccess.bomba ? 'md:grid-cols-2' : ''} gap-6`}>
           <StatCard
             title="Média Diária de Minutas"
             value={Math.round(avgMinutasPerDay * 10) / 10}
             icon={ClipboardList}
             color="blue"
           />
-          <StatCard
-            title="Média por Motorista"
-            value={Math.round(avgMinutasPerDriver * 10) / 10}
-            icon={UserCheck}
-            color="green"
-          />
+          {!moduleAccess.bomba && (
+            <StatCard
+              title="Média por Motorista"
+              value={Math.round(avgMinutasPerDriver * 10) / 10}
+              icon={UserCheck}
+              color="green"
+            />
+          )}
         </div>
       )}
 
