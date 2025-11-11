@@ -1470,7 +1470,7 @@ const HodometrosDashboard = () => {
                       .map((stats, index) => (
                         <tr 
                           key={stats.veiculo_id} 
-                          className={`border-b border-gray-100 dark:border-gray-700 ${index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-750' : ''}`}
+                          className={`border-b border-gray-100 dark:border-gray-700 ${index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-900/50' : 'bg-white dark:bg-gray-800'}`}
                           data-testid={`row-vehicle-${stats.veiculo_id}`}
                         >
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{stats.placa}</td>
