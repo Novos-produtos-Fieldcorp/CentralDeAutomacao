@@ -3149,6 +3149,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Validate WiseApp token
+  app.post("/api/wiseapp/validate-token", async (req, res) => {
+    try {
+      const { token, accountId } = req.body;
+
+      if (!token || !accountId) {
+        return res.status(400).json({
+          valid: false,
+          error: 'Token e ID da conta são obrigatórios'
+        });
+      }
+
+      // Try to fetch profile from WiseApp API to validate token
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/profile`;
+      
+      console.log(`🔍 Validando token...`);
+      
+      const response = await fetch(wiseAppUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.log(`❌ Token inválido - API retornou ${response.status}`);
+        return res.json({
+          valid: false,
+          error: 'Token de acesso inválido ou expirado'
+        });
+      }
+
+      const profileData = await response.json();
+      
+      console.log(`✅ Token validado com sucesso!`);
+      
+      return res.json({
+        valid: true,
+        profile: profileData
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao validar token:', error);
+      return res.json({
+        valid: false,
+        error: 'Erro ao conectar com o servidor de autenticação'
+      });
+    }
+  });
+
   // WiseApp Proxy Route (replaces proxy-wiseapp Edge Function)
   app.all("/api/wiseapp-proxy", async (req, res) => {
     try {

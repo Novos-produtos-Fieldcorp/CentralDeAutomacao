@@ -2,6 +2,7 @@
 
 ## Overview
 This project is a full-stack web application designed as a fleet management system. It facilitates the management of drivers, vehicles, clients, and operational workflows such as checklists and odometer readings. Built with React for the frontend and Express.js for the backend, it leverages PostgreSQL with Drizzle ORM for data persistence and integrates with external services like Supabase for enhanced functionality. The system aims to provide a robust solution for multi-company fleet management, with features like dynamic authentication based on account IDs, comprehensive job vacancy management, and efficient document handling, improving operational efficiency and data consistency within the logistics sector.
+This project is a full-stack web application designed for multi-company fleet management within the logistics sector. Its primary purpose is to centralize and streamline operations related to drivers, vehicles, clients, and critical workflows like checklists and odometer readings. The application offers dynamic authentication, comprehensive job vacancy management, efficient document handling, and integrates with external services to enhance functionality, ultimately aiming to boost efficiency and ensure data consistency.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -51,6 +52,33 @@ Preferred communication style: Simple, everyday language.
 - **Fuel Pump Integration**: Added bomba_gasolina table integration to hodometro readings list, displaying Preço (Price) and Litros (Liters) columns alongside the odometer column. Each shows Lido/Informado values with camera icons for accessing fuel pump photos (foto_bomba). Data is fetched via Supabase join using hodometro_id foreign key relationship. The edit modal includes a dedicated "Dados da Bomba de Gasolina" section with four fields (Preço Lido, Preço Informado, Litros Lido, Litros Informado), allowing users to update or clear fuel pump readings. The system uses maybeSingle() for robust upsert operations, properly handling edge cases like clearing values and preventing duplicate records. The Foto column displays two icons: Gauge icon for hodometer photo and Fuel icon for fuel pump photo, with dynamic modal titles and download filenames based on photo type. The edit modal features two distinct photo upload sections with neutral gray borders for cleaner interface: hodometer photo section (Gauge icon) and fuel pump photo section (Fuel icon), each with preview display, upload/replacement capabilities, remove buttons, and base64 encoding for database storage.
 - **Module Access Control for Fuel Pump**: Implemented granular access control for fuel pump functionality through the Admin page (/admin). Added "Bomba" column to the access control table with toggle functionality for each company. The bomba_gasolina_access flag controls visibility of fuel pump-related features: Preço and Litros columns in the readings table, fuel pump data entry fields in the edit modal, fuel pump photo upload section, and fuel pump photo icon in the Foto column. Integrated with useModuleAccess hook for consistent permission checking across the application. Companies without bomba_gasolina_access enabled will see a simplified interface without fuel pump functionality.
 - **Minuta Management System**: Implemented complete minuta management in the Hodômetros module with list view, filtering by period, search (motorista, placa, minuta, romaneio, filial), and photo viewing. Changed romaneio field from string to array to support multiple romaneio numbers per minuta. Added edit modal with reference to HodometrosRelatorio.tsx, allowing users to edit minuta_informada, minuta_lida, and manage multiple romaneios with add/remove functionality. The romaneios are displayed as badges in the table and exported to Excel as comma-separated values. Module access controlled by minuta_access flag in company table.
+### Frontend
+- **Framework**: React 18 with TypeScript and Vite.
+- **Styling**: Tailwind CSS for custom dark mode and responsiveness, leveraging Radix UI and shadcn/ui components.
+- **State Management**: React Context API for global state; TanStack Query for server state management and data fetching.
+- **Routing**: React Router.
+
+### Backend
+- **Framework**: Express.js with TypeScript.
+- **Database**: PostgreSQL via Supabase, including real-time features.
+- **Build**: `esbuild` for production.
+
+### Key Architectural Decisions
+- **Authentication**: Dynamic context-based system utilizing account IDs from URL parameters to support multi-company environments and data isolation.
+- **Database Layer**: Direct integration with Supabase PostgreSQL, employing Row Level Security (RLS) for multi-tenancy, real-time subscriptions, and type-safe operations.
+- **UI/UX**: Responsive design, comprehensive component library, dark/light theme support, and consistent styling across the application.
+- **Data Flow**: TanStack Query is used with direct Supabase calls for optimized caching and state management, ensuring company-filtered queries via RLS.
+- **External Integrations**: Modular design facilitates integration with third-party services like WiseApp, often routed through secure Supabase Edge Functions.
+- **Document Management**: Direct uploads to Supabase Storage with validation and URL storage.
+- **WiseApp Token Management**: Automatic retrieval of WiseApp tokens from the database based on email, eliminating manual configuration. All WiseApp API operations are routed through Supabase Edge Functions for security and consistent behavior.
+- **Form Validation**: Includes enhanced CNH validation and real-time input sanitization.
+- **Pagination**: Implemented a comprehensive pagination system across lists with configurable page sizes.
+- **License Plate API**: Real-time vehicle data consultation via FIPE API for automated form filling.
+- **Odometer Readings**: Integrated `bomba_gasolina` table for odometer readings, including price, liters, and photo management with granular access control.
+- **Minuta Management**: Full minuta management in the Hodômetros module with search, filtering, and editing capabilities, supporting multiple `romaneio` numbers.
+- **Tag Synchronization**: Bidirectional tag synchronization between WiseApp and the local database, ensuring multi-tenant data isolation and referential integrity.
+- **Vagas View Mode**: Allows toggling between table and card grid views, with preference persistence.
+- **Database Architecture**: Exclusively uses Supabase; local Replit database is disabled.
 
 ## External Dependencies
 

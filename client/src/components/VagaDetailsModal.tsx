@@ -31,6 +31,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
     dias_trabalho: Array.isArray(initialVaga.dias_trabalho) ? initialVaga.dias_trabalho : 
                    typeof initialVaga.dias_trabalho === 'string' ? JSON.parse(initialVaga.dias_trabalho || '[]') : [],
     horario: initialVaga.horario || '',
+    tipo_contrato: initialVaga.tipo_contrato || '',
     dt_limite: initialVaga.dt_limite ? new Date(initialVaga.dt_limite).toISOString().slice(0, 16) : '',
     unidade_id: initialVaga.unidade_id || '',
     operacao_id: initialVaga.operacao_id || '',
@@ -71,6 +72,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
       dias_trabalho: Array.isArray(initialVaga.dias_trabalho) ? initialVaga.dias_trabalho : 
                      typeof initialVaga.dias_trabalho === 'string' ? JSON.parse(initialVaga.dias_trabalho || '[]') : [],
       horario: initialVaga.horario || '',
+      tipo_contrato: initialVaga.tipo_contrato || '',
       dt_limite: initialVaga.dt_limite ? new Date(initialVaga.dt_limite).toISOString().slice(0, 16) : '',
       unidade_id: initialVaga.unidade_id || '',
       operacao_id: initialVaga.operacao_id || '',
@@ -314,6 +316,20 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                     </div>
                     <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Tipo de Contrato
+                      </dt>
+                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
+                        <input
+                          type="text"
+                          value={formData.tipo_contrato}
+                          onChange={(e) => setFormData(prev => ({ ...prev, tipo_contrato: e.target.value }))}
+                          placeholder="Ex: CLT, PJ, Temporário"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        />
+                      </dd>
+                    </div>
+                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
                         Dias de Trabalho *
                       </dt>
                       <dd className="mt-1 sm:mt-0 sm:col-span-2">
@@ -507,6 +523,15 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                       </dd>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                        <Briefcase className="w-4 h-4 mr-2" />
+                        Tipo de Contrato
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                        {currentVaga.tipo_contrato || 'Não informado'}
+                      </dd>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
                         <Calendar className="w-4 h-4 mr-2" />
                         Dias de Trabalho

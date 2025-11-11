@@ -1,0 +1,179 @@
+event_message,event_type,function_id,id,level,timestamp
+"[OPTIONS] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,bf3936d8-f9fa-4e05-8848-18940a920928,info,1761574909754000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,8d061f28-8d0f-4b16-8db1-d578018d2864,info,1761574909754000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,de3dd182-a9eb-45fd-ba33-c7116725f7e7,info,1761574909754000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,c2420012-b3fd-4b07-a0d7-a30fbe674352,info,1761574909754000
+"Listening on http://localhost:9999/
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,1efdfc2b-713b-4a34-8bde-e9a3ddc93065,info,1761574909751000
+booted (time: 34ms),Boot,b3a46c2d-0f86-4953-94d1-1208b76570c5,d13651a6-5004-44ff-a846-b52b2bf95790,log,1761574909738000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,83a0d023-641d-415b-b06f-8a497d81352f,info,1761574901989000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,7df87785-9523-4220-93ca-59b280fdf5da,info,1761574901989000
+"[OPTIONS] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,65b25103-b5e9-409c-bbd9-a1d89bc03b52,info,1761574901988000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,194d643d-f335-42af-b4a8-ad571f887633,info,1761574901988000
+"Listening on http://localhost:9999/
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,99ee3f03-ff4c-4b23-92e7-ecb6af063c46,info,1761574901986000
+booted (time: 30ms),Boot,b3a46c2d-0f86-4953-94d1-1208b76570c5,9ee88629-de49-4102-a18d-1f98a1d03ac1,log,1761574901982000
+shutdown,Shutdown,b3a46c2d-0f86-4953-94d1-1208b76570c5,199a9305-eb11-454a-823c-08aa1da01609,log,1761573808008000
+shutdown,Shutdown,b3a46c2d-0f86-4953-94d1-1208b76570c5,603f004a-2df6-4e20-94a6-55e1a6f656b7,log,1761573798374000
+shutdown,Shutdown,b3a46c2d-0f86-4953-94d1-1208b76570c5,1b2a3ce2-5b8a-4b5e-baa2-a4b0e4aab560,log,1761573798210000
+shutdown,Shutdown,b3a46c2d-0f86-4953-94d1-1208b76570c5,c9126ebf-90fb-4b3c-85b8-4526246b341c,log,1761573751175000
+"❌ Endpoint WiseApp não encontrado: /wiseapp/validate-token POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,a8def3e1-7d68-4396-b4b0-c9bc155addbb,info,1761573608001000
+"🔍 handleWiseAppRoutes called with path: /wiseapp/validate-token, method: POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,a25570ab-b014-4a6e-938a-9a2dd5aaf0b9,info,1761573608001000
+"[POST] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,0ceca004-d541-42d8-adfd-8e1e9b99806d,info,1761573607997000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,017259ee-cdaf-48f1-9c2a-b980ebd25d43,info,1761573607997000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,5ef373f6-7c80-4fb9-b691-fd51320f1b08,info,1761573607997000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,e3981b01-1671-4016-838a-464241166792,info,1761573607997000
+"Listening on http://localhost:9999/
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,766320da-c77f-436c-b6a2-d7bb0f69817a,info,1761573607995000
+booted (time: 30ms),Boot,b3a46c2d-0f86-4953-94d1-1208b76570c5,18d1597f-5644-4345-ad83-9737cbbd795b,log,1761573607991000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,abb14533-9cc7-41fe-a105-d48e87302722,info,1761573607863000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,1c06e522-9036-4b9f-99eb-029b6c25632a,info,1761573607863000
+"[OPTIONS] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,43bfac59-d0e8-4400-96b4-a35acfd705b1,info,1761573607863000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,f25fea42-0e7c-4d26-a6fc-c567c2f058d0,info,1761573607863000
+"Listening on http://localhost:9999/
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,c4622a1f-713f-4dd1-bd69-0cd60c18ecc0,info,1761573607861000
+booted (time: 30ms),Boot,b3a46c2d-0f86-4953-94d1-1208b76570c5,e77d1e3a-3c2c-40c4-81e1-7c041b49f29f,log,1761573607858000
+"❌ Endpoint WiseApp não encontrado: /wiseapp/validate-token POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,e20679eb-5f05-4c16-8682-61381becd6bf,info,1761573598367000
+"🔍 handleWiseAppRoutes called with path: /wiseapp/validate-token, method: POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,ffa3ad9b-95a4-4b44-8cd3-5d7d44c2bd0f,info,1761573598366000
+"[POST] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,35157ea4-d1d0-459c-b3e5-6999cc377d4a,info,1761573598363000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,5c04b47d-0a5a-4ac9-b174-e414ed1d245a,info,1761573598363000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,c292dbd3-00bb-40d0-bad9-642943fd8c4c,info,1761573598363000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,6e990e59-2c3b-4361-a42c-f16a89e641e1,info,1761573598363000
+"Listening on http://localhost:9999/
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,0db47762-a72e-49dc-ae9d-ce0a0efd9635,info,1761573598360000
+booted (time: 37ms),Boot,b3a46c2d-0f86-4953-94d1-1208b76570c5,90909188-5136-43e5-9143-370ded7df145,log,1761573598356000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,e1d8e286-534b-4c6b-99ef-76e8631f2d31,info,1761573598194000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,f265682e-7492-4f7e-8949-066f847cd48f,info,1761573598194000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,a5818383-f832-45fa-8d03-681f2ae7f150,info,1761573598194000
+"[OPTIONS] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,694fb941-e830-4c7f-875d-5819ab9f1bc3,info,1761573598194000
+"Listening on http://localhost:9999/
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,13bf7dfd-e86f-4c42-b834-1fb6d44c8f07,info,1761573598191000
+booted (time: 30ms),Boot,b3a46c2d-0f86-4953-94d1-1208b76570c5,f9528b56-0be0-4767-9a2f-bbcce69c85d0,log,1761573598188000
+shutdown,Shutdown,b3a46c2d-0f86-4953-94d1-1208b76570c5,5ce7c0c7-b9a3-46a4-8336-d8031f4dcf0b,log,1761572904298000
+shutdown,Shutdown,b3a46c2d-0f86-4953-94d1-1208b76570c5,b5797f13-47f0-4294-a1b1-65121657d1af,log,1761572904153000
+shutdown,Shutdown,b3a46c2d-0f86-4953-94d1-1208b76570c5,9de87738-0515-4cfe-a6b5-d7799a2df3b6,log,1761572892071000
+shutdown,Shutdown,b3a46c2d-0f86-4953-94d1-1208b76570c5,d0bd8e28-9f65-4fc4-9c3d-775f4523ddb7,log,1761572891948000
+shutdown,Shutdown,b3a46c2d-0f86-4953-94d1-1208b76570c5,be016647-ea20-4ae6-b1fe-4606a163357c,log,1761572880434000
+shutdown,Shutdown,b3a46c2d-0f86-4953-94d1-1208b76570c5,984ee98e-d442-48a8-bf3c-121987e742ef,log,1761572880255000
+"❌ Endpoint WiseApp não encontrado: /wiseapp/validate-token POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,d871b5f9-9806-40d3-b1a2-747f21abcd23,info,1761572704267000
+"🔍 handleWiseAppRoutes called with path: /wiseapp/validate-token, method: POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,639046bf-62b2-4d71-b93d-a2be2643ff66,info,1761572704267000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,08a40195-8a46-4bcb-a4bf-427725b5bbc2,info,1761572704263000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,f1911e4e-10f1-42a2-a90d-39b908aeb276,info,1761572704263000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,57b3dcca-6fdc-47a9-9fb8-e60281e0105b,info,1761572704263000
+"[POST] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,96fedec6-534b-4d2d-81d3-594528fd9e0e,info,1761572704263000
+"Listening on http://localhost:9999/
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,5e403dd5-739c-4562-abd0-4d02d7429426,info,1761572704261000
+booted (time: 29ms),Boot,b3a46c2d-0f86-4953-94d1-1208b76570c5,869b5e52-64d9-49d3-b323-c9916dcb098c,log,1761572704258000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,91f00af2-6b9a-4f99-8df5-f07dbdce87b4,info,1761572704134000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,dbab86bc-7640-4b2f-89a6-9fa9fa2d360b,info,1761572704134000
+"[OPTIONS] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,45cbf264-d357-4ba8-9ceb-6b9c85a7048b,info,1761572704134000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,2640f128-5d9d-4f4c-b779-bd39dec565c8,info,1761572704134000
+"Listening on http://localhost:9999/
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,a15d2092-8444-43c1-a428-84480b190cc2,info,1761572704132000
+booted (time: 30ms),Boot,b3a46c2d-0f86-4953-94d1-1208b76570c5,aeeacc6a-b46c-45b1-b472-9a71c5e08228,log,1761572704128000
+"🔍 handleWiseAppRoutes called with path: /wiseapp/validate-token, method: POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,4f079815-6e18-4f23-81d5-b572b7d26fff,info,1761572692061000
+"🔍 handleWiseAppRoutes called with path: /wiseapp/validate-token, method: POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,817f4ecf-2f0d-4f1b-b690-4921155188b6,info,1761572692061000
+"🔍 handleWiseAppRoutes called with path: /wiseapp/validate-token, method: POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,7e9f39f8-1dd7-4f50-9d2b-41bfdc54ce96,info,1761572692061000
+"❌ Endpoint WiseApp não encontrado: /wiseapp/validate-token POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,751d34a9-d9aa-4131-8fd1-7c2f12cc5fbe,info,1761572692061000
+"❌ Endpoint WiseApp não encontrado: /wiseapp/validate-token POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,cb74411f-4bd9-4e44-9ba8-1f8300f0116c,info,1761572692061000
+"❌ Endpoint WiseApp não encontrado: /wiseapp/validate-token POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,f6c8d61f-5b66-47dd-91e6-296cb0ed5c9f,info,1761572692061000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,07611178-9b16-46a6-8375-12da137a9531,info,1761572692057000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,2c057965-7e34-4e31-987d-f3c9a4bd8b10,info,1761572692057000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,03f7c0db-a73f-443e-82b5-276c9c8782e6,info,1761572692057000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,2ebb78f6-063e-441c-a418-71ca0ba4c3bb,info,1761572692057000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,d8241fe8-e02e-461c-b749-63308ffc0b4d,info,1761572692057000
+"[POST] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,378785bd-0286-4d68-9138-dbda4ec23197,info,1761572692057000
+"[POST] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,41980f40-a5c5-4664-abcd-d4571fa0a2b6,info,1761572692057000
+"[POST] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,507a1472-e504-49e9-a8e8-2e57f10e8caa,info,1761572692057000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,c4928811-0f5e-4aec-9439-1d5602b4721b,info,1761572692057000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,c071874d-4007-468f-81ca-04df892107ba,info,1761572692057000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,0c024150-4ff8-4006-bd82-9641c4fb8779,info,1761572692057000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,752737ac-2b32-47c4-be2a-640c16be7add,info,1761572692057000
+"Listening on http://localhost:9999/
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,74d6218b-dc9c-49e0-ab79-eac2ad63598d,info,1761572692055000
+"Listening on http://localhost:9999/
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,e1506f44-64de-49a2-ac73-c964ca21e640,info,1761572692055000
+"Listening on http://localhost:9999/
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,b9fd3d52-1870-4b79-bbf4-1bcb1c53427a,info,1761572692055000
+booted (time: 30ms),Boot,b3a46c2d-0f86-4953-94d1-1208b76570c5,c54797a3-6ae5-4d95-8c99-1999ad9bc658,log,1761572692051000
+booted (time: 30ms),Boot,b3a46c2d-0f86-4953-94d1-1208b76570c5,8d51f8ff-69b6-4d1a-a39e-dec25a32cbf5,log,1761572692051000
+booted (time: 30ms),Boot,b3a46c2d-0f86-4953-94d1-1208b76570c5,acf333a8-e04d-4c24-ac2f-ae67d33188b9,log,1761572692051000
+"❌ Endpoint WiseApp não encontrado: /wiseapp/validate-token POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,0329e122-363e-4258-965b-ebb155de7fcd,info,1761572680405000
+"🔍 handleWiseAppRoutes called with path: /wiseapp/validate-token, method: POST
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,eae43ce4-50c2-4e6f-bc09-a10b59d4dde8,info,1761572680404000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,06d13338-03c7-4343-b965-7ab881a5b02a,info,1761572680400000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,ccfd91de-965c-4a73-b7fc-6df233cabb14,info,1761572680400000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,556277bb-d48f-4911-8e26-00781de23465,info,1761572680400000
+"[POST] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,e80b37d2-13c4-40f8-a272-4f31da3ffccd,info,1761572680400000
+"Listening on http://localhost:9999/
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,9ab4e5a3-e40a-4cdf-b7e0-21aabffeccb9,info,1761572680398000
+booted (time: 30ms),Boot,b3a46c2d-0f86-4953-94d1-1208b76570c5,f4d2e56c-9757-48ed-ab83-df5533708b82,log,1761572680395000
+"Looking for sync-all-motoristas: false
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,bb9e0b1d-97ae-44a2-aca5-9d657e1aa563,info,1761572680235000
+"Full URL: http://ohmoxsvwjvohmqqgxjhb.supabase.co/api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,759e4193-e9a2-4d95-856e-14d71e4ac944,info,1761572680235000
+"Pathname: /api/wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,54bf6fca-d36c-4ba3-a164-d4118feb815e,info,1761572680235000
+"[OPTIONS] /wiseapp/validate-token
+",Log,b3a46c2d-0f86-4953-94d1-1208b76570c5,ed21d831-b164-4445-9a98-e63929152e94,info,1761572680235000

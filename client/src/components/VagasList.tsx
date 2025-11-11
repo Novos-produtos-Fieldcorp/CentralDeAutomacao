@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus } from 'lucide-react';
+import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus, LayoutGrid, LayoutList, Briefcase } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { Vaga } from '@shared/schema';
@@ -684,6 +685,9 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                   Operação
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Tipo Contrato
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Quantidade
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -728,6 +732,12 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
                       {(vaga as any).operacao_nome || '-'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center text-sm text-gray-900 dark:text-white">
+                      <Briefcase size={16} className="mr-1 text-gray-400" />
+                      {vaga.tipo_contrato || '-'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -787,6 +797,109 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
               ))}
             </tbody>
           </table>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+          {filteredVagas.map((vaga) => (
+            <div key={vaga.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                    {vaga.nome || 'Sem nome'}
+                  </h3>
+                  {vaga.descricao && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                      {vaga.descricao}
+                    </p>
+                  )}
+                </div>
+                <div className="relative ml-2">
+                  <select
+                    value={vaga.st_vaga_id || ''}
+                    onChange={(e) => handleStatusChange(vaga.id, Number(e.target.value))}
+                    className={`appearance-none px-3 py-1 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer ${getStatusColor((vaga as any).status_nome || 'Ativa')}`}
+                    style={{ paddingRight: '24px' }}
+                  >
+                    {statusOptions.map((status) => (
+                      <option key={status.id} value={status.id} className="bg-white text-gray-900">
+                        {status.status_vaga}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown 
+                    size={12} 
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-current" 
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                  <Building size={16} className="mr-2 text-gray-400" />
+                  <span>{(vaga as any).cliente_nome || 'Sem cliente'}</span>
+                </div>
+                {(vaga as any).unidade_nome && (
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                    <MapPin size={16} className="mr-2 text-gray-400" />
+                    <span>{(vaga as any).unidade_nome}</span>
+                  </div>
+                )}
+                <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                  <Clock size={16} className="mr-2 text-gray-400" />
+                  <span>{(vaga as any).operacao_nome || '-'}</span>
+                </div>
+                {vaga.tipo_contrato && (
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                    <Briefcase size={16} className="mr-2 text-gray-400" />
+                    <span>{vaga.tipo_contrato}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center text-gray-600 dark:text-gray-300">
+                    <Users size={16} className="mr-2 text-gray-400" />
+                    <span>{vaga.quantidade || '-'} vagas</span>
+                  </div>
+                  <div className="flex items-center text-gray-600 dark:text-gray-300">
+                    <Calendar size={16} className="mr-2 text-gray-400" />
+                    <span>{formatDate(vaga.dt_limite?.toString() || null)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    setSelectedVagaForCandidates(vaga);
+                    setIsCandidatesModalOpen(true);
+                  }}
+                  className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300"
+                  title="Ver Candidatos"
+                  data-testid={`button-view-candidates-${vaga.id}`}
+                >
+                  <Users size={18} />
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedVaga(vaga);
+                    setIsModalOpen(true);
+                  }}
+                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                  title="Visualizar"
+                  data-testid={`button-view-details-${vaga.id}`}
+                >
+                  <Eye size={18} />
+                </button>
+                <button
+                  onClick={() => handleDeleteVaga(vaga.id)}
+                  className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                  title="Excluir"
+                  data-testid={`button-delete-${vaga.id}`}
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
         )}
       </div>
