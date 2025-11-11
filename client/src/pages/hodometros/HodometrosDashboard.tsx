@@ -91,6 +91,34 @@ interface DailyVehicleReadings {
   veiculo_placa: string | null;
 }
 
+interface BombaReading {
+  id: number;
+  data: string;
+  litro_lido: number;
+  preco_lido: number;
+  km_rodado: number | null;
+  veiculo_placa: string;
+  veiculo_marca: string;
+  motorista_nome: string;
+}
+
+interface VehicleFuelStats {
+  veiculo_id: number;
+  placa: string;
+  marca: string;
+  totalLitros: number;
+  totalGasto: number;
+  totalKm: number;
+  custoPorlitro: number;
+  abastecimentos: number;
+}
+
+interface KmVsPriceData {
+  placa: string;
+  km: number;
+  preco: number;
+}
+
 const HodometrosDashboard = () => {
   const { query } = useCompanyData();
   const { companyId } = useAuth();
@@ -119,6 +147,13 @@ const HodometrosDashboard = () => {
   // Bomba stats
   const [totalBomba, setTotalBomba] = useState(0);
   const [todayBombaMinuta, setTodayBombaMinuta] = useState(0);
+  
+  // Detailed Bomba stats
+  const [vehicleFuelStats, setVehicleFuelStats] = useState<VehicleFuelStats[]>([]);
+  const [kmVsPriceData, setKmVsPriceData] = useState<KmVsPriceData[]>([]);
+  const [totalLitros, setTotalLitros] = useState(0);
+  const [totalGasto, setTotalGasto] = useState(0);
+  const [avgCustoPorLitro, setAvgCustoPorLitro] = useState(0);
   
   const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('30days', true);
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
@@ -155,6 +190,7 @@ const HodometrosDashboard = () => {
       // Fetch bomba stats if user has access
       if (moduleAccess.bomba) {
         fetchBombaStats();
+        fetchBombaDetailedStats();
       }
       
       // Fetch combined today stats
@@ -689,6 +725,140 @@ const HodometrosDashboard = () => {
     }
   };
 
+  const fetchBombaDetailedStats = async () => {
+    try {
+      setConnectionError(false);
+      
+      // Helper to safely parse string numbers
+      const parseNumber = (value: string | null | undefined): number => {
+        if (!value) return 0;
+        const num = parseFloat(value);
+        return isNaN(num) ? 0 : num;
+      };
+      
+      // Fetch bomba_gasolina with joins to hodometro and veiculo
+      const { data, error } = await supabase
+        .from('bomba_gasolina')
+        .select(`
+          id,
+          data,
+          litro_lido,
+          preco_lido,
+          veiculo_id,
+          motorista_id,
+          hodometro_id,
+          veiculo:veiculo_id (
+            veiculo_id,
+            placa,
+            marca
+          ),
+          motorista:motorista_id (
+            motorista_id,
+            nome
+          ),
+          hodometro:hodometro_id (
+            id_hodometro,
+            km_rodado
+          )
+        `)
+        .eq('company_id', companyId)
+        .gte('data', dateRange.startDate)
+        .lte('data', dateRange.endDate)
+        .order('data', { ascending: false });
+      
+      if (error) throw error;
+      
+      const bombas = data || [];
+      
+      // Maps to aggregate data by vehicle
+      const vehicleStatsMap = new Map<number, VehicleFuelStats>();
+      const kmVsPriceMap = new Map<string, { km: number; preco: number }>();
+      
+      let totalLitrosSum = 0;
+      let totalGastoSum = 0;
+      let validReadingsCount = 0;
+      
+      bombas.forEach((bomba: any) => {
+        const litros = parseNumber(bomba.litro_lido);
+        const preco = parseNumber(bomba.preco_lido);
+        const kmRodado = bomba.hodometro?.km_rodado || null;
+        
+        // Skip invalid readings
+        if (litros === 0 && preco === 0) return;
+        
+        const veiculo = Array.isArray(bomba.veiculo) ? bomba.veiculo[0] : bomba.veiculo;
+        if (!veiculo || !veiculo.veiculo_id) return;
+        
+        const veiculoId = veiculo.veiculo_id;
+        const placa = veiculo.placa || 'Desconhecida';
+        const marca = veiculo.marca || 'Desconhecida';
+        
+        // Aggregate by vehicle
+        if (!vehicleStatsMap.has(veiculoId)) {
+          vehicleStatsMap.set(veiculoId, {
+            veiculo_id: veiculoId,
+            placa,
+            marca,
+            totalLitros: 0,
+            totalGasto: 0,
+            totalKm: 0,
+            custoPorlitro: 0,
+            abastecimentos: 0
+          });
+        }
+        
+        const stats = vehicleStatsMap.get(veiculoId)!;
+        stats.totalLitros += litros;
+        stats.totalGasto += preco;
+        stats.abastecimentos += 1;
+        
+        if (kmRodado !== null && kmRodado > 0) {
+          stats.totalKm += kmRodado;
+        }
+        
+        vehicleStatsMap.set(veiculoId, stats);
+        
+        // Aggregate km vs price by placa
+        if (kmRodado !== null && kmRodado > 0) {
+          const existing = kmVsPriceMap.get(placa) || { km: 0, preco: 0 };
+          existing.km += kmRodado;
+          existing.preco += preco;
+          kmVsPriceMap.set(placa, existing);
+        }
+        
+        // Sum totals
+        totalLitrosSum += litros;
+        totalGastoSum += preco;
+        if (litros > 0) validReadingsCount++;
+      });
+      
+      // Calculate cost per liter for each vehicle
+      const vehicleStats = Array.from(vehicleStatsMap.values()).map(stats => ({
+        ...stats,
+        custoPorlitro: stats.totalLitros > 0 ? stats.totalGasto / stats.totalLitros : 0
+      }));
+      
+      // Convert km vs price map to array
+      const kmVsPrice = Array.from(kmVsPriceMap.entries()).map(([placa, data]) => ({
+        placa,
+        km: data.km,
+        preco: data.preco
+      }));
+      
+      // Calculate average cost per liter
+      const avgCusto = totalLitrosSum > 0 ? totalGastoSum / totalLitrosSum : 0;
+      
+      setVehicleFuelStats(vehicleStats);
+      setKmVsPriceData(kmVsPrice);
+      setTotalLitros(totalLitrosSum);
+      setTotalGasto(totalGastoSum);
+      setAvgCustoPorLitro(avgCusto);
+      
+    } catch (error) {
+      handleSupabaseError(error, 'carregar estatísticas detalhadas de bomba');
+    }
+  };
+
   const fetchTodayBombaMinuta = async () => {
     try {
       setConnectionError(false);
@@ -1180,6 +1350,160 @@ const HodometrosDashboard = () => {
             />
           )}
         </div>
+      )}
+
+      {/* Bomba Dashboard Section - Only visible with bomba access */}
+      {moduleAccess.bomba && (
+        <>
+          {/* Bomba Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard
+              title="Total de Abastecimentos"
+              value={totalBomba}
+              icon={Fuel}
+              color="blue"
+              data-testid="stat-total-abastecimentos"
+            />
+            <StatCard
+              title="Litros Totais"
+              value={Math.round(totalLitros * 10) / 10}
+              icon={Activity}
+              color="green"
+              unit="L"
+              data-testid="stat-litros-totais"
+            />
+            <StatCard
+              title="Gasto Total (R$)"
+              value={Math.round(totalGasto * 100) / 100}
+              icon={AlertCircle}
+              color="amber"
+              data-testid="stat-gasto-total"
+            />
+            <StatCard
+              title="Custo Médio/Litro (R$)"
+              value={totalLitros > 0 ? Math.round(avgCustoPorLitro * 100) / 100 : 0}
+              icon={Gauge}
+              color="purple"
+              data-testid="stat-custo-medio-litro"
+            />
+          </div>
+
+          {/* Km vs Preço Chart */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+            <div className="mb-6 flex items-center gap-2">
+              <BarChart2 className="text-blue-500" size={20} />
+              <h3 className="text-lg font-bold text-black dark:text-white">KM Rodado x Preço Gasto por Veículo</h3>
+            </div>
+            
+            {kmVsPriceData.length > 0 ? (
+              <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+                {kmVsPriceData.map((item, index) => {
+                  const maxKm = Math.max(...kmVsPriceData.map(d => d.km), 1);
+                  const maxPrice = Math.max(...kmVsPriceData.map(d => d.preco), 1);
+                  
+                  return (
+                    <div key={index} className="space-y-2" data-testid={`chart-km-price-${index}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-black dark:text-white">
+                          {item.placa}
+                        </span>
+                        <div className="flex gap-4 text-sm">
+                          <span className="text-blue-600 dark:text-blue-400">
+                            {item.km.toFixed(0)} km
+                          </span>
+                          <span className="text-green-600 dark:text-green-400">
+                            R$ {item.preco.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <div className="h-2 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
+                              style={{ 
+                                width: `${Math.max(5, (item.km / maxKm) * 100)}%` 
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="h-2 bg-green-200 dark:bg-green-800 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all duration-300"
+                              style={{ 
+                                width: `${Math.max(5, (item.preco / maxPrice) * 100)}%` 
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700 rounded-2xl shadow">
+                <BarChart2 className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
+                <p className="text-gray-400">Nenhum dado de km disponível para o período selecionado</p>
+              </div>
+            )}
+          </div>
+
+          {/* Custo por Litro Table */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+            <div className="mb-6 flex items-center gap-2">
+              <FileBarChart className="text-purple-500" size={20} />
+              <h3 className="text-lg font-bold text-black dark:text-white">Custo por Litro por Veículo</h3>
+            </div>
+            
+            {vehicleFuelStats.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full" data-testid="table-custo-por-litro">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Placa</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Marca</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Abast.</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Litros</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Gasto (R$)</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">KM</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">R$/Litro</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vehicleFuelStats
+                      .sort((a, b) => b.custoPorlitro - a.custoPorlitro)
+                      .map((stats, index) => (
+                        <tr 
+                          key={stats.veiculo_id} 
+                          className={`border-b border-gray-100 dark:border-gray-700 ${index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-750' : ''}`}
+                          data-testid={`row-vehicle-${stats.veiculo_id}`}
+                        >
+                          <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{stats.placa}</td>
+                          <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{stats.marca}</td>
+                          <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">{stats.abastecimentos}</td>
+                          <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">{stats.totalLitros.toFixed(1)} L</td>
+                          <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">R$ {stats.totalGasto.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">
+                            {stats.totalKm > 0 ? `${stats.totalKm.toFixed(0)} km` : '-'}
+                          </td>
+                          <td className="py-3 px-4 text-sm font-semibold text-purple-600 dark:text-purple-400 text-right">
+                            R$ {stats.custoPorlitro.toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-40 bg-gray-50 dark:bg-gray-700 rounded-2xl shadow">
+                <FileBarChart className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
+                <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* Charts Grid */}
