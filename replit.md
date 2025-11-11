@@ -54,24 +54,22 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### November 11, 2025 - Fixed Custom Date Filter Across All Modules
+### November 11, 2025 - Fixed Custom Date Filter with Instant Update
 - **Issue**: Custom date range filter was not applying user-selected dates across all accounts in any module
 - **Root Cause**: 
   1. Hook `useDateRange` was using `debounceCustomUpdate: true` mode
   2. Date changes were stored in `pendingDateRange` but never applied to `dateRange` used in queries
-  3. No "Apply" button existed to commit pending changes
-  4. useEffect had `!pendingDateRange` condition blocking data fetch when changes were pending
+  3. useEffect had `!pendingDateRange` condition blocking data fetch when changes were pending
 - **Solution Implemented**:
-  1. Added "Aplicar filtro" button that calls `applyPendingDateRange()`
-  2. Button only appears when `pendingDateRange` exists (user has made changes)
-  3. Date inputs now show `pendingDateRange` values (if exist) or `dateRange` (fallback)
-  4. Animated visual indicator showing "Alterações pendentes" when changes not yet applied
-  5. Added unique data-testid attributes for testing in each module
+  1. Disabled debounce mode: `useDateRange(..., false)` in all modules
+  2. Date inputs directly update `dateRange.startDate` and `dateRange.endDate`
+  3. Data fetching triggers automatically when dates change (instant update)
+  4. Removed complex pending state and "Aplicar filtro" button system
 - **Files Modified**: 
   - Hodômetros: `HodometrosDashboard.tsx`, `HodometrosLista.tsx`, `HodometrosRelatorio.tsx`, `HodometrosMinuta.tsx`
   - Checklist: `ChecklistDashboard.tsx`, `ChecklistManutencao.tsx`, `ChecklistMensal.tsx`, `ChecklistSemanal.tsx`
-- **UX Flow**: User selects custom dates → sees "pending changes" indicator → clicks "Aplicar filtro" → data refreshes with new date range
-- **Impact**: Custom date filtering now works correctly across all modules and accounts, with consistent UX showing pending changes and explicit apply action
+- **UX Flow**: User selects custom dates → data refreshes automatically (no button needed)
+- **Impact**: Custom date filtering now works correctly across all modules with instant updates - dates change immediately when selected
 
 ### November 11, 2025 - Alternative Km Calculation Method (Inter-day vs Intra-day)
 - **Feature**: Added `calculo_um_por_dia` flag to enable alternative km calculation method
