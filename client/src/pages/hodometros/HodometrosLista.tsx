@@ -237,11 +237,8 @@ const HodometrosLista = () => {
       const recalculateKmRodado = (readings: HodometroReading[], calculoUmPorDia: boolean): HodometroReading[] => {
         if (readings.length === 0) return readings;
         
-        console.log(`📊 recalculateKmRodado - Modo: ${calculoUmPorDia ? 'INTRA-DAY' : 'INTER-DAY'}`);
-        
         // Determine if vehicle is ciclomotor (has battery) or automovel
         const isCiclomotor = readings.some(r => r.bateria !== null && r.bateria !== undefined);
-        console.log(`🔍 Tipo de veículo: ${isCiclomotor ? 'CICLOMOTOR' : 'AUTOMÓVEL'}`);
         
         // Sort readings chronologically (ascending by date, then time)
         const sortedReadings = [...readings].sort((a, b) => {
@@ -251,7 +248,63 @@ const HodometrosLista = () => {
         });
         
         if (calculoUmPorDia) {
-          // INTRA-DAY: km_rodado = last reading of day - first reading of day
+          // INTER-DAY (UM POR DIA): km_rodado do dia = hodômetro do próximo dia - hodômetro de hoje
+          // Exemplo: km do dia 11 = hodômetro do dia 12 - hodômetro do dia 11
+          const readingsByDay = new Map<string, HodometroReading[]>();
+          
+          // Group by day
+          sortedReadings.forEach(reading => {
+            const dayKey = reading.data;
+            if (!readingsByDay.has(dayKey)) {
+              readingsByDay.set(dayKey, []);
+            }
+            readingsByDay.get(dayKey)!.push(reading);
+          });
+          
+          // Get unique days sorted
+          const uniqueDays = Array.from(readingsByDay.keys()).sort();
+          
+          // Map each day to its last reading value
+          const dayLastReadings = new Map<string, number>();
+          uniqueDays.forEach(day => {
+            const dayReadings = readingsByDay.get(day)!;
+            const lastReading = dayReadings[dayReadings.length - 1];
+            const value = isCiclomotor 
+              ? (Number(lastReading.trip_lida) || 0)
+              : (Number(lastReading.hod_lido) || 0);
+            dayLastReadings.set(day, value);
+          });
+          
+          // Calculate km_rodado for each reading
+          // km_rodado do dia N = hodômetro do dia N+1 - hodômetro do dia N
+          return sortedReadings.map(reading => {
+            const currentDay = reading.data;
+            const currentDayIndex = uniqueDays.indexOf(currentDay);
+            
+            let kmRodado = 0;
+            // Se não for o último dia, calcula comparando com próximo dia
+            if (currentDayIndex < uniqueDays.length - 1) {
+              const nextDay = uniqueDays[currentDayIndex + 1];
+              const todayLastReading = dayLastReadings.get(currentDay) ?? 0;
+              const nextDayLastReading = dayLastReadings.get(nextDay) ?? 0;
+              kmRodado = nextDayLastReading - todayLastReading;
+              
+              // Clamp negative values to 0
+              if (kmRodado < 0) {
+                console.warn(`Negative km_rodado for vehicle on ${currentDay}. Resetting to 0.`);
+                kmRodado = 0;
+              }
+            }
+            // Último dia sempre tem km_rodado = 0 pois não há próximo dia
+            
+            return {
+              ...reading,
+              km_rodado: kmRodado
+            };
+          });
+          
+        } else {
+          // INTRA-DAY (MÚLTIPLAS LEITURAS): km_rodado = última leitura - primeira leitura do mesmo dia
           const readingsByDay = new Map<string, HodometroReading[]>();
           
           // Group by day
@@ -281,55 +334,9 @@ const HodometrosLista = () => {
             }
             
             // Clamp negative values to 0
-            if (kmRodado < 0) kmRodado = 0;
-            
-            return {
-              ...reading,
-              km_rodado: kmRodado
-            };
-          });
-          
-        } else {
-          // INTER-DAY: km_rodado = today's reading - last reading of previous day
-          const readingsByDay = new Map<string, HodometroReading[]>();
-          
-          // Group by day
-          sortedReadings.forEach(reading => {
-            const dayKey = reading.data;
-            if (!readingsByDay.has(dayKey)) {
-              readingsByDay.set(dayKey, []);
-            }
-            readingsByDay.get(dayKey)!.push(reading);
-          });
-          
-          // Get unique days sorted
-          const uniqueDays = Array.from(readingsByDay.keys()).sort();
-          
-          // Map each day to its last reading value
-          const dayLastReadings = new Map<string, number>();
-          uniqueDays.forEach(day => {
-            const dayReadings = readingsByDay.get(day)!;
-            const lastReading = dayReadings[dayReadings.length - 1];
-            const value = isCiclomotor 
-              ? (Number(lastReading.trip_lida) || 0)
-              : (Number(lastReading.hod_lido) || 0);
-            dayLastReadings.set(day, value);
-          });
-          
-          // Calculate km_rodado for each reading
-          return sortedReadings.map(reading => {
-            const currentDay = reading.data;
-            const currentDayIndex = uniqueDays.indexOf(currentDay);
-            
-            let kmRodado = 0;
-            if (currentDayIndex > 0) {
-              const previousDay = uniqueDays[currentDayIndex - 1];
-              const previousDayLastReading = dayLastReadings.get(previousDay) ?? 0;
-              const todayLastReading = dayLastReadings.get(currentDay) ?? 0;
-              kmRodado = todayLastReading - previousDayLastReading;
-              
-              // Clamp negative values to 0
-              if (kmRodado < 0) kmRodado = 0;
+            if (kmRodado < 0) {
+              console.warn(`Negative km_rodado for vehicle on ${reading.data}. Resetting to 0.`);
+              kmRodado = 0;
             }
             
             return {
@@ -344,15 +351,6 @@ const HodometrosLista = () => {
       const vehiclesArray: VehicleData[] = Array.from(vehicleMap.entries()).map(([veiculo_id, vehicleData]) => {
         // Step 1: Recalculate km_rodado for all readings based on calculoUmPorDia flag
         const recalculatedReadings = recalculateKmRodado(vehicleData.readings, moduleAccess.calculoUmPorDia);
-        
-        // Debug: log recalculated values
-        console.log(`🔧 Veículo ${veiculo_id} - Readings recalculados:`, recalculatedReadings.map(r => ({
-          data: r.data,
-          hora: r.hora,
-          hod_lido: r.hod_lido,
-          trip_lida: r.trip_lida,
-          km_rodado_calculado: r.km_rodado
-        })));
         
         // Step 2: Group readings by day to avoid double-counting
         // In intra-day mode, all readings of the same day have the same km_rodado
