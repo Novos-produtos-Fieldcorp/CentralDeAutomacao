@@ -264,15 +264,24 @@ const HodometrosLista = () => {
           // Get unique days sorted
           const uniqueDays = Array.from(readingsByDay.keys()).sort();
           
-          // Map each day to its last reading value
+          // Map each day to its HIGHEST reading value (not last chronological)
+          // This handles cases where there are data entry errors and readings go backwards
           const dayLastReadings = new Map<string, number>();
           uniqueDays.forEach(day => {
             const dayReadings = readingsByDay.get(day)!;
-            const lastReading = dayReadings[dayReadings.length - 1];
-            const value = isCiclomotor 
-              ? (Number(lastReading.trip_lida) || 0)
-              : (Number(lastReading.hod_lido) || 0);
-            dayLastReadings.set(day, value);
+            
+            // Get the HIGHEST reading of the day, not just the last chronological one
+            let maxValue = 0;
+            dayReadings.forEach(reading => {
+              const value = isCiclomotor 
+                ? (Number(reading.trip_lida) || 0)
+                : (Number(reading.hod_lido) || 0);
+              if (value > maxValue) {
+                maxValue = value;
+              }
+            });
+            
+            dayLastReadings.set(day, maxValue);
           });
           
           // Calculate km_rodado for each reading
