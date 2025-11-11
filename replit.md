@@ -1,7 +1,7 @@
-# replit.md
+# Fleet Management Application
 
 ## Overview
-This project is a full-stack web application for multi-company fleet management. It streamlines operations related to drivers, vehicles, clients, and workflows such as checklists and odometer readings. The system provides dynamic authentication, comprehensive job vacancy management, efficient document handling, and integrates with external services for enhanced functionality, aiming to improve efficiency and data consistency in the logistics sector.
+This full-stack web application provides a comprehensive solution for multi-company fleet management. It centralizes operations for drivers, vehicles, clients, and workflows like checklists and odometer readings. Key features include dynamic authentication, job vacancy management, efficient document handling, and integrations with external services to boost efficiency and ensure data consistency in the logistics sector. The project aims to streamline complex logistics operations and offer a robust platform for fleet managers.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -10,147 +10,36 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend
 - **Framework**: React 18 with TypeScript and Vite.
-- **Styling**: Tailwind CSS with custom dark mode and responsiveness, utilizing Radix UI and shadcn/ui components.
+- **Styling**: Tailwind CSS for responsive design, dark mode, utilizing Radix UI and shadcn/ui components.
 - **State Management**: React Context API for global states; TanStack Query for server state management and data fetching.
 - **Routing**: React Router.
 
 ### Backend
 - **Framework**: Express.js with TypeScript.
-- **Database**: PostgreSQL via Supabase, with real-time features.
+- **Database**: PostgreSQL via Supabase, including real-time features.
 - **Build**: `esbuild` for production.
 
 ### Key Architectural Decisions
-- **Authentication**: Dynamic context-based system using account IDs from URL parameters for multi-company support and data isolation.
-- **Database Layer**: Direct Supabase integration with PostgreSQL, leveraging Row Level Security (RLS) for multi-tenancy, real-time subscriptions, and type-safe operations. Migrated from Express.js API to direct database access for performance.
-- **UI/UX**: Responsive design with comprehensive component library, dark/light theme support, and consistent styling.
-- **Data Flow**: TanStack Query with direct Supabase calls for optimal caching and state management, ensuring company-filtered queries via RLS.
-- **External Integrations**: Modular design for third-party services like Supabase and WiseApp, often routed through secure proxy systems (Supabase Edge Functions).
-- **Vagas Module**: Migrated to direct Supabase access with RLS for improved performance and data isolation.
+- **Authentication**: Dynamic, context-based system using account IDs from URL parameters to support multi-company environments and data isolation.
+- **Database Layer**: Direct Supabase integration with PostgreSQL, leveraging Row Level Security (RLS) for multi-tenancy, real-time subscriptions, and type-safe operations.
+- **UI/UX**: Responsive design with a comprehensive component library, dark/light theme support, and consistent styling.
+- **Data Flow**: TanStack Query with direct Supabase calls for optimized caching and state management, ensuring company-filtered queries via RLS.
+- **External Integrations**: Modular design for third-party services, often routed through secure proxy systems (Supabase Edge Functions).
 - **WhatsApp Integration**: Seamless photo capture and display using WiseApp API, with automatic storage in Supabase and real-time avatar updates.
-- **Document Management**: Direct upload to Supabase Storage with validation and URL storage.
-- **User Experience**: Includes CPF API integration for form auto-population, simplified context menus, and WhatsApp avatar display.
-- **WiseApp Token Management**: Automatic retrieval of WiseApp tokens from the database (`wiseapp_acesso` table) based on email, eliminating manual configuration.
+- **Document Management**: Direct upload to Supabase Storage with validation.
+- **WiseApp Token Management**: Automatic retrieval of WiseApp tokens from the database based on email.
 - **Form Validation**: Enhanced CNH validation and real-time input sanitization.
-- **Pagination**: Comprehensive pagination system implemented across lists with configurable page sizes.
+- **Pagination**: Comprehensive pagination system across lists with configurable page sizes.
 - **License Plate API**: Real-time vehicle data consultation via FIPE API for automatic form filling.
-- **Performance Optimization**: Significant improvements in data loading times for large datasets through optimized database queries and pagination.
+- **Performance Optimization**: Optimized database queries and pagination for large datasets.
 - **Replit Configuration**: Configured for Replit deployment with Vite dev server accepting all hosts and Express backend bound to `0.0.0.0:5000`.
-- **Fuel Pump Integration**: Integrated `bomba_gasolina` table for odometer readings, including price, liters, and photo management with granular access control via Admin page.
-- **Minuta Management**: Full minuta management in Hodômetros module with search, filtering, and editing capabilities, including multiple `romaneio` numbers.
-- **Tag Synchronization**: Bidirectional tag synchronization between WiseApp and local database, ensuring multi-tenant data isolation and maintaining referential integrity.
-- **Vagas View Mode**: Toggle between table and card grid views, with preference persistence.
+- **Fuel Pump Integration**: Integrated `bomba_gasolina` table for odometer readings, including price, liters, and photo management with granular access control.
+- **Minuta Management**: Full minuta management in Hodômetros module with search, filtering, and editing, including multiple `romaneio` numbers.
+- **Tag Synchronization**: Bidirectional tag synchronization between WiseApp and local database, ensuring multi-tenant data isolation and referential integrity.
+- **Vagas View Mode**: Toggle between table and card grid views with preference persistence.
 - **Secure WiseApp Proxy**: All WiseApp API operations are routed through Supabase Edge Functions for secure token management and consistent API behavior.
 - **Database Architecture**: Exclusively uses Supabase; local Replit database is disabled.
-- **WiseApp Token Authentication**: Email-based authentication - user provides email once, system saves to localStorage and retrieves token from `wiseapp_acesso` table by email for all subsequent operations.
-- **WiseApp Tag Operations**: All tag operations (create, delete, sync, assign individual/bulk) now correctly use:
-  - `wiseapp-account-id` header: Always converted to String from `id_conta_wiseapp` for proper WiseApp account routing
-  - API URLs: MUST include `companyId` in path: `/api/wiseapp/${companyId}/contacts/${contactId}/labels`
-  - Account isolation: Backend uses `wiseapp-account-id` header to route requests to correct WiseApp account
-  - Bidirectional sync: Syncs FROM WiseApp TO local DB (adds what's in WiseApp but not in DB, removes what's in DB but not in WiseApp)
-  - Label structure: WiseApp API uses `name` field for tag names when reading, accepts `labels` array when writing
-  - Contact labels: Uses `/contacts/` endpoint (NOT `/conversations/`) with payload `{labels: ["tag1", "tag2"]}`
-  - Fixed in: TagAdministration, TagManager, BulkActionsModal (GET/POST), MotoristaTagsManager (GET/POST/DELETE)
-  - Backend routes: `/api/wiseapp/:companyId/contacts/:contactId/labels` (GET/POST/DELETE) fully implemented
-
-## Recent Changes
-
-### November 11, 2025 - Fixed Custom Date Filter with Instant Update
-- **Issue**: Custom date range filter was not applying user-selected dates across all accounts in any module
-- **Root Cause**: 
-  1. Hook `useDateRange` was using `debounceCustomUpdate: true` mode
-  2. Date changes were stored in `pendingDateRange` but never applied to `dateRange` used in queries
-  3. useEffect had `!pendingDateRange` condition blocking data fetch when changes were pending
-- **Solution Implemented**:
-  1. Disabled debounce mode: `useDateRange(..., false)` in all modules
-  2. Date inputs directly update `dateRange.startDate` and `dateRange.endDate`
-  3. Data fetching triggers automatically when dates change (instant update)
-  4. Removed complex pending state and "Aplicar filtro" button system
-- **Files Modified**: 
-  - Hodômetros: `HodometrosDashboard.tsx`, `HodometrosLista.tsx`, `HodometrosRelatorio.tsx`, `HodometrosMinuta.tsx`
-  - Checklist: `ChecklistDashboard.tsx`, `ChecklistManutencao.tsx`, `ChecklistMensal.tsx`, `ChecklistSemanal.tsx`
-- **UX Flow**: User selects custom dates → data refreshes automatically (no button needed)
-- **Impact**: Custom date filtering now works correctly across all modules with instant updates - dates change immediately when selected
-
-### November 11, 2025 - Alternative Km Calculation Method (Inter-day vs Intra-day)
-- **Feature**: Added `calculo_um_por_dia` flag to enable alternative km calculation method
-- **Schema Changes**:
-  - Added `calculo_um_por_dia: boolean` column to `company` table (default: false)
-  - Migration SQL created: `supabase/migrations/20251111000000_add_calculo_um_por_dia.sql`
-- **Implementation**:
-  1. **Hook Update**: `useModuleAccess` now exposes `calculoUmPorDia` flag with safe fallback to false
-  2. **Dashboard Logic**: `HodometrosDashboard.tsx` implements two calculation methods:
-     - **FALSE (default/intra-day)**: Calculates km as difference between first and last reading of the same day
-       - Example: Morning 1000km, Afternoon 1150km → km_rodado = 150km
-     - **TRUE (inter-day)**: Calculates km by comparing today's reading with yesterday's reading
-       - Example: Day 1: 1000km, Day 2: 1150km → km_rodado Day 2 = 150km
-  3. **Reactive Updates**: Dashboard refetches data when flag changes (via useEffect dependency)
-- **Files Modified**: 
-  - `shared/schema.ts` - schema definition
-  - `client/src/hooks/useModuleAccess.ts` - flag exposure
-  - `client/src/pages/hodometros/HodometrosDashboard.tsx` - calculation logic
-  - `supabase/migrations/20251111000000_add_calculo_um_por_dia.sql` - migration SQL
-- **Deployment Required**: Execute SQL migration in Supabase SQL Editor:
-  ```sql
-  ALTER TABLE company ADD COLUMN IF NOT EXISTS calculo_um_por_dia boolean DEFAULT false;
-  UPDATE company SET calculo_um_por_dia = false WHERE calculo_um_por_dia IS NULL;
-  ```
-- **Impact**: Companies can now choose between two km calculation methods based on their operational workflow
-
-### October 24, 2025 - Fixed WiseApp Token Validation (CORS Issue in Netlify)
-- **Issue**: After Netlify deployment, token validation was returning 404 error because backend API routes don't exist in static hosting
-- **Root Cause**: 
-  1. Netlify hosts only static files (SPA)
-  2. Backend Express routes `/api/*` are not deployed to Netlify
-  3. Catch-all redirect (`/*` → `/index.html`) captures all routes including API calls
-- **Solution Implemented**:
-  1. Created Supabase Edge Function: `validate-wiseapp-token`
-  2. Frontend now uses Edge Function for token validation in production
-  3. Maintains Express route for local development
-  4. Server-to-server validation avoids CORS issues
-- **Files Created/Modified**:
-  - `supabase/functions/validate-wiseapp-token/index.ts` (NEW)
-  - `client/src/components/WiseAppTokenModal.tsx` (UPDATED)
-  - `SOLUCAO_VALIDACAO_TOKEN.md` (NEW - comprehensive documentation)
-  - `DEPLOY_VALIDATE_TOKEN_FUNCTION.md` (NEW - deployment instructions)
-- **Deployment Required**: Must deploy Supabase Edge Function with `supabase functions deploy validate-wiseapp-token`
-- **Impact**: Token validation now works in both development (Replit) and production (Netlify) without CORS errors
-- **Technical Flow**: Frontend → Supabase Edge Function → Chatwoot API → Response back to frontend
-
-### October 17, 2025 - Fixed Tag Limit Update UI Refresh
-- **Issue**: After updating the maximum limit of associates for a tag, the card didn't update without page reload
-- **Root Causes**:
-  1. `EditTagModal` wasn't updating `formData` when `tag` prop changed
-  2. `updateTagMutation` was invalidating queries with wrong key (`accountId` instead of `companyId`)
-  3. `deleteTagMutation` had the same key mismatch issue
-- **Fixes Applied**:
-  1. Added `useEffect` to `EditTagModal` to sync `formData` with `tag` prop changes
-  2. Changed query invalidation from `["local-tags", accountId]` to `["local-tags", companyId]` in both update and delete mutations
-  3. Added `refetchQueries` to force immediate UI update after mutations
-- **Files Modified**: `client/src/components/TagAdministration.tsx`
-- **Impact**: Tag cards now update immediately when limit is changed, no reload needed
-
-### October 17, 2025 - Fixed Tag Assignment (Individual & Bulk)
-- **Issue**: Tag assignment to contacts was failing in both individual and bulk operations
-- **Root Causes**: 
-  1. Edge Function was incorrectly mapping `companyId` (from URL) to `id_conta_wiseapp` when searching for WiseApp tokens
-  2. Missing GET route for `/wiseapp/:companyId/contacts/:contactId/labels` preventing label retrieval
-- **Fixes Applied**:
-  1. **GET `/wiseapp/:companyId/contacts/:contactId/labels`**: Added new route to retrieve contact labels from WiseApp
-  2. **POST `/wiseapp/:companyId/contacts/:contactId/labels`**: Fixed to first query `company` table for `id_conta_wiseapp`, then use that to find WiseApp token
-  3. Both routes now properly handle company-to-account ID mapping and include comprehensive error logging
-- **Files Modified**: `supabase/functions/api/index.ts`
-- **Impact**: Individual tag assignment, bulk tag assignment, and tag synchronization now work correctly
-- **Deployment**: Requires Supabase Edge Function redeployment with `supabase functions deploy api`
-
-### October 17, 2025 - Fixed Tag Creation in Netlify Deployment  
-- **Issue**: Tag creation was failing with 422 error on Netlify deployment when using Supabase Edge Functions
-- **Root Cause**: Supabase Edge Function was not transforming request body format from `{name, color}` to WiseApp API format `{title, color, description}`
-- **Fix**: Updated `supabase/functions/api/index.ts` POST `/wiseapp/:companyId/labels` handler to:
-  - Parse request body as JSON and transform field names
-  - Handle duplicate tags (422 error) by fetching existing tag
-  - Return properly formatted responses
-- **Files Modified**: `supabase/functions/api/index.ts`
-- **Deployment**: Requires Supabase Edge Function redeployment with `supabase functions deploy api`
+- **WiseApp Tag Operations**: All tag operations (create, delete, sync, assign individual/bulk) correctly use `wiseapp-account-id` header for routing and include `companyId` in API URLs for account isolation.
 
 ## External Dependencies
 
