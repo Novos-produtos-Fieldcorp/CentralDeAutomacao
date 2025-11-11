@@ -482,11 +482,8 @@ const HodometrosDashboard = () => {
                 };
                 vehicleData.totalKm += kmRodadoNoDia;
                 
-                // Update last date if this reading is more recent
-                const currentDate = new Date(currentDay.date);
-                const existingDate = vehicleData.lastDate ? new Date(vehicleData.lastDate) : null;
-                
-                if (!existingDate || currentDate > existingDate) {
+                // Update last date if this reading is more recent (compare strings directly)
+                if (!vehicleData.lastDate || currentDay.date > vehicleData.lastDate) {
                   vehicleData.lastDate = currentDay.date;
                 }
                 
@@ -548,11 +545,8 @@ const HodometrosDashboard = () => {
             };
             vehicleData.totalKm += kmRodadoNoDia;
             
-            // Update last date if this reading is more recent
-            const currentDate = new Date(date);
-            const existingDate = vehicleData.lastDate ? new Date(vehicleData.lastDate) : null;
-            
-            if (!existingDate || currentDate > existingDate) {
+            // Update last date if this reading is more recent (compare strings directly)
+            if (!vehicleData.lastDate || date > vehicleData.lastDate) {
               vehicleData.lastDate = date;
             }
             
@@ -656,13 +650,12 @@ const HodometrosDashboard = () => {
       // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
       
-      // Check if today is within the selected date range
-      const startDate = dateRange.startDate ? new Date(dateRange.startDate) : null;
-      const endDate = dateRange.endDate ? new Date(dateRange.endDate) : null;
-      const todayDate = new Date(today);
+      // Check if today is within the selected date range (compare strings directly)
+      const startDate = dateRange.startDate;
+      const endDate = dateRange.endDate;
       
       // If today is not in the selected range, set todayReadings to 0
-      if ((startDate && todayDate < startDate) || (endDate && todayDate > endDate)) {
+      if ((startDate && today < startDate) || (endDate && today > endDate)) {
         setTodayReadings(0);
         return;
       }
@@ -765,9 +758,9 @@ const HodometrosDashboard = () => {
       const minutas = data || [];
       const totalMinutasCount = minutas.length;
       
-      // Calculate unique days
+      // Calculate unique days (extract date part without creating Date object)
       const uniqueDays = new Set(
-        minutas.map(m => new Date(m.created_at).toISOString().split('T')[0])
+        minutas.map(m => m.created_at.split('T')[0])
       ).size;
       
       // Calculate average minutas per day

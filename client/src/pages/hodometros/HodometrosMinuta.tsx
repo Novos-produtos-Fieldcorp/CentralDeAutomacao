@@ -413,9 +413,24 @@ const HodometrosMinuta: React.FC = () => {
           }
         }
         
+        // Extract date and time from created_at without creating Date object
+        let dataFormatada = '-';
+        let horaFormatada = '-';
+        if (m.created_at) {
+          const [datePart, timePart] = m.created_at.split('T');
+          if (datePart) {
+            const [year, month, day] = datePart.split('-');
+            dataFormatada = `${day}/${month}/${year}`;
+          }
+          if (timePart) {
+            const [hour, minute] = timePart.split(':');
+            horaFormatada = `${hour}:${minute}`;
+          }
+        }
+        
         return {
-          'Data': m.created_at ? new Date(m.created_at).toISOString().split('T')[0].split('-').reverse().join('/') : '-',
-          'Hora': m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
+          'Data': dataFormatada,
+          'Hora': horaFormatada,
           'Motorista': m.motorista?.nome || 'Não informado',
           'CPF': m.motorista?.cpf ? formatCPF(m.motorista.cpf) : 'Não informado',
           'Veículo': m.veiculo?.placa || 'Não informado',
@@ -781,9 +796,20 @@ const HodometrosMinuta: React.FC = () => {
                 <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Nenhuma minuta encontrada para o período selecionado</td></tr>
               ) : (
                 (paginatedData || []).map((m) => {
-                  const created = m.created_at ? new Date(m.created_at) : null;
-                  const dateStr = created ? `${String(created.getDate()).padStart(2,'0')}/${String(created.getMonth()+1).padStart(2,'0')}/${created.getFullYear()}` : '-';
-                  const timeStr = created ? `${String(created.getHours()).padStart(2,'0')}:${String(created.getMinutes()).padStart(2,'0')}` : '-';
+                  // Extract date and time from created_at without creating Date object
+                  let dateStr = '-';
+                  let timeStr = '-';
+                  if (m.created_at) {
+                    const [datePart, timePart] = m.created_at.split('T');
+                    if (datePart) {
+                      const [year, month, day] = datePart.split('-');
+                      dateStr = `${day}/${month}/${year}`;
+                    }
+                    if (timePart) {
+                      const [hour, minute] = timePart.split(':');
+                      timeStr = `${hour}:${minute}`;
+                    }
+                  }
 
                   return (
                     <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">

@@ -64,20 +64,17 @@ export const formatDate = (date: string | Date | undefined | null): string => {
   // Simply split the date string and reformat it without creating a Date object
   // This avoids any timezone adjustments
   if (typeof date === 'string') {
-    // Check if it's in ISO format (YYYY-MM-DD)
-    const parts = date.split('T')[0].split('-');
-    if (parts.length === 3) {
+    // Check if it's in ISO format (YYYY-MM-DD) or (YYYY-MM-DDTHH:MM:SS)
+    const datePart = date.split('T')[0];
+    const parts = datePart.split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
   }
   
-  // Fallback to using Date object if not a string or not in expected format
-  const dateObj = new Date(date);
-  const day = String(dateObj.getDate()).padStart(2, '0');
-  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const year = dateObj.getFullYear();
-  
-  return `${day}/${month}/${year}`;
+  // Se não for string, retornar mensagem de erro em vez de tentar converter
+  console.warn('[formatDate] Received non-string date value:', date);
+  return '-';
 };
 
 // Get current date in ISO format (YYYY-MM-DD)
