@@ -377,6 +377,8 @@ const ChecklistManutencao = () => {
               data-testid="input-custom-start-date-checklist-manutencao"
               value={dateRange.startDate}
               onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              min="2020-01-01"
+              max="2099-12-31"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
@@ -389,6 +391,8 @@ const ChecklistManutencao = () => {
               data-testid="input-custom-end-date-checklist-manutencao"
               value={dateRange.endDate}
               onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              min="2020-01-01"
+              max="2099-12-31"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
