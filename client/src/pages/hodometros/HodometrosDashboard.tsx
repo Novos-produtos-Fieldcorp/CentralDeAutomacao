@@ -1356,14 +1356,7 @@ const HodometrosDashboard = () => {
       {moduleAccess.bomba && (
         <>
           {/* Bomba Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard
-              title="Total de Abastecimentos"
-              value={totalBomba}
-              icon={Fuel}
-              color="blue"
-              data-testid="stat-total-abastecimentos"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <StatCard
               title="Litros Totais"
               value={Math.round(totalLitros * 10) / 10}
