@@ -54,6 +54,31 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### November 11, 2025 - Alternative Km Calculation Method (Inter-day vs Intra-day)
+- **Feature**: Added `calculo_um_por_dia` flag to enable alternative km calculation method
+- **Schema Changes**:
+  - Added `calculo_um_por_dia: boolean` column to `company` table (default: false)
+  - Migration SQL created: `supabase/migrations/20251111000000_add_calculo_um_por_dia.sql`
+- **Implementation**:
+  1. **Hook Update**: `useModuleAccess` now exposes `calculoUmPorDia` flag with safe fallback to false
+  2. **Dashboard Logic**: `HodometrosDashboard.tsx` implements two calculation methods:
+     - **FALSE (default/intra-day)**: Calculates km as difference between first and last reading of the same day
+       - Example: Morning 1000km, Afternoon 1150km → km_rodado = 150km
+     - **TRUE (inter-day)**: Calculates km by comparing today's reading with yesterday's reading
+       - Example: Day 1: 1000km, Day 2: 1150km → km_rodado Day 2 = 150km
+  3. **Reactive Updates**: Dashboard refetches data when flag changes (via useEffect dependency)
+- **Files Modified**: 
+  - `shared/schema.ts` - schema definition
+  - `client/src/hooks/useModuleAccess.ts` - flag exposure
+  - `client/src/pages/hodometros/HodometrosDashboard.tsx` - calculation logic
+  - `supabase/migrations/20251111000000_add_calculo_um_por_dia.sql` - migration SQL
+- **Deployment Required**: Execute SQL migration in Supabase SQL Editor:
+  ```sql
+  ALTER TABLE company ADD COLUMN IF NOT EXISTS calculo_um_por_dia boolean DEFAULT false;
+  UPDATE company SET calculo_um_por_dia = false WHERE calculo_um_por_dia IS NULL;
+  ```
+- **Impact**: Companies can now choose between two km calculation methods based on their operational workflow
+
 ### October 24, 2025 - Fixed WiseApp Token Validation (CORS Issue in Netlify)
 - **Issue**: After Netlify deployment, token validation was returning 404 error because backend API routes don't exist in static hosting
 - **Root Cause**: 
