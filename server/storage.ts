@@ -79,7 +79,6 @@ export interface IStorage {
 
   // WiseApp methods
   getWiseappToken(companyId: number): Promise<string | null>;
-  getWiseappTokenByAccount(accountId: string | number): Promise<string | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -405,27 +404,14 @@ export class DatabaseStorage implements IStorage {
   async getWiseappToken(companyId: number): Promise<string | null> {
     console.log(`Fetching WiseApp token for company ${companyId}`);
     try {
-      // Primeiro buscar a company para obter id_conta_wiseapp
-      const { data: companyData, error: companyError } = await supabase
-        .from('company')
-        .select('id_conta_wiseapp')
-        .eq('company_id', companyId)
-        .single();
-      
-      if (companyError || !companyData?.id_conta_wiseapp) {
-        console.log(`No id_conta_wiseapp found for company ${companyId}`);
-        return null;
-      }
-      
-      // Agora buscar o token usando id_conta_wiseapp
       const { data, error } = await supabase
         .from('wiseapp_acesso')
         .select('access_token_wiseapp')
-        .eq('id_conta_wiseapp', companyData.id_conta_wiseapp)
+        .eq('company_id', companyId)
         .single();
       
       if (error || !data?.access_token_wiseapp) {
-        console.log(`No WiseApp token found for id_conta_wiseapp ${companyData.id_conta_wiseapp}`);
+        console.log(`No WiseApp token found for company ${companyId}`);
         return null;
       }
       
@@ -433,29 +419,6 @@ export class DatabaseStorage implements IStorage {
       return data.access_token_wiseapp;
     } catch (error) {
       console.error(`Error fetching WiseApp token for company ${companyId}:`, error);
-      return null;
-    }
-  }
-
-  // WiseApp token method using account_id directly
-  async getWiseappTokenByAccount(accountId: string | number): Promise<string | null> {
-    console.log(`Fetching WiseApp token for account ${accountId}`);
-    try {
-      const { data, error } = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp')
-        .eq('id_conta_wiseapp', accountId)
-        .single();
-      
-      if (error || !data?.access_token_wiseapp) {
-        console.log(`No WiseApp token found for account ${accountId}`);
-        return null;
-      }
-      
-      console.log(`Found WiseApp token for account ${accountId}`);
-      return data.access_token_wiseapp;
-    } catch (error) {
-      console.error(`Error fetching WiseApp token for account ${accountId}:`, error);
       return null;
     }
   }

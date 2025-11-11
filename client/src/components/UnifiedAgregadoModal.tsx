@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, Truck, User, FileText, ExternalLink, Edit2, Users, ShieldAlert, MessageSquare, Tag } from 'lucide-react';
-import type { 
-  DocumentoMotorista, 
-  Veiculo, 
+import type {
+  DocumentoMotorista,
+  Veiculo,
   Motorista
 } from '../types/database';
 import { formatCPF, formatPhone, formatDate, formatCEP, formatCNPJ } from '../utils/format';
@@ -73,7 +73,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
 
       if (veiculoError) throw veiculoError;
       setVeiculo(veiculoData);
-      
+
       // Fetch gestão de risco
       try {
         const { data: grData, error: grError } = await supabase
@@ -87,21 +87,21 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
           .order('id', { ascending: false }) // Ordena pelo ID em ordem decrescente
           .limit(1) // Limita a 1 resultado
           .maybeSingle();
-          
+
         if (grError) {
           console.error('Erro ao buscar dados de gestão de risco:', grError);
           throw grError;
         }
-        
+
         console.log('Dados de gestão de risco encontrados:', grData);
-        
+
         // Atualiza o objeto motorista com os dados de gestão de risco
         if (grData) {
           motorista.gr_motorista_id = grData.id;
           motorista.gr_motorista_motivo = grData.motivo || null;
           motorista.empresa_motorista = grData.empresa?.nome || null;
           motorista.status_motorista = grData.status?.status || null;
-          
+
           console.log('Dados de gestão de risco atualizados no motorista:', {
             gr_motorista_id: motorista.gr_motorista_id,
             motivo: motorista.gr_motorista_motivo,
@@ -155,7 +155,14 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
         .from('documento_ajudante')
         .select(`
           *,
-          cnh_ajudante (*),
+          cnh_ajudante (
+            id_cnh_ajudante,
+            nr_registro,
+            categoria,
+            nome_pai,
+            nome_mae,
+            foto_cnh
+          ),
           rg_ajudante (*),
           end_ajudante (
             *,
@@ -325,24 +332,24 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
 
   const handleDeleteConfirm = async () => {
     if (!selectedAjudante) return;
-    
+
     try {
       // Delete the ajudante from the database
       const { error: deleteError } = await supabase
         .from('documento_ajudante')
         .delete()
         .eq('id_ajudante', selectedAjudante.id_ajudante);
-      
+
       if (deleteError) throw deleteError;
-      
+
       // Update local state to remove the deleted ajudante
-      setAjudantes(prevAjudantes => 
+      setAjudantes(prevAjudantes =>
         prevAjudantes.filter(a => a.id_ajudante !== selectedAjudante.id_ajudante)
       );
-      
+
       // Update the count
       setAjudantesCount(prevCount => Math.max(0, prevCount - 1));
-      
+
       toast.success('Ajudante excluído com sucesso!');
       setIsDeleteAjudanteModalOpen(false);
       setSelectedAjudante(null);
@@ -359,7 +366,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
     await fetchAgregadoDetails();
     onSuccess?.();
   };
-  
+
   return (
     <div className="fixed inset-0 z-50">
       {/* Overlay */}
@@ -367,7 +374,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       {/* Modal Container */}
       <div className="fixed inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
-          <div 
+          <div
             className="relative bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl shadow-xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
@@ -376,7 +383,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
               <div className="p-6">
                 <div className="flex justify-between items-start">
                   <div className="flex items-start gap-4">
-                    <WhatsAppAvatar 
+                    <WhatsAppAvatar
                       photoUrl={motorista?.foto_whatsapp}
                       name={nome}
                       size="lg"
@@ -388,7 +395,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         Agregado • {formatCPF(cpf)}
                       </p>
-                      
+
                       {/* Vehicle Info */}
                       {veiculo && (
                         <div className="mt-4 flex items-center gap-2">
@@ -403,7 +410,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       )}
                     </div>
                   </div>
-                  
+
                   <button
                     onClick={onClose}
                     className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 
@@ -414,17 +421,16 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                 </div>
               </div>
             </div>
-            
+
             {/* Tabs */}
             <div className="border-b border-gray-200 dark:border-gray-700">
               <nav className="-mb-px flex space-x-8 px-6">
                 <button
                   onClick={() => setActiveTab('details')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'details'
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'details'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-1">
                     <User className="w-4 h-4" />
@@ -433,11 +439,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                 </button>
                 <button
                   onClick={() => setActiveTab('documents')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'documents'
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'documents'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-1">
                     <FileText className="w-4 h-4" />
@@ -451,11 +456,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                 </button>
                 <button
                   onClick={() => setActiveTab('ajudantes')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'ajudantes'
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'ajudantes'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
@@ -469,11 +473,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                 </button>
                 <button
                   onClick={() => setActiveTab('gestao-risco')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'gestao-risco'
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'gestao-risco'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-1">
                     <ShieldAlert className="w-4 h-4" />
@@ -487,11 +490,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                 </button>
                 <button
                   onClick={() => setActiveTab('comentarios')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'comentarios'
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'comentarios'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-1">
                     <MessageSquare className="w-4 h-4" />
@@ -505,11 +507,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                 </button>
                 <button
                   onClick={() => setActiveTab('tags')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'tags'
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'tags'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-1">
                     <Tag className="w-4 h-4" />
@@ -683,11 +684,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               Rastreador
                             </dt>
                             <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2">
-                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                veiculo.possui_rastreador
+                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${veiculo.possui_rastreador
                                   ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
                                   : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-200'
-                              }`}>
+                                }`}>
                                 {veiculo.possui_rastreador ? 'Sim' : 'Não'}
                               </span>
                               {veiculo.possui_rastreador && veiculo.marca_rastreador && (
@@ -797,9 +797,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                       </button>
                                       {!isPdf(documento?.foto_cnh || motorista.foto_cnh || null) && (documento?.foto_cnh || motorista.foto_cnh) && (
                                         <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
-                                          <img 
-                                            src={documento?.foto_cnh || motorista.foto_cnh || ''} 
-                                            alt="CNH Preview" 
+                                          <img
+                                            src={documento?.foto_cnh || motorista.foto_cnh || ''}
+                                            alt="CNH Preview"
                                             className="w-full h-full object-cover cursor-pointer"
                                             onClick={() => setActiveDocument(documento?.foto_cnh || motorista.foto_cnh || null)}
                                           />
@@ -826,8 +826,8 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                   <div>
                                     <span className="block text-xs text-gray-500 dark:text-gray-400">Validade</span>
                                     <span className="block font-semibold text-gray-900 dark:text-white">
-                                      {documento?.validade_cnh ? formatDate(documento.validade_cnh) : 
-                                       motorista.validade_cnh ? formatDate(motorista.validade_cnh) : 'Não informado'}
+                                      {documento?.validade_cnh ? formatDate(documento.validade_cnh) :
+                                        motorista.validade_cnh ? formatDate(motorista.validade_cnh) : 'Não informado'}
                                     </span>
                                   </div>
                                   <div>
@@ -868,9 +868,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                   </button>
                                   {!isPdf(documento.foto_comprovante_residencia) && (
                                     <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
-                                      <img 
-                                        src={documento.foto_comprovante_residencia} 
-                                        alt="Comprovante Preview" 
+                                      <img
+                                        src={documento.foto_comprovante_residencia}
+                                        alt="Comprovante Preview"
                                         className="w-full h-full object-cover cursor-pointer"
                                         onClick={() => setActiveDocument(documento.foto_comprovante_residencia)}
                                       />
@@ -894,15 +894,15 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                     className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
                                   >
                                     <FileText className="w-5 h-5 mr-2" />
-                                    {veiculo.documento_veiculo?.[0]?.foto_crv 
+                                    {veiculo.documento_veiculo?.[0]?.foto_crv
                                       ? (isPdf(veiculo.documento_veiculo[0].foto_crv) ? 'Ver PDF' : 'Ver Imagem')
                                       : 'Nenhum documento disponível'}
                                   </button>
                                   {veiculo.documento_veiculo?.[0]?.foto_crv && !isPdf(veiculo.documento_veiculo[0].foto_crv) && (
                                     <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
-                                      <img 
-                                        src={veiculo.documento_veiculo[0].foto_crv} 
-                                        alt="CRV Preview" 
+                                      <img
+                                        src={veiculo.documento_veiculo[0].foto_crv}
+                                        alt="CRV Preview"
                                         className="w-full h-full object-cover cursor-pointer"
                                         onClick={() => veiculo.documento_veiculo?.[0]?.foto_crv && setActiveDocument(veiculo.documento_veiculo[0].foto_crv)}
                                       />
@@ -912,7 +912,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                               </dd>
                             </div>
                           )}
-                          
+
                           {/* Seção do Proprietário do Veículo - apenas para agregados */}
                           {motorista.funcao === 'Agregado' && proprietarioVeiculo && (
                             <>
@@ -921,7 +921,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                   Informações do Proprietário do Veículo
                                 </h4>
                               </div>
-                              
+
                               {proprietarioVeiculo.pessoaFisica && (
                                 <>
                                   <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -988,9 +988,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                           </button>
                                           {!isPdf(proprietarioVeiculo.pessoaFisica?.foto_documento) && (
                                             <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
-                                              <img 
-                                                src={proprietarioVeiculo.pessoaFisica?.foto_documento} 
-                                                alt="Documento Preview" 
+                                              <img
+                                                src={proprietarioVeiculo.pessoaFisica?.foto_documento}
+                                                alt="Documento Preview"
                                                 className="w-full h-full object-cover cursor-pointer"
                                                 onClick={() => setActiveDocument(proprietarioVeiculo.pessoaFisica?.foto_documento)}
                                               />
@@ -1016,9 +1016,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                           </button>
                                           {!isPdf(proprietarioVeiculo.pessoaFisica?.comprovante_residencia) && (
                                             <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
-                                              <img 
-                                                src={proprietarioVeiculo.pessoaFisica?.comprovante_residencia} 
-                                                alt="Comprovante Preview" 
+                                              <img
+                                                src={proprietarioVeiculo.pessoaFisica?.comprovante_residencia}
+                                                alt="Comprovante Preview"
                                                 className="w-full h-full object-cover cursor-pointer"
                                                 onClick={() => setActiveDocument(proprietarioVeiculo.pessoaFisica?.comprovante_residencia)}
                                               />
@@ -1030,7 +1030,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                   )}
                                 </>
                               )}
-                              
+
                               {proprietarioVeiculo.pessoaJuridica && (
                                 <>
                                   <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -1073,9 +1073,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                                           </button>
                                           {!isPdf(proprietarioVeiculo.pessoaJuridica?.comprovante_residencia) && (
                                             <div className="ml-4 w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
-                                              <img 
-                                                src={proprietarioVeiculo.pessoaJuridica?.comprovante_residencia} 
-                                                alt="Comprovante Preview" 
+                                              <img
+                                                src={proprietarioVeiculo.pessoaJuridica?.comprovante_residencia}
+                                                alt="Comprovante Preview"
                                                 className="w-full h-full object-cover cursor-pointer"
                                                 onClick={() => setActiveDocument(proprietarioVeiculo.pessoaJuridica?.comprovante_residencia)}
                                               />
@@ -1109,209 +1109,223 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                       Adicionar Ajudante
                     </button>
                   </div>
-                  
+
                   {ajudantes.length > 0 ? (
                     <div className="space-y-6">
-                        {ajudantes.map((ajudante) => (
-                          <div key={ajudante.id_ajudante} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                            {/* Header com nome e ações */}
-                            <div className="dark:bg-gray-750 px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-[#1f2937]">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                  <div className="flex-shrink-0 h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                    <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                                  </div>
-                                  <div className="ml-4">
-                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                                      {ajudante.nome}
-                                    </h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                      Ajudante
-                                    </p>
-                                  </div>
+                      {ajudantes.map((ajudante) => (
+                        <div key={ajudante.id_ajudante} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                          {/* Header com nome e ações */}
+                          <div className="white:bg-white dark:bg-gray-750 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                  <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                                 </div>
-                                <div className="flex space-x-2">
-                                  <button
-                                    onClick={() => handleEditAjudante(ajudante)}
-                                    className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                  >
-                                    <Edit2 className="w-4 h-4 mr-2" />
-                                    Editar
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteAjudante(ajudante)}
-                                    className="inline-flex items-center px-3 py-2 border border-red-300 dark:border-red-600 shadow-sm text-sm font-medium rounded-md text-red-700 dark:text-red-200 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                  >
-                                    <X className="w-4 h-4 mr-2" />
-                                    Excluir
-                                  </button>
+                                <div className="ml-4">
+                                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                                    {ajudante.nome}
+                                  </h3>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Ajudante
+                                  </p>
                                 </div>
                               </div>
-                            </div>
-
-                            {/* Informações detalhadas */}
-                            <div className="px-6 py-4">
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {/* Informações Pessoais */}
-                                <div>
-                                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-1">
-                                    Informações Pessoais
-                                  </h4>
-                                  <div className="space-y-2">
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">CPF</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'Não informado'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Telefone</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.telefone || 'Não informado'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Gênero</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.genero === 'M' ? 'Masculino' : ajudante.genero === 'F' ? 'Feminino' : 'Não informado'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Documentação */}
-                                <div>
-                                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-1">
-                                    Documentação
-                                  </h4>
-                                  <div className="space-y-2">
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">RG</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nr_rg || 'Não informado'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Órgão Expedidor</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.orgao_expedidor || 'Não informado'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Data de Emissão</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.data_emissao ? new Date(ajudante.data_emissao).toLocaleDateString('pt-BR') : 'Não informado'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Filiação */}
-                                <div>
-                                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-1">
-                                    Filiação
-                                  </h4>
-                                  <div className="space-y-2">
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Nome do Pai</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nome_pai || 'Não informado'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Nome da Mãe</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nome_mae || 'Não informado'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleEditAjudante(ajudante)}
+                                  className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                >
+                                  <Edit2 className="w-4 h-4 mr-2" />
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteAjudante(ajudante)}
+                                  className="inline-flex items-center px-3 py-2 border border-red-300 dark:border-red-600 shadow-sm text-sm font-medium rounded-md text-red-700 dark:text-red-200 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                >
+                                  <X className="w-4 h-4 mr-2" />
+                                  Excluir
+                                </button>
                               </div>
-
-                              {/* Endereço */}
-                              {(ajudante.logradouro_ajudante || ajudante.nr_cep_ajudante || ajudante.nome_cidade_ajudante) && (
-                                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                                    Endereço
-                                  </h4>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Logradouro</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.logradouro_ajudante || 'Não informado'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Número</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nr_end_ajudante || 'Não informado'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Complemento</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.ds_complemento_end_ajudante || 'Não informado'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">CEP</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nr_cep_ajudante || 'Não informado'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Bairro</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nome_bairro_ajudante || 'Não informado'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Cidade</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nome_cidade_ajudante || 'Não informado'}
-                                      </span>
-                                    </div>
-                                    <div>
-                                      <span className="text-xs text-gray-500 dark:text-gray-400 block">Estado</span>
-                                      <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nome_estado_ajudante || 'Não informado'}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Documentos */}
-                              {(ajudante.foto_rg || ajudante.comprovante_residencia) && (
-                                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                                    Documentos
-                                  </h4>
-                                  <div className="flex flex-wrap gap-3">
-                                    {ajudante.foto_rg && (
-                                      <button
-                                        onClick={() => setActiveDocument(ajudante.foto_rg)}
-                                        className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                      >
-                                        <FileText className="w-4 h-4 mr-2" />
-                                        Ver RG
-                                      </button>
-                                    )}
-                                    {ajudante.comprovante_residencia && (
-                                      <button
-                                        onClick={() => setActiveDocument(ajudante.comprovante_residencia)}
-                                        className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                      >
-                                        <FileText className="w-4 h-4 mr-2" />
-                                        Ver Comprovante de Residência
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
                             </div>
                           </div>
-                        ))}
+
+                          {/* Informações detalhadas */}
+                          <div className="px-6 py-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {/* Informações Pessoais */}
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-1">
+                                  Informações Pessoais
+                                </h4>
+                                <div className="space-y-2">
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">CPF</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.cpf ? formatCPF(ajudante.cpf.toString()) : 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">Telefone</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.telefone || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">Gênero</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.genero === 'M' ? 'Masculino' : ajudante.genero === 'F' ? 'Feminino' : 'Não informado'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Documentação */}
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-1">
+                                  Documentação
+                                </h4>
+                                <div className="space-y-2">
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">RG</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.rg_ajudante?.[0]?.nr_rg || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">Órgão Expedidor</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.rg_ajudante?.[0]?.orgao_expedidor || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">Data de Emissão</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.rg_ajudante?.[0]?.data_emissao ? new Date(ajudante.rg_ajudante[0].data_emissao).toLocaleDateString('pt-BR') : 'Não informado'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Filiação */}
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 border-b border-gray-200 dark:border-gray-700 pb-1">
+                                  Filiação
+                                </h4>
+                                <div className="space-y-2">
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">Nome do Pai</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.cnh_ajudante?.[0]?.nome_pai || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">Nome da Mãe</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.cnh_ajudante?.[0]?.nome_mae || 'Não informado'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Endereço */}
+                            {(ajudante.logradouro_ajudante || ajudante.nr_cep_ajudante || ajudante.nome_cidade_ajudante) && (
+                              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                                  Endereço
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">Logradouro</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.logradouro_ajudante || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">Número</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.nr_end_ajudante || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">Complemento</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.ds_complemento_end_ajudante || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">CEP</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.nr_cep_ajudante || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">Bairro</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.nome_bairro_ajudante || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">Cidade</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.nome_cidade_ajudante || 'Não informado'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block">Estado</span>
+                                    <span className="text-sm text-gray-900 dark:text-white">
+                                      {ajudante.nome_estado_ajudante || 'Não informado'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Documentos */}
+                            {(ajudante.foto_rg || ajudante.comprovante_residencia || ajudante.rg_ajudante?.[0]?.foto_rg || ajudante.cnh_ajudante?.[0]?.foto_cnh) && (
+                              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                                  Documentos
+                                </h4>
+                                <div className="flex flex-wrap gap-3">
+                                  {/* RG */}
+                                  {(ajudante.foto_rg || ajudante.rg_ajudante?.[0]?.foto_rg) && (
+                                    <button
+                                      onClick={() => setActiveDocument(ajudante.foto_rg || ajudante.rg_ajudante?.[0]?.foto_rg)}
+                                      className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                      <FileText className="w-4 h-4 mr-2" />
+                                      Ver RG
+                                    </button>
+                                  )}
+
+                                  {/* CNH */}
+                                  {ajudante.cnh_ajudante?.[0]?.foto_cnh && (
+                                    <button
+                                      onClick={() => setActiveDocument(ajudante.cnh_ajudante[0].foto_cnh)}
+                                      className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                      <FileText className="w-4 h-4 mr-2" />
+                                      Ver CNH
+                                    </button>
+                                  )}
+
+                                  {/* Comprovante de Residência */}
+                                  {ajudante.comprovante_residencia && (
+                                    <button
+                                      onClick={() => setActiveDocument(ajudante.comprovante_residencia)}
+                                      className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    >
+                                      <FileText className="w-4 h-4 mr-2" />
+                                      Ver Comprovante de Residência
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <div className="text-center py-12">
@@ -1326,7 +1340,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   )}
                 </div>
               ) : activeTab === 'gestao-risco' ? (
-                <GestaoRiscoTab 
+                <GestaoRiscoTab
                   motorista_id={motorista.motorista_id}
                   gr_motorista_id={motorista.gr_motorista_id}
                   gr_motorista_motivo={motorista.gr_motorista_motivo}
@@ -1338,7 +1352,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   }}
                 />
               ) : activeTab === 'comentarios' ? (
-                <ComentariosTab 
+                <ComentariosTab
                   motorista_id={motorista.motorista_id}
                   onUpdateSuccess={() => {
                     fetchAgregadoDetails();
@@ -1350,8 +1364,8 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">Gerenciar Marcadores</h3>
                   </div>
-                  
-                  <MotoristaTagsManager 
+
+                  <MotoristaTagsManager
                     motoristaId={motorista.motorista_id}
                     companyId={motorista.company_id || 1}
                   />
@@ -1410,11 +1424,11 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       )}
       {/* Full-screen document viewer */}
       {activeDocument && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
           onClick={() => setActiveDocument(null)}
         >
-          <div 
+          <div
             className="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
@@ -1440,9 +1454,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
             </div>
             <div className="relative h-[calc(90vh-80px)]">
               {isPdf(activeDocument) ? (
-                <iframe 
-                  src={`${activeDocument}#toolbar=1`} 
-                  className="w-full h-full" 
+                <iframe
+                  src={`${activeDocument}#toolbar=1`}
+                  className="w-full h-full"
                   title="PDF Viewer"
                 />
               ) : (

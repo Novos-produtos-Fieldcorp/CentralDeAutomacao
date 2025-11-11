@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus } from 'lucide-react';
 import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus, LayoutGrid, LayoutList, Briefcase } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
@@ -8,7 +9,6 @@ import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { queryClient } from '../lib/queryClient';
 import VagaDetailsModal from './VagaDetailsModal';
-import VagaCandidatesModal from './VagaCandidatesModal';
 import {
   fetchVagasWithRelations,
   fetchStatusVagas,
@@ -30,14 +30,6 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const { accountId } = useAuth();
   const [selectedVaga, setSelectedVaga] = useState<VagaWithRelations | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isCandidatesModalOpen, setIsCandidatesModalOpen] = useState(false);
-  const [selectedVagaForCandidates, setSelectedVagaForCandidates] = useState<VagaWithRelations | null>(null);
-  
-  // View mode state with localStorage persistence
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>(() => {
-    const saved = localStorage.getItem('vagas-view-mode');
-    return (saved === 'table' || saved === 'cards') ? saved : 'table';
-  });
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,11 +46,6 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const [showUnidadeDropdown, setShowUnidadeDropdown] = useState(false);
   const [showOperacaoDropdown, setShowOperacaoDropdown] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-
-  // Persist view mode to localStorage
-  useEffect(() => {
-    localStorage.setItem('vagas-view-mode', viewMode);
-  }, [viewMode]);
 
   // Get company data first
   const { data: companyData, isLoading: companyLoading, error: companyError } = useQuery({
@@ -360,9 +347,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
     return (
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
         <div className="text-center py-8">
-          <p className="text-red-600 dark:text-red-400">
-            Erro ao carregar vagas. Tente novamente.
-          </p>
+          <p className="text-red-600 dark:text-red-400">{error}</p>
         </div>
       </div>
     );
@@ -395,7 +380,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
               )}
             </div>
 
-            {/* Filter toggle, view mode toggle, and add button */}
+            {/* Filter toggle and add button */}
             <div className="flex gap-2">
               <button
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -414,32 +399,6 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                 )}
                 <ChevronDown className={`h-4 w-4 transition-transform ${showAdvancedFilters ? 'transform rotate-180' : ''}`} />
               </button>
-
-              {/* View Mode Toggle */}
-              <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`inline-flex items-center justify-center px-3 py-2.5 text-sm font-medium rounded-l-lg transition-colors ${
-                    viewMode === 'table'
-                      ? 'bg-gray-100 text-gray-900 dark:bg-gray-600 dark:text-white'
-                      : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                  title="Visualização em Tabela"
-                >
-                  <LayoutList size={16} />
-                </button>
-                <button
-                  onClick={() => setViewMode('cards')}
-                  className={`inline-flex items-center justify-center px-3 py-2.5 text-sm font-medium rounded-r-lg border-l border-gray-300 dark:border-gray-600 transition-colors ${
-                    viewMode === 'cards'
-                      ? 'bg-gray-100 text-gray-900 dark:bg-gray-600 dark:text-white'
-                      : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                  title="Visualização em Cards"
-                >
-                  <LayoutGrid size={16} />
-                </button>
-              </div>
               
               {onAddClick && (
                 <button
@@ -711,7 +670,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
             Crie sua primeira vaga para começar
           </p>
         </div>
-      ) : viewMode === 'table' ? (
+      ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -817,23 +776,11 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                     <div className="flex items-center justify-end space-x-2">
                       <button
                         onClick={() => {
-                          setSelectedVagaForCandidates(vaga);
-                          setIsCandidatesModalOpen(true);
-                        }}
-                        className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300"
-                        title="Ver Candidatos"
-                        data-testid={`button-view-candidates-${vaga.id}`}
-                      >
-                        <Users size={18} />
-                      </button>
-                      <button
-                        onClick={() => {
                           setSelectedVaga(vaga);
                           setIsModalOpen(true);
                         }}
                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                         title="Visualizar"
-                        data-testid={`button-view-details-${vaga.id}`}
                       >
                         <Eye size={18} />
                       </button>
@@ -841,7 +788,6 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                         onClick={() => handleDeleteVaga(vaga.id)}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                         title="Excluir"
-                        data-testid={`button-delete-${vaga.id}`}
                       >
                         <Trash2 size={18} />
                       </button>
@@ -961,40 +907,16 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
       {/* Modal de Detalhes/Edição */}
       {selectedVaga && (
         <VagaDetailsModal
-          vaga={{
-            ...selectedVaga,
-            quantidade: selectedVaga.quantidade?.toString() || null,
-            created_at: new Date(selectedVaga.created_at),
-            updated_at: selectedVaga.updated_at ? new Date(selectedVaga.updated_at) : null,
-            dt_limite: selectedVaga.dt_limite ? new Date(selectedVaga.dt_limite) : null,
-          } as Vaga}
+          vaga={selectedVaga}
           isOpen={isModalOpen}
           onClose={() => {
             setIsModalOpen(false);
             setSelectedVaga(null);
           }}
           onUpdate={() => {
-            queryClient.invalidateQueries({ queryKey: ['vagas', companyId] });
+            fetchVagas();
             onRefresh();
           }}
-        />
-      )}
-
-      {/* Modal de Candidatos */}
-      {selectedVagaForCandidates && companyId && (
-        <VagaCandidatesModal
-          isOpen={isCandidatesModalOpen}
-          onClose={() => {
-            setIsCandidatesModalOpen(false);
-            setSelectedVagaForCandidates(null);
-          }}
-          vaga={{
-            id: selectedVagaForCandidates.id,
-            nome: selectedVagaForCandidates.nome,
-            cliente_id: selectedVagaForCandidates.cliente_id,
-            cliente_nome: selectedVagaForCandidates.cliente_nome,
-          }}
-          companyId={companyId}
         />
       )}
     </div>

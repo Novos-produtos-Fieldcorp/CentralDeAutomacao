@@ -1,14 +1,14 @@
 // Serviço para chamadas diretas sem backend Express
-import { supabase } from "./supabase";
-import { API_BASE_URL, createApiUrl } from "./api-config-supabase";
-import { robustWiseAppFetch, clearCache } from "./robustFetch";
+import { supabase } from './supabase';
+import { API_BASE_URL, createApiUrl } from './api-config-supabase';
+import { robustWiseAppFetch, clearCache } from './robustFetch';
 
 // Serviço para buscar empresa por account_id
 export const getCompanyByAccountId = async (accountId: string) => {
   const { data, error } = await supabase
-    .from("company")
-    .select("*")
-    .eq("id_conta_wiseapp", accountId)
+    .from('company')
+    .select('*')
+    .eq('id_conta_wiseapp', accountId)
     .single();
 
   if (error) {
@@ -23,13 +23,13 @@ export const getCompanyByAccountId = async (accountId: string) => {
 // Serviço para criar tag
 export const createTag = async (tagData: any) => {
   const { data, error } = await supabase
-    .from("tags")
+    .from('tags')
     .insert(tagData)
     .select()
     .single();
 
   if (error) {
-    throw new Error("Failed to create tag");
+    throw new Error('Failed to create tag');
   }
 
   return data;
@@ -38,14 +38,14 @@ export const createTag = async (tagData: any) => {
 // Serviço para atualizar tag
 export const updateTag = async (tagId: number, tagData: any) => {
   const { data, error } = await supabase
-    .from("tags")
+    .from('tags')
     .update(tagData)
-    .eq("id", tagId)
+    .eq('id', tagId)
     .select()
     .single();
 
   if (error) {
-    throw new Error("Failed to update tag");
+    throw new Error('Failed to update tag');
   }
 
   return data;
@@ -53,10 +53,13 @@ export const updateTag = async (tagId: number, tagData: any) => {
 
 // Serviço para deletar tag
 export const deleteTag = async (tagId: number) => {
-  const { error } = await supabase.from("tags").delete().eq("id", tagId);
+  const { error } = await supabase
+    .from('tags')
+    .delete()
+    .eq('id', tagId);
 
   if (error) {
-    throw new Error("Failed to delete tag");
+    throw new Error('Failed to delete tag');
   }
 
   return { success: true };
@@ -65,32 +68,29 @@ export const deleteTag = async (tagId: number) => {
 // Serviço para buscar motoristas com tags
 export const getMotoristaWithTags = async (motoristaId: number) => {
   const { data, error } = await supabase
-    .from("motorista")
-    .select("*, tags_ids")
-    .eq("motorista_id", motoristaId)
+    .from('motorista')
+    .select('*, tags_ids')
+    .eq('motorista_id', motoristaId)
     .single();
 
   if (error) {
-    throw new Error("Failed to fetch motorista");
+    throw new Error('Failed to fetch motorista');
   }
 
   return data;
 };
 
 // Serviço para atualizar tags do motorista
-export const updateMotoristaTags = async (
-  motoristaId: number,
-  tagIds: number[],
-) => {
+export const updateMotoristaTags = async (motoristaId: number, tagIds: number[]) => {
   const { data, error } = await supabase
-    .from("motorista")
+    .from('motorista')
     .update({ tags_ids: tagIds })
-    .eq("motorista_id", motoristaId)
+    .eq('motorista_id', motoristaId)
     .select()
     .single();
 
   if (error) {
-    throw new Error("Failed to update motorista tags");
+    throw new Error('Failed to update motorista tags');
   }
 
   return data;
@@ -98,51 +98,49 @@ export const updateMotoristaTags = async (
 
 // Serviço para consultar CEP (chamada externa direta)
 export const consultarCepDireto = async (cep: string) => {
-  const cepLimpo = cep.replace(/\D/g, "");
-
+  const cepLimpo = cep.replace(/\D/g, '');
+  
   if (cepLimpo.length !== 8) {
-    throw new Error("CEP deve conter exatamente 8 dígitos");
+    throw new Error('CEP deve conter exatamente 8 dígitos');
   }
 
   // Usar ViaCEP diretamente
   try {
     const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
     if (!response.ok) {
-      throw new Error("Falha na consulta CEP");
+      throw new Error('Falha na consulta CEP');
     }
-
+    
     const data = await response.json();
-
+    
     if (data.erro) {
-      throw new Error("CEP não encontrado");
+      throw new Error('CEP não encontrado');
     }
-
+    
     return data;
   } catch (error) {
     // Fallback para outros serviços se ViaCEP falhar
     try {
-      const response = await fetch(
-        `https://brasilapi.com.br/api/cep/v1/${cepLimpo}`,
-      );
+      const response = await fetch(`https://brasilapi.com.br/api/cep/v1/${cepLimpo}`);
       if (!response.ok) {
-        throw new Error("Falha na consulta CEP");
+        throw new Error('Falha na consulta CEP');
       }
-
+      
       const data = await response.json();
       return {
         cep: data.cep,
         logradouro: data.street,
-        complemento: "",
+        complemento: '',
         bairro: data.neighborhood,
         localidade: data.city,
         uf: data.state,
-        ibge: "",
-        gia: "",
-        ddd: "",
-        siafi: "",
+        ibge: '',
+        gia: '',
+        ddd: '',
+        siafi: ''
       };
     } catch (fallbackError) {
-      throw new Error("CEP não encontrado em nenhum serviço disponível");
+      throw new Error('CEP não encontrado em nenhum serviço disponível');
     }
   }
 };
@@ -152,25 +150,25 @@ export const wiseAppService = {
   async syncMotorista(motoristaId: number, companyId: number) {
     // Buscar token WiseApp da empresa
     const { data: tokenData } = await supabase
-      .from("wiseapp_acesso")
-      .select("access_token_wiseapp")
-      .eq("company_id", companyId)
+      .from('wiseapp_acesso')
+      .select('access_token_wiseapp')
+      .eq('company_id', companyId)
       .single();
 
     if (!tokenData) {
-      throw new Error("Token WiseApp não configurado");
+      throw new Error('Token WiseApp não configurado');
     }
 
     // Buscar dados do motorista
     const { data: motorista } = await supabase
-      .from("motorista")
-      .select("nome, telefone, foto_whatsapp")
-      .eq("motorista_id", motoristaId)
-      .eq("company_id", companyId)
+      .from('motorista')
+      .select('nome, telefone, foto_whatsapp')
+      .eq('motorista_id', motoristaId)
+      .eq('company_id', companyId)
       .single();
 
     if (!motorista || !motorista.telefone) {
-      throw new Error("Motorista não encontrado ou sem telefone");
+      throw new Error('Motorista não encontrado ou sem telefone');
     }
 
     // Buscar contato no WiseApp
@@ -179,13 +177,13 @@ export const wiseAppService = {
 
     const searchResponse = await fetch(searchUrl, {
       headers: {
-        api_access_token: tokenData.access_token_wiseapp,
-        "Content-Type": "application/json",
-      },
+        'api_access_token': tokenData.access_token_wiseapp,
+        'Content-Type': 'application/json'
+      }
     });
 
     if (!searchResponse.ok) {
-      throw new Error("Erro ao buscar contato no WiseApp");
+      throw new Error('Erro ao buscar contato no WiseApp');
     }
 
     const searchData = await searchResponse.json();
@@ -196,214 +194,189 @@ export const wiseAppService = {
       // Se tem foto e é diferente da atual, atualizar
       if (contact.thumbnail && contact.thumbnail !== motorista.foto_whatsapp) {
         await supabase
-          .from("motorista")
+          .from('motorista')
           .update({ foto_whatsapp: contact.thumbnail })
-          .eq("motorista_id", motoristaId);
+          .eq('motorista_id', motoristaId);
 
         return {
           success: true,
-          message: "Foto sincronizada com sucesso",
-          photoUpdated: true,
+          message: 'Foto sincronizada com sucesso',
+          photoUpdated: true
         };
       }
 
       return {
         success: true,
-        message: "Contato encontrado, foto já atualizada",
-        photoUpdated: false,
+        message: 'Contato encontrado, foto já atualizada',
+        photoUpdated: false
       };
     }
 
     return {
       success: false,
-      message: "Contato não encontrado no WiseApp",
+      message: 'Contato não encontrado no WiseApp'
     };
   },
 
   async syncMotoristasBulkWithTags(companyId: number) {
     try {
       // Usar a rota backend que gerencia tudo
-      const response = await fetch(
-        createApiUrl("wiseapp/sync-motoristas-bulk"),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ company_id: companyId }),
+      const response = await fetch(createApiUrl('wiseapp/sync-motoristas-bulk'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
         },
-      );
+        body: JSON.stringify({ company_id: companyId })
+      });
 
       if (!response.ok) {
         throw new Error(`Erro na sincronização: ${response.status}`);
       }
 
       return await response.json();
+
     } catch (error) {
-      throw new Error(
-        `Erro na sincronização bidirecional: ${(error as Error).message}`,
-      );
+      throw new Error(`Erro na sincronização bidirecional: ${(error as Error).message}`);
     }
   },
 
   async validateConfig(companyId: number) {
     const { data: tokenData } = await supabase
-      .from("wiseapp_acesso")
-      .select("access_token_wiseapp")
-      .eq("company_id", companyId)
+      .from('wiseapp_acesso')
+      .select('access_token_wiseapp')
+      .eq('company_id', companyId)
       .single();
 
     if (!tokenData?.access_token_wiseapp) {
       return {
         valid: false,
-        error: "Token WiseApp não configurado para esta empresa",
+        error: 'Token WiseApp não configurado para esta empresa'
       };
     }
 
-    const testUrl = `/api/v1/accounts/${companyId}/inboxes`;
+    // Testar acesso ao WiseApp via backend proxy
+    const testUrl = `/api/api/v1/accounts/${companyId}/inboxes`;
 
     try {
       const testResponse = await fetch(testUrl, {
         headers: {
-          api_access_token: tokenData.access_token_wiseapp,
-          "Content-Type": "application/json",
-        },
+          'api_access_token': tokenData.access_token_wiseapp,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (testResponse.ok) {
         return {
           valid: true,
-          message: "Configuração WiseApp válida e funcionando",
+          message: 'Configuração WiseApp válida e funcionando'
         };
       } else {
         return {
           valid: false,
-          error: `Erro de autenticação WiseApp: ${testResponse.status}`,
+          error: `Erro de autenticação WiseApp: ${testResponse.status}`
         };
       }
     } catch (error) {
       return {
         valid: false,
-        error: `Erro ao conectar com WiseApp: ${(error as Error).message}`,
+        error: `Erro ao conectar com WiseApp: ${(error as Error).message}`
       };
     }
-  },
+  }
 };
 
 // Funções para WiseApp API via backend proxy
-const CHAT_API_URL = "/api/v1"; // Use backend proxy instead of direct API
+const CHAT_API_URL = '/api/api/v1'; // Use backend proxy instead of direct API
 
 // Buscar todas as labels da conta via backend existente com retry robusto
-export const getWiseAppLabels = async (
-  accountId: string,
-  token: string,
-  companyId?: number,
-) => {
+export const getWiseAppLabels = async (accountId: string, token: string, companyId?: number) => {
   if (!accountId || !token) {
-    throw new Error(
-      "AccountId e token são obrigatórios para buscar labels do WiseApp.",
-    );
+    throw new Error('AccountId e token são obrigatórios para buscar labels do WiseApp.');
   }
 
   // Determinar companyId dinamicamente se não fornecido
-  let finalCompanyId = accountId;
-  let CompanyId = finalCompanyId;
+  let finalCompanyId = companyId;
   if (!finalCompanyId) {
     try {
       const { data: companyData } = await supabase
-        .from("company")
-        .select("company_id")
-        .eq("id_conta_wiseapp", accountId)
+        .from('company')
+        .select('company_id')
+        .eq('id_conta_wiseapp', accountId)
         .single();
-      CompanyId = companyData?.company_id;
+      
+      finalCompanyId = companyData?.company_id || 2; // fallback para 2 se não encontrar
     } catch (error) {
-      console.warn(
-        "Não foi possível determinar companyId, usando fallback 2:",
-        error,
-      );
+      console.warn('Não foi possível determinar companyId, usando fallback 2:', error);
+      finalCompanyId = 2;
     }
   }
 
-  const primaryUrl = createApiUrl(`wiseapp/${accountId}/labels`);
-  const fallbackUrls = [].filter((url) => url !== primaryUrl);
-
+  const primaryUrl = createApiUrl(`wiseapp/${finalCompanyId}/labels`);
+  const fallbackUrls = [
+    createApiUrl(`wiseapp/2/labels`), // Fallback para companyId 2
+    createApiUrl(`wiseapp/1/labels`)  // Fallback para companyId 1
+  ].filter(url => url !== primaryUrl); // Remove duplicatas
+  
+  // Synchronizing tags with WiseApp
+  // Making request via backend
+  
   try {
-    const data = await robustWiseAppFetch(
-      primaryUrl,
-      {
-        method: "GET",
-        cacheKey: `wiseapp-labels-${accountId}-${finalCompanyId}`,
-        cacheTtl: 5 * 60 * 1000, // 5 minutos de cache
-        fallbackUrls,
-        onRetry: (attempt, error) => {
-          console.warn(
-            `🔄 [getWiseAppLabels] Tentativa ${attempt} falhou:`,
-            error.message,
-          );
-        },
-        onFallback: (url, error) => {
-          console.warn(
-            `🔀 [getWiseAppLabels] Usando URL alternativa ${url}:`,
-            error.message,
-          );
-        },
+    const data = await robustWiseAppFetch(primaryUrl, {
+      method: 'GET',
+      cacheKey: `wiseapp-labels-${accountId}-${finalCompanyId}`,
+      cacheTtl: 5 * 60 * 1000, // 5 minutos de cache
+      fallbackUrls,
+      onRetry: (attempt, error) => {
+        // WiseApp request retry attempt failed
       },
-      accountId,
-      token,
-    );
+      onFallback: (url, error) => {
+        // Using alternative URL for WiseApp request
+      }
+    }, accountId, token);
 
-    console.log("✅ [getWiseAppLabels] Resposta do WiseApp recebida:", data);
+    // Response received successfully
+    // Response data processed
     return data;
   } catch (error) {
-    console.error(
-      "Erro na requisição via backend (todas as tentativas falharam):",
-      error,
-    );
-
+    console.error('Erro na requisição via backend (todas as tentativas falharam):', error);
+    
     // Tentar retornar dados em cache como último recurso
     try {
       const { data: cachedTags } = await supabase
-        .from("tag")
-        .select("*")
-        .eq("company_id", CompanyId)
-        .order("nome");
-
+        .from('tag')
+        .select('*')
+        .eq('company_id', finalCompanyId)
+        .order('nome');
+      
       if (cachedTags && cachedTags.length > 0) {
-        console.warn("WiseApp indisponível, usando tags locais como fallback");
-        return cachedTags.map((tag) => ({
+        console.warn('WiseApp indisponível, usando tags locais como fallback');
+        return cachedTags.map(tag => ({
           id: tag.id,
-          title: tag.nome, // WiseApp usa 'title', não 'name'
+          name: tag.nome,
           color: tag.cor,
-          description: "",
+          description: ''
         }));
       }
     } catch (cacheError) {
-      console.error("Erro ao buscar tags locais como fallback:", cacheError);
+      console.error('Erro ao buscar tags locais como fallback:', cacheError);
     }
-
+    
     throw error;
   }
 };
 
 // Buscar labels de um contato específico
-export const getContactLabels = async (
-  accountId: string,
-  token: string,
-  contactId: number,
-) => {
-  const response = await fetch(
-    `${CHAT_API_URL}/api/v1/accounts/${accountId}/contacts/${contactId}/labels`,
-    {
-      headers: {
-        api_access_token: token,
-        "Content-Type": "application/json",
-      },
-    },
-  );
+export const getContactLabels = async (accountId: string, token: string, contactId: number) => {
+  const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/contacts/${contactId}/labels`, {
+    headers: {
+      'api_access_token': token,
+      'Content-Type': 'application/json'
+    }
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Erro na API WiseApp:", response.status, errorText);
+    console.error('Erro na API WiseApp:', response.status, errorText);
     throw new Error(`Erro ao buscar labels do contato: ${response.status}`);
   }
 
@@ -411,80 +384,50 @@ export const getContactLabels = async (
 };
 
 // Buscar contato por telefone via backend existente com retry robusto
-export const searchWiseAppContact = async (
-  accountId: string,
-  token: string,
-  phone: string,
-) => {
+export const searchWiseAppContact = async (accountId: string, token: string, phone: string, companyId: number = 2) => {
   if (!accountId || !token) {
-    throw new Error(
-      "AccountId e token são obrigatórios para buscar contatos do WiseApp.",
-    );
+    throw new Error('AccountId e token são obrigatórios para buscar contatos do WiseApp.');
   }
 
-  const primaryUrl = createApiUrl(
-    `wiseapp/${accountId}/contacts/search?phone=${phone}`,
-  );
+  const primaryUrl = createApiUrl(`wiseapp/${companyId}/contacts/search?phone=${phone}`);
   const fallbackUrls = [
     createApiUrl(`wiseapp/2/contacts/search?phone=${phone}`),
-    createApiUrl(`wiseapp/1/contacts/search?phone=${phone}`),
-  ].filter((url) => url !== primaryUrl);
-
-  console.log(
-    `Buscando contato por telefone ${phone} via backend para:`,
-    primaryUrl,
-  );
-
+    createApiUrl(`wiseapp/1/contacts/search?phone=${phone}`)
+  ].filter(url => url !== primaryUrl);
+  
+  console.log(`Buscando contato por telefone ${phone} via backend para:`, primaryUrl);
+  
   try {
-    return await robustWiseAppFetch(
-      primaryUrl,
-      {
-        method: "GET",
-        cacheKey: `wiseapp-contact-${accountId}-${phone}`,
-        cacheTtl: 2 * 60 * 1000,
-        fallbackUrls,
-        onRetry: (attempt, error) => {
-          console.log(
-            `[WiseApp Contact] Tentativa ${attempt} falhou para telefone ${phone}: ${error.message}`,
-          );
-        },
-        onFallback: (url, error) => {
-          console.log(
-            `[WiseApp Contact] Usando URL alternativa ${url} após erro: ${error.message}`,
-          );
-        },
+    return await robustWiseAppFetch(primaryUrl, {
+      method: 'GET',
+      cacheKey: `wiseapp-contact-${accountId}-${phone}`,
+      cacheTtl: 2 * 60 * 1000,
+      fallbackUrls,
+      onRetry: (attempt, error) => {
+        console.log(`[WiseApp Contact] Tentativa ${attempt} falhou para telefone ${phone}: ${error.message}`);
       },
-      accountId,
-      token,
-    );
+      onFallback: (url, error) => {
+        console.log(`[WiseApp Contact] Usando URL alternativa ${url} após erro: ${error.message}`);
+      }
+    }, accountId, token);
   } catch (error) {
-    console.error(
-      `Erro na requisição de contato por telefone ${phone} (todas as tentativas falharam):`,
-      error,
-    );
+    console.error(`Erro na requisição de contato por telefone ${phone} (todas as tentativas falharam):`, error);
     throw error;
   }
 };
 
 // Buscar detalhes de um contato específico
-export const getWiseAppContact = async (
-  accountId: string,
-  token: string,
-  contactId: number,
-) => {
-  const response = await fetch(
-    `${CHAT_API_URL}/api/v1/accounts/${accountId}/contacts/${contactId}`,
-    {
-      headers: {
-        api_access_token: token,
-        "Content-Type": "application/json",
-      },
-    },
-  );
+export const getWiseAppContact = async (accountId: string, token: string, contactId: number) => {
+  const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/contacts/${contactId}`, {
+    headers: {
+      'api_access_token': token,
+      'Content-Type': 'application/json'
+    }
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Erro na API WiseApp:", response.status, errorText);
+    console.error('Erro na API WiseApp:', response.status, errorText);
     throw new Error(`Erro ao buscar detalhes do contato: ${response.status}`);
   }
 
@@ -492,109 +435,72 @@ export const getWiseAppContact = async (
 };
 
 // Aplicar labels a um contato preservando existentes com retry robusto
-export const applyWiseAppContactLabels = async (
-  accountId: string,
-  token: string,
-  contactId: number,
-  labelNames: string[],
-  companyId: number = 2,
-) => {
+export const applyWiseAppContactLabels = async (accountId: string, token: string, contactId: number, labelNames: string[], companyId: number = 2) => {
   if (!accountId || !token || !contactId) {
-    throw new Error(
-      "AccountId, token e contactId são obrigatórios para aplicar labels.",
-    );
+    throw new Error('AccountId, token e contactId são obrigatórios para aplicar labels.');
   }
 
-  const url = createApiUrl(`wiseapp/${accountId}/contacts/${contactId}/labels`);
-
-  console.log(
-    `Aplicando labels [${labelNames.join(", ")}] ao contato ${contactId}`,
-  );
-
+  const url = createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`);
+  
+  console.log(`Aplicando labels [${labelNames.join(', ')}] ao contato ${contactId}`);
+  
   try {
     // 1. Buscar labels existentes primeiro (mesma lógica que funciona individual)
-    const existingLabelsData = await robustWiseAppFetch(
-      url,
-      {
-        method: "GET",
-        cacheKey: `wiseapp-contact-labels-${accountId}-${contactId}`,
-        cacheTtl: 30 * 1000, // 30 segundos de cache para labels de contatos
-        onRetry: (attempt, error) => {
-          console.log(
-            `[WiseApp Labels Get] Tentativa ${attempt} falhou para contato ${contactId}: ${error.message}`,
-          );
-        },
-      },
-      accountId,
-      token,
-    );
-
+    const existingLabelsData = await robustWiseAppFetch(url, {
+      method: 'GET',
+      cacheKey: `wiseapp-contact-labels-${accountId}-${contactId}`,
+      cacheTtl: 30 * 1000, // 30 segundos de cache para labels de contatos
+      onRetry: (attempt, error) => {
+        console.log(`[WiseApp Labels Get] Tentativa ${attempt} falhou para contato ${contactId}: ${error.message}`);
+      }
+    }, accountId, token);
+    
     const existingLabels: string[] = existingLabelsData?.payload || [];
-
+    
     // 2. Adicionar novas labels se não existirem (case insensitive)
     const mergedLabels = [...existingLabels];
     for (const newLabel of labelNames) {
       // Verificar se a label já existe (case insensitive)
-      const labelExists = mergedLabels.some(
-        (existingLabel) =>
-          existingLabel.toLowerCase() === newLabel.toLowerCase(),
+      const labelExists = mergedLabels.some(existingLabel => 
+        existingLabel.toLowerCase() === newLabel.toLowerCase()
       );
-
+      
       if (!labelExists) {
         mergedLabels.push(newLabel);
         console.log(`Adding new label "${newLabel}" to contact ${contactId}`);
       } else {
-        console.log(
-          `Label "${newLabel}" already exists for contact ${contactId}`,
-        );
+        console.log(`Label "${newLabel}" already exists for contact ${contactId}`);
       }
     }
-
+    
     // 3. Enviar lista completa (mesma lógica que funciona individual)
-    return await robustWiseAppFetch(
-      url,
-      {
-        method: "POST",
-        body: JSON.stringify({ labels: mergedLabels }),
-        onRetry: (attempt, error) => {
-          console.log(
-            `[WiseApp Labels Apply] Tentativa ${attempt} falhou para contato ${contactId}: ${error.message}`,
-          );
-        },
-      },
-      accountId,
-      token,
-    );
+    return await robustWiseAppFetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ labels: mergedLabels }),
+      onRetry: (attempt, error) => {
+        console.log(`[WiseApp Labels Apply] Tentativa ${attempt} falhou para contato ${contactId}: ${error.message}`);
+      }
+    }, accountId, token);
   } catch (error) {
-    console.error(
-      `Erro ao aplicar labels ao contato ${contactId} (todas as tentativas falharam):`,
-      error,
-    );
+    console.error(`Erro ao aplicar labels ao contato ${contactId} (todas as tentativas falharam):`, error);
     throw error;
   }
 };
 
 // Criar uma nova label na conta
-export const createWiseAppLabel = async (
-  accountId: string,
-  token: string,
-  labelData: { title: string; color?: string; description?: string },
-) => {
-  const response = await fetch(
-    `${CHAT_API_URL}/api/v1/accounts/${accountId}/labels`,
-    {
-      method: "POST",
-      headers: {
-        api_access_token: token,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(labelData),
+export const createWiseAppLabel = async (accountId: string, token: string, labelData: { title: string; color?: string; description?: string }) => {
+  const response = await fetch(`${CHAT_API_URL}/api/v1/accounts/${accountId}/labels`, {
+    method: 'POST',
+    headers: {
+      'api_access_token': token,
+      'Content-Type': 'application/json'
     },
-  );
+    body: JSON.stringify(labelData)
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Erro na API WiseApp:", response.status, errorText);
+    console.error('Erro na API WiseApp:', response.status, errorText);
     throw new Error(`Erro ao criar label no WiseApp: ${response.status}`);
   }
 
@@ -606,25 +512,25 @@ export const chatWootService = {
   async getInboxes(companyId: number, accountId: string) {
     // Buscar token WiseApp da empresa
     const { data: tokenData } = await supabase
-      .from("wiseapp_acesso")
-      .select("access_token_wiseapp")
-      .eq("company_id", companyId)
+      .from('wiseapp_acesso')
+      .select('access_token_wiseapp')
+      .eq('company_id', companyId)
       .single();
 
     if (!tokenData) {
-      throw new Error("Token WiseApp não configurado");
+      throw new Error('Token WiseApp não configurado');
     }
 
     // Verificar cache primeiro
     const cacheKey = `inboxes_${companyId}_${accountId}`;
     const cached = localStorage.getItem(cacheKey);
-
+    
     if (cached) {
       const cachedData = JSON.parse(cached);
       const expiresAt = cachedData._cache_metadata?.expires_at || 0;
-
+      
       if (Date.now() < expiresAt) {
-        console.log("Using cached ChatWoot inboxes");
+        console.log('Using cached ChatWoot inboxes');
         return cachedData;
       }
     }
@@ -633,29 +539,29 @@ export const chatWootService = {
     const targetUrl = `${CHAT_API_URL}/api/v1/accounts/${accountId}/inboxes`;
 
     const response = await fetch(targetUrl, {
-      method: "GET",
+      method: 'GET',
       headers: {
-        api_access_token: tokenData.access_token_wiseapp,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
+        'api_access_token': tokenData.access_token_wiseapp,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      }
     });
 
     if (!response.ok) {
       if (response.status === 401) {
-        throw new Error("Token de autenticação inválido ou expirado");
+        throw new Error('Token de autenticação inválido ou expirado');
       } else if (response.status === 403) {
-        throw new Error("Acesso negado. Verifique as permissões da conta");
+        throw new Error('Acesso negado. Verifique as permissões da conta');
       } else if (response.status === 404) {
-        throw new Error("Conta não encontrada no ChatWoot");
+        throw new Error('Conta não encontrada no ChatWoot');
       }
       throw new Error(`ChatWoot API error: ${response.status}`);
     }
 
     const data = await response.json();
-
+    
     // Adicionar metadados para cache
     const responseData = {
       ...data,
@@ -663,13 +569,13 @@ export const chatWootService = {
         company_id: companyId,
         account_id: accountId,
         timestamp: Date.now(),
-        expires_at: Date.now() + 60 * 60 * 1000, // 1 hora
-      },
+        expires_at: Date.now() + (60 * 60 * 1000) // 1 hora
+      }
     };
 
     // Salvar no cache
     localStorage.setItem(cacheKey, JSON.stringify(responseData));
 
     return responseData;
-  },
+  }
 };

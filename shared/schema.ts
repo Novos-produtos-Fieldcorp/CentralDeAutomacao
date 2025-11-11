@@ -659,37 +659,10 @@ export const wiseapp_acesso = pgTable("wiseapp_acesso", {
   wiseapp_acesso_id: serial("wiseapp_acesso_id").primaryKey(),
   email: text("email").notNull(),
   nome: text("nome"),
+  company_id: integer("company_id").references(() => company.company_id),
   id_conta_wiseapp: numeric("id_conta_wiseapp").notNull(),
   access_token_wiseapp: text("access_token_wiseapp"),
   created_at: timestamp("created_at").defaultNow(),
-});
-
-// Grupo Resumo table - WhatsApp Group Summary
-export const grupo_resumo = pgTable("grupo_resumo", {
-  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
-  nome_grupo: text("nome_grupo").notNull(),
-  nome_inbox: text("nome_inbox").notNull(),
-  horario: text("horario").notNull(),
-  ativo: boolean("ativo").notNull().default(true),
-  company_id: integer("company_id").notNull().references(() => company.company_id, { onDelete: 'cascade' }),
-  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-  color_name: text("color_name"),
-  icon_name: text("icon_name"),
-  atendente_id: integer("atendente_id").references(() => wiseapp_acesso.wiseapp_acesso_id),
-  inbox_id: text("inbox_id"),
-});
-
-// Envio Resumo table - Summary Sending History
-export const envio_resumo = pgTable("envio_resumo", {
-  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
-  grupo_id: bigint("grupo_id", { mode: "number" }).notNull().references(() => grupo_resumo.id),
-  data_envio: timestamp("data_envio", { withTimezone: true }).notNull(),
-  status: boolean("status").notNull(),
-  mensagem: text("mensagem").notNull(),
-  resumo_grupo: text("resumo_grupo"),
-  company_id: integer("company_id").notNull().references(() => company.company_id, { onDelete: 'cascade' }),
-  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 // Comprovante tables
@@ -839,48 +812,6 @@ export type Comprovante = typeof comprovante.$inferSelect;
 export type InsertComprovante = z.infer<typeof insertComprovanteSchema>;
 export type EndComprovanteEntrega = typeof end_comprovante_entrega.$inferSelect;
 export type InsertEndComprovanteEntrega = z.infer<typeof insertEndComprovanteEntregaSchema>;
-
-// Insert schemas for Grupo Resumo
-export const insertGrupoResumoSchema = createInsertSchema(grupo_resumo).omit({
-  id: true,
-  created_at: true,
-  updated_at: true,
-});
-
-export const insertEnvioResumoSchema = createInsertSchema(envio_resumo).omit({
-  id: true,
-  created_at: true,
-});
-
-// Types for Grupo Resumo
-export type GrupoResumo = typeof grupo_resumo.$inferSelect;
-export type InsertGrupoResumo = z.infer<typeof insertGrupoResumoSchema>;
-export type EnvioResumo = typeof envio_resumo.$inferSelect;
-export type InsertEnvioResumo = z.infer<typeof insertEnvioResumoSchema>;
-
-// Relations for Grupo Resumo
-export const grupoResumoRelations = relations(grupo_resumo, ({ one, many }) => ({
-  company: one(company, {
-    fields: [grupo_resumo.company_id],
-    references: [company.company_id],
-  }),
-  atendente: one(wiseapp_acesso, {
-    fields: [grupo_resumo.atendente_id],
-    references: [wiseapp_acesso.wiseapp_acesso_id],
-  }),
-  envios: many(envio_resumo),
-}));
-
-export const envioResumoRelations = relations(envio_resumo, ({ one }) => ({
-  grupo: one(grupo_resumo, {
-    fields: [envio_resumo.grupo_id],
-    references: [grupo_resumo.id],
-  }),
-  company: one(company, {
-    fields: [envio_resumo.company_id],
-    references: [company.company_id],
-  }),
-}));
 
 export interface MotoristaWithAddress extends Motorista {
   endereco?: {

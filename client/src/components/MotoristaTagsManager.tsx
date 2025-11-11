@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { getWiseAppLabels } from "@/lib/directApiService";
 import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
-import { supabase } from "@/lib/supabase";
+import { supabase } from '@/lib/supabase';
 
 interface Tag {
   id: number;
@@ -29,10 +29,7 @@ interface MotoristaTagsManagerProps {
   companyId: number;
 }
 
-export function MotoristaTagsManager({
-  motoristaId,
-  companyId,
-}: MotoristaTagsManagerProps) {
+export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsManagerProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -40,15 +37,13 @@ export function MotoristaTagsManager({
   const { accountId } = useAuth();
   const { token: wiseAppToken } = useWiseAppAccess();
 
-  // Query para buscar tags do motorista
-  const { data: motoristaTagsData = [], isLoading: isLoadingMotorTags } =
-    useQuery<Tag[]>({
-      queryKey: ["motorista-tags", motoristaId],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from("associacao_tags")
-          .select(
-            `
+  // Query para buscar tags do motorista  
+  const { data: motoristaTagsData = [], isLoading: isLoadingMotorTags } = useQuery<Tag[]>({
+    queryKey: ['motorista-tags', motoristaId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('associacao_tags')
+        .select(`
           tag:tag_id (
             id,
             nome,
@@ -58,25 +53,24 @@ export function MotoristaTagsManager({
             created_at,
             updated_at
           )
-        `,
-          )
-          .eq("motorista_id", motoristaId);
+        `)
+        .eq('motorista_id', motoristaId);
 
-        if (error) throw error;
-        return data?.map((item: any) => item.tag).filter(Boolean) || [];
-      },
-      enabled: !!motoristaId,
-    });
+      if (error) throw error;
+      return data?.map((item: any) => item.tag).filter(Boolean) || [];
+    },
+    enabled: !!motoristaId,
+  });
 
   // Query para buscar todas as tags da empresa do banco local
   const { data: allTags = [], isLoading: isLoadingAllTags } = useQuery<Tag[]>({
-    queryKey: ["local-tags", accountId],
+    queryKey: ['local-tags', companyId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("tag")
-        .select("*")
-        .eq("company_id", companyId)
-        .order("nome");
+        .from('tag')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('nome');
 
       if (error) throw error;
       return data || [];
@@ -85,19 +79,13 @@ export function MotoristaTagsManager({
   });
 
   // Verificar limite de associados por tag
-  const checkTagLimit = async (
-    tagId: number,
-  ): Promise<{
-    canAdd: boolean;
-    currentCount: number;
-    limit: number | null;
-  }> => {
+  const checkTagLimit = async (tagId: number): Promise<{ canAdd: boolean; currentCount: number; limit: number | null }> => {
     try {
       // Buscar informações da tag
       const { data: tagData, error: tagError } = await supabase
-        .from("tag")
-        .select("limite_max")
-        .eq("id", tagId)
+        .from('tag')
+        .select('limite_max')
+        .eq('id', tagId)
         .single();
 
       if (tagError) throw tagError;
@@ -108,9 +96,9 @@ export function MotoristaTagsManager({
 
       // Contar associados atuais
       const { count, error: countError } = await supabase
-        .from("associacao_tags")
-        .select("*", { count: "exact", head: true })
-        .eq("tag_id", tagId);
+        .from('associacao_tags')
+        .select('*', { count: 'exact', head: true })
+        .eq('tag_id', tagId);
 
       if (countError) throw countError;
 
@@ -119,7 +107,7 @@ export function MotoristaTagsManager({
 
       return { canAdd, currentCount, limit: tagData.limite_max };
     } catch (error) {
-      console.error("Erro ao verificar limite do marcador:", error);
+      console.error('Erro ao verificar limite do marcador:', error);
       return { canAdd: true, currentCount: 0, limit: null };
     }
   };
@@ -130,39 +118,39 @@ export function MotoristaTagsManager({
       try {
         // Verificar se a associação já existe
         const { data: existingAssociation } = await supabase
-          .from("associacao_tags")
-          .select("id")
-          .eq("motorista_id", motoristaId)
-          .eq("tag_id", tagId)
+          .from('associacao_tags')
+          .select('id')
+          .eq('motorista_id', motoristaId)
+          .eq('tag_id', tagId)
           .single();
 
         if (existingAssociation) {
-          throw new Error("Marcador já está associado a este motorista");
+          throw new Error('Marcador já está associado a este motorista');
         }
 
         // Buscar dados do motorista e da tag
         const { data: motorista, error: motoristaError } = await supabase
-          .from("motorista")
-          .select("nome, telefone")
-          .eq("motorista_id", motoristaId)
+          .from('motorista')
+          .select('nome, telefone')
+          .eq('motorista_id', motoristaId)
           .single();
 
         if (motoristaError) throw motoristaError;
 
         const { data: tag, error: tagError } = await supabase
-          .from("tag")
-          .select("nome")
-          .eq("id", tagId)
+          .from('tag')
+          .select('nome')
+          .eq('id', tagId)
           .single();
 
         if (tagError) throw tagError;
 
         // Criar a associação local
         const { data, error } = await supabase
-          .from("associacao_tags")
+          .from('associacao_tags')
           .insert({
             motorista_id: motoristaId,
-            tag_id: tagId,
+            tag_id: tagId
           })
           .select();
 
@@ -171,40 +159,32 @@ export function MotoristaTagsManager({
         // Sincronizar via backend seguro (usando a mesma lógica do BulkActionsModal)
         if (motorista.telefone && accountId && wiseAppToken) {
           try {
-            const wiseAppAccountId = String(accountId);
-
             // Buscar contato no WiseApp primeiro
-            const formattedPhone = motorista.telefone.replace(/\D/g, "");
-            const searchResponse = await fetch(
-              `https://chat.wiseapp360.com/api/v1/accounts/${wiseAppAccountId}/contacts/search?phone=${formattedPhone}`,
-              {
-                method: "GET",
-                headers: {
-                  api_access_token: wiseAppToken,
-                  "Content-Type": "application/json",
-                },
-              },
-            );
+            const formattedPhone = motorista.telefone.replace(/\D/g, '');
+            const searchResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?phone=${formattedPhone}`, {
+              method: 'GET',
+              headers: {
+                'api_access_token': wiseAppToken,
+                'Content-Type': 'application/json'
+              }
+            });
 
             if (searchResponse.ok) {
               const searchData = await searchResponse.json();
               const contacts = searchData.payload || [];
-
+              
               if (contacts.length > 0) {
                 const contact = contacts[0];
-
+                
                 // Buscar labels existentes primeiro
-                const existingTagsResponse = await fetch(
-                  `/api/${wiseAppAccountId}/contacts/${contact.id}/labels`,
-                  {
-                    method: "GET",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "wiseapp-token": wiseAppToken,
-                      "wiseapp-account-id": wiseAppAccountId,
-                    },
-                  },
-                );
+                const existingTagsResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                  method: 'GET',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'wiseapp-token': wiseAppToken,
+                    'wiseapp-account-id': accountId
+                  }
+                });
 
                 let existingTags: string[] = [];
                 if (existingTagsResponse.ok) {
@@ -214,47 +194,32 @@ export function MotoristaTagsManager({
 
                 // Criar array com todas as tags (existentes + nova)
                 const allTags = [...existingTags];
-                if (
-                  !allTags.some(
-                    (existingTag) =>
-                      existingTag.toLowerCase() === tag.nome.toLowerCase(),
-                  )
-                ) {
+                if (!allTags.some(existingTag => existingTag.toLowerCase() === tag.nome.toLowerCase())) {
                   allTags.push(tag.nome);
                 }
 
                 // Enviar array completo
-                const tagResponse = await fetch(
-                  `/api/${wiseAppAccountId}/contacts/${contact.id}/labels`,
-                  {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "wiseapp-token": wiseAppToken,
-                      "wiseapp-account-id": wiseAppAccountId,
-                    },
-                    body: JSON.stringify({ labels: allTags }),
+                const tagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'wiseapp-token': wiseAppToken,
+                    'wiseapp-account-id': accountId
                   },
-                );
+                  body: JSON.stringify({ labels: allTags })
+                });
 
                 if (tagResponse.ok) {
-                  console.log(
-                    `✅ Tag "${tag.nome}" sincronizada com sucesso no WiseApp`,
-                  );
+                  console.log(`✅ Tag "${tag.nome}" sincronizada com sucesso no WiseApp`);
                 } else {
                   const errorData = await tagResponse.text();
                   console.warn(`⚠️ Erro na sincronização WiseApp:`, errorData);
                 }
               } else {
-                console.log(
-                  `❌ Nenhum contato encontrado no WiseApp para ${motorista.nome} (${formattedPhone})`,
-                );
+                console.log(`❌ Nenhum contato encontrado no WiseApp para ${motorista.nome} (${formattedPhone})`);
               }
             } else {
-              console.warn(
-                `⚠️ Erro ao buscar contato no WiseApp:`,
-                searchResponse.status,
-              );
+              console.warn(`⚠️ Erro ao buscar contato no WiseApp:`, searchResponse.status);
             }
           } catch (error) {
             console.warn(`⚠️ Erro não crítico na sincronização:`, error);
@@ -267,14 +232,10 @@ export function MotoristaTagsManager({
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["motorista-tags", motoristaId],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["local-tags", accountId],
-      });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      queryClient.invalidateQueries({ queryKey: ["all-tags"] });
+      queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
+      queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       toast.success("Marcador adicionado e sincronizado com sucesso!");
     },
     onError: (error: any) => {
@@ -288,86 +249,71 @@ export function MotoristaTagsManager({
       try {
         // Buscar dados do motorista e da tag antes de remover
         const { data: motorista, error: motoristaError } = await supabase
-          .from("motorista")
-          .select("nome, telefone")
-          .eq("motorista_id", motoristaId)
+          .from('motorista')
+          .select('nome, telefone')
+          .eq('motorista_id', motoristaId)
           .single();
 
         if (motoristaError) throw motoristaError;
 
         const { data: tag, error: tagError } = await supabase
-          .from("tag")
-          .select("nome")
-          .eq("id", tagId)
+          .from('tag')
+          .select('nome')
+          .eq('id', tagId)
           .single();
 
         if (tagError) throw tagError;
 
         // Remover a associação local
         const { error } = await supabase
-          .from("associacao_tags")
+          .from('associacao_tags')
           .delete()
-          .eq("motorista_id", motoristaId)
-          .eq("tag_id", tagId);
+          .eq('motorista_id', motoristaId)
+          .eq('tag_id', tagId);
 
         if (error) throw error;
 
         // Sincronizar via backend seguro (usando a mesma lógica do BulkActionsModal)
         if (motorista.telefone && accountId && wiseAppToken) {
           try {
-            const wiseAppAccountId = String(accountId);
-
             // Buscar contato no WiseApp primeiro
-            const formattedPhone = motorista.telefone.replace(/\D/g, "");
-            const searchResponse = await fetch(
-              `https://chat.wiseapp360.com/api/v1/accounts/${wiseAppAccountId}/contacts/search?phone=${formattedPhone}`,
-              {
-                method: "GET",
-                headers: {
-                  api_access_token: wiseAppToken,
-                  "Content-Type": "application/json",
-                },
-              },
-            );
+            const formattedPhone = motorista.telefone.replace(/\D/g, '');
+            const searchResponse = await fetch(`https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?phone=${formattedPhone}`, {
+              method: 'GET',
+              headers: {
+                'api_access_token': wiseAppToken,
+                'Content-Type': 'application/json'
+              }
+            });
 
             if (searchResponse.ok) {
               const searchData = await searchResponse.json();
               const contacts = searchData.payload || [];
-
+              
               if (contacts.length > 0) {
                 const contact = contacts[0];
-
+                
                 // Remover tag do contato usando rota que preserva outras tags
-                const tagResponse = await fetch(
-                  `/api/${wiseAppAccountId}/contacts/${contact.id}/labels/${tagId}`,
-                  {
-                    method: "DELETE",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "wiseapp-token": wiseAppToken,
-                      "wiseapp-account-id": wiseAppAccountId,
-                    },
-                  },
-                );
+                const tagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels/${tagId}`, {
+                  method: 'DELETE',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'wiseapp-token': wiseAppToken,
+                    'wiseapp-account-id': accountId
+                  }
+                });
 
                 if (tagResponse.ok) {
-                  console.log(
-                    `✅ Tag "${tag.nome}" removida com sucesso no WiseApp`,
-                  );
+                  console.log(`✅ Tag "${tag.nome}" removida com sucesso no WiseApp`);
                 } else {
                   const errorData = await tagResponse.text();
                   console.warn(`⚠️ Erro na remoção WiseApp:`, errorData);
                 }
               } else {
-                console.log(
-                  `❌ Nenhum contato encontrado no WiseApp para ${motorista.nome} (${formattedPhone})`,
-                );
+                console.log(`❌ Nenhum contato encontrado no WiseApp para ${motorista.nome} (${formattedPhone})`);
               }
             } else {
-              console.warn(
-                `⚠️ Erro ao buscar contato no WiseApp:`,
-                searchResponse.status,
-              );
+              console.warn(`⚠️ Erro ao buscar contato no WiseApp:`, searchResponse.status);
             }
           } catch (error) {
             console.warn(`⚠️ Erro não crítico na sincronização:`, error);
@@ -380,12 +326,10 @@ export function MotoristaTagsManager({
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["motorista-tags", motoristaId],
-      });
-      queryClient.invalidateQueries({ queryKey: ["local-tags", companyId] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      queryClient.invalidateQueries({ queryKey: ["all-tags"] });
+      queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
+      queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       toast.success("Marcador removido e sincronizado com sucesso!");
     },
     onError: (error: any) => {
@@ -395,34 +339,26 @@ export function MotoristaTagsManager({
 
   // Mutation para atualizar tag
   const updateTagMutation = useMutation({
-    mutationFn: async ({
-      tagId,
-      updates,
-    }: {
-      tagId: number;
-      updates: Partial<Tag>;
-    }) => {
+    mutationFn: async ({ tagId, updates }: { tagId: number; updates: Partial<Tag> }) => {
       const { data, error } = await supabase
-        .from("tag")
+        .from('tag')
         .update({
           nome: updates.nome,
           cor: updates.cor,
           limite_max: updates.limite_max,
-          updated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
-        .eq("id", tagId)
+        .eq('id', tagId)
         .select();
 
       if (error) throw error;
       return data[0];
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["motorista-tags", motoristaId],
-      });
-      queryClient.invalidateQueries({ queryKey: ["local-tags", accountId] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      queryClient.invalidateQueries({ queryKey: ["all-tags"] });
+      queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
+      queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       toast.success("Marcador atualizado com sucesso!");
       setIsEditModalOpen(false);
       setEditingTag(null);
@@ -437,29 +373,27 @@ export function MotoristaTagsManager({
     mutationFn: async (tagId: number) => {
       // Primeiro remover todas as associações
       const { error: deleteAssociationsError } = await supabase
-        .from("associacao_tags")
+        .from('associacao_tags')
         .delete()
-        .eq("tag_id", tagId);
+        .eq('tag_id', tagId);
 
       if (deleteAssociationsError) throw deleteAssociationsError;
 
       // Depois deletar a tag
       const { error: deleteTagError } = await supabase
-        .from("tag")
+        .from('tag')
         .delete()
-        .eq("id", tagId);
+        .eq('id', tagId);
 
       if (deleteTagError) throw deleteTagError;
 
       return { success: true };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["motorista-tags", motoristaId],
-      });
-      queryClient.invalidateQueries({ queryKey: ["local-tags", accountId] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      queryClient.invalidateQueries({ queryKey: ["all-tags"] });
+      queryClient.invalidateQueries({ queryKey: ['motorista-tags', motoristaId] });
+      queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      queryClient.invalidateQueries({ queryKey: ['all-tags'] });
       toast.success("Marcador deletado com sucesso!");
     },
     onError: (error: any) => {
@@ -468,8 +402,8 @@ export function MotoristaTagsManager({
   });
 
   const motoristaTags = motoristaTagsData || [];
-  const availableTags = allTags.filter(
-    (tag: any) => !motoristaTags.find((motTag: any) => motTag.id === tag.id),
+  const availableTags = allTags.filter((tag: any) => 
+    !motoristaTags.find((motTag: any) => motTag.id === tag.id)
   );
 
   const handleAddTag = (tagId: number) => {
@@ -489,11 +423,7 @@ export function MotoristaTagsManager({
   };
 
   const handleDeleteTag = (tagId: number) => {
-    if (
-      window.confirm(
-        "Tem certeza que deseja deletar esta tag? Esta ação não pode ser desfeita.",
-      )
-    ) {
+    if (window.confirm('Tem certeza que deseja deletar esta tag? Esta ação não pode ser desfeita.')) {
       deleteTagMutation.mutate(tagId);
     }
   };
@@ -505,11 +435,7 @@ export function MotoristaTagsManager({
   };
 
   if (isLoadingMotorTags) {
-    return (
-      <div className="text-center text-gray-600 dark:text-gray-400">
-        Carregando tags...
-      </div>
-    );
+    return <div className="text-center text-gray-600 dark:text-gray-400">Carregando tags...</div>;
   }
 
   return (
@@ -531,10 +457,7 @@ export function MotoristaTagsManager({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {motoristaTags.map((tag: any) => (
-          <div
-            key={tag.id}
-            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:shadow-md transition-shadow"
-          >
+          <div key={tag.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div
@@ -580,15 +503,11 @@ export function MotoristaTagsManager({
       </div>
 
       {motoristaTags.length === 0 && (
-        <p className="text-gray-500 dark:text-gray-400 text-sm">
-          Nenhum marcador atribuído ainda.
-        </p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">Nenhum marcador atribuído ainda.</p>
       )}
 
       {availableTags.length === 0 && motoristaTags.length > 0 && (
-        <p className="text-gray-500 dark:text-gray-400 text-sm">
-          Todos os marcadores disponíveis já foram atribuídos.
-        </p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">Todos os marcadores disponíveis já foram atribuídos.</p>
       )}
 
       {/* Modal para adicionar marcadores */}
@@ -596,9 +515,7 @@ export function MotoristaTagsManager({
         <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 w-80 max-w-sm mx-4 border dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Adicionar Marcador
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Adicionar Marcador</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
@@ -609,9 +526,7 @@ export function MotoristaTagsManager({
 
             <div className="max-h-64 overflow-y-auto space-y-1">
               {isLoadingAllTags ? (
-                <div className="text-center py-4 text-gray-600 dark:text-gray-400 text-sm">
-                  Carregando marcadores...
-                </div>
+                <div className="text-center py-4 text-gray-600 dark:text-gray-400 text-sm">Carregando marcadores...</div>
               ) : availableTags.length === 0 ? (
                 <div className="text-center py-3 text-gray-500 dark:text-gray-400 text-sm">
                   Nenhum marcador disponível.
@@ -664,9 +579,7 @@ export function MotoristaTagsManager({
         <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4 border dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Editar Marcador
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Editar Marcador</h2>
               <button
                 onClick={() => {
                   setIsEditModalOpen(false);
@@ -706,7 +619,7 @@ function EditTagForm({ tag, onSave, onCancel, isLoading }: EditTagFormProps) {
   const [formData, setFormData] = useState({
     nome: tag.nome,
     cor: tag.cor,
-    limite_max: tag.limite_max || "",
+    limite_max: tag.limite_max || ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -714,9 +627,7 @@ function EditTagForm({ tag, onSave, onCancel, isLoading }: EditTagFormProps) {
     onSave({
       nome: formData.nome,
       cor: formData.cor,
-      limite_max: formData.limite_max
-        ? parseInt(formData.limite_max.toString())
-        : null,
+      limite_max: formData.limite_max ? parseInt(formData.limite_max.toString()) : null
     });
   };
 
@@ -729,9 +640,7 @@ function EditTagForm({ tag, onSave, onCancel, isLoading }: EditTagFormProps) {
         <input
           type="text"
           value={formData.nome}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, nome: e.target.value }))
-          }
+          onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           required
         />
@@ -745,17 +654,13 @@ function EditTagForm({ tag, onSave, onCancel, isLoading }: EditTagFormProps) {
           <input
             type="color"
             value={formData.cor}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, cor: e.target.value }))
-            }
+            onChange={(e) => setFormData(prev => ({ ...prev, cor: e.target.value }))}
             className="w-12 h-8 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
           />
           <input
             type="text"
             value={formData.cor}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, cor: e.target.value }))
-            }
+            onChange={(e) => setFormData(prev => ({ ...prev, cor: e.target.value }))}
             className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             placeholder="#000000"
           />
@@ -766,16 +671,14 @@ function EditTagForm({ tag, onSave, onCancel, isLoading }: EditTagFormProps) {
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Limite Máximo de Associados (opcional)
         </label>
-        <input
-          type="number"
-          min="1"
-          value={formData.limite_max}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, limite_max: e.target.value }))
-          }
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          placeholder="Deixe vazio para sem limite"
-        />
+                  <input
+            type="number"
+            min="1"
+            value={formData.limite_max}
+            onChange={(e) => setFormData(prev => ({ ...prev, limite_max: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            placeholder="Deixe vazio para sem limite"
+          />
       </div>
 
       <div className="flex justify-end gap-2 pt-4">
@@ -791,7 +694,7 @@ function EditTagForm({ tag, onSave, onCancel, isLoading }: EditTagFormProps) {
           disabled={isLoading}
           className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors"
         >
-          {isLoading ? "Salvando..." : "Salvar"}
+          {isLoading ? 'Salvando...' : 'Salvar'}
         </button>
       </div>
     </form>

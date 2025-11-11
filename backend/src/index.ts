@@ -7,11 +7,11 @@ import { registerRoutes } from "./routes.js";
 import { corsMiddleware } from "./middleware/cors.js";
 
 // Declaração para process global do Node.js
-// ⚠️ Sistema usa APENAS Supabase - DATABASE_URL removido
 declare const process: {
   env: {
     NODE_ENV?: string;
     PORT?: string;
+    DATABASE_URL?: string;
     VITE_SUPABASE_URL?: string;
     VITE_SUPABASE_ANON_KEY?: string;
     VITE_CHAT_API_URL?: string;

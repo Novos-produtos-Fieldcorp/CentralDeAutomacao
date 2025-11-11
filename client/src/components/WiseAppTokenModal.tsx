@@ -6,7 +6,7 @@ import { createApiUrl } from '@/lib/api-config-supabase';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onTokenSaved: (token: string, attendantId?: number, attendantName?: string) => void;
+  onTokenSaved: (token: string) => void;
   companyId: number | null;
 }
 
@@ -41,8 +41,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
 
       if (existing) {
         if (existing.access_token_wiseapp) {
-          // Salvar email no localStorage para uso posterior
-          localStorage.setItem('wiseapp_user_email', email);
+          // Remove localStorage dependency for Netlify compatibility
           onTokenSaved(existing.access_token_wiseapp);
           onClose();
         } else {
@@ -148,8 +147,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
         if (updateError) throw updateError;
       }
 
-      // Salvar email no localStorage para uso posterior
-      localStorage.setItem('wiseapp_user_email', email);
+      // Remove localStorage dependency for Netlify compatibility
       onTokenSaved(token);
       onClose();
     } catch (err: any) {
