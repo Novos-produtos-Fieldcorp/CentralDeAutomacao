@@ -84,6 +84,13 @@ const HodometrosLista = () => {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
+  // Validate date is within acceptable range
+  const validateDate = (dateString: string): boolean => {
+    if (!dateString) return true; // Allow empty
+    const year = parseInt(dateString.split('-')[0]);
+    return year >= 2020 && year <= 2099;
+  };
+
   const fetchVehicleData = useCallback(async () => {
     try {
       setLoading(true);
@@ -713,7 +720,14 @@ const HodometrosLista = () => {
               type="date"
               data-testid="input-custom-start-date-lista"
               value={dateRange.startDate}
-              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                if (validateDate(newDate)) {
+                  setDateRange({ ...dateRange, startDate: newDate });
+                } else {
+                  toast.error('Por favor selecione uma data entre 2020 e 2099');
+                }
+              }}
               min="2020-01-01"
               max="2099-12-31"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -727,7 +741,14 @@ const HodometrosLista = () => {
               type="date"
               data-testid="input-custom-end-date-lista"
               value={dateRange.endDate}
-              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                if (validateDate(newDate)) {
+                  setDateRange({ ...dateRange, endDate: newDate });
+                } else {
+                  toast.error('Por favor selecione uma data entre 2020 e 2099');
+                }
+              }}
               min="2020-01-01"
               max="2099-12-31"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
