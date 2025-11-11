@@ -40,7 +40,7 @@ Preferred communication style: Simple, everyday language.
 - **Secure WiseApp Proxy**: All WiseApp API operations are routed through Supabase Edge Functions for secure token management and consistent API behavior.
 - **Database Architecture**: Exclusively uses Supabase; local Replit database is disabled.
 - **WiseApp Tag Operations**: All tag operations (create, delete, sync, assign individual/bulk) correctly use `wiseapp-account-id` header for routing and include `companyId` in API URLs for account isolation.
-- **Hodômetro km_rodado Calculation**: Frontend dynamically calculates km_rodado values instead of using database column. Two calculation modes: INTER-DAY (when `calculoUmPorDia=true`, compares current day with next day) and INTRA-DAY (when `calculoUmPorDia=false`, compares first/last reading of same day). Handles both automobiles (hod_lido) and ciclomotors (trip_lida) with automatic type detection.
+- **Hodômetro km_rodado Calculation**: Frontend dynamically calculates km_rodado values instead of using database column. Two calculation modes: INTER-DAY (when `calculoUmPorDia=true`, compares current day with next day only if consecutive) and INTRA-DAY (when `calculoUmPorDia=false`, compares first/last reading of same day). Only calculates km_rodado for consecutive days (day 5→6, skips day 5→7). Handles both automobiles (hod_lido) and ciclomotors (trip_lida) with automatic type detection.
 
 ## External Dependencies
 

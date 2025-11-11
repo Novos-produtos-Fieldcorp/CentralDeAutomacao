@@ -285,15 +285,25 @@ const HodometrosLista = () => {
             // Se não for o último dia, calcula comparando com próximo dia
             if (currentDayIndex < uniqueDays.length - 1) {
               const nextDay = uniqueDays[currentDayIndex + 1];
-              const todayLastReading = dayLastReadings.get(currentDay) ?? 0;
-              const nextDayLastReading = dayLastReadings.get(nextDay) ?? 0;
-              kmRodado = nextDayLastReading - todayLastReading;
               
-              // Clamp negative values to 0
-              if (kmRodado < 0) {
-                console.warn(`Negative km_rodado for vehicle on ${currentDay}. Resetting to 0.`);
-                kmRodado = 0;
+              // Verifica se os dias são consecutivos (diferença de exatamente 1 dia)
+              const currentDate = new Date(currentDay + 'T00:00:00');
+              const nextDate = new Date(nextDay + 'T00:00:00');
+              const daysDiff = Math.round((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+              
+              // Só calcula km_rodado se os dias forem consecutivos (dia 5 → dia 6, não dia 5 → dia 7)
+              if (daysDiff === 1) {
+                const todayLastReading = dayLastReadings.get(currentDay) ?? 0;
+                const nextDayLastReading = dayLastReadings.get(nextDay) ?? 0;
+                kmRodado = nextDayLastReading - todayLastReading;
+                
+                // Clamp negative values to 0
+                if (kmRodado < 0) {
+                  console.warn(`Negative km_rodado for vehicle on ${currentDay}. Resetting to 0.`);
+                  kmRodado = 0;
+                }
               }
+              // Se os dias não são consecutivos, km_rodado fica 0 (não calcula)
             }
             // Último dia sempre tem km_rodado = 0 pois não há próximo dia
             
