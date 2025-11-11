@@ -82,7 +82,16 @@ const HodometrosLista = () => {
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [selectedPhotoData, setSelectedPhotoData] = useState<{
+    url: string;
+    type: 'hodometro' | 'bomba';
+  } | null>(null);
+
+  // Photo title mapping
+  const PHOTO_TITLES = {
+    hodometro: 'Foto do Hodômetro',
+    bomba: 'Foto da Bomba'
+  };
 
   // Validate date is within acceptable range
   const validateDate = (dateString: string): boolean => {
@@ -449,10 +458,10 @@ const HodometrosLista = () => {
     return num.toLocaleString('pt-BR');
   };
 
-  const handleShowPhoto = (photo: string | null, e: React.MouseEvent) => {
+  const handleShowPhoto = (photo: string | null, type: 'hodometro' | 'bomba', e: React.MouseEvent) => {
     e.stopPropagation();
     if (photo) {
-      setSelectedPhoto(photo);
+      setSelectedPhotoData({ url: photo, type });
       setShowPhotoModal(true);
     } else {
       toast.error('Nenhuma foto disponível');
@@ -959,7 +968,7 @@ const HodometrosLista = () => {
                                       <div className="flex items-center justify-center gap-2">
                                         {reading.foto_hodometro ? (
                                           <button
-                                            onClick={(e) => handleShowPhoto(reading.foto_hodometro, e)}
+                                            onClick={(e) => handleShowPhoto(reading.foto_hodometro, 'hodometro', e)}
                                             className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                                             title="Ver foto do hodômetro"
                                           >
@@ -973,7 +982,7 @@ const HodometrosLista = () => {
                                         {moduleAccess.bomba && (
                                           reading.bomba_gasolina?.foto_bomba ? (
                                             <button
-                                              onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e)}
+                                              onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, 'bomba', e)}
                                               className="inline-flex items-center justify-center p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
                                               title="Ver foto da bomba de gasolina"
                                             >
@@ -1042,7 +1051,7 @@ const HodometrosLista = () => {
       )}
 
       {/* Photo Modal */}
-      {showPhotoModal && selectedPhoto && (
+      {showPhotoModal && selectedPhotoData && (
         <div 
           className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4"
           onClick={() => setShowPhotoModal(false)}
@@ -1053,7 +1062,7 @@ const HodometrosLista = () => {
           >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Foto do Hodômetro
+                {selectedPhotoData ? PHOTO_TITLES[selectedPhotoData.type] : 'Foto'}
               </h3>
               <button
                 onClick={() => setShowPhotoModal(false)}
@@ -1064,15 +1073,15 @@ const HodometrosLista = () => {
             </div>
             <div className="relative aspect-video">
               <img
-                src={selectedPhoto}
-                alt="Foto do Hodômetro"
+                src={selectedPhotoData?.url || ''}
+                alt={selectedPhotoData ? PHOTO_TITLES[selectedPhotoData.type] : 'Foto'}
                 className="absolute inset-0 w-full h-full object-contain"
               />
             </div>
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
               <a
-                href={selectedPhoto}
-                download="hodometro.jpg"
+                href={selectedPhotoData?.url || ''}
+                download={selectedPhotoData?.type === 'bomba' ? 'bomba.jpg' : 'hodometro.jpg'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
