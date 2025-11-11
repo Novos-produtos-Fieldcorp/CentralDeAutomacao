@@ -1486,7 +1486,7 @@ const HodometrosDashboard = () => {
               data-testid="stat-litros-totais"
             />
             <StatCard
-              title="Gasto Total (R$)"
+              title="Gastos totais com abastecimento"
               value={Math.round(totalGasto * 100) / 100}
               icon={AlertCircle}
               color="amber"
