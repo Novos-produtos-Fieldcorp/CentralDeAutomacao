@@ -1478,7 +1478,7 @@ const HodometrosDashboard = () => {
           {/* Bomba Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <StatCard
-              title="Litros Totais"
+              title="Litros totais abastecidos"
               value={Math.round(totalLitros * 10) / 10}
               icon={Activity}
               color="green"
