@@ -68,7 +68,9 @@ const Hodometros = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Hodômetro e Abastecimento</h1>
+      <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+        {moduleAccess.bomba ? 'Hodômetro e Abastecimento' : 'Hodômetro'}
+      </h1>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
         <div className="border-b border-gray-200 dark:border-gray-700 relative">
