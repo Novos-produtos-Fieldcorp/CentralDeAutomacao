@@ -706,29 +706,62 @@ const HodometrosLista = () => {
 
       {/* Custom Date Range */}
       {periodType === 'custom' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Data inicial
-            </label>
-            <input
-              type="date"
-              value={dateRange.startDate}
-              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
+        <div className="mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data inicial
+              </label>
+              <input
+                type="date"
+                data-testid="input-custom-start-date-lista"
+                value={pendingDateRange?.startDate || dateRange.startDate}
+                onChange={(e) => setDateRange({ 
+                  startDate: e.target.value, 
+                  endDate: pendingDateRange?.endDate || dateRange.endDate 
+                })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data final
+              </label>
+              <input
+                type="date"
+                data-testid="input-custom-end-date-lista"
+                value={pendingDateRange?.endDate || dateRange.endDate}
+                onChange={(e) => setDateRange({ 
+                  startDate: pendingDateRange?.startDate || dateRange.startDate, 
+                  endDate: e.target.value 
+                })}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Data final
-            </label>
-            <input
-              type="date"
-              value={dateRange.endDate}
-              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
-          </div>
+          
+          {/* Apply Filter Button - Only show when there are pending changes */}
+          {pendingDateRange && (
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                type="button"
+                data-testid="button-apply-custom-filter-lista"
+                onClick={() => {
+                  applyPendingDateRange();
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Aplicar filtro
+              </button>
+              <span className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                <span className="flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                </span>
+                Alterações pendentes - clique em "Aplicar filtro" para atualizar
+              </span>
+            </div>
+          )}
         </div>
       )}
 
