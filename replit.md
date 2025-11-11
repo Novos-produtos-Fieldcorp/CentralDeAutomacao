@@ -54,8 +54,8 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### November 11, 2025 - Fixed Custom Date Filter in Hodômetro Module
-- **Issue**: Custom date range filter was not applying user-selected dates across all accounts
+### November 11, 2025 - Fixed Custom Date Filter Across All Modules
+- **Issue**: Custom date range filter was not applying user-selected dates across all accounts in any module
 - **Root Cause**: 
   1. Hook `useDateRange` was using `debounceCustomUpdate: true` mode
   2. Date changes were stored in `pendingDateRange` but never applied to `dateRange` used in queries
@@ -66,10 +66,12 @@ Preferred communication style: Simple, everyday language.
   2. Button only appears when `pendingDateRange` exists (user has made changes)
   3. Date inputs now show `pendingDateRange` values (if exist) or `dateRange` (fallback)
   4. Animated visual indicator showing "Alterações pendentes" when changes not yet applied
-  5. Added data-testid attributes for testing (`input-custom-start-date`, `input-custom-end-date`, `button-apply-custom-filter`)
-- **Files Modified**: `client/src/pages/hodometros/HodometrosDashboard.tsx`
+  5. Added unique data-testid attributes for testing in each module
+- **Files Modified**: 
+  - Hodômetros: `HodometrosDashboard.tsx`, `HodometrosLista.tsx`, `HodometrosRelatorio.tsx`, `HodometrosMinuta.tsx`
+  - Checklist: `ChecklistDashboard.tsx`, `ChecklistManutencao.tsx`, `ChecklistMensal.tsx`, `ChecklistSemanal.tsx`
 - **UX Flow**: User selects custom dates → sees "pending changes" indicator → clicks "Aplicar filtro" → data refreshes with new date range
-- **Impact**: Custom date filtering now works correctly across all accounts, with clear UX indicating when changes need to be applied
+- **Impact**: Custom date filtering now works correctly across all modules and accounts, with consistent UX showing pending changes and explicit apply action
 
 ### November 11, 2025 - Alternative Km Calculation Method (Inter-day vs Intra-day)
 - **Feature**: Added `calculo_um_por_dia` flag to enable alternative km calculation method
