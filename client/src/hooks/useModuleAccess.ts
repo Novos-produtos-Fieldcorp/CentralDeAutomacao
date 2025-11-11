@@ -14,6 +14,7 @@ interface ModuleAccess {
   tags: boolean;
   comprovantes: boolean;
   bomba: boolean;
+  calculoUmPorDia: boolean;
 }
 
 export const useModuleAccess = () => {
@@ -30,6 +31,7 @@ export const useModuleAccess = () => {
     tags: true,
     comprovantes: true,
     bomba: false,
+    calculoUmPorDia: false,
   });
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export const useModuleAccess = () => {
         const { data: company, error: companyError } = await supabase
           .from("company")
           .select(
-            "checklist_access, motorista_access, hodometro_acsess, minuta_access, resumo_access, tags_access, comprovante_access, bomba_gasolina_access",
+            "checklist_access, motorista_access, hodometro_acsess, minuta_access, resumo_access, tags_access, comprovante_access, bomba_gasolina_access, calculo_um_por_dia",
           )
           .eq("company_id", companyId)
           .maybeSingle();
@@ -66,6 +68,7 @@ export const useModuleAccess = () => {
             tags: true,
             comprovantes: true,
             bomba: false,
+            calculoUmPorDia: false,
           });
           return;
         }
@@ -82,6 +85,7 @@ export const useModuleAccess = () => {
             tags: company.tags_access || false,
             comprovantes: company.comprovante_access || false,
             bomba: company.bomba_gasolina_access || false,
+            calculoUmPorDia: company.calculo_um_por_dia || false,
           });
         } else {
           // Default to all modules enabled if company data doesn't exist
@@ -96,6 +100,7 @@ export const useModuleAccess = () => {
             tags: true,
             comprovantes: true,
             bomba: false,
+            calculoUmPorDia: false,
           });
         }
       } catch (error) {
@@ -117,6 +122,7 @@ export const useModuleAccess = () => {
           tags: true,
           comprovantes: true,
           bomba: false,
+          calculoUmPorDia: false,
         });
       } finally {
         setLoading(false);

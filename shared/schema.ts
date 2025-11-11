@@ -19,6 +19,7 @@ export const company = pgTable("company", {
   resumo_access: boolean("resumo_access").default(false),
   tags_access: boolean("tags_access").default(true),
   bomba_gasolina_access: boolean("bomba_gasolina_access").default(false),
+  calculo_um_por_dia: boolean("calculo_um_por_dia").default(false),
 
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),

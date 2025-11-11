@@ -196,7 +196,7 @@ const HodometrosDashboard = () => {
       // Fetch combined today stats
       fetchTodayBombaMinuta();
     }
-  }, [dateRange, pendingDateRange, moduleAccess.hodometros, moduleAccess.minuta, moduleAccess.bomba]);
+  }, [dateRange, pendingDateRange, moduleAccess.hodometros, moduleAccess.minuta, moduleAccess.bomba, moduleAccess.calculoUmPorDia]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -399,29 +399,127 @@ const HodometrosDashboard = () => {
       let totalKilometers = 0;
       
       // Process daily vehicle data to calculate mileage
-      for (const [key, data] of Array.from(dailyVehicleDataMap.entries())) {
-        const [date, vehicleId] = key.split('_');
-        let kmRodadoNoDia = 0;
+      // When calculoUmPorDia is true: compare today's reading with yesterday's reading
+      // When calculoUmPorDia is false: use difference between first and last reading of the same day
+      
+      if (moduleAccess.calculoUmPorDia) {
+        // NEW METHOD: One reading per day - compare with previous day
+        // Group readings by vehicle and sort by date
+        const vehicleReadingsMap = new Map<number, Array<{ date: string; reading: number; vehicleType: string; data: DailyVehicleReadings }>>();
         
-        if (data.vehicleType === 'automovel' && data.firstReadingKm !== null && data.lastReadingKm !== null) {
-          kmRodadoNoDia = data.lastReadingKm - data.firstReadingKm;
-          // Handle cases where final reading is less than initial (odometer reset or error)
-          if (kmRodadoNoDia < 0) {
-            console.warn(`Negative km_rodado for automovel on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
-            kmRodadoNoDia = 0;
+        for (const [key, data] of Array.from(dailyVehicleDataMap.entries())) {
+          const [date, vehicleId] = key.split('_');
+          const numericVehicleId = parseInt(vehicleId);
+          
+          if (!vehicleReadingsMap.has(numericVehicleId)) {
+            vehicleReadingsMap.set(numericVehicleId, []);
           }
-        } else if (data.vehicleType === 'ciclomotor' && data.firstReadingTrip !== null && data.lastReadingTrip !== null) {
-          // For ciclomotors, calculate km_rodado as the difference between last and first trip readings
-          kmRodadoNoDia = data.lastReadingTrip - data.firstReadingTrip;
-          if (kmRodadoNoDia < 0) {
-            console.warn(`Negative km_rodado for ciclomotor on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
-            kmRodadoNoDia = 0;
+          
+          // Get the reading for this day
+          let reading: number | null = null;
+          if (data.vehicleType === 'automovel' && data.lastReadingKm !== null) {
+            reading = data.lastReadingKm;
+          } else if (data.vehicleType === 'ciclomotor' && data.lastReadingTrip !== null) {
+            reading = data.lastReadingTrip;
+          }
+          
+          if (reading !== null) {
+            vehicleReadingsMap.get(numericVehicleId)!.push({
+              date,
+              reading,
+              vehicleType: data.vehicleType,
+              data
+            });
           }
         }
         
-        if (kmRodadoNoDia > 0) {
-          // Update total kilometers
-          totalKilometers += kmRodadoNoDia;
+        // Process each vehicle's readings chronologically
+        for (const [vehicleId, readings] of vehicleReadingsMap.entries()) {
+          // Sort by date
+          readings.sort((a, b) => a.date.localeCompare(b.date));
+          
+          // Calculate km for each day by comparing with previous day
+          for (let i = 1; i < readings.length; i++) {
+            const currentDay = readings[i];
+            const previousDay = readings[i - 1];
+            
+            const kmRodadoNoDia = currentDay.reading - previousDay.reading;
+            
+            // Handle negative values (odometer reset or error)
+            if (kmRodadoNoDia < 0) {
+              console.warn(`Negative km_rodado for vehicle ${vehicleId} on ${currentDay.date}. Resetting to 0.`);
+              continue; // Skip this day
+            }
+            
+            if (kmRodadoNoDia > 0) {
+              // Update total kilometers
+              totalKilometers += kmRodadoNoDia;
+              
+              // Update daily mileage map
+              const dailyData = dailyMileageMap.get(currentDay.date) || { 
+                totalKm: 0, 
+                formattedDate: formatDateBR(currentDay.date) 
+              };
+              dailyData.totalKm += kmRodadoNoDia;
+              dailyMileageMap.set(currentDay.date, dailyData);
+              
+              // Update driver mileage map
+              if (currentDay.data.motorista_id && currentDay.data.motorista_nome) {
+                const driverData = driverMileageMap.get(currentDay.data.motorista_id) || {
+                  nome: currentDay.data.motorista_nome,
+                  totalKm: 0
+                };
+                driverData.totalKm += kmRodadoNoDia;
+                driverMileageMap.set(currentDay.data.motorista_id, driverData);
+              }
+              
+              // Update vehicle mileage map
+              if (currentDay.data.veiculo_id && currentDay.data.veiculo_placa) {
+                const vehicleData = vehicleMileageMap.get(currentDay.data.veiculo_id) || {
+                  placa: currentDay.data.veiculo_placa,
+                  totalKm: 0,
+                  lastDate: currentDay.date
+                };
+                vehicleData.totalKm += kmRodadoNoDia;
+                
+                // Update last date if this reading is more recent
+                const currentDate = new Date(currentDay.date);
+                const existingDate = vehicleData.lastDate ? new Date(vehicleData.lastDate) : null;
+                
+                if (!existingDate || currentDate > existingDate) {
+                  vehicleData.lastDate = currentDay.date;
+                }
+                
+                vehicleMileageMap.set(currentDay.data.veiculo_id, vehicleData);
+              }
+            }
+          }
+        }
+      } else {
+        // ORIGINAL METHOD: Multiple readings per day - calculate difference within the same day
+        for (const [key, data] of Array.from(dailyVehicleDataMap.entries())) {
+          const [date, vehicleId] = key.split('_');
+          let kmRodadoNoDia = 0;
+          
+          if (data.vehicleType === 'automovel' && data.firstReadingKm !== null && data.lastReadingKm !== null) {
+            kmRodadoNoDia = data.lastReadingKm - data.firstReadingKm;
+            // Handle cases where final reading is less than initial (odometer reset or error)
+            if (kmRodadoNoDia < 0) {
+              console.warn(`Negative km_rodado for automovel on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
+              kmRodadoNoDia = 0;
+            }
+          } else if (data.vehicleType === 'ciclomotor' && data.firstReadingTrip !== null && data.lastReadingTrip !== null) {
+            // For ciclomotors, calculate km_rodado as the difference between last and first trip readings
+            kmRodadoNoDia = data.lastReadingTrip - data.firstReadingTrip;
+            if (kmRodadoNoDia < 0) {
+              console.warn(`Negative km_rodado for ciclomotor on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
+              kmRodadoNoDia = 0;
+            }
+          }
+          
+          if (kmRodadoNoDia > 0) {
+            // Update total kilometers
+            totalKilometers += kmRodadoNoDia;
           
           // Update daily mileage map
           const dailyData = dailyMileageMap.get(date) || { 
@@ -459,6 +557,7 @@ const HodometrosDashboard = () => {
             }
             
             vehicleMileageMap.set(data.veiculo_id, vehicleData);
+          }
           }
         }
       }
