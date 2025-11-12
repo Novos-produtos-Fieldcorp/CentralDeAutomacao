@@ -247,7 +247,15 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
 const HodometrosMinuta: React.FC = () => {
   const { companyId } = useAuth();
   // moduleAccess removed — create modal removed
-  const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange } = useDateRange('30days', true);
+  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days', false);
+  
+  // Validate date is within acceptable range
+  const validateDate = (dateString: string): boolean => {
+    if (!dateString) return true; // Allow empty
+    const year = parseInt(dateString.split('-')[0]);
+    return year >= 2020 && year <= 2099;
+  };
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [minutas, setMinutas] = useState<Minuta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -349,8 +357,8 @@ const HodometrosMinuta: React.FC = () => {
   }, [dateRange, companyId]);
 
   useEffect(() => {
-    if (!pendingDateRange) fetchMinutas();
-  }, [fetchMinutas, pendingDateRange]);
+    fetchMinutas();
+  }, [fetchMinutas]);
 
   // create options removed (create modal removed)
 
@@ -413,9 +421,24 @@ const HodometrosMinuta: React.FC = () => {
           }
         }
         
+        // Extract date and time from created_at without creating Date object
+        let dataFormatada = '-';
+        let horaFormatada = '-';
+        if (m.created_at) {
+          const [datePart, timePart] = m.created_at.split('T');
+          if (datePart) {
+            const [year, month, day] = datePart.split('-');
+            dataFormatada = `${day}/${month}/${year}`;
+          }
+          if (timePart) {
+            const [hour, minute] = timePart.split(':');
+            horaFormatada = `${hour}:${minute}`;
+          }
+        }
+        
         return {
-          'Data': m.created_at ? new Date(m.created_at).toISOString().split('T')[0].split('-').reverse().join('/') : '-',
-          'Hora': m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-',
+          'Data': dataFormatada,
+          'Hora': horaFormatada,
           'Motorista': m.motorista?.nome || 'Não informado',
           'CPF': m.motorista?.cpf ? formatCPF(m.motorista.cpf) : 'Não informado',
           'Veículo': m.veiculo?.placa || 'Não informado',
@@ -736,8 +759,18 @@ const HodometrosMinuta: React.FC = () => {
             </label>
             <input
               type="date"
+              data-testid="input-custom-start-date-hodometros-minuta"
               value={dateRange.startDate}
-              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                if (validateDate(newDate)) {
+                  setDateRange({ ...dateRange, startDate: e.target.value });
+                } else {
+                  toast.error('Por favor selecione uma data entre 2020 e 2099');
+                }
+              }}
+              min="2020-01-01"
+              max="2099-12-31"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
@@ -747,8 +780,18 @@ const HodometrosMinuta: React.FC = () => {
             </label>
             <input
               type="date"
+              data-testid="input-custom-end-date-hodometros-minuta"
               value={dateRange.endDate}
-              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                if (validateDate(newDate)) {
+                  setDateRange({ ...dateRange, endDate: e.target.value });
+                } else {
+                  toast.error('Por favor selecione uma data entre 2020 e 2099');
+                }
+              }}
+              min="2020-01-01"
+              max="2099-12-31"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
@@ -779,9 +822,20 @@ const HodometrosMinuta: React.FC = () => {
                 <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Nenhuma minuta encontrada para o período selecionado</td></tr>
               ) : (
                 (paginatedData || []).map((m) => {
-                  const created = m.created_at ? new Date(m.created_at) : null;
-                  const dateStr = created ? `${String(created.getDate()).padStart(2,'0')}/${String(created.getMonth()+1).padStart(2,'0')}/${created.getFullYear()}` : '-';
-                  const timeStr = created ? `${String(created.getHours()).padStart(2,'0')}:${String(created.getMinutes()).padStart(2,'0')}` : '-';
+                  // Extract date and time from created_at without creating Date object
+                  let dateStr = '-';
+                  let timeStr = '-';
+                  if (m.created_at) {
+                    const [datePart, timePart] = m.created_at.split('T');
+                    if (datePart) {
+                      const [year, month, day] = datePart.split('-');
+                      dateStr = `${day}/${month}/${year}`;
+                    }
+                    if (timePart) {
+                      const [hour, minute] = timePart.split(':');
+                      timeStr = `${hour}:${minute}`;
+                    }
+                  }
 
                   return (
                     <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">

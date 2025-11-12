@@ -36,7 +36,15 @@ const ChecklistMensal = () => {
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
-  const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('all', true);
+  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all', false);
+  
+  // Validate date is within acceptable range
+  const validateDate = (dateString: string): boolean => {
+    if (!dateString) return true; // Allow empty
+    const year = parseInt(dateString.split('-')[0]);
+    return year >= 2020 && year <= 2099;
+  };
+  
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [contextMenu, setContextMenu] = useState<{
@@ -52,11 +60,11 @@ const ChecklistMensal = () => {
   });
 
   useEffect(() => {
-    // Only fetch when date range actually changes, not on pending changes
-    if (!pendingDateRange && companyId) {
+    // Only fetch when date range actually changes
+    if (companyId) {
       fetchChecklists();
     }
-  }, [dateRange, pendingDateRange, companyId]);
+  }, [dateRange, companyId]);
 
   useEffect(() => {
     // Close context menu and dropdowns when clicking anywhere
@@ -492,8 +500,18 @@ const ChecklistMensal = () => {
               </label>
               <input
                 type="date"
+                data-testid="input-custom-start-date-checklist-mensal"
                 value={dateRange.startDate}
-                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                onChange={(e) => {
+                  const newDate = e.target.value;
+                  if (validateDate(newDate)) {
+                    setDateRange({ ...dateRange, startDate: e.target.value });
+                  } else {
+                    toast.error('Por favor selecione uma data entre 2020 e 2099');
+                  }
+                }}
+                min="2020-01-01"
+                max="2099-12-31"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
@@ -503,8 +521,18 @@ const ChecklistMensal = () => {
               </label>
               <input
                 type="date"
+                data-testid="input-custom-end-date-checklist-mensal"
                 value={dateRange.endDate}
-                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                onChange={(e) => {
+                  const newDate = e.target.value;
+                  if (validateDate(newDate)) {
+                    setDateRange({ ...dateRange, endDate: e.target.value });
+                  } else {
+                    toast.error('Por favor selecione uma data entre 2020 e 2099');
+                  }
+                }}
+                min="2020-01-01"
+                max="2099-12-31"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>

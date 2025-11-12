@@ -52,12 +52,51 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       } else {
         // Email doesn't exist, require attendant name in token step
         setRequiresAttendantName(true);
+        
+        // Get account_id from URL or use default for serverless compatibility
+        let accountId;
+        try {
+          accountId = localStorage?.getItem('account_id');
+          console.log('🔍 Account ID do localStorage:', accountId);
+        } catch (err) {
+          console.error('Erro ao acessar localStorage:', err);
+          throw new Error('Account ID não encontrado - acesse via URL com account_id');
+        }
+
+        if (!accountId) {
+          console.error('❌ Account ID está vazio ou null');
+          throw new Error('Account ID não encontrado. Por favor, acesse o sistema via URL com account_id.');
+        }
+
+        const accountIdNum = Number(accountId);
+        console.log('📝 Tentando inserir registro com:', { email, id_conta_wiseapp: accountIdNum });
+
+        // Insert initial record without name (will be added when token is saved)
+        const { error: insertError } = await supabase
+          .from('wiseapp_acesso')
+          .insert([{ email, id_conta_wiseapp: accountIdNum, access_token_wiseapp: null }]);
+
+        if (insertError) {
+          console.error('❌ Erro ao inserir registro:', insertError);
+          throw insertError;
+        }
+
+        console.log('✅ Registro criado com sucesso');
         setStep('tutorial');
       }
-    } catch (err) {
-      setError('Erro ao verificar/criar acesso.');
+    } catch (err: any) {
+      console.error('Erro detalhado:', err);
+      
+      // Mensagem de erro mais específica
+      if (err?.message?.includes('Account ID')) {
+        setError(err.message);
+      } else if (err?.code === '23502') {
+        setError('Dados obrigatórios não foram fornecidos. Verifique se o account_id está configurado.');
+      } else {
+        setError('Erro ao verificar/criar acesso. Tente novamente.');
+      }
+      
       setRequiresAttendantName(false); // Reset on error
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -103,6 +142,42 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
 
     try {
+      // Validar o token usando Supabase Edge Function
+      console.log('🔐 Validando token...');
+      
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+      const validationUrl = `${supabaseUrl}/functions/v1/validate-wiseapp-token`;
+      
+      console.log('🌍 Ambiente:', window.location.hostname);
+      console.log('🔗 URL de validação:', validationUrl);
+      
+      const validationResponse = await fetch(validationUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      const validationData = await validationResponse.json();
+
+      if (!validationResponse.ok || !validationData.valid) {
+        if (validationResponse.status === 401) {
+          throw new Error('Token inválido. Por favor, verifique se copiou o token corretamente.');
+        }
+        throw new Error('Não foi possível validar o token. Tente novamente.');
+      }
+
+      const userData = validationData.userData;
+      console.log('✅ Token válido:', userData);
+
+      // Atualizar com nome apenas se foi fornecido ou se é obrigatório
+      const updateData: any = { access_token_wiseapp: token };
+      if (attendantName || requiresAttendantName) {
+        updateData.nome = attendantName;
+      } else if (userData.name) {
+        // Se não foi fornecido nome mas a API retornou, usar o nome da API
+        updateData.nome = userData.name;
       // Validar token antes de salvar
       const accountId = localStorage?.getItem('account_id');
       if (!accountId) {
@@ -151,6 +226,15 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       onTokenSaved(token);
       onClose();
     } catch (err: any) {
+      console.error('Erro ao salvar token:', err);
+      
+      if (err.message.includes('Token inválido')) {
+        setError(err.message);
+      } else if (err.message.includes('validar')) {
+        setError(err.message);
+      } else {
+        setError('Erro ao salvar o token. Tente novamente.');
+      }
       setError(err.message || 'Erro ao salvar o token.');
       console.error(err);
     } finally {

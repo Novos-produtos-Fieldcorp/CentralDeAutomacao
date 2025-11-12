@@ -6,24 +6,16 @@
   NODE_VERSION = "18"
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
+# Netlify Functions para validação de token
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
   included_files = ["netlify/functions/**"]
 
+# API redirects - functions first
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api-native/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/test/*"
-  to = "/.netlify/functions/test/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/functions/v1/sync-motoristas-bulk"
-  to = "/.netlify/functions/sync-motoristas-bulk"
+  from = "/api/validate-wiseapp-token"
+  to = "/.netlify/functions/validate-wiseapp-token"
   status = 200
 
 [[redirects]]

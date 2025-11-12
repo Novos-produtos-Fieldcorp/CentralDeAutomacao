@@ -72,7 +72,7 @@ const HodometrosLista = () => {
   const { companyId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange, applyPendingDateRange } = useDateRange('all', true);
+  const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all', false);
   const [vehicleData, setVehicleData] = useState<VehicleData[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleData | null>(null);
   const [showChartModal, setShowChartModal] = useState(false);
@@ -80,7 +80,23 @@ const HodometrosLista = () => {
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [selectedPhotoData, setSelectedPhotoData] = useState<{
+    url: string;
+    type: 'hodometro' | 'bomba';
+  } | null>(null);
+
+  // Photo title mapping
+  const PHOTO_TITLES = {
+    hodometro: 'Foto do Hodômetro',
+    bomba: 'Foto da Bomba'
+  };
+
+  // Validate date is within acceptable range
+  const validateDate = (dateString: string): boolean => {
+    if (!dateString) return true; // Allow empty
+    const year = parseInt(dateString.split('-')[0]);
+    return year >= 2020 && year <= 2099;
+  };
 
   const fetchVehicleData = useCallback(async () => {
     try {
@@ -164,64 +180,14 @@ const HodometrosLista = () => {
 
       // Processing hodometro records
       
-      // First, create a unique set of vehicle IDs to avoid duplicates
-      const uniqueVehicleIds = new Set<number>();
-      
+      // First pass: Group readings by vehicle
       (data || []).forEach((hodometro) => {
-        if (hodometro.veiculo_id && hodometro.veiculo) {
-          uniqueVehicleIds.add(hodometro.veiculo_id);
-        }
-      });
-      
-      // Processing unique vehicles from dataset
-      
-      // Create a map to store daily vehicle readings
-      const dailyVehicleReadingsMap = new Map<string, {
-        firstReadingKm: number | null;
-        lastReadingKm: number | null;
-        firstReadingTrip: number | null;
-        lastReadingTrip: number | null;
-        vehicleType: 'automovel' | 'ciclomotor';
-        motorista_id: number | null;
-        motorista_nome: string | null;
-        veiculo_id: number | null;
-        veiculo_placa: string | null;
-        readings: HodometroReading[];
-      }>();
-      
-      // First pass: collect all readings by day and vehicle
-      (data || []).forEach((hodometro) => {
-        // Skip records without veiculo_id
+        // Skip records without required data
         if (!hodometro.veiculo_id || !hodometro.veiculo || !hodometro.motorista) {
           return;
         }
         
         const vehicleId = hodometro.veiculo_id;
-        const date = hodometro.data;
-        const uniqueKey = `${date}_${vehicleId}`;
-        
-        // Determine vehicle type based on whether it has battery readings
-        const vehicleType = hodometro.bateria !== null && hodometro.bateria !== undefined 
-          ? 'ciclomotor' 
-          : 'automovel';
-        
-        // Get current reading based on vehicle type
-        let currentReading: number | null = null;
-        let isOdometerReading = false;
-        
-        if (vehicleType === 'automovel' && hodometro.hod_lido !== null) {
-          currentReading = hodometro.hod_lido;
-          isOdometerReading = true;
-        } else if (vehicleType === 'ciclomotor' && hodometro.trip_lida !== null) {
-          currentReading = hodometro.trip_lida;
-        }
-        
-        // Skip if no valid reading
-        if (currentReading === null) {
-          return;
-        }
-        
-        // Get or create daily vehicle entry
         const motoristaNome = Array.isArray(hodometro.motorista) 
           ? (hodometro.motorista?.[0] as any)?.nome || 'Desconhecido'
           : (hodometro.motorista as any)?.nome || 'Desconhecido';
@@ -230,20 +196,7 @@ const HodometrosLista = () => {
           ? (hodometro.veiculo[0] as any)?.placa || null
           : (hodometro.veiculo as any)?.placa || null;
 
-        const dailyVehicleEntry = dailyVehicleReadingsMap.get(uniqueKey) || {
-          firstReadingKm: null,
-          lastReadingKm: null,
-          firstReadingTrip: null,
-          lastReadingTrip: null,
-          vehicleType,
-          motorista_id: hodometro.motorista_id,
-          motorista_nome: motoristaNome,
-          veiculo_id: hodometro.veiculo_id,
-          veiculo_placa: veiculoPlaca,
-          readings: [] as HodometroReading[]
-        };
-        
-        // Add reading to the collection - ensure proper type casting
+        // Format reading - ensure proper type casting
         const formattedHodometro: HodometroReading = {
           ...hodometro,
           motorista: Array.isArray(hodometro.motorista) 
@@ -257,57 +210,11 @@ const HodometrosLista = () => {
             : null
         };
         
-        dailyVehicleEntry.readings.push(formattedHodometro);
-        
-        // Update first and last readings
-        if (isOdometerReading) {
-          if (dailyVehicleEntry.firstReadingKm === null || currentReading < dailyVehicleEntry.firstReadingKm) {
-            dailyVehicleEntry.firstReadingKm = currentReading;
-          }
-          if (dailyVehicleEntry.lastReadingKm === null || currentReading > dailyVehicleEntry.lastReadingKm) {
-            dailyVehicleEntry.lastReadingKm = currentReading;
-          }
-        } else {
-          if (dailyVehicleEntry.firstReadingTrip === null || currentReading < dailyVehicleEntry.firstReadingTrip) {
-            dailyVehicleEntry.firstReadingTrip = currentReading;
-          }
-          if (dailyVehicleEntry.lastReadingTrip === null || currentReading > dailyVehicleEntry.lastReadingTrip) {
-            dailyVehicleEntry.lastReadingTrip = currentReading;
-          }
-        }
-        
-        dailyVehicleReadingsMap.set(uniqueKey, dailyVehicleEntry);
-      });
-      
-      // Second pass: calculate daily kilometers and build vehicle data
-      for (const [key, dailyData] of Array.from(dailyVehicleReadingsMap.entries())) {
-        const [date, vehicleIdStr] = key.split('_');
-        const vehicleId = parseInt(vehicleIdStr);
-        
-        // Calculate kilometers for the day
-        let kmRodadoNoDia = 0;
-        
-        if (dailyData.vehicleType === 'automovel' && dailyData.firstReadingKm !== null && dailyData.lastReadingKm !== null) {
-          kmRodadoNoDia = dailyData.lastReadingKm - dailyData.firstReadingKm;
-          // Handle cases where final reading is less than initial (odometer reset or error)
-          if (kmRodadoNoDia < 0) {
-            console.warn(`Negative km_rodado for automovel on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
-            kmRodadoNoDia = 0;
-          }
-        } else if (dailyData.vehicleType === 'ciclomotor' && dailyData.firstReadingTrip !== null && dailyData.lastReadingTrip !== null) {
-          // For ciclomotors, calculate km_rodado as the difference between last and first trip readings
-          kmRodadoNoDia = dailyData.lastReadingTrip - dailyData.firstReadingTrip;
-          if (kmRodadoNoDia < 0) {
-            console.warn(`Negative km_rodado for ciclomotor on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
-            kmRodadoNoDia = 0;
-          }
-        }
-        
         // Get or create vehicle data
         const vehicleData = vehicleMap.get(vehicleId) || {
-          placa: dailyData.veiculo_placa || '',
-          marca: dailyData.readings[0]?.veiculo?.marca || '',
-          tipo: dailyData.readings[0]?.veiculo?.tipo || '',
+          placa: veiculoPlaca || '',
+          marca: formattedHodometro.veiculo?.marca || '',
+          tipo: formattedHodometro.veiculo?.tipo || '',
           totalKm: 0,
           dailyData: new Map<string, number>(),
           daysWithReadings: new Set<string>(),
@@ -315,59 +222,221 @@ const HodometrosLista = () => {
           readings: [] as HodometroReading[]
         };
         
-        // Add km to total
-        vehicleData.totalKm += kmRodadoNoDia;
+        // Add reading to vehicle
+        vehicleData.readings.push(formattedHodometro);
         
-        // Add km to daily data
-        vehicleData.dailyData.set(date, kmRodadoNoDia);
-        
-        // Add date to days with readings
-        vehicleData.daysWithReadings.add(date);
-        
-        // Add km to motorista
-        if (dailyData.motorista_id && dailyData.motorista_nome) {
-          const motoristaData = vehicleData.motoristas.get(dailyData.motorista_id) || { 
-            nome: dailyData.motorista_nome, 
-            km: 0 
-          };
-          motoristaData.km += kmRodadoNoDia;
-          vehicleData.motoristas.set(dailyData.motorista_id, motoristaData);
-        }
-        
-        // Add readings to vehicle data - ensure proper array handling
-        vehicleData.readings = [...vehicleData.readings, ...dailyData.readings];
-        
-        // Update vehicle data
+        // Update vehicle map
         vehicleMap.set(vehicleId, vehicleData);
-      }
+      });
 
       // Vehicle data processing completed
 
-      // Convert to array and sort by total km (descending)
-      const vehiclesArray: VehicleData[] = Array.from(vehicleMap.entries()).map(([veiculo_id, data]) => {
-        const daysWithReadings = data.daysWithReadings.size;
-        const avgKmPerDay = daysWithReadings > 0 ? data.totalKm / daysWithReadings : 0;
+      // Helper function to recalculate km_rodado for each reading based on calculoUmPorDia flag
+      const recalculateKmRodado = (readings: HodometroReading[], calculoUmPorDia: boolean): HodometroReading[] => {
+        if (readings.length === 0) return readings;
+        
+        // Determine if vehicle is ciclomotor (has battery) or automovel
+        const isCiclomotor = readings.some(r => r.bateria !== null && r.bateria !== undefined);
+        
+        // Sort readings chronologically (ascending by date, then time)
+        const sortedReadings = [...readings].sort((a, b) => {
+          const dateCompare = a.data.localeCompare(b.data);
+          if (dateCompare !== 0) return dateCompare;
+          return a.hora.localeCompare(b.hora);
+        });
+        
+        if (calculoUmPorDia) {
+          // INTER-DAY (UM POR DIA): km_rodado do dia = hodômetro do próximo dia - hodômetro de hoje
+          // Exemplo: km do dia 11 = hodômetro do dia 12 - hodômetro do dia 11
+          const readingsByDay = new Map<string, HodometroReading[]>();
+          
+          // Group by day
+          sortedReadings.forEach(reading => {
+            const dayKey = reading.data;
+            if (!readingsByDay.has(dayKey)) {
+              readingsByDay.set(dayKey, []);
+            }
+            readingsByDay.get(dayKey)!.push(reading);
+          });
+          
+          // Get unique days sorted
+          const uniqueDays = Array.from(readingsByDay.keys()).sort();
+          
+          // Map each day to its HIGHEST reading value (not last chronological)
+          // This handles cases where there are data entry errors and readings go backwards
+          const dayLastReadings = new Map<string, number>();
+          uniqueDays.forEach(day => {
+            const dayReadings = readingsByDay.get(day)!;
+            
+            // Get the HIGHEST reading of the day, not just the last chronological one
+            let maxValue = 0;
+            dayReadings.forEach(reading => {
+              const value = isCiclomotor 
+                ? (Number(reading.trip_lida) || 0)
+                : (Number(reading.hod_lido) || 0);
+              if (value > maxValue) {
+                maxValue = value;
+              }
+            });
+            
+            dayLastReadings.set(day, maxValue);
+          });
+          
+          // Calculate km_rodado for each reading
+          // km_rodado do dia N = hodômetro do dia N+1 - hodômetro do dia N
+          return sortedReadings.map(reading => {
+            const currentDay = reading.data;
+            const currentDayIndex = uniqueDays.indexOf(currentDay);
+            
+            let kmRodado = 0;
+            // Se não for o último dia, calcula comparando com próximo dia
+            if (currentDayIndex < uniqueDays.length - 1) {
+              const nextDay = uniqueDays[currentDayIndex + 1];
+              
+              // Verifica se os dias são consecutivos (diferença de exatamente 1 dia)
+              const currentDate = new Date(currentDay + 'T00:00:00');
+              const nextDate = new Date(nextDay + 'T00:00:00');
+              const daysDiff = Math.round((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+              
+              // Só calcula km_rodado se os dias forem consecutivos (dia 5 → dia 6, não dia 5 → dia 7)
+              if (daysDiff === 1) {
+                const todayLastReading = dayLastReadings.get(currentDay) ?? 0;
+                const nextDayLastReading = dayLastReadings.get(nextDay) ?? 0;
+                kmRodado = nextDayLastReading - todayLastReading;
+                
+                // Clamp negative values to 0
+                if (kmRodado < 0) {
+                  console.warn(`Negative km_rodado for vehicle on ${currentDay}. Resetting to 0.`);
+                  kmRodado = 0;
+                }
+              }
+              // Se os dias não são consecutivos, km_rodado fica 0 (não calcula)
+            }
+            // Último dia sempre tem km_rodado = 0 pois não há próximo dia
+            
+            return {
+              ...reading,
+              km_rodado: kmRodado
+            };
+          });
+          
+        } else {
+          // INTRA-DAY (MÚLTIPLAS LEITURAS): km_rodado = última leitura - primeira leitura do mesmo dia
+          const readingsByDay = new Map<string, HodometroReading[]>();
+          
+          // Group by day
+          sortedReadings.forEach(reading => {
+            const dayKey = reading.data;
+            if (!readingsByDay.has(dayKey)) {
+              readingsByDay.set(dayKey, []);
+            }
+            readingsByDay.get(dayKey)!.push(reading);
+          });
+          
+          // Calculate km_rodado for each day
+          return sortedReadings.map(reading => {
+            const dayReadings = readingsByDay.get(reading.data)!;
+            const firstReading = dayReadings[0];
+            const lastReading = dayReadings[dayReadings.length - 1];
+            
+            let kmRodado = 0;
+            if (isCiclomotor) {
+              const first = Number(firstReading.trip_lida) || 0;
+              const last = Number(lastReading.trip_lida) || 0;
+              kmRodado = last - first;
+            } else {
+              const first = Number(firstReading.hod_lido) || 0;
+              const last = Number(lastReading.hod_lido) || 0;
+              kmRodado = last - first;
+            }
+            
+            // Clamp negative values to 0
+            if (kmRodado < 0) {
+              console.warn(`Negative km_rodado for vehicle on ${reading.data}. Resetting to 0.`);
+              kmRodado = 0;
+            }
+            
+            return {
+              ...reading,
+              km_rodado: kmRodado
+            };
+          });
+        }
+      };
+
+      // Recalculate km_rodado and compute aggregates from recalculated values
+      const vehiclesArray: VehicleData[] = Array.from(vehicleMap.entries()).map(([veiculo_id, vehicleData]) => {
+        // Step 1: Recalculate km_rodado for all readings based on calculoUmPorDia flag
+        const recalculatedReadings = recalculateKmRodado(vehicleData.readings, moduleAccess.calculoUmPorDia);
+        
+        // Step 2: Group readings by day to avoid double-counting
+        // In intra-day mode, all readings of the same day have the same km_rodado
+        // So we take only one reading per day for aggregation
+        const readingsByDay = new Map<string, HodometroReading[]>();
+        recalculatedReadings.forEach(reading => {
+          if (!readingsByDay.has(reading.data)) {
+            readingsByDay.set(reading.data, []);
+          }
+          readingsByDay.get(reading.data)!.push(reading);
+        });
+        
+        // Step 3: Compute aggregates from one reading per day (the last chronological one)
+        let totalKm = 0;
+        const dailyData = new Map<string, number>();
+        const motoristas = new Map<number, { nome: string; km: number }>();
+        const daysWithReadings = new Set<string>();
+        
+        // Process each day
+        for (const [date, dayReadings] of readingsByDay.entries()) {
+          // Sort by time to get the last reading
+          const sortedDayReadings = dayReadings.sort((a, b) => a.hora.localeCompare(b.hora));
+          const lastReading = sortedDayReadings[sortedDayReadings.length - 1];
+          
+          const kmForDay = lastReading.km_rodado ?? 0;
+          
+          // Add to total
+          totalKm += kmForDay;
+          
+          // Add to daily data
+          dailyData.set(date, kmForDay);
+          
+          // Add to days set
+          daysWithReadings.add(date);
+          
+          // Add to motorista (use last reading's motorista)
+          if (lastReading.motorista?.motorista_id) {
+            const motoristaData = motoristas.get(lastReading.motorista.motorista_id) || {
+              nome: lastReading.motorista.nome || 'Desconhecido',
+              km: 0
+            };
+            motoristaData.km += kmForDay;
+            motoristas.set(lastReading.motorista.motorista_id, motoristaData);
+          }
+        }
+        
+        const daysCount = daysWithReadings.size;
+        const avgKmPerDay = daysCount > 0 ? totalKm / daysCount : 0;
         
         return {
           veiculo_id,
-          placa: data.placa,
-          marca: data.marca,
-          tipo: data.tipo,
-          totalKm: data.totalKm,
+          placa: vehicleData.placa,
+          marca: vehicleData.marca,
+          tipo: vehicleData.tipo,
+          totalKm,
           avgKmPerDay,
-          daysWithReadings,
-          dailyData: Array.from(data.dailyData.entries()).map(([date, km]) => ({
+          daysWithReadings: daysCount,
+          dailyData: Array.from(dailyData.entries()).map(([date, km]) => ({
             date,
             km,
             formattedDate: formatDateBR(date)
           })).sort((a, b) => a.date.localeCompare(b.date)), // Sort by date ascending
-          motoristas: Array.from(data.motoristas.entries()).map(([motorista_id, motorista]) => ({
+          motoristas: Array.from(motoristas.entries()).map(([motorista_id, motorista]) => ({
             motorista_id,
             nome: motorista.nome,
             km: motorista.km
           })).sort((a, b) => b.km - a.km), // Sort by km descending
           expanded: false,
-          readings: data.readings.sort((a, b) => {
+          readings: recalculatedReadings.sort((a, b) => {
             // Sort by date descending, then by time descending
             const dateCompare = b.data.localeCompare(a.data);
             if (dateCompare !== 0) return dateCompare;
@@ -387,14 +456,12 @@ const HodometrosLista = () => {
     } finally {
       setLoading(false);
     }
-  }, [dateRange, companyId]);
+  }, [dateRange, companyId, moduleAccess.calculoUmPorDia]);
 
   useEffect(() => {
-    // Only fetch when date range actually changes, not on pending changes
-    if (!pendingDateRange) {
-      fetchVehicleData();
-    }
-  }, [fetchVehicleData, pendingDateRange]);
+    // Only fetch when date range actually changes
+    fetchVehicleData();
+  }, [fetchVehicleData]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -442,10 +509,10 @@ const HodometrosLista = () => {
     return num.toLocaleString('pt-BR');
   };
 
-  const handleShowPhoto = (photo: string | null, e: React.MouseEvent) => {
+  const handleShowPhoto = (photo: string | null, type: 'hodometro' | 'bomba', e: React.MouseEvent) => {
     e.stopPropagation();
     if (photo) {
-      setSelectedPhoto(photo);
+      setSelectedPhotoData({ url: photo, type });
       setShowPhotoModal(true);
     } else {
       toast.error('Nenhuma foto disponível');
@@ -711,8 +778,18 @@ const HodometrosLista = () => {
             </label>
             <input
               type="date"
+              data-testid="input-custom-start-date-lista"
               value={dateRange.startDate}
-              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                if (validateDate(newDate)) {
+                  setDateRange({ ...dateRange, startDate: newDate });
+                } else {
+                  toast.error('Por favor selecione uma data entre 2020 e 2099');
+                }
+              }}
+              min="2020-01-01"
+              max="2099-12-31"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
@@ -722,8 +799,18 @@ const HodometrosLista = () => {
             </label>
             <input
               type="date"
+              data-testid="input-custom-end-date-lista"
               value={dateRange.endDate}
-              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                if (validateDate(newDate)) {
+                  setDateRange({ ...dateRange, endDate: newDate });
+                } else {
+                  toast.error('Por favor selecione uma data entre 2020 e 2099');
+                }
+              }}
+              min="2020-01-01"
+              max="2099-12-31"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
@@ -943,19 +1030,36 @@ const HodometrosLista = () => {
                                       </div>
                                     </td>
                                     <td className="px-4 py-2 whitespace-nowrap text-center">
-                                      {reading.foto_hodometro ? (
-                                        <button
-                                          onClick={(e) => handleShowPhoto(reading.foto_hodometro, e)}
-                                          className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                                          title="Ver foto do hodômetro"
-                                        >
-                                          <Camera size={16} />
-                                        </button>
-                                      ) : (
-                                        <span className="text-gray-400 dark:text-gray-600">
-                                          <Camera size={16} className="inline-block opacity-50" />
-                                        </span>
-                                      )}
+                                      <div className="flex items-center justify-center gap-2">
+                                        {reading.foto_hodometro ? (
+                                          <button
+                                            onClick={(e) => handleShowPhoto(reading.foto_hodometro, 'hodometro', e)}
+                                            className="inline-flex items-center justify-center p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                                            title="Ver foto do hodômetro"
+                                          >
+                                            <Gauge size={16} />
+                                          </button>
+                                        ) : (
+                                          <span className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50" title="Sem foto do hodômetro">
+                                            <Gauge size={16} />
+                                          </span>
+                                        )}
+                                        {moduleAccess.bomba && (
+                                          reading.bomba_gasolina?.foto_bomba ? (
+                                            <button
+                                              onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, 'bomba', e)}
+                                              className="inline-flex items-center justify-center p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                                              title="Ver foto da bomba de gasolina"
+                                            >
+                                              <Fuel size={16} />
+                                            </button>
+                                          ) : (
+                                            <span className="inline-flex items-center justify-center p-2 text-gray-400 dark:text-gray-600 opacity-50" title="Sem foto da bomba">
+                                              <Fuel size={16} />
+                                            </span>
+                                          )
+                                        )}
+                                      </div>
                                     </td>
                                   </tr>
                                 ))}
@@ -1012,7 +1116,7 @@ const HodometrosLista = () => {
       )}
 
       {/* Photo Modal */}
-      {showPhotoModal && selectedPhoto && (
+      {showPhotoModal && selectedPhotoData && (
         <div 
           className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4"
           onClick={() => setShowPhotoModal(false)}
@@ -1023,7 +1127,7 @@ const HodometrosLista = () => {
           >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Foto do Hodômetro
+                {selectedPhotoData ? PHOTO_TITLES[selectedPhotoData.type] : 'Foto'}
               </h3>
               <button
                 onClick={() => setShowPhotoModal(false)}
@@ -1034,15 +1138,15 @@ const HodometrosLista = () => {
             </div>
             <div className="relative aspect-video">
               <img
-                src={selectedPhoto}
-                alt="Foto do Hodômetro"
+                src={selectedPhotoData?.url || ''}
+                alt={selectedPhotoData ? PHOTO_TITLES[selectedPhotoData.type] : 'Foto'}
                 className="absolute inset-0 w-full h-full object-contain"
               />
             </div>
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
               <a
-                href={selectedPhoto}
-                download="hodometro.jpg"
+                href={selectedPhotoData?.url || ''}
+                download={selectedPhotoData?.type === 'bomba' ? 'bomba.jpg' : 'hodometro.jpg'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 

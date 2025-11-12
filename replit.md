@@ -1,8 +1,7 @@
-# replit.md
+# Fleet Management Application
 
 ## Overview
-This project is a full-stack web application designed as a fleet management system. It facilitates the management of drivers, vehicles, clients, and operational workflows such as checklists and odometer readings. Built with React for the frontend and Express.js for the backend, it leverages PostgreSQL with Drizzle ORM for data persistence and integrates with external services like Supabase for enhanced functionality. The system aims to provide a robust solution for multi-company fleet management, with features like dynamic authentication based on account IDs, comprehensive job vacancy management, and efficient document handling, improving operational efficiency and data consistency within the logistics sector.
-This project is a full-stack web application designed for multi-company fleet management within the logistics sector. Its primary purpose is to centralize and streamline operations related to drivers, vehicles, clients, and critical workflows like checklists and odometer readings. The application offers dynamic authentication, comprehensive job vacancy management, efficient document handling, and integrates with external services to enhance functionality, ultimately aiming to boost efficiency and ensure data consistency.
+This full-stack web application provides a comprehensive solution for multi-company fleet management. It centralizes operations for drivers, vehicles, clients, and workflows like checklists and odometer readings. Key features include dynamic authentication, job vacancy management, efficient document handling, and integrations with external services to boost efficiency and ensure data consistency in the logistics sector. The project aims to streamline complex logistics operations and offer a robust platform for fleet managers.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -54,8 +53,8 @@ Preferred communication style: Simple, everyday language.
 - **Minuta Management System**: Implemented complete minuta management in the Hodômetros module with list view, filtering by period, search (motorista, placa, minuta, romaneio, filial), and photo viewing. Changed romaneio field from string to array to support multiple romaneio numbers per minuta. Added edit modal with reference to HodometrosRelatorio.tsx, allowing users to edit minuta_informada, minuta_lida, and manage multiple romaneios with add/remove functionality. The romaneios are displayed as badges in the table and exported to Excel as comma-separated values. Module access controlled by minuta_access flag in company table.
 ### Frontend
 - **Framework**: React 18 with TypeScript and Vite.
-- **Styling**: Tailwind CSS for custom dark mode and responsiveness, leveraging Radix UI and shadcn/ui components.
-- **State Management**: React Context API for global state; TanStack Query for server state management and data fetching.
+- **Styling**: Tailwind CSS for responsive design, dark mode, utilizing Radix UI and shadcn/ui components.
+- **State Management**: React Context API for global states; TanStack Query for server state management and data fetching.
 - **Routing**: React Router.
 
 ### Backend
@@ -64,21 +63,27 @@ Preferred communication style: Simple, everyday language.
 - **Build**: `esbuild` for production.
 
 ### Key Architectural Decisions
-- **Authentication**: Dynamic context-based system utilizing account IDs from URL parameters to support multi-company environments and data isolation.
-- **Database Layer**: Direct integration with Supabase PostgreSQL, employing Row Level Security (RLS) for multi-tenancy, real-time subscriptions, and type-safe operations.
-- **UI/UX**: Responsive design, comprehensive component library, dark/light theme support, and consistent styling across the application.
-- **Data Flow**: TanStack Query is used with direct Supabase calls for optimized caching and state management, ensuring company-filtered queries via RLS.
-- **External Integrations**: Modular design facilitates integration with third-party services like WiseApp, often routed through secure Supabase Edge Functions.
-- **Document Management**: Direct uploads to Supabase Storage with validation and URL storage.
-- **WiseApp Token Management**: Automatic retrieval of WiseApp tokens from the database based on email, eliminating manual configuration. All WiseApp API operations are routed through Supabase Edge Functions for security and consistent behavior.
-- **Form Validation**: Includes enhanced CNH validation and real-time input sanitization.
-- **Pagination**: Implemented a comprehensive pagination system across lists with configurable page sizes.
-- **License Plate API**: Real-time vehicle data consultation via FIPE API for automated form filling.
-- **Odometer Readings**: Integrated `bomba_gasolina` table for odometer readings, including price, liters, and photo management with granular access control.
-- **Minuta Management**: Full minuta management in the Hodômetros module with search, filtering, and editing capabilities, supporting multiple `romaneio` numbers.
-- **Tag Synchronization**: Bidirectional tag synchronization between WiseApp and the local database, ensuring multi-tenant data isolation and referential integrity.
-- **Vagas View Mode**: Allows toggling between table and card grid views, with preference persistence.
+- **Authentication**: Dynamic, context-based system using account IDs from URL parameters to support multi-company environments and data isolation.
+- **Database Layer**: Direct Supabase integration with PostgreSQL, leveraging Row Level Security (RLS) for multi-tenancy, real-time subscriptions, and type-safe operations.
+- **UI/UX**: Responsive design with a comprehensive component library, dark/light theme support, and consistent styling.
+- **Data Flow**: TanStack Query with direct Supabase calls for optimized caching and state management, ensuring company-filtered queries via RLS.
+- **External Integrations**: Modular design for third-party services, often routed through secure proxy systems (Supabase Edge Functions).
+- **WhatsApp Integration**: Seamless photo capture and display using WiseApp API, with automatic storage in Supabase and real-time avatar updates.
+- **Document Management**: Direct upload to Supabase Storage with validation.
+- **WiseApp Token Management**: Automatic retrieval of WiseApp tokens from the database based on email.
+- **Form Validation**: Enhanced CNH validation and real-time input sanitization.
+- **Pagination**: Comprehensive pagination system across lists with configurable page sizes.
+- **License Plate API**: Real-time vehicle data consultation via FIPE API for automatic form filling.
+- **Performance Optimization**: Optimized database queries and pagination for large datasets.
+- **Replit Configuration**: Configured for Replit deployment with Vite dev server accepting all hosts and Express backend bound to `0.0.0.0:5000`.
+- **Fuel Pump Integration**: Integrated `bomba_gasolina` table for odometer readings, including price, liters, and photo management with granular access control.
+- **Minuta Management**: Full minuta management in Hodômetros module with search, filtering, and editing, including multiple `romaneio` numbers.
+- **Tag Synchronization**: Bidirectional tag synchronization between WiseApp and local database, ensuring multi-tenant data isolation and referential integrity.
+- **Vagas View Mode**: Toggle between table and card grid views with preference persistence.
+- **Secure WiseApp Proxy**: All WiseApp API operations are routed through Supabase Edge Functions for secure token management and consistent API behavior.
 - **Database Architecture**: Exclusively uses Supabase; local Replit database is disabled.
+- **WiseApp Tag Operations**: All tag operations (create, delete, sync, assign individual/bulk) correctly use `wiseapp-account-id` header for routing and include `companyId` in API URLs for account isolation.
+- **Hodômetro km_rodado Calculation**: Frontend dynamically calculates km_rodado values instead of using database column. Two calculation modes: INTER-DAY (when `calculoUmPorDia=true`, compares current day with next day only if consecutive) and INTRA-DAY (when `calculoUmPorDia=false`, compares first/last reading of same day). Only calculates km_rodado for consecutive days (day 5→6, skips day 5→7). Uses the HIGHEST reading of each day (not last chronological) to handle data entry errors where odometer readings go backwards. Handles both automobiles (hod_lido) and ciclomotors (trip_lida) with automatic type detection.
 
 ## External Dependencies
 

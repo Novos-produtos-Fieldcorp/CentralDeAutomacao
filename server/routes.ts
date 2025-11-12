@@ -149,6 +149,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  // Rota para validar token WiseApp
+  app.post("/api/validate-wiseapp-token", async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ 
+          error: "Token é obrigatório" 
+        });
+      }
+
+      console.log("🔐 Validando token WiseApp...");
+
+      const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
+      const response = await fetch(`${wiseappApiUrl}/api/v1/profile`, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          return res.status(401).json({ 
+            valid: false,
+            error: "Token inválido" 
+          });
+        }
+        return res.status(response.status).json({ 
+          valid: false,
+          error: "Erro ao validar token" 
+        });
+      }
+
+      const userData = await response.json();
+      console.log("✅ Token válido para usuário:", userData.name);
+
+      res.json({ 
+        valid: true,
+        userData: {
+          name: userData.name,
+          email: userData.email,
+          id: userData.id
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao validar token:", error);
+      res.status(500).json({ 
+        valid: false,
+        error: "Erro interno ao validar token" 
+      });
+    }
+  });
+
 
   // Nova rota específica para buscar inboxes com cache otimizado por company_id
   app.get("/api/inboxes/:companyId", async (req, res) => {
