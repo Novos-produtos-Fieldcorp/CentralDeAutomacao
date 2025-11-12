@@ -127,7 +127,7 @@ const BulkActionsModal = ({
 
   // Função para aplicar tag aos contatos no WiseApp (usando serviços existentes)
   const applyTagToWiseAppContacts = async (tagData: any, motoristaIds: number[]) => {
-    if (!wiseAppToken || !companyId) {
+    if (!accountId || !wiseAppToken) {
       console.log('Token WiseApp ou dados não disponíveis para sincronização');
       return;
     }
@@ -308,7 +308,7 @@ const BulkActionsModal = ({
 
             try {
               // Buscar contato no WiseApp usando o serviço existente
-              const searchData = await searchWiseAppContact(wiseAppAccountId, wiseAppToken, formattedPhone);
+              const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId);
 
               // Corrigir estrutura de dados (descoberta: searchData é array direto)
               const contacts = Array.isArray(searchData) ? searchData : (searchData?.payload || []);
@@ -322,7 +322,7 @@ const BulkActionsModal = ({
                   headers: {
                     'Content-Type': 'application/json',
                     'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': wiseAppAccountId
+                    'wiseapp-account-id': accountId
                   }
                 });
 
@@ -344,7 +344,7 @@ const BulkActionsModal = ({
                   headers: {
                     'Content-Type': 'application/json',
                     'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': wiseAppAccountId
+                    'wiseapp-account-id': accountId
                   },
                   body: JSON.stringify({ labels: allTags })
                 });

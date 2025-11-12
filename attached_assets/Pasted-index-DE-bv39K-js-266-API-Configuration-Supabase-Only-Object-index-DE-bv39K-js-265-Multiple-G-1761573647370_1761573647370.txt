@@ -1,0 +1,31 @@
+index-DE-bv39K.js:266 🔧 API Configuration (Supabase Only): Object
+index-DE-bv39K.js:265 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+fv @ index-DE-bv39K.js:265
+index-DE-bv39K.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-DE-bv39K.js:1116 🔍 [WiseAppAccess] Account ID da URL: 1
+index-DE-bv39K.js:1116 🔍 [WiseAppAccess] Buscando dados frescos do banco...
+index-DE-bv39K.js:1116 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 1
+index-DE-bv39K.js:1116 📊 [WiseAppAccess] Resultado da busca da empresa: Object
+index-DE-bv39K.js:1116 ✅ [WiseAppAccess] Empresa encontrada: Object
+index-DE-bv39K.js:1116 🔍 [WiseAppAccess] Buscando token para email: null
+index-DE-bv39K.js:1116 ❌ [WiseAppAccess] Email não encontrado, mostrando modal
+ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/veiculo?select=veiculo_id%2Cmarca_veiculo%2Cplaca&company_id=eq.2&order=veiculo_id.desc&limit=3:1  Failed to load resource: the server responded with a status of 400 ()
+index-DE-bv39K.js:1212 🔍 DEBUG Clientes - Company ID usado: 2
+index-DE-bv39K.js:1212 🔍 DEBUG Clientes - Total encontrados: 6
+index-DE-bv39K.js:1212 🔍 DEBUG Clientes - Dados recentes: Array(5)
+index-DE-bv39K.js:1212 🚫 Filtering out incorrect client data: teste (ID: 327)
+(anonymous) @ index-DE-bv39K.js:1212
+index-DE-bv39K.js:1212 🚫 Filtering out incorrect client data: teste (ID: 324)
+(anonymous) @ index-DE-bv39K.js:1212
+index-DE-bv39K.js:1212 🚫 Filtering out incorrect client data: teste (ID: 323)
+(anonymous) @ index-DE-bv39K.js:1212
+index-DE-bv39K.js:1212 Dashboard data loaded: Object
+ingesteer.services-prod.nsvcs.net/rum_collection:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+rum:1  Uncaught (in promise) TypeError: Failed to fetch
+    at Q (rum:1:5196)
+    at rum:1:11100
+ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/wiseapp_acesso?select=wiseapp_acesso_id%2Cemail%2Cnome%2Caccess_token_wiseapp&email=eq.testetemp%40gmail.com:1  Failed to load resource: the server responded with a status of 406 ()
+index-DE-bv39K.js:1116 🔍 Validando token antes de salvar...
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/validate-token:1  Failed to load resource: the server responded with a status of 404 ()
+index-DE-bv39K.js:1116 🔍 Validando token antes de salvar...
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/validate-token:1  Failed to load resource: the server responded with a status of 404 ()

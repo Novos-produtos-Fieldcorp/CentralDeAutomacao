@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, Routes, Route, Navigate } from 'react-router-dom';
-import { Gauge, ClipboardList, LayoutDashboard, Loader as Road, ChevronRight } from 'lucide-react';
+import { Gauge, ClipboardList, LayoutDashboard, Loader as Road, ChevronRight, FileText } from 'lucide-react';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import HodometrosDashboard from './hodometros/HodometrosDashboard';
 import HodometrosLista from './hodometros/HodometrosLista';
 import HodometrosRelatorio from './hodometros/HodometrosRelatorio';
 import HodometrosMinuta from './hodometros/HodometrosMinuta';
+import HodometrosRomaneio from './hodometros/HodometrosRomaneio';
 
 const Hodometros = () => {
   const location = useLocation();
@@ -47,6 +48,7 @@ const Hodometros = () => {
     { path: '/hodometros/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/hodometros/relatorio', icon: Gauge, label: 'Leituras' },
     ...(moduleAccess.minuta ? [{ path: '/hodometros/minuta', icon: ClipboardList, label: 'Minutas' }] : []),
+    ...(moduleAccess.romaneio ? [{ path: '/hodometros/romaneio', icon: FileText, label: 'Romaneios' }] : []),
     { path: '/hodometros/lista', icon: ClipboardList, label: 'Relatórios' }
   ];
 
@@ -71,6 +73,7 @@ const Hodometros = () => {
       <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
         {moduleAccess.bomba ? 'Hodômetro e Abastecimento' : 'Hodômetro'}
       </h1>
+      <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Hodômetros</h1>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
         <div className="border-b border-gray-200 dark:border-gray-700 relative">
@@ -109,6 +112,7 @@ const Hodometros = () => {
             <Route path="dashboard" element={<HodometrosDashboard />} />
             <Route path="relatorio" element={<HodometrosRelatorio />} />
             {moduleAccess.minuta && <Route path="minuta" element={<HodometrosMinuta />} />}
+            {moduleAccess.romaneio && <Route path="romaneio" element={<HodometrosRomaneio />} />}
             <Route path="lista" element={<HodometrosLista />} />
           </Routes>
         </div>

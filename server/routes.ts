@@ -205,28 +205,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
-  // Rota proxy para buscar inboxes usando o token do usuário
+  // Nova rota específica para buscar inboxes com cache otimizado por company_id
   app.get("/api/inboxes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
       const { accountId } = req.query;
-      const userToken = req.headers['x-wiseapp-token'] as string;
       
-      console.log(`Fetching inboxes for account_id: ${accountId}`);
+      console.log(`Fetching inboxes for company_id: ${companyId}, accountId: ${accountId}`);
 
-      if (!accountId) {
-        return res.status(400).json({ 
-          error: "Account ID é obrigatório" 
+      // Buscar token WiseApp para esta empresa
+      const token = await storage.getWiseappToken(parseInt(companyId));
+      
+      if (!token) {
+        return res.status(404).json({ 
+          error: "Token WiseApp não configurado para esta empresa" 
         });
       }
 
-      if (!userToken) {
-        return res.status(401).json({ 
-          error: "Token de autenticação não fornecido" 
+      // Buscar dados da empresa para validar accountId
+      const { data: companies, error: companyError } = await supabaseBackend
+        .from("company")
+        .select("id_conta_wiseapp")
+        .eq("company_id", parseInt(companyId))
+        .eq("id_conta_wiseapp", accountId)
+        .limit(1);
+
+      if (companyError || !companies || companies.length === 0) {
+        return res.status(403).json({ 
+          error: "Account ID não corresponde à empresa especificada" 
         });
       }
 
-      // Fazer requisição para o ChatWoot usando o token do usuário
+      // Fazer requisição para o ChatWoot
       const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
       const targetUrl = `${wiseappApiUrl}/api/v1/accounts/${accountId}/inboxes`;
 
@@ -235,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await fetch(targetUrl, {
         method: 'GET',
         headers: {
-          'api_access_token': userToken,
+          'api_access_token': token,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Cache-Control': 'no-cache'
@@ -325,42 +335,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const wiseappApiUrl =
         process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
-      let apiKey =
+      const apiKey =
         req.headers["api_access_token"] || req.headers["authorization"];
 
-      // Se não houver token no header, tentar buscar do banco usando accountId da URL
       if (!apiKey) {
-        const accountIdMatch = req.url.match(/\/accounts\/(\d+)/);
-        if (accountIdMatch) {
-          const accountId = parseInt(accountIdMatch[1]);
-          
-          // Buscar company_id baseado no accountId
-          const { data: companies } = await supabaseBackend
-            .from("company")
-            .select("company_id, id")
-            .eq("id_conta_wiseapp", accountId)
-            .limit(1);
-          
-          if (companies && companies.length > 0) {
-            const companyId = companies[0].company_id || companies[0].id;
-            
-            // Buscar token WiseApp do banco
-            const { data: tokenData } = await supabaseBackend
-              .from('wiseapp_acesso')
-              .select('access_token_wiseapp')
-              .eq('company_id', companyId)
-              .limit(1);
-            
-            if (tokenData && tokenData.length > 0 && tokenData[0].access_token_wiseapp) {
-              apiKey = tokenData[0].access_token_wiseapp;
-              console.log(`✅ Token WiseApp recuperado do banco para company_id=${companyId}`);
-            }
-          }
-        }
-      }
-
-      if (!apiKey) {
-        return res.status(401).json({ error: "Token de acesso não encontrado" });
+        return res.status(401).json({ error: "Token de acesso não fornecido" });
       }
 
       // Remover /api do início da URL para fazer o proxy
@@ -1112,24 +1091,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ error: "nome e company_id são obrigatórios" });
       }
 
-      // 1. Criar tag localmente
       const tag = await storage.createTag({ nome, cor, company_id });
-      
-      // 2. Criar tag no WiseApp automaticamente
-      const { createTagInWiseApp } = await import('./bulk-contact-tags-sync');
-      const wiseappResult = await createTagInWiseApp(company_id, nome, cor || '#3B82F6');
-      
-      if (wiseappResult.success) {
-        console.log(`[POST /api/tags] Tag criada localmente e no WiseApp: ${nome}`);
-      } else {
-        console.error(`[POST /api/tags] ERRO: Tag criada localmente, mas falhou no WiseApp: ${wiseappResult.error}`);
-      }
-      
-      res.status(201).json({
-        ...tag,
-        wiseapp_sync: wiseappResult.success,
-        wiseapp_label_id: wiseappResult.labelId
-      });
+      res.status(201).json(tag);
     } catch (error) {
       console.error("Erro ao criar tag:", error);
       res.status(500).json({
@@ -3237,6 +3200,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         valid: false, 
         error: 'Erro ao conectar com WiseApp'
+      });
+    }
+  });
+
+  // Validate WiseApp token
+  app.post("/api/wiseapp/validate-token", async (req, res) => {
+    try {
+      const { token, accountId } = req.body;
+
+      if (!token || !accountId) {
+        return res.status(400).json({
+          valid: false,
+          error: 'Token e ID da conta são obrigatórios'
+        });
+      }
+
+      // Try to fetch profile from WiseApp API to validate token
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/profile`;
+      
+      console.log(`🔍 Validando token...`);
+      
+      const response = await fetch(wiseAppUrl, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.log(`❌ Token inválido - API retornou ${response.status}`);
+        return res.json({
+          valid: false,
+          error: 'Token de acesso inválido ou expirado'
+        });
+      }
+
+      const profileData = await response.json();
+      
+      console.log(`✅ Token validado com sucesso!`);
+      
+      return res.json({
+        valid: true,
+        profile: profileData
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao validar token:', error);
+      return res.json({
+        valid: false,
+        error: 'Erro ao conectar com o servidor de autenticação'
       });
     }
   });

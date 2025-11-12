@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, BarChart2, Download, X, Calendar, User, Truck, ChevronDown, ChevronUp, Eye, Clock, Camera, Gauge, Fuel } from 'lucide-react';
+import { Search, BarChart2, Download, X, Calendar, User, Truck, ChevronDown, ChevronUp, Eye, Clock, Camera } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
-import { useModuleAccess } from '../../hooks/useModuleAccess';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import { usePagination } from '../../hooks/usePagination';
@@ -71,7 +70,6 @@ interface VehicleData {
 
 const HodometrosLista = () => {
   const { companyId } = useAuth();
-  const { moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all', false);
@@ -911,12 +909,8 @@ const HodometrosLista = () => {
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Data/Hora</th>
                                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Motorista</th>
                                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Hodômetro</th>
-                                  {moduleAccess.bomba && (
-                                    <>
-                                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Preço</th>
-                                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Litros</th>
-                                    </>
-                                  )}
+                                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Preço</th>
+                                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Litros</th>
                                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Trip</th>
                                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">KM Rodado</th>
                                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">Foto</th>
@@ -966,38 +960,56 @@ const HodometrosLista = () => {
                                         </div>
                                       )}
                                     </td>
-                                    {moduleAccess.bomba && (
-                                      <>
-                                        <td className="px-4 py-2 whitespace-nowrap text-right">
-                                          {reading.bomba_gasolina ? (
-                                            <div>
-                                              <div className="text-sm text-gray-900 dark:text-white">
-                                                Lido: {reading.bomba_gasolina.preco_lido ? `R$ ${reading.bomba_gasolina.preco_lido}` : '-'}
-                                              </div>
-                                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                Informado: {reading.bomba_gasolina.preco_informado ? `R$ ${reading.bomba_gasolina.preco_informado}` : '-'}
-                                              </div>
+                                    <td className="px-4 py-2 whitespace-nowrap text-right">
+                                      {reading.bomba_gasolina ? (
+                                        <div>
+                                          <div className="flex items-center justify-end gap-1">
+                                            <div className="text-sm text-gray-900 dark:text-white">
+                                              Lido: {reading.bomba_gasolina.preco_lido || '-'}
                                             </div>
-                                          ) : (
-                                            <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                                          )}
-                                        </td>
-                                        <td className="px-4 py-2 whitespace-nowrap text-right">
-                                          {reading.bomba_gasolina ? (
-                                            <div>
-                                              <div className="text-sm text-gray-900 dark:text-white">
-                                                Lido: {reading.bomba_gasolina.litro_lido || '-'}
-                                              </div>
-                                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                Informado: {reading.bomba_gasolina.litro_informado || '-'}
-                                              </div>
+                                            {reading.bomba_gasolina.foto_bomba && (
+                                              <button
+                                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e)}
+                                                className="inline-flex items-center justify-center p-1 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                                title="Ver foto do preço lido"
+                                              >
+                                                <Camera size={12} />
+                                              </button>
+                                            )}
+                                          </div>
+                                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            Informado: {reading.bomba_gasolina.preco_informado || '-'}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-right">
+                                      {reading.bomba_gasolina ? (
+                                        <div>
+                                          <div className="flex items-center justify-end gap-1">
+                                            <div className="text-sm text-gray-900 dark:text-white">
+                                              Lido: {reading.bomba_gasolina.litro_lido || '-'}
                                             </div>
-                                          ) : (
-                                            <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
-                                          )}
-                                        </td>
-                                      </>
-                                    )}
+                                            {reading.bomba_gasolina.foto_bomba && (
+                                              <button
+                                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e)}
+                                                className="inline-flex items-center justify-center p-1 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                                title="Ver foto dos litros lidos"
+                                              >
+                                                <Camera size={12} />
+                                              </button>
+                                            )}
+                                          </div>
+                                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            Informado: {reading.bomba_gasolina.litro_informado || '-'}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="text-sm text-gray-500 dark:text-gray-400">-</div>
+                                      )}
+                                    </td>
                                     <td className="px-4 py-2 whitespace-nowrap text-right">
                                       {reading.trip_lida !== null ? (
                                         <div className="text-sm text-gray-900 dark:text-white">

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Lock } from 'lucide-react';
+import { createApiUrl } from '@/lib/api-config-supabase';
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onTokenSaved: (token: string, attendantId?: number, attendantName?: string) => void;
+  onTokenSaved: (token: string) => void;
   companyId: number | null;
 }
 
@@ -40,8 +41,7 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
 
       if (existing) {
         if (existing.access_token_wiseapp) {
-          // Salvar email no localStorage para uso posterior
-          localStorage.setItem('wiseapp_user_email', email);
+          // Remove localStorage dependency for Netlify compatibility
           onTokenSaved(existing.access_token_wiseapp);
           onClose();
         } else {
@@ -102,6 +102,28 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
   };
 
+  const validateToken = async (token: string, accountId: string): Promise<{ valid: boolean; error?: string }> => {
+    try {
+      const response = await fetch(createApiUrl('/wiseapp/validate-token'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, accountId }),
+      });
+
+      if (!response.ok) {
+        return { valid: false, error: 'Erro ao validar token' };
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Erro ao validar token:', error);
+      return { valid: false, error: 'Erro ao conectar com o servidor' };
+    }
+  };
+
   const handleTokenSubmit = async () => {
     setLoading(true);
     setError('');
@@ -156,17 +178,51 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       } else if (userData.name) {
         // Se não foi fornecido nome mas a API retornou, usar o nome da API
         updateData.nome = userData.name;
+      // Validar token antes de salvar
+      const accountId = localStorage?.getItem('account_id');
+      if (!accountId) {
+        throw new Error('Account ID não encontrado - acesse via URL com account_id');
       }
 
-      const { error: updateError } = await supabase
-        .from('wiseapp_acesso')
-        .update(updateData)
-        .eq('email', email);
+      console.log('🔍 Validando token antes de salvar...');
+      const validationResult = await validateToken(token, accountId);
 
-      if (updateError) throw updateError;
+      if (!validationResult.valid) {
+        setError(validationResult.error || 'Token de acesso inválido. Verifique se você copiou corretamente.');
+        setLoading(false);
+        return;
+      }
 
-      // Salvar email no localStorage para uso posterior
-      localStorage.setItem('wiseapp_user_email', email);
+      console.log('✅ Token validado com sucesso!');
+
+      if (requiresAttendantName) {
+        // NOVO USUÁRIO: Fazer INSERT com nome, email, token e id_conta_wiseapp
+        const { error: insertError } = await supabase
+          .from('wiseapp_acesso')
+          .insert([{ 
+            email, 
+            nome: attendantName, 
+            id_conta_wiseapp: parseInt(accountId), 
+            access_token_wiseapp: token 
+          }]);
+
+        if (insertError) throw insertError;
+      } else {
+        // USUÁRIO EXISTENTE: Fazer UPDATE apenas do token (e nome se fornecido)
+        const updateData: any = { access_token_wiseapp: token };
+        if (attendantName) {
+          updateData.nome = attendantName;
+        }
+
+        const { error: updateError } = await supabase
+          .from('wiseapp_acesso')
+          .update(updateData)
+          .eq('email', email);
+
+        if (updateError) throw updateError;
+      }
+
+      // Remove localStorage dependency for Netlify compatibility
       onTokenSaved(token);
       onClose();
     } catch (err: any) {
@@ -179,6 +235,8 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       } else {
         setError('Erro ao salvar o token. Tente novamente.');
       }
+      setError(err.message || 'Erro ao salvar o token.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
