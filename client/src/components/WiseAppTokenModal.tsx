@@ -171,29 +171,11 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       const userData = validationData.userData;
       console.log('✅ Token válido:', userData);
 
-      // Atualizar com nome apenas se foi fornecido ou se é obrigatório
-      const updateData: any = { access_token_wiseapp: token };
-      if (attendantName || requiresAttendantName) {
-        updateData.nome = attendantName;
-      } else if (userData.name) {
-        // Se não foi fornecido nome mas a API retornou, usar o nome da API
-        updateData.nome = userData.name;
-      // Validar token antes de salvar
+      // Obter accountId
       const accountId = localStorage?.getItem('account_id');
       if (!accountId) {
         throw new Error('Account ID não encontrado - acesse via URL com account_id');
       }
-
-      console.log('🔍 Validando token antes de salvar...');
-      const validationResult = await validateToken(token, accountId);
-
-      if (!validationResult.valid) {
-        setError(validationResult.error || 'Token de acesso inválido. Verifique se você copiou corretamente.');
-        setLoading(false);
-        return;
-      }
-
-      console.log('✅ Token validado com sucesso!');
 
       if (requiresAttendantName) {
         // NOVO USUÁRIO: Fazer INSERT com nome, email, token e id_conta_wiseapp

@@ -3,7 +3,7 @@
   publish = "dist/public"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
 # Netlify Functions para validação de token

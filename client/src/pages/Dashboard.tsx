@@ -337,8 +337,6 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
                 <Users className="w-3 h-3 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white">
-                  {stats.contratados}
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.outros}
                 </div>
