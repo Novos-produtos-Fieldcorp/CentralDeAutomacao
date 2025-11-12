@@ -1438,18 +1438,22 @@ const HodometrosDashboard = () => {
           color="green"
           unit="km"
         />
-        <StatCard
-          title="Total de Leituras"
-          value={totalBomba + totalMinutas}
-          icon={Fuel}
-          color="purple"
-        />
-        <StatCard
-          title="Total de Leituras de Hoje"
-          value={todayBombaMinuta}
-          icon={ClipboardList}
-          color="amber"
-        />
+        {moduleAccess.bomba && (
+          <>
+            <StatCard
+              title="Total de Leituras"
+              value={totalBomba + totalMinutas}
+              icon={Fuel}
+              color="purple"
+            />
+            <StatCard
+              title="Total de Leituras de Hoje"
+              value={todayBombaMinuta}
+              icon={ClipboardList}
+              color="amber"
+            />
+          </>
+        )}
       </div>
 
       {/* Minuta Stats - Only visible with minuta access */}
