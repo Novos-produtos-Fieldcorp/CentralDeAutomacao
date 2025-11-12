@@ -1616,9 +1616,11 @@ const HodometrosDashboard = () => {
               </div>
             )}
           </div>
+        </>
+      )}
 
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Charts Grid - Always visible */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Daily Mileage */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
           <div className="mb-6 flex items-center gap-2">
@@ -1885,8 +1887,6 @@ const HodometrosDashboard = () => {
           </div>
         )}
       </div>
-        </>
-      )}
 
       {/* Minutas por Filial - Only visible with minuta access */}
       {moduleAccess.minuta && (
