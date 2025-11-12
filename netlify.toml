@@ -18,7 +18,6 @@
   to = "/.netlify/functions/validate-wiseapp-token"
   status = 200
 
-# Redirecionamento SPA - todas as rotas vão para index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"

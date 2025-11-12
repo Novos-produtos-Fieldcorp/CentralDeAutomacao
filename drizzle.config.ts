@@ -1,8 +1,3 @@
-// ⛔ DESABILITADO - Sistema usa APENAS Supabase direto
-// Este arquivo seria para migrations no banco local do Replit
-// Mantido aqui apenas para referência, mas NÃO É USADO
-
-/*
 import { defineConfig } from "drizzle-kit";
 
 if (!process.env.DATABASE_URL) {
@@ -17,8 +12,3 @@ export default defineConfig({
     url: process.env.DATABASE_URL,
   },
 });
-*/
-
-// Sistema configurado para usar EXCLUSIVAMENTE Supabase
-console.warn('⚠️ Drizzle config desabilitado - Sistema usa APENAS Supabase');
-export default {};

@@ -43,7 +43,6 @@ import { format, subMonths, isBefore, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { dashboardApi } from "../lib/apiService";
 import AccessTooltip from "../components/AccessTooltip";
-import LockedModuleOverlay from "../components/LockedModuleOverlay";
 import { supabase } from "../lib/supabase";
 
 // Checklist types
@@ -273,8 +272,16 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access */}
-      {!hasAccess && <LockedModuleOverlay module="motoristas" />}
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-contratacao">
+          <AccessTooltip module="motoristas">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -316,7 +323,7 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
                 <Truck className="w-3 h-3 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="text-sm font-bold text-gray-900 dark:text-white">
                   {stats.agregados}
                 </div>
                 <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
@@ -330,6 +337,8 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
                 <Users className="w-3 h-3 text-green-600 dark:text-green-400" />
               </div>
               <div>
+                <div className="text-sm font-bold text-gray-900 dark:text-white">
+                  {stats.contratados}
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.outros}
                 </div>
@@ -344,7 +353,7 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
                 <UserCheck className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                <div className="text-sm font-bold text-gray-900 dark:text-white">
                   {stats.contratados}
                 </div>
                 <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
@@ -384,13 +393,13 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
         </h3>
         <div className="grid grid-cols-4 gap-2">
           <div className="text-center">
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
               {stats.vagasAbertas}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Abertas</p>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
               {stats.vagasPreenchidas}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -398,13 +407,13 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
             </p>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+            <div className="text-sm font-bold text-red-600 dark:text-red-400">
               {stats.vagasVencidas}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Vencidas</p>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            <div className="text-sm font-bold text-purple-600 dark:text-purple-400">
               {stats.taxaPreenchimento}%
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Taxa</p>
@@ -430,8 +439,16 @@ const HodometroHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access */}
-      {!hasAccess && <LockedModuleOverlay module="hodometro" />}
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-hodometros">
+          <AccessTooltip module="hodometro">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -473,8 +490,8 @@ const HodometroHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
         {stats.hodometroData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={stats.hodometroData}>
-              <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'inherit' }} />
-              <YAxis tick={{ fontSize: 11, fontFamily: 'inherit' }} />
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
               <Tooltip content={<SimpleTooltip />} />
               <Line
                 type="monotone"
@@ -503,8 +520,16 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access */}
-      {!hasAccess && <LockedModuleOverlay module="resumo" />}
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-clientes">
+          <AccessTooltip module="resumo">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -540,7 +565,7 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
               <Users className="w-3 h-3 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="text-lg font-bold text-gray-900 dark:text-white">
                 {stats.clientes.total}
               </div>
               <p className="text-xs text-teal-600 dark:text-teal-400 font-medium">
@@ -555,7 +580,7 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
               <UserCheck className="w-3 h-3 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="text-lg font-bold text-gray-900 dark:text-white">
                 {stats.clientes.ativos}
               </div>
               <p className="text-xs text-green-600 dark:text-green-400 font-medium">
@@ -683,8 +708,16 @@ const VeiculosHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access */}
-      {!hasAccess && <LockedModuleOverlay module="resumo" />}
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-veiculos">
+          <AccessTooltip module="resumo">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -777,8 +810,16 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
     <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
       !hasAccess ? "opacity-60" : ""
     }`}>
-      {/* Lock overlay for restricted access */}
-      {!hasAccess && <LockedModuleOverlay module="comprovantes" />}
+      {/* Lock overlay for restricted access - CENTRALIZADO */}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-comprovantes">
+          <AccessTooltip module="comprovantes">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -821,8 +862,8 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       <div className="h-32">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={stats.comprovantes.monthlyData}>
-            <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'inherit' }} />
-            <YAxis tick={{ fontSize: 11, fontFamily: 'inherit' }} />
+            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 10 }} />
             <Tooltip content={<SimpleTooltip />} />
             <Area
               type="monotone"
@@ -846,7 +887,15 @@ const ResumoGrupoHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       !hasAccess ? "opacity-60" : ""
     }`}>
       {/* Lock overlay for restricted access */}
-      {!hasAccess && <LockedModuleOverlay module="resumo" />}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-resumo-grupo">
+          <AccessTooltip module="resumo">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -926,7 +975,15 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       !hasAccess ? "opacity-60" : ""
     }`}>
       {/* Lock overlay for restricted access */}
-      {!hasAccess && <LockedModuleOverlay module="checklist" />}
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-checklist">
+          <AccessTooltip module="checklist">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -996,8 +1053,8 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       <div className="h-32">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={stats.checklists.monthlyData}>
-            <XAxis dataKey="month" tick={{ fontSize: 11, fontFamily: 'inherit' }} />
-            <YAxis tick={{ fontSize: 11, fontFamily: 'inherit' }} />
+            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 10 }} />
             <Tooltip content={<ChecklistTooltip />} />
             <Bar
               dataKey="mensal"
@@ -1156,21 +1213,28 @@ const Dashboard: React.FC = () => {
         envioResumoSemanaResult,
         envioResumoMonthlyResult,
       ] = await Promise.all([
-        // Usar views otimizadas para contar motoristas, agregados e contratados
+        // Optimized count queries for motoristas - 3 categorias específicas
         supabase
-          .from("vw_agregados_completo")
+          .from("motorista")
           .select("motorista_id", { count: "exact", head: true })
-          .eq("company_id", companyId),
+          .eq("company_id", companyId)
+          .eq("ativo", true)
+          .ilike("funcao", "%agregado%"),
 
         supabase
-          .from("vw_motoristas_completo")
+          .from("motorista")
           .select("motorista_id", { count: "exact", head: true })
-          .eq("company_id", companyId),
+          .eq("company_id", companyId)
+          .eq("ativo", true)
+          .ilike("funcao", "%motorista%"),
 
+        // Contratados - buscar registros com funcao NULL (são os contratados)
         supabase
-          .from("vw_contratados_completo")
+          .from("motorista")
           .select("motorista_id", { count: "exact", head: true })
-          .eq("company_id", companyId),
+          .eq("company_id", companyId)
+          .eq("ativo", true)
+          .is("funcao", null),
 
         // Real hodometro data with correct fields - last 6 months
         supabase
@@ -1207,11 +1271,14 @@ const Dashboard: React.FC = () => {
           .order("cliente_id", { ascending: false })
           .limit(5),
 
+        // Motoristas contratados por cliente (status contratado) - só da company atual
         // Motoristas contratados por cliente - usar view para dados corretos
         supabase
           .from("vw_contratados_completo")
           .select("cliente_id")
           .eq("company_id", companyId)
+          .eq("ativo", true)
+          .eq("st_cadastro", "contratado")
           .not("cliente_id", "is", null),
 
         supabase
@@ -1447,32 +1514,10 @@ const Dashboard: React.FC = () => {
       const clientesAtivos = clientesAtivosResult.count || 0;
       const clientesDesativos = totalClientes - clientesAtivos;
 
-      // Debug: Log para verificar se filtro por company_id está funcionando
-      console.log("🔍 DEBUG Clientes - Company ID usado:", companyId);
-      console.log("🔍 DEBUG Clientes - Total encontrados:", totalClientes);
-      console.log("🔍 DEBUG Clientes - Dados recentes:", clientesRecentResult.data);
-      
-      // TEMPORARY FIX: Filter out obviously incorrect client data that belongs to other companies
-      const filteredRecentClientes = (clientesRecentResult.data || []).filter((cliente) => {
-        // Filter out obvious company names that shouldn't be in this account
-        const nome = cliente.nome?.toUpperCase() || '';
-        const isIncorrectData = (
-          nome.includes('WEBMOTORS') ||
-          nome.includes('DAITAN') ||
-          (nome === 'TESTE' && cliente.cliente_id > 300) // Old test data with high IDs
-        );
-        
-        if (isIncorrectData) {
-          console.warn(`🚫 Filtering out incorrect client data: ${cliente.nome} (ID: ${cliente.cliente_id})`);
-        }
-        
-        return !isIncorrectData;
-      });
-      
       // Calculate new clients this month - using fallback since created_at doesn't exist
       const clientesNoMes = 0; // Disabled due to schema limitation
 
-      const recentClientes = filteredRecentClientes.map((c) => ({
+      const recentClientes = (clientesRecentResult.data || []).map((c) => ({
         nome: c.nome,
         created_at: new Date().toISOString(), // Using fallback since created_at doesn't exist
       }));

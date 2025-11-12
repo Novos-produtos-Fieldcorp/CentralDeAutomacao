@@ -123,7 +123,7 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
   }, [showDropdown]);
   
   const handleCopyRomaneios = () => {
-    const text = romaneios.join(', ');
+    const text = romaneios.join('\n');
     
     // Tentar usar a API moderna primeiro
     if (navigator.clipboard && navigator.clipboard.writeText) {

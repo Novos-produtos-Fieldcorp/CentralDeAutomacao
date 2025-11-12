@@ -41,7 +41,7 @@ const Motoristas = () => {
       if (!companyId) return;
       
       const apiBaseUrl = window.location.hostname.includes('netlify.app') 
-        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1` 
+        ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
         : '/api';
       const response = await fetch(`${apiBaseUrl}/vagas/dashboard/${companyId}`);
       if (response.ok) {

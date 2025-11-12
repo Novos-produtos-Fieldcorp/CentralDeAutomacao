@@ -131,6 +131,8 @@ export interface DocumentoAjudante {
   gr_ajudante_motivo?: string | null;
   empresa_ajudante?: string | null;
   status_ajudante?: string | null;
+  rg_ajudante?: RgAjudante[];
+  cnh_ajudante?: CnhAjudante[];
 }
 
 export interface CnhAjudante {
