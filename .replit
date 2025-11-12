@@ -15,26 +15,20 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 39601
+localPort = 33005
 externalPort = 4200
 
 [[ports]]
-localPort = 43015
-externalPort = 5000
+localPort = 33355
+externalPort = 8000
+
+[[ports]]
 localPort = 34599
 externalPort = 3000
 
 [[ports]]
-localPort = 34909
-externalPort = 8000
-
-[[ports]]
 localPort = 36089
 externalPort = 6800
-
-[[ports]]
-localPort = 36449
-externalPort = 8000
 
 [[ports]]
 localPort = 42263
@@ -45,13 +39,12 @@ localPort = 43895
 externalPort = 3001
 
 [[ports]]
-localPort = 44853
-externalPort = 3002
+localPort = 44659
+externalPort = 5000
 
 [[ports]]
-localPort = 45705
-localPort = 44877
-externalPort = 8008
+localPort = 44853
+externalPort = 3002
 
 [[ports]]
 localPort = 45267
@@ -86,10 +79,6 @@ task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
 
-[workflows.workflow.metadata]
-outputType = "webview"
-
 [agent]
-integrations = ["javascript_supabase==1.0.0", "javascript_database==1.0.0"]
 integrations = ["javascript_database:1.0.0"]
 expertMode = true
