@@ -50,7 +50,7 @@ export const useModuleAccess = () => {
         const { data: company, error: companyError } = await supabase
           .from("company")
           .select(
-            "checklist_access, motorista_access, hodometro_acsess, minuta_access, resumo_access, tags_access, comprovante_access, bomba_gasolina_access, calculo_um_por_dia",
+            "checklist_access, motorista_access, hodometro_acsess, minuta_access, romaneio_access, resumo_access, tags_access, comprovante_access, bomba_gasolina_access, calculo_um_por_dia",
           )
           .eq("company_id", companyId)
           .maybeSingle();
