@@ -1505,68 +1505,6 @@ const HodometrosDashboard = () => {
             />
           </div>
 
-          {/* Km vs Preço Chart */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-            <div className="mb-6 flex items-center gap-2">
-              <BarChart2 className="text-blue-500" size={20} />
-              <h3 className="text-lg font-bold text-black dark:text-white">KM Rodado x Preço Gasto por Veículo</h3>
-            </div>
-            
-            {kmVsPriceData.length > 0 ? (
-              <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-                {kmVsPriceData.map((item, index) => {
-                  const maxKm = Math.max(...kmVsPriceData.map(d => d.km), 1);
-                  const maxPrice = Math.max(...kmVsPriceData.map(d => d.preco), 1);
-                  
-                  return (
-                    <div key={index} className="space-y-2" data-testid={`chart-km-price-${index}`}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-black dark:text-white">
-                          {item.placa}
-                        </span>
-                        <div className="flex gap-4 text-sm">
-                          <span className="text-blue-600 dark:text-blue-400">
-                            {item.km.toFixed(0)} km
-                          </span>
-                          <span className="text-green-600 dark:text-green-400">
-                            R$ {item.preco.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="flex-1">
-                          <div className="h-2 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
-                              style={{ 
-                                width: `${Math.max(5, (item.km / maxKm) * 100)}%` 
-                              }}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="h-2 bg-green-200 dark:bg-green-800 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all duration-300"
-                              style={{ 
-                                width: `${Math.max(5, (item.preco / maxPrice) * 100)}%` 
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700 rounded-2xl shadow">
-                <BarChart2 className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-                <p className="text-gray-400">Nenhum dado de km disponível para o período selecionado</p>
-              </div>
-            )}
-          </div>
-
           {/* Custo por Litro Table */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
             <div className="mb-6 flex items-center gap-2">
