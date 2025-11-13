@@ -825,6 +825,96 @@ const HodometrosDashboard = () => {
     }
   };
 
+  // Helper function to recalculate km_rodado using the same logic as HodometrosLista
+  const recalculateKmRodadoForVehicle = (readings: any[], calculoUmPorDia: boolean): Map<number, number> => {
+    const kmRodadoMap = new Map<number, number>();
+    
+    if (readings.length === 0) return kmRodadoMap;
+    
+    const isCiclomotor = readings.some((r: any) => r.bateria !== null && r.bateria !== undefined);
+    
+    const sortedReadings = [...readings].sort((a: any, b: any) => {
+      const dateCompare = a.data.localeCompare(b.data);
+      if (dateCompare !== 0) return dateCompare;
+      return a.hora.localeCompare(b.hora);
+    });
+    
+    if (calculoUmPorDia) {
+      const readingsByDay = new Map<string, any[]>();
+      
+      sortedReadings.forEach((reading: any) => {
+        if (!readingsByDay.has(reading.data)) {
+          readingsByDay.set(reading.data, []);
+        }
+        readingsByDay.get(reading.data)!.push(reading);
+      });
+      
+      const uniqueDays = Array.from(readingsByDay.keys()).sort();
+      const dayLastReadings = new Map<string, number>();
+      
+      uniqueDays.forEach(day => {
+        const dayReadings = readingsByDay.get(day)!;
+        let maxValue = 0;
+        dayReadings.forEach((reading: any) => {
+          const value = isCiclomotor 
+            ? (Number(reading.trip_lida) || 0)
+            : (Number(reading.hod_lido) || 0);
+          if (value > maxValue) maxValue = value;
+        });
+        dayLastReadings.set(day, maxValue);
+      });
+      
+      sortedReadings.forEach((reading: any) => {
+        const currentDayIndex = uniqueDays.indexOf(reading.data);
+        let kmRodado = 0;
+        
+        if (currentDayIndex < uniqueDays.length - 1) {
+          const nextDay = uniqueDays[currentDayIndex + 1];
+          const currentDate = new Date(reading.data + 'T00:00:00');
+          const nextDate = new Date(nextDay + 'T00:00:00');
+          const daysDiff = Math.round((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff === 1) {
+            const todayReading = dayLastReadings.get(reading.data) ?? 0;
+            const nextDayReading = dayLastReadings.get(nextDay) ?? 0;
+            kmRodado = nextDayReading - todayReading;
+            if (kmRodado < 0) kmRodado = 0;
+          }
+        }
+        
+        kmRodadoMap.set(reading.id_hodometro, kmRodado);
+      });
+      
+    } else {
+      const readingsByDay = new Map<string, any[]>();
+      
+      sortedReadings.forEach((reading: any) => {
+        if (!readingsByDay.has(reading.data)) {
+          readingsByDay.set(reading.data, []);
+        }
+        readingsByDay.get(reading.data)!.push(reading);
+      });
+      
+      sortedReadings.forEach((reading: any) => {
+        const dayReadings = readingsByDay.get(reading.data)!;
+        const firstReading = dayReadings[0];
+        const lastReading = dayReadings[dayReadings.length - 1];
+        
+        let kmRodado = 0;
+        if (isCiclomotor) {
+          kmRodado = (Number(lastReading.trip_lida) || 0) - (Number(firstReading.trip_lida) || 0);
+        } else {
+          kmRodado = (Number(lastReading.hod_lido) || 0) - (Number(firstReading.hod_lido) || 0);
+        }
+        
+        if (kmRodado < 0) kmRodado = 0;
+        kmRodadoMap.set(reading.id_hodometro, kmRodado);
+      });
+    }
+    
+    return kmRodadoMap;
+  };
+
   const fetchBombaDetailedStats = async () => {
     try {
       setConnectionError(false);
@@ -836,7 +926,46 @@ const HodometrosDashboard = () => {
         return isNaN(num) ? 0 : num;
       };
       
-      // Fetch bomba_gasolina with joins to hodometro and veiculo
+      // First, fetch all hodometros for the period to recalculate km_rodado
+      const { data: hodometrosData, error: hodometrosError } = await supabase
+        .from('hodometro')
+        .select(`
+          id_hodometro,
+          data,
+          hora,
+          hod_lido,
+          trip_lida,
+          bateria,
+          veiculo_id
+        `)
+        .eq('company_id', companyId)
+        .gte('data', dateRange.startDate)
+        .lte('data', dateRange.endDate)
+        .order('veiculo_id')
+        .order('data')
+        .order('hora');
+      
+      if (hodometrosError) throw hodometrosError;
+      
+      // Group hodometros by vehicle and recalculate km_rodado
+      const hodometrosByVehicle = new Map<number, any[]>();
+      (hodometrosData || []).forEach(hod => {
+        if (!hodometrosByVehicle.has(hod.veiculo_id)) {
+          hodometrosByVehicle.set(hod.veiculo_id, []);
+        }
+        hodometrosByVehicle.get(hod.veiculo_id)!.push(hod);
+      });
+      
+      // Recalculate km_rodado for each vehicle
+      const recalculatedKmRodado = new Map<number, number>();
+      hodometrosByVehicle.forEach((readings, veiculoId) => {
+        const kmMap = recalculateKmRodadoForVehicle(readings, moduleAccess.calculoUmPorDia);
+        kmMap.forEach((km, hodometroId) => {
+          recalculatedKmRodado.set(hodometroId, km);
+        });
+      });
+      
+      // Now fetch bomba_gasolina with joins
       const { data, error } = await supabase
         .from('bomba_gasolina')
         .select(`
@@ -855,10 +984,6 @@ const HodometrosDashboard = () => {
           motorista:motorista_id (
             motorista_id,
             nome
-          ),
-          hodometro:hodometro_id (
-            id_hodometro,
-            km_rodado
           )
         `)
         .eq('company_id', companyId)
@@ -881,7 +1006,8 @@ const HodometrosDashboard = () => {
       bombas.forEach((bomba: any) => {
         const litros = parseNumber(bomba.litro_lido);
         const preco = parseNumber(bomba.preco_lido);
-        const kmRodado = bomba.hodometro?.km_rodado || null;
+        // Use recalculated km_rodado instead of database value
+        const kmRodado = bomba.hodometro_id ? (recalculatedKmRodado.get(bomba.hodometro_id) ?? 0) : 0;
         
         // Skip invalid readings
         if (litros === 0 && preco === 0) return;
