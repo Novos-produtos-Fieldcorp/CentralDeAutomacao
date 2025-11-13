@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, BarChart2, Download, X, Calendar, User, Truck, ChevronDown, ChevronUp, Eye, Clock, Camera } from 'lucide-react';
+import { Search, BarChart2, Download, X, Calendar, User, Truck, ChevronDown, ChevronUp, Eye, Clock, Camera, Gauge, Fuel } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -11,6 +11,7 @@ import Pagination from '../../components/Pagination';
 import * as XLSX from 'xlsx';
 import MileageChartModal from '../../components/hodometros/MileageChartModal';
 import { formatCPF } from '../../utils/format';
+import { useModuleAccess } from '../../hooks/useModuleAccess';
 
 interface DailyData {
   date: string;
@@ -70,6 +71,7 @@ interface VehicleData {
 
 const HodometrosLista = () => {
   const { companyId } = useAuth();
+  const { moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all', false);
@@ -969,7 +971,7 @@ const HodometrosLista = () => {
                                             </div>
                                             {reading.bomba_gasolina.foto_bomba && (
                                               <button
-                                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e)}
+                                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, 'bomba', e)}
                                                 className="inline-flex items-center justify-center p-1 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                                                 title="Ver foto do preço lido"
                                               >
@@ -994,7 +996,7 @@ const HodometrosLista = () => {
                                             </div>
                                             {reading.bomba_gasolina.foto_bomba && (
                                               <button
-                                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, e)}
+                                                onClick={(e) => handleShowPhoto(reading.bomba_gasolina?.foto_bomba || null, 'bomba', e)}
                                                 className="inline-flex items-center justify-center p-1 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                                                 title="Ver foto dos litros lidos"
                                               >
