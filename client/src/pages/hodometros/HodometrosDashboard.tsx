@@ -1640,7 +1640,7 @@ const HodometrosDashboard = () => {
             
             {vehicleFuelStats.length > 0 ? (
               <div className="overflow-x-auto">
-                <div className="min-w-[600px] h-[400px] flex items-end justify-center gap-3 p-4">
+                <div className="min-w-[600px] h-[300px] flex items-end justify-center gap-3 p-4">
                   {vehicleFuelStats
                     .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
                     .map((stats, index) => {
