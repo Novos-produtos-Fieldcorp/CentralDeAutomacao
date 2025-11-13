@@ -825,6 +825,96 @@ const HodometrosDashboard = () => {
     }
   };
 
+  // Helper function to recalculate km_rodado using the same logic as HodometrosLista
+  const recalculateKmRodadoForVehicle = (readings: any[], calculoUmPorDia: boolean): Map<number, number> => {
+    const kmRodadoMap = new Map<number, number>();
+    
+    if (readings.length === 0) return kmRodadoMap;
+    
+    const isCiclomotor = readings.some((r: any) => r.bateria !== null && r.bateria !== undefined);
+    
+    const sortedReadings = [...readings].sort((a: any, b: any) => {
+      const dateCompare = a.data.localeCompare(b.data);
+      if (dateCompare !== 0) return dateCompare;
+      return a.hora.localeCompare(b.hora);
+    });
+    
+    if (calculoUmPorDia) {
+      const readingsByDay = new Map<string, any[]>();
+      
+      sortedReadings.forEach((reading: any) => {
+        if (!readingsByDay.has(reading.data)) {
+          readingsByDay.set(reading.data, []);
+        }
+        readingsByDay.get(reading.data)!.push(reading);
+      });
+      
+      const uniqueDays = Array.from(readingsByDay.keys()).sort();
+      const dayLastReadings = new Map<string, number>();
+      
+      uniqueDays.forEach(day => {
+        const dayReadings = readingsByDay.get(day)!;
+        let maxValue = 0;
+        dayReadings.forEach((reading: any) => {
+          const value = isCiclomotor 
+            ? (Number(reading.trip_lida) || 0)
+            : (Number(reading.hod_lido) || 0);
+          if (value > maxValue) maxValue = value;
+        });
+        dayLastReadings.set(day, maxValue);
+      });
+      
+      sortedReadings.forEach((reading: any) => {
+        const currentDayIndex = uniqueDays.indexOf(reading.data);
+        let kmRodado = 0;
+        
+        if (currentDayIndex < uniqueDays.length - 1) {
+          const nextDay = uniqueDays[currentDayIndex + 1];
+          const currentDate = new Date(reading.data + 'T00:00:00');
+          const nextDate = new Date(nextDay + 'T00:00:00');
+          const daysDiff = Math.round((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff === 1) {
+            const todayReading = dayLastReadings.get(reading.data) ?? 0;
+            const nextDayReading = dayLastReadings.get(nextDay) ?? 0;
+            kmRodado = nextDayReading - todayReading;
+            if (kmRodado < 0) kmRodado = 0;
+          }
+        }
+        
+        kmRodadoMap.set(reading.id_hodometro, kmRodado);
+      });
+      
+    } else {
+      const readingsByDay = new Map<string, any[]>();
+      
+      sortedReadings.forEach((reading: any) => {
+        if (!readingsByDay.has(reading.data)) {
+          readingsByDay.set(reading.data, []);
+        }
+        readingsByDay.get(reading.data)!.push(reading);
+      });
+      
+      sortedReadings.forEach((reading: any) => {
+        const dayReadings = readingsByDay.get(reading.data)!;
+        const firstReading = dayReadings[0];
+        const lastReading = dayReadings[dayReadings.length - 1];
+        
+        let kmRodado = 0;
+        if (isCiclomotor) {
+          kmRodado = (Number(lastReading.trip_lida) || 0) - (Number(firstReading.trip_lida) || 0);
+        } else {
+          kmRodado = (Number(lastReading.hod_lido) || 0) - (Number(firstReading.hod_lido) || 0);
+        }
+        
+        if (kmRodado < 0) kmRodado = 0;
+        kmRodadoMap.set(reading.id_hodometro, kmRodado);
+      });
+    }
+    
+    return kmRodadoMap;
+  };
+
   const fetchBombaDetailedStats = async () => {
     try {
       setConnectionError(false);
@@ -836,7 +926,46 @@ const HodometrosDashboard = () => {
         return isNaN(num) ? 0 : num;
       };
       
-      // Fetch bomba_gasolina with joins to hodometro and veiculo
+      // First, fetch all hodometros for the period to recalculate km_rodado
+      const { data: hodometrosData, error: hodometrosError } = await supabase
+        .from('hodometro')
+        .select(`
+          id_hodometro,
+          data,
+          hora,
+          hod_lido,
+          trip_lida,
+          bateria,
+          veiculo_id
+        `)
+        .eq('company_id', companyId)
+        .gte('data', dateRange.startDate)
+        .lte('data', dateRange.endDate)
+        .order('veiculo_id')
+        .order('data')
+        .order('hora');
+      
+      if (hodometrosError) throw hodometrosError;
+      
+      // Group hodometros by vehicle and recalculate km_rodado
+      const hodometrosByVehicle = new Map<number, any[]>();
+      (hodometrosData || []).forEach(hod => {
+        if (!hodometrosByVehicle.has(hod.veiculo_id)) {
+          hodometrosByVehicle.set(hod.veiculo_id, []);
+        }
+        hodometrosByVehicle.get(hod.veiculo_id)!.push(hod);
+      });
+      
+      // Recalculate km_rodado for each vehicle
+      const recalculatedKmRodado = new Map<number, number>();
+      hodometrosByVehicle.forEach((readings, veiculoId) => {
+        const kmMap = recalculateKmRodadoForVehicle(readings, moduleAccess.calculoUmPorDia);
+        kmMap.forEach((km, hodometroId) => {
+          recalculatedKmRodado.set(hodometroId, km);
+        });
+      });
+      
+      // Now fetch bomba_gasolina with joins
       const { data, error } = await supabase
         .from('bomba_gasolina')
         .select(`
@@ -855,10 +984,6 @@ const HodometrosDashboard = () => {
           motorista:motorista_id (
             motorista_id,
             nome
-          ),
-          hodometro:hodometro_id (
-            id_hodometro,
-            km_rodado
           )
         `)
         .eq('company_id', companyId)
@@ -870,8 +995,8 @@ const HodometrosDashboard = () => {
       
       const bombas = data || [];
       
-      // Maps to aggregate data by vehicle
-      const vehicleStatsMap = new Map<number, VehicleFuelStats>();
+      // Maps to aggregate data by vehicle (using placa as key to avoid duplicates)
+      const vehicleStatsMap = new Map<string, VehicleFuelStats>();
       const kmVsPriceMap = new Map<string, { km: number; preco: number }>();
       
       let totalLitrosSum = 0;
@@ -881,7 +1006,8 @@ const HodometrosDashboard = () => {
       bombas.forEach((bomba: any) => {
         const litros = parseNumber(bomba.litro_lido);
         const preco = parseNumber(bomba.preco_lido);
-        const kmRodado = bomba.hodometro?.km_rodado || null;
+        // Use recalculated km_rodado instead of database value
+        const kmRodado = bomba.hodometro_id ? (recalculatedKmRodado.get(bomba.hodometro_id) ?? 0) : 0;
         
         // Skip invalid readings
         if (litros === 0 && preco === 0) return;
@@ -890,14 +1016,14 @@ const HodometrosDashboard = () => {
         if (!veiculo || !veiculo.veiculo_id) return;
         
         const veiculoId = veiculo.veiculo_id;
-        const placa = veiculo.placa || 'Desconhecida';
+        const placaNormalizada = (veiculo.placa || 'Desconhecida').toUpperCase();
         const marca = veiculo.marca || 'Desconhecida';
         
-        // Aggregate by vehicle
-        if (!vehicleStatsMap.has(veiculoId)) {
-          vehicleStatsMap.set(veiculoId, {
+        // Aggregate by placa (normalized to uppercase) instead of veiculo_id
+        if (!vehicleStatsMap.has(placaNormalizada)) {
+          vehicleStatsMap.set(placaNormalizada, {
             veiculo_id: veiculoId,
-            placa,
+            placa: placaNormalizada,
             marca,
             totalLitros: 0,
             totalGasto: 0,
@@ -907,7 +1033,7 @@ const HodometrosDashboard = () => {
           });
         }
         
-        const stats = vehicleStatsMap.get(veiculoId)!;
+        const stats = vehicleStatsMap.get(placaNormalizada)!;
         stats.totalLitros += litros;
         stats.totalGasto += preco;
         stats.abastecimentos += 1;
@@ -916,14 +1042,14 @@ const HodometrosDashboard = () => {
           stats.totalKm += kmRodado;
         }
         
-        vehicleStatsMap.set(veiculoId, stats);
+        vehicleStatsMap.set(placaNormalizada, stats);
         
-        // Aggregate km vs price by placa
+        // Aggregate km vs price by placa (normalized to uppercase)
         if (kmRodado !== null && kmRodado > 0) {
-          const existing = kmVsPriceMap.get(placa) || { km: 0, preco: 0 };
+          const existing = kmVsPriceMap.get(placaNormalizada) || { km: 0, preco: 0 };
           existing.km += kmRodado;
           existing.preco += preco;
-          kmVsPriceMap.set(placa, existing);
+          kmVsPriceMap.set(placaNormalizada, existing);
         }
         
         // Sum totals
@@ -1505,64 +1631,61 @@ const HodometrosDashboard = () => {
             />
           </div>
 
-          {/* Km vs Preço Chart */}
+          {/* Consumo Médio Chart (Bar Chart) */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
             <div className="mb-6 flex items-center gap-2">
               <BarChart2 className="text-blue-500" size={20} />
-              <h3 className="text-lg font-bold text-black dark:text-white">KM Rodado x Preço Gasto por Veículo</h3>
+              <h3 className="text-lg font-bold text-black dark:text-white">Média de Consumo por Veículo (km/L)</h3>
             </div>
             
-            {kmVsPriceData.length > 0 ? (
-              <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-                {kmVsPriceData.map((item, index) => {
-                  const maxKm = Math.max(...kmVsPriceData.map(d => d.km), 1);
-                  const maxPrice = Math.max(...kmVsPriceData.map(d => d.preco), 1);
-                  
-                  return (
-                    <div key={index} className="space-y-2" data-testid={`chart-km-price-${index}`}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-black dark:text-white">
-                          {item.placa}
-                        </span>
-                        <div className="flex gap-4 text-sm">
-                          <span className="text-blue-600 dark:text-blue-400">
-                            {item.km.toFixed(0)} km
-                          </span>
-                          <span className="text-green-600 dark:text-green-400">
-                            R$ {item.preco.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="flex-1">
-                          <div className="h-2 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
+            {vehicleFuelStats.length > 0 ? (
+              <div className="overflow-x-auto">
+                <div className="min-w-[600px] h-[300px] flex items-end justify-center gap-3 p-4">
+                  {vehicleFuelStats
+                    .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
+                    .map((stats, index) => {
+                      // Set Y-axis to 20, but increase if any value exceeds it
+                      const actualMaxValue = Math.max(...vehicleFuelStats.map(s => s.mediaKmPorLitro), 1);
+                      const maxMedia = Math.max(actualMaxValue, 20);
+                      const heightPercent = (stats.mediaKmPorLitro / maxMedia) * 100;
+                      
+                      return (
+                        <div 
+                          key={stats.placa} 
+                          className="flex flex-col items-center gap-2"
+                          style={{ width: '80px' }}
+                          data-testid={`bar-vehicle-${stats.placa}`}
+                        >
+                          <div className="w-full flex flex-col items-center gap-1">
+                            <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
+                              {stats.mediaKmPorLitro > 0 ? stats.mediaKmPorLitro.toFixed(2) : '0'}
+                            </span>
                             <div 
-                              className="h-full bg-blue-500 dark:bg-blue-400 rounded-full transition-all duration-300"
+                              className="w-full bg-gradient-to-t from-purple-500 to-purple-400 dark:from-purple-600 dark:to-purple-500 rounded-t-lg transition-all duration-500 hover:opacity-80 relative group"
                               style={{ 
-                                width: `${Math.max(5, (item.km / maxKm) * 100)}%` 
+                                height: `${Math.max(10, heightPercent)}%`,
+                                minHeight: '20px'
                               }}
-                            />
+                            >
+                              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                {stats.placa}: {stats.mediaKmPorLitro.toFixed(2)} km/L
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">
+                              {stats.placa}
+                            </p>
                           </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="h-2 bg-green-200 dark:bg-green-800 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all duration-300"
-                              style={{ 
-                                width: `${Math.max(5, (item.preco / maxPrice) * 100)}%` 
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700 rounded-2xl shadow">
                 <BarChart2 className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-                <p className="text-gray-400">Nenhum dado de km disponível para o período selecionado</p>
+                <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
               </div>
             )}
           </div>
@@ -1593,9 +1716,9 @@ const HodometrosDashboard = () => {
                       .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
                       .map((stats, index) => (
                         <tr 
-                          key={stats.veiculo_id} 
+                          key={stats.placa} 
                           className={`border-b border-gray-100 dark:border-gray-700 ${index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-900/50' : 'bg-white dark:bg-gray-800'}`}
-                          data-testid={`row-vehicle-${stats.veiculo_id}`}
+                          data-testid={`row-vehicle-${stats.placa}`}
                         >
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{stats.placa}</td>
                           <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{stats.marca}</td>
