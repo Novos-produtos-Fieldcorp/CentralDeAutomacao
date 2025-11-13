@@ -926,7 +926,7 @@ const HodometrosDashboard = () => {
         return isNaN(num) ? 0 : num;
       };
       
-      // First, fetch all hodometros for the period to recalculate km_rodado
+      // First, fetch all hodometros for the period to calculate total km_rodado
       const { data: hodometrosData, error: hodometrosError } = await supabase
         .from('hodometro')
         .select(`
@@ -947,7 +947,8 @@ const HodometrosDashboard = () => {
       
       if (hodometrosError) throw hodometrosError;
       
-      // Group hodometros by vehicle and recalculate km_rodado
+      // Group hodometros by vehicle and calculate total km_rodado
+      // km_rodado = (most recent reading - first reading) for the entire period
       const hodometrosByVehicle = new Map<number, any[]>();
       (hodometrosData || []).forEach(hod => {
         if (!hodometrosByVehicle.has(hod.veiculo_id)) {
@@ -956,13 +957,40 @@ const HodometrosDashboard = () => {
         hodometrosByVehicle.get(hod.veiculo_id)!.push(hod);
       });
       
-      // Recalculate km_rodado for each vehicle
-      const recalculatedKmRodado = new Map<number, number>();
+      // Calculate total km_rodado for each vehicle (most recent - first reading)
+      const totalKmRodadoByVehicle = new Map<number, number>();
       hodometrosByVehicle.forEach((readings, veiculoId) => {
-        const kmMap = recalculateKmRodadoForVehicle(readings, moduleAccess.calculoUmPorDia);
-        kmMap.forEach((km, hodometroId) => {
-          recalculatedKmRodado.set(hodometroId, km);
+        if (readings.length === 0) return;
+        
+        // Sort by date and time to ensure correct order
+        const sortedReadings = [...readings].sort((a, b) => {
+          const dateCompare = a.data.localeCompare(b.data);
+          if (dateCompare !== 0) return dateCompare;
+          return a.hora.localeCompare(b.hora);
         });
+        
+        const firstReading = sortedReadings[0];
+        const lastReading = sortedReadings[sortedReadings.length - 1];
+        
+        // Determine if it's a ciclomotor (has bateria field)
+        const isCiclomotor = firstReading.bateria !== null && firstReading.bateria !== undefined;
+        
+        // Calculate total km_rodado
+        let totalKm = 0;
+        if (isCiclomotor) {
+          const firstValue = parseNumber(firstReading.trip_lida);
+          const lastValue = parseNumber(lastReading.trip_lida);
+          totalKm = lastValue - firstValue;
+        } else {
+          const firstValue = parseNumber(firstReading.hod_lido);
+          const lastValue = parseNumber(lastReading.hod_lido);
+          totalKm = lastValue - firstValue;
+        }
+        
+        // Ensure non-negative
+        if (totalKm < 0) totalKm = 0;
+        
+        totalKmRodadoByVehicle.set(veiculoId, totalKm);
       });
       
       // Now fetch bomba_gasolina with joins
@@ -1006,8 +1034,6 @@ const HodometrosDashboard = () => {
       bombas.forEach((bomba: any) => {
         const litros = parseNumber(bomba.litro_lido);
         const preco = parseNumber(bomba.preco_lido);
-        // Use recalculated km_rodado instead of database value
-        const kmRodado = bomba.hodometro_id ? (recalculatedKmRodado.get(bomba.hodometro_id) ?? 0) : 0;
         
         // Skip invalid readings
         if (litros === 0 && preco === 0) return;
@@ -1021,13 +1047,16 @@ const HodometrosDashboard = () => {
         
         // Aggregate by placa (normalized to uppercase) instead of veiculo_id
         if (!vehicleStatsMap.has(placaNormalizada)) {
+          // Get total km_rodado for this vehicle (most recent - first reading)
+          const totalKmForVehicle = totalKmRodadoByVehicle.get(veiculoId) ?? 0;
+          
           vehicleStatsMap.set(placaNormalizada, {
             veiculo_id: veiculoId,
             placa: placaNormalizada,
             marca,
             totalLitros: 0,
             totalGasto: 0,
-            totalKm: 0,
+            totalKm: totalKmForVehicle,
             mediaKmPorLitro: 0,
             abastecimentos: 0
           });
@@ -1038,16 +1067,16 @@ const HodometrosDashboard = () => {
         stats.totalGasto += preco;
         stats.abastecimentos += 1;
         
-        if (kmRodado !== null && kmRodado > 0) {
-          stats.totalKm += kmRodado;
-        }
-        
         vehicleStatsMap.set(placaNormalizada, stats);
         
         // Aggregate km vs price by placa (normalized to uppercase)
-        if (kmRodado !== null && kmRodado > 0) {
+        const totalKmForVehicle = totalKmRodadoByVehicle.get(veiculoId) ?? 0;
+        if (totalKmForVehicle > 0) {
           const existing = kmVsPriceMap.get(placaNormalizada) || { km: 0, preco: 0 };
-          existing.km += kmRodado;
+          // Only set km once per vehicle (not per bomba)
+          if (existing.km === 0) {
+            existing.km = totalKmForVehicle;
+          }
           existing.preco += preco;
           kmVsPriceMap.set(placaNormalizada, existing);
         }
