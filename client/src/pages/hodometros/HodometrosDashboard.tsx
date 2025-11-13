@@ -1505,6 +1505,65 @@ const HodometrosDashboard = () => {
             />
           </div>
 
+          {/* Consumo Médio Chart (Bar Chart) */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+            <div className="mb-6 flex items-center gap-2">
+              <BarChart2 className="text-blue-500" size={20} />
+              <h3 className="text-lg font-bold text-black dark:text-white">Média de Consumo por Veículo (km/L)</h3>
+            </div>
+            
+            {vehicleFuelStats.length > 0 ? (
+              <div className="overflow-x-auto">
+                <div className="min-w-[600px] h-[400px] flex items-end gap-3 p-4">
+                  {vehicleFuelStats
+                    .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
+                    .map((stats, index) => {
+                      const maxMedia = Math.max(...vehicleFuelStats.map(s => s.mediaKmPorLitro), 1);
+                      const heightPercent = (stats.mediaKmPorLitro / maxMedia) * 100;
+                      
+                      return (
+                        <div 
+                          key={stats.veiculo_id} 
+                          className="flex-1 flex flex-col items-center gap-2"
+                          data-testid={`bar-vehicle-${stats.veiculo_id}`}
+                        >
+                          <div className="w-full flex flex-col items-center gap-1">
+                            <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
+                              {stats.mediaKmPorLitro > 0 ? stats.mediaKmPorLitro.toFixed(2) : '0'}
+                            </span>
+                            <div 
+                              className="w-full bg-gradient-to-t from-purple-500 to-purple-400 dark:from-purple-600 dark:to-purple-500 rounded-t-lg transition-all duration-500 hover:opacity-80 relative group"
+                              style={{ 
+                                height: `${Math.max(10, heightPercent)}%`,
+                                minHeight: '20px'
+                              }}
+                            >
+                              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                {stats.placa}: {stats.mediaKmPorLitro.toFixed(2)} km/L
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">
+                              {stats.placa}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {stats.marca}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700 rounded-2xl shadow">
+                <BarChart2 className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
+                <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
+              </div>
+            )}
+          </div>
+
           {/* Custo por Litro Table */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
             <div className="mb-6 flex items-center gap-2">
