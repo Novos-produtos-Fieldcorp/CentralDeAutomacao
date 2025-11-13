@@ -1441,7 +1441,7 @@ const HodometrosDashboard = () => {
         {moduleAccess.bomba && (
           <>
             <StatCard
-              title="Total de Leituras"
+              title="Total de leituras de abastecimentos"
               value={totalBomba + totalMinutas}
               icon={Fuel}
               color="purple"
