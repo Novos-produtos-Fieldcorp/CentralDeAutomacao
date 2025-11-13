@@ -1548,9 +1548,6 @@ const HodometrosDashboard = () => {
                             <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">
                               {stats.placa}
                             </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {stats.marca}
-                            </p>
                           </div>
                         </div>
                       );
