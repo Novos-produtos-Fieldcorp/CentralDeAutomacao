@@ -870,8 +870,8 @@ const HodometrosDashboard = () => {
       
       const bombas = data || [];
       
-      // Maps to aggregate data by vehicle
-      const vehicleStatsMap = new Map<number, VehicleFuelStats>();
+      // Maps to aggregate data by vehicle (using placa as key to avoid duplicates)
+      const vehicleStatsMap = new Map<string, VehicleFuelStats>();
       const kmVsPriceMap = new Map<string, { km: number; preco: number }>();
       
       let totalLitrosSum = 0;
@@ -890,14 +890,14 @@ const HodometrosDashboard = () => {
         if (!veiculo || !veiculo.veiculo_id) return;
         
         const veiculoId = veiculo.veiculo_id;
-        const placa = (veiculo.placa || 'Desconhecida').toUpperCase();
+        const placaNormalizada = (veiculo.placa || 'Desconhecida').toUpperCase();
         const marca = veiculo.marca || 'Desconhecida';
         
-        // Aggregate by vehicle
-        if (!vehicleStatsMap.has(veiculoId)) {
-          vehicleStatsMap.set(veiculoId, {
+        // Aggregate by placa (normalized to uppercase) instead of veiculo_id
+        if (!vehicleStatsMap.has(placaNormalizada)) {
+          vehicleStatsMap.set(placaNormalizada, {
             veiculo_id: veiculoId,
-            placa,
+            placa: placaNormalizada,
             marca,
             totalLitros: 0,
             totalGasto: 0,
@@ -907,7 +907,7 @@ const HodometrosDashboard = () => {
           });
         }
         
-        const stats = vehicleStatsMap.get(veiculoId)!;
+        const stats = vehicleStatsMap.get(placaNormalizada)!;
         stats.totalLitros += litros;
         stats.totalGasto += preco;
         stats.abastecimentos += 1;
@@ -916,11 +916,10 @@ const HodometrosDashboard = () => {
           stats.totalKm += kmRodado;
         }
         
-        vehicleStatsMap.set(veiculoId, stats);
+        vehicleStatsMap.set(placaNormalizada, stats);
         
         // Aggregate km vs price by placa (normalized to uppercase)
         if (kmRodado !== null && kmRodado > 0) {
-          const placaNormalizada = placa.toUpperCase();
           const existing = kmVsPriceMap.get(placaNormalizada) || { km: 0, preco: 0 };
           existing.km += kmRodado;
           existing.preco += preco;
@@ -1524,10 +1523,10 @@ const HodometrosDashboard = () => {
                       
                       return (
                         <div 
-                          key={stats.veiculo_id} 
+                          key={stats.placa} 
                           className="flex flex-col items-center gap-2"
                           style={{ width: '80px' }}
-                          data-testid={`bar-vehicle-${stats.veiculo_id}`}
+                          data-testid={`bar-vehicle-${stats.placa}`}
                         >
                           <div className="w-full flex flex-col items-center gap-1">
                             <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
@@ -1589,9 +1588,9 @@ const HodometrosDashboard = () => {
                       .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
                       .map((stats, index) => (
                         <tr 
-                          key={stats.veiculo_id} 
+                          key={stats.placa} 
                           className={`border-b border-gray-100 dark:border-gray-700 ${index % 2 === 0 ? 'bg-gray-50 dark:bg-gray-900/50' : 'bg-white dark:bg-gray-800'}`}
-                          data-testid={`row-vehicle-${stats.veiculo_id}`}
+                          data-testid={`row-vehicle-${stats.placa}`}
                         >
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{stats.placa}</td>
                           <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{stats.marca}</td>
