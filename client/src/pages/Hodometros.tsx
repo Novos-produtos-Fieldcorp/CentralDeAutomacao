@@ -73,7 +73,9 @@ const Hodometros = () => {
       <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
         {moduleAccess.bomba ? 'Hodômetro e Abastecimento' : 'Hodômetro'}
       </h1>
-      <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Hodômetros</h1>
+      {!moduleAccess.bomba && (
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Hodômetros</h1>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
         <div className="border-b border-gray-200 dark:border-gray-700 relative">
