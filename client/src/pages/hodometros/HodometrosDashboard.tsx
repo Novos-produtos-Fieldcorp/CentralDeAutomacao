@@ -1514,7 +1514,7 @@ const HodometrosDashboard = () => {
             
             {vehicleFuelStats.length > 0 ? (
               <div className="overflow-x-auto">
-                <div className="min-w-[600px] h-[400px] flex items-end gap-3 p-4">
+                <div className="min-w-[600px] h-[400px] flex items-end justify-center gap-3 p-4">
                   {vehicleFuelStats
                     .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
                     .map((stats, index) => {
@@ -1524,7 +1524,8 @@ const HodometrosDashboard = () => {
                       return (
                         <div 
                           key={stats.veiculo_id} 
-                          className="flex-1 flex flex-col items-center gap-2"
+                          className="flex flex-col items-center gap-2"
+                          style={{ width: '80px' }}
                           data-testid={`bar-vehicle-${stats.veiculo_id}`}
                         >
                           <div className="w-full flex flex-col items-center gap-1">
