@@ -890,7 +890,7 @@ const HodometrosDashboard = () => {
         if (!veiculo || !veiculo.veiculo_id) return;
         
         const veiculoId = veiculo.veiculo_id;
-        const placa = veiculo.placa || 'Desconhecida';
+        const placa = (veiculo.placa || 'Desconhecida').toUpperCase();
         const marca = veiculo.marca || 'Desconhecida';
         
         // Aggregate by vehicle
@@ -918,12 +918,13 @@ const HodometrosDashboard = () => {
         
         vehicleStatsMap.set(veiculoId, stats);
         
-        // Aggregate km vs price by placa
+        // Aggregate km vs price by placa (normalized to uppercase)
         if (kmRodado !== null && kmRodado > 0) {
-          const existing = kmVsPriceMap.get(placa) || { km: 0, preco: 0 };
+          const placaNormalizada = placa.toUpperCase();
+          const existing = kmVsPriceMap.get(placaNormalizada) || { km: 0, preco: 0 };
           existing.km += kmRodado;
           existing.preco += preco;
-          kmVsPriceMap.set(placa, existing);
+          kmVsPriceMap.set(placaNormalizada, existing);
         }
         
         // Sum totals
