@@ -1644,9 +1644,9 @@ const HodometrosDashboard = () => {
                   {vehicleFuelStats
                     .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
                     .map((stats, index) => {
-                      // Set Y-axis to 30, but increase if any value exceeds it
+                      // Set Y-axis to 25, but increase if any value exceeds it
                       const actualMaxValue = Math.max(...vehicleFuelStats.map(s => s.mediaKmPorLitro), 1);
-                      const maxMedia = Math.max(actualMaxValue, 30);
+                      const maxMedia = Math.max(actualMaxValue, 25);
                       const heightPercent = (stats.mediaKmPorLitro / maxMedia) * 100;
                       
                       return (
