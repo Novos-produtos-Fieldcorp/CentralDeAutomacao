@@ -109,7 +109,7 @@ interface VehicleFuelStats {
   totalLitros: number;
   totalGasto: number;
   totalKm: number;
-  custoPorlitro: number;
+  mediaKmPorLitro: number;
   abastecimentos: number;
 }
 
@@ -902,7 +902,7 @@ const HodometrosDashboard = () => {
             totalLitros: 0,
             totalGasto: 0,
             totalKm: 0,
-            custoPorlitro: 0,
+            mediaKmPorLitro: 0,
             abastecimentos: 0
           });
         }
@@ -932,10 +932,10 @@ const HodometrosDashboard = () => {
         if (litros > 0) validReadingsCount++;
       });
       
-      // Calculate cost per liter for each vehicle
+      // Calculate average km per liter for each vehicle
       const vehicleStats = Array.from(vehicleStatsMap.values()).map(stats => ({
         ...stats,
-        custoPorlitro: stats.totalLitros > 0 ? stats.totalGasto / stats.totalLitros : 0
+        mediaKmPorLitro: stats.totalLitros > 0 ? stats.totalKm / stats.totalLitros : 0
       }));
       
       // Convert km vs price map to array
@@ -1585,12 +1585,12 @@ const HodometrosDashboard = () => {
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Litros</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Gasto (R$)</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">KM</th>
-                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">R$/Litro</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Média (km/L)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {vehicleFuelStats
-                      .sort((a, b) => b.custoPorlitro - a.custoPorlitro)
+                      .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
                       .map((stats, index) => (
                         <tr 
                           key={stats.veiculo_id} 
@@ -1606,7 +1606,7 @@ const HodometrosDashboard = () => {
                             {stats.totalKm > 0 ? `${stats.totalKm.toFixed(0)} km` : '-'}
                           </td>
                           <td className="py-3 px-4 text-sm font-semibold text-purple-600 dark:text-purple-400 text-right">
-                            R$ {stats.custoPorlitro.toFixed(2)}
+                            {stats.mediaKmPorLitro > 0 ? `${stats.mediaKmPorLitro.toFixed(2)} km/L` : '-'}
                           </td>
                         </tr>
                       ))}
