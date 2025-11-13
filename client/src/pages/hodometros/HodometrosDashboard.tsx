@@ -1447,7 +1447,7 @@ const HodometrosDashboard = () => {
               color="purple"
             />
             <StatCard
-              title="Total de Leituras de Hoje"
+              title="Total de leituras de minutas"
               value={todayBombaMinuta}
               icon={ClipboardList}
               color="amber"
