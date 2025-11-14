@@ -28,7 +28,8 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **Minuta Management**: Full minuta management in the Hodômetros module with search, filtering, and editing, including support for multiple `romaneio` numbers per minuta.
 - **Hodômetro km_rodado Calculation with Reset Detection**: 
   - **Reset Detection Utility** (`client/src/utils/hodometroResetUtils.ts`):
-    - `buildOdometerTimeline()`: Detects odometer resets (when reading decreases) and creates segments
+    - `buildOdometerTimeline()`: Detects odometer resets (when reading decreases by >100 km) and creates segments
+    - **Reset Tolerance**: 100 km threshold to ignore data entry errors (decreases < 100 km are treated as input mistakes)
     - Returns baseline value (first reading after last reset) for accurate calculations
     - Supports multiple resets throughout vehicle history
     - Type-safe TypeScript implementation with proper interfaces

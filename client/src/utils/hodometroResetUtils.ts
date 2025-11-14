@@ -48,6 +48,12 @@ function parseNumber(value: string | number | null | undefined): number {
 }
 
 /**
+ * Minimum decrease in km to be considered a true reset (not just a data entry error).
+ * Decreases smaller than this threshold are ignored as likely input mistakes.
+ */
+const RESET_TOLERANCE_KM = 100;
+
+/**
  * Builds an odometer timeline with reset detection for a single vehicle.
  * 
  * @param readings - Chronologically sorted readings for a single vehicle
@@ -56,7 +62,7 @@ function parseNumber(value: string | number | null | undefined): number {
  * Algorithm:
  * 1. Determine vehicle type (automovel vs ciclomotor)
  * 2. Iterate through chronological readings
- * 3. Detect resets when value decreases
+ * 3. Detect resets when value decreases by more than RESET_TOLERANCE_KM
  * 4. Create new segment at each reset
  * 5. Return baseline (after last reset) and total km_rodado
  */
@@ -94,8 +100,10 @@ export function buildOdometerTimeline(
     // Skip null/zero readings
     if (currentValue === 0) continue;
 
-    // Detect reset: current value is less than previous value
-    if (previousValue > 0 && currentValue < previousValue) {
+    // Detect reset: current value is significantly less than previous value
+    // Small decreases (< RESET_TOLERANCE_KM) are treated as data entry errors and ignored
+    const decrease = previousValue - currentValue;
+    if (previousValue > 0 && decrease > RESET_TOLERANCE_KM) {
       // Reset detected! Close current segment and start new one
       if (currentSegment) {
         currentSegment.endReading = previousValue;
