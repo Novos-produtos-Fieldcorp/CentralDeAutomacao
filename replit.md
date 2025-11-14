@@ -62,7 +62,14 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
     - Search by motorista name or ID with safe null handling
     - Excel export functionality
     - Pagination (25 items per page)
-    - Photo modal with full-screen overlay
+    - **Smart Media Loading System**: Comprehensive photo/video support with robust URL parsing
+      - Handles multiple formats: base64 (images/videos), complete URLs, JSON arrays, comma-separated lists, single filenames
+      - Auto-detects video vs image (MIME types + file extensions)
+      - Pre-computed URLs during data fetch for optimal performance
+      - Thumbnail previews in table (video icon placeholder for videos)
+      - Full-screen modal with native video player support
+      - Error handling with detailed console logging
+      - Supports WiseApp URLs and Supabase Storage URLs
     - Loading and error states with retry functionality
   - **Navigation**: Tab highlighting with `startsWith` logic for correct active state in nested routes
   - **Data Integrity**: Proper normalization of Supabase relation arrays to single objects before state updates
