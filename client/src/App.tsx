@@ -27,6 +27,7 @@ import ResumosGrupo from "./pages/ResumosGrupo";
 import TagsAdmin from "./pages/TagsAdmin";
 import Comprovantes from "./pages/Comprovantes";
 import Vagas from "./pages/Vagas";
+import ComprovRotaLista from "./pages/comprov-rota/ComprovRotaLista";
 
 const AppRoutes = () => {
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -57,6 +58,10 @@ const AppRoutes = () => {
             <SidebarLayout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
+                <Route
+                  path="/comprov-rota"
+                  element={<ComprovRotaLista />}
+                />
                 <Route
                   path="/motoristas/*"
                   element={<Motoristas />}
