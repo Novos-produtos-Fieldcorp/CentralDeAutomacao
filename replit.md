@@ -55,6 +55,12 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
     - Implementation: All plates normalized to UPPERCASE before aggregation to prevent duplicates (e.g., "Hbz6f14" and "HBZ6F14" treated as "HBZ6F14")
     - Strategy: Calculate km_rodado per veiculo_id first (reliable), then consolidate by normalized plate for final display
 - **Vagas Module**: Supports inline creation of related entities, real-time dashboard statistics, and a toggle for table/card grid views with preference persistence.
+- **Comprovante de Rota Module**: Tabbed interface with Dashboard and Lista (List) views following the same pattern as Hodômetros and Checklist modules:
+  - **Dashboard**: Statistics cards showing total comprovantes, today's count, monthly count, and active drivers; Top 5 drivers chart with visual progress bars
+  - **Lista**: Search and filter functionality for route proofs with motorista relation normalization
+  - **Navigation**: Tab highlighting with `startsWith` logic for correct active state in nested routes
+  - **Data Integrity**: Proper normalization of Supabase relation arrays to single objects before state updates
+  - **Testing**: All interactive elements include data-testid attributes
 - **Deployment**: Configured for Replit with Vite dev server accepting all hosts (`0.0.0.0`) and Express backend bound to `0.0.0.0:5000`.
 
 ### System Design Choices
