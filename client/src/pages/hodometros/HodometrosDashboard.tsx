@@ -596,7 +596,7 @@ const HodometrosDashboard = () => {
           totalKm: data.totalKm,
           formattedDate: data.formattedDate
         }))
-        .sort((a, b) => a.date.localeCompare(b.date));
+        .sort((a, b) => b.date.localeCompare(a.date)); // Sort descending: most recent first
       
       const driverMileageArray: DriverMileage[] = Array.from(driverMileageMap.entries())
         .map(([motorista_id, data]) => ({
