@@ -57,7 +57,13 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **Vagas Module**: Supports inline creation of related entities, real-time dashboard statistics, and a toggle for table/card grid views with preference persistence.
 - **Comprovante de Rota Module**: Tabbed interface with Dashboard and Lista (List) views following the same pattern as Hodômetros and Checklist modules:
   - **Dashboard**: Statistics cards showing total comprovantes, today's count, monthly count, and active drivers; Top 5 drivers chart with visual progress bars
-  - **Lista**: Search and filter functionality for route proofs with motorista relation normalization
+  - **Lista**: Professional table layout matching HodometrosRelatorio aesthetics with:
+    - Period filter (Hoje, 15 dias, 30 dias, Personalizado with custom date range)
+    - Search by motorista name or ID with safe null handling
+    - Excel export functionality
+    - Pagination (25 items per page)
+    - Photo modal with full-screen overlay
+    - Loading and error states with retry functionality
   - **Navigation**: Tab highlighting with `startsWith` logic for correct active state in nested routes
   - **Data Integrity**: Proper normalization of Supabase relation arrays to single objects before state updates
   - **Testing**: All interactive elements include data-testid attributes
