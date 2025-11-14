@@ -70,8 +70,16 @@ export default function ComprovRotaLista() {
         return;
       }
 
-      setComprovantes(data || []);
-      setFilteredComprovantes(data || []);
+      // Normalizar motorista de array para objeto único
+      const normalizedData = (data || []).map(item => ({
+        ...item,
+        motorista: Array.isArray(item.motorista) 
+          ? (item.motorista[0] ?? null) 
+          : (item.motorista ?? null)
+      }));
+
+      setComprovantes(normalizedData);
+      setFilteredComprovantes(normalizedData);
     } catch (error) {
       console.error('Error:', error);
       toast.error('Erro ao carregar dados');
@@ -93,28 +101,22 @@ export default function ComprovRotaLista() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <MapPin className="h-8 w-8 text-blue-600" />
-            Comprovantes de Rota
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Gerencie os comprovantes de rota dos motoristas
-          </p>
+        <div className="flex items-center gap-2">
+          <button 
+            data-testid="button-add-comprov-rota"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center gap-2 transition-colors"
+            disabled
+            title="Funcionalidade em desenvolvimento"
+          >
+            <Plus className="h-4 w-4" />
+            Novo Comprovante
+          </button>
         </div>
-        <button 
-          data-testid="button-add-comprov-rota"
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center gap-2 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Novo Comprovante
-        </button>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Filtros</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
         <div className="flex gap-4">
           <div className="flex-1">
             <div className="relative">
