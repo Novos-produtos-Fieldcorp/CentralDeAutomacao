@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar, numeric, date, bigint, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, numeric, date, bigint, jsonb, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -301,6 +301,8 @@ export const comprov_rota = pgTable("comprov_rota", {
   id_motorista: integer("id_motorista").references(() => motorista.motorista_id),
   company_id: integer("company_id").references(() => company.company_id),
   foto: text("foto"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
 });
 
 // Endereço Comprovante de Rota table

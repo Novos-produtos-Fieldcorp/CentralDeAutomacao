@@ -16,6 +16,8 @@ interface ComprovRotaItem {
   id_motorista: number | null;
   company_id: number | null;
   foto: string | null;
+  latitude: number | null;
+  longitude: number | null;
   mediaUrl?: string | null;
   isVideo?: boolean;
   motorista?: {
@@ -33,6 +35,7 @@ export default function ComprovRotaLista() {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<'image' | 'video'>('image');
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [mediaLoadError, setMediaLoadError] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
@@ -57,6 +60,8 @@ export default function ComprovRotaLista() {
           id_motorista,
           company_id,
           foto,
+          latitude,
+          longitude,
           motorista:motorista!comprov_rota_id_motorista_fkey (
             motorista_id,
             nome
@@ -247,6 +252,11 @@ export default function ComprovRotaLista() {
     if (item.mediaUrl) {
       setSelectedPhoto(item.mediaUrl);
       setSelectedMediaType(item.isVideo ? 'video' : 'image');
+      setSelectedLocation(
+        item.latitude != null && item.longitude != null
+          ? { lat: item.latitude, lng: item.longitude }
+          : null
+      );
       setMediaLoadError(false);
       setShowPhotoModal(true);
     } else {
@@ -266,6 +276,8 @@ export default function ComprovRotaLista() {
         'ID': item.id,
         'Data/Hora': format(new Date(item.created_at), 'dd/MM/yyyy HH:mm'),
         'Motorista': item.motorista?.nome || 'Não informado',
+        'Latitude': item.latitude?.toFixed(6) || '-',
+        'Longitude': item.longitude?.toFixed(6) || '-',
         'Tem Foto': item.foto ? 'Sim' : 'Não'
       }));
 
@@ -276,6 +288,8 @@ export default function ComprovRotaLista() {
         { wch: 10 },
         { wch: 18 },
         { wch: 30 },
+        { wch: 12 },
+        { wch: 12 },
         { wch: 12 }
       ];
       
@@ -498,6 +512,9 @@ export default function ComprovRotaLista() {
                   Motorista
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Localização
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Foto
                 </th>
               </tr>
@@ -505,7 +522,7 @@ export default function ComprovRotaLista() {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {paginatedComprovantes.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12">
+                  <td colSpan={5} className="px-6 py-12">
                     <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                       <MapPin className="h-12 w-12 mb-3 text-gray-300 dark:text-gray-600" />
                       <p className="text-lg font-medium">Nenhum comprovante encontrado</p>
@@ -544,6 +561,28 @@ export default function ComprovRotaLista() {
                           {item.motorista?.nome || 'Não informado'}
                         </span>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {item.latitude != null && item.longitude != null ? (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-green-500" />
+                          <a
+                            href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            data-testid={`link-location-${item.id}`}
+                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Ver no mapa
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          Não disponível
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {item.mediaUrl ? (
@@ -660,7 +699,7 @@ export default function ComprovRotaLista() {
                 </a>
               </div>
             ) : (
-              <>
+              <div className="space-y-3">
                 {selectedMediaType === 'video' ? (
                   <video
                     src={selectedPhoto}
@@ -679,7 +718,34 @@ export default function ComprovRotaLista() {
                     onError={() => handleMediaError(selectedPhoto)}
                   />
                 )}
-              </>
+                
+                {/* Location info */}
+                {selectedLocation && (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <MapPin className="h-5 w-5 text-green-500" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          Localização GPS
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href={`https://www.google.com/maps?q=${selectedLocation.lat},${selectedLocation.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid="link-location-modal"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Abrir no Google Maps
+                    </a>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
