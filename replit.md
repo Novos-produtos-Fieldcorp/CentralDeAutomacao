@@ -60,7 +60,13 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
   - **Lista**: Professional table layout matching HodometrosRelatorio aesthetics with:
     - Period filter (Hoje, 15 dias, 30 dias, Personalizado with custom date range)
     - Search by motorista name or ID with safe null handling
-    - Excel export functionality
+    - **GPS Location Display**: Shows latitude/longitude for each photo/video with Google Maps integration
+      - Table column with "Ver no mapa" link (opens in new tab)
+      - Modal displays GPS coordinates with "Abrir no Google Maps" button
+      - Null-safe rendering handles missing location data gracefully
+      - Proper handling of zero coordinates (equator/prime meridian)
+      - Schema fields: `latitude: real`, `longitude: real` in comprov_rota table
+    - Excel export functionality (includes GPS coordinates)
     - Pagination (25 items per page)
     - **Smart Media Loading System**: Comprehensive photo/video support with robust URL parsing
       - Handles multiple formats: base64 (images/videos), complete URLs, JSON arrays, comma-separated lists, single filenames
