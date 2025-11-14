@@ -692,6 +692,26 @@ const HodometrosDashboard = () => {
           readingsInPeriod
         );
 
+        // Debug log for LRT1E73
+        if (placaNormalizada === 'LRT1E73') {
+          console.log('🔍 DEBUG LRT1E73:', {
+            totalReadings: timelineInputs.length,
+            readingsInPeriod: readingsInPeriod.length,
+            vehicleType: timeline.vehicleType,
+            baseline: timeline.baseline,
+            latestDate: timeline.latestDate,
+            segments: timeline.segments.length,
+            kmRodadoPeriodo,
+            firstReading: timelineInputs[0],
+            lastReading: timelineInputs[timelineInputs.length - 1],
+            allReadings: timelineInputs.map(r => ({
+              data: r.data,
+              hod_lido: r.hod_lido,
+              trip_lida: r.trip_lida
+            }))
+          });
+        }
+
         if (kmRodadoPeriodo > 0 && timeline.latestDate) {
           vehicleMileageMap.set(placaNormalizada, {
             placa: placaNormalizada,
