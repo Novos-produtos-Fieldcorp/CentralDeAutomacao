@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, MapPin, X, Download, AlertCircle, ChevronDown, Calendar, User, Camera, Clock } from 'lucide-react';
+import { Search, MapPin, X, Download, AlertCircle, ChevronDown, Calendar, User, Camera, Clock, Video, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
@@ -16,6 +16,8 @@ interface ComprovRotaItem {
   id_motorista: number | null;
   company_id: number | null;
   foto: string | null;
+  mediaUrl?: string | null;
+  isVideo?: boolean;
   motorista?: {
     motorista_id: number;
     nome: string;
@@ -30,6 +32,7 @@ export default function ComprovRotaLista() {
   const [error, setError] = useState<string | null>(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [selectedMediaType, setSelectedMediaType] = useState<'image' | 'video'>('image');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   
@@ -74,13 +77,28 @@ export default function ComprovRotaLista() {
         return;
       }
 
-      // Normalizar motorista de array para objeto único
-      const normalizedData = data.map(item => ({
-        ...item,
-        motorista: Array.isArray(item.motorista) 
-          ? (item.motorista[0] ?? null) 
-          : (item.motorista ?? null)
-      }));
+      // Normalizar motorista de array para objeto único e pré-computar URLs de mídia
+      const normalizedData = data.map(item => {
+        const mediaUrl = getMediaUrl(item.foto);
+        return {
+          ...item,
+          motorista: Array.isArray(item.motorista) 
+            ? (item.motorista[0] ?? null) 
+            : (item.motorista ?? null),
+          mediaUrl: mediaUrl,
+          isVideo: mediaUrl ? isVideoUrl(mediaUrl) : false
+        };
+      });
+
+      // Log de debug para primeiros itens
+      if (normalizedData.length > 0) {
+        console.log('📸 [ComprovRota] Amostra de dados carregados:');
+        normalizedData.slice(0, 3).forEach((item, index) => {
+          console.log(`  ${index + 1}. ID: ${item.id}, foto original: ${item.foto?.substring(0, 50)}...`);
+          console.log(`     mediaUrl: ${item.mediaUrl?.substring(0, 80)}...`);
+          console.log(`     isVideo: ${item.isVideo}`);
+        });
+      }
 
       setComprovantes(normalizedData);
     } catch (error) {
@@ -121,13 +139,117 @@ export default function ComprovRotaLista() {
     return dateStr;
   };
 
-  const handleShowPhoto = (photo: string | null, e: React.MouseEvent) => {
+  const isVideoUrl = (url: string): boolean => {
+    if (!url) return false;
+    const lowerUrl = url.toLowerCase();
+    
+    // Check for base64 video MIME types
+    if (lowerUrl.startsWith('data:video')) {
+      return true;
+    }
+    
+    // Check for file extensions
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.m4v', '.mkv'];
+    return videoExtensions.some(ext => lowerUrl.includes(ext));
+  };
+
+  const getMediaUrl = (photo: string | null): string | null => {
+    if (!photo || photo.trim() === '') return null;
+    
+    try {
+      const trimmedPhoto = photo.trim();
+      
+      // 1. Base64 data - return directly
+      if (trimmedPhoto.startsWith('data:')) {
+        return trimmedPhoto;
+      }
+      
+      // 2. Try to parse as JSON array
+      if (trimmedPhoto.startsWith('[') || trimmedPhoto.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(trimmedPhoto);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Get first item from array and trim it
+            const firstItem = typeof parsed[0] === 'string' ? parsed[0].trim() : null;
+            if (firstItem) {
+              // Check if it's base64
+              if (firstItem.startsWith('data:')) {
+                return firstItem;
+              }
+              // Check if it's a complete URL
+              if (firstItem.startsWith('http://') || firstItem.startsWith('https://')) {
+                return firstItem;
+              }
+              // If it's a filename, generate Storage URL
+              if (firstItem.includes('.')) {
+                const { data } = supabase.storage
+                  .from('comprovante')
+                  .getPublicUrl(firstItem);
+                return data.publicUrl;
+              }
+            }
+          }
+        } catch {
+          // Not valid JSON, continue to next check
+        }
+      }
+      
+      // 3. Comma-separated values
+      if (trimmedPhoto.includes(',')) {
+        const items = trimmedPhoto.split(',').map(u => u.trim()).filter(u => u.length > 0);
+        
+        // Try each item until we find a valid one
+        for (const item of items) {
+          // Base64
+          if (item.startsWith('data:')) {
+            return item;
+          }
+          // Complete URL
+          if (item.startsWith('http://') || item.startsWith('https://')) {
+            return item;
+          }
+          // Filename with extension
+          if (item.includes('.') && !item.includes('http')) {
+            const { data } = supabase.storage
+              .from('comprovante')
+              .getPublicUrl(item);
+            return data.publicUrl;
+          }
+        }
+      }
+      
+      // 4. Complete URL - return directly
+      if (trimmedPhoto.startsWith('http://') || trimmedPhoto.startsWith('https://')) {
+        return trimmedPhoto;
+      }
+      
+      // 5. Filename only - generate Supabase Storage URL
+      // Only do this if it looks like a filename (has extension and no commas)
+      if (trimmedPhoto.includes('.') && !trimmedPhoto.includes(',')) {
+        const { data } = supabase.storage
+          .from('comprovante')
+          .getPublicUrl(trimmedPhoto);
+        return data.publicUrl;
+      }
+      
+      // If none of the above, return null
+      return null;
+      
+    } catch (error) {
+      console.error('❌ [ComprovRota] Erro ao processar mídia:', error, photo);
+      return null;
+    }
+  };
+
+  const handleShowPhoto = (item: ComprovRotaItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (photo) {
-      setSelectedPhoto(photo);
+    if (item.mediaUrl) {
+      setSelectedPhoto(item.mediaUrl);
+      setSelectedMediaType(item.isVideo ? 'video' : 'image');
       setShowPhotoModal(true);
     } else {
-      toast.error('Nenhuma foto disponível');
+      toast.error('Mídia não disponível ou URL inválida');
+      console.error('❌ [ComprovRota] Mídia não disponível para item:', item);
     }
   };
 
@@ -417,18 +539,49 @@ export default function ComprovRotaLista() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {item.foto ? (
-                        <button
-                          onClick={(e) => handleShowPhoto(item.foto, e)}
-                          data-testid={`button-view-photo-${item.id}`}
-                          className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                        >
-                          <Camera className="h-3 w-3" />
-                          Ver foto
-                        </button>
+                      {item.mediaUrl ? (
+                        <div className="flex items-center gap-3">
+                          {/* Thumbnail */}
+                          <div className="relative w-12 h-12 flex-shrink-0">
+                            {item.isVideo ? (
+                              <div className="w-full h-full bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center">
+                                <Video className="h-6 w-6 text-gray-400" />
+                              </div>
+                            ) : (
+                              <img
+                                src={item.mediaUrl}
+                                alt={`Preview ${item.id}`}
+                                className="w-full h-full object-cover rounded"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  console.error(`❌ [ComprovRota] Falha ao carregar thumbnail do item ${item.id}:`, item.mediaUrl);
+                                }}
+                              />
+                            )}
+                          </div>
+                          {/* View Button */}
+                          <button
+                            onClick={(e) => handleShowPhoto(item, e)}
+                            data-testid={`button-view-photo-${item.id}`}
+                            className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                          >
+                            {item.isVideo ? (
+                              <>
+                                <Video className="h-3 w-3" />
+                                Ver vídeo
+                              </>
+                            ) : (
+                              <>
+                                <Camera className="h-3 w-3" />
+                                Ver foto
+                              </>
+                            )}
+                          </button>
+                        </div>
                       ) : (
                         <span className="text-sm text-gray-400 dark:text-gray-500">
-                          Sem foto
+                          Sem mídia
                         </span>
                       )}
                     </td>
@@ -452,7 +605,7 @@ export default function ComprovRotaLista() {
         />
       )}
 
-      {/* Photo Modal */}
+      {/* Photo/Video Modal */}
       {showPhotoModal && selectedPhoto && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4"
@@ -466,11 +619,31 @@ export default function ComprovRotaLista() {
             >
               <X className="h-8 w-8" />
             </button>
-            <img
-              src={selectedPhoto}
-              alt="Comprovante"
-              className="w-full h-full object-contain rounded-lg"
-            />
+            
+            {selectedMediaType === 'video' ? (
+              <video
+                src={selectedPhoto}
+                controls
+                autoPlay
+                className="w-full h-full max-h-[85vh] rounded-lg"
+                onError={(e) => {
+                  console.error('❌ [ComprovRota] Erro ao carregar vídeo:', selectedPhoto);
+                  toast.error('Erro ao carregar vídeo');
+                }}
+              >
+                Seu navegador não suporta a tag de vídeo.
+              </video>
+            ) : (
+              <img
+                src={selectedPhoto}
+                alt="Comprovante"
+                className="w-full h-full object-contain rounded-lg"
+                onError={(e) => {
+                  console.error('❌ [ComprovRota] Erro ao carregar imagem:', selectedPhoto);
+                  toast.error('Erro ao carregar imagem');
+                }}
+              />
+            )}
           </div>
         </div>
       )}
