@@ -270,7 +270,7 @@ const HodometrosDashboard = () => {
       setLoading(true);
       setConnectionError(false);
       
-      // Fetch all hodometro readings within date range
+      // STEP 1: Fetch all hodometro readings within date range
       const { data, error } = await supabase.from('hodometro')
         .select(`
           *,
@@ -587,6 +587,138 @@ const HodometrosDashboard = () => {
       // Always ensure "Sem cliente" exists in the map
       if (!operationMileageMap.has('Sem cliente')) {
         operationMileageMap.set('Sem cliente', 0);
+      }
+      
+      // STEP 2: Fetch FIRST-EVER readings for vehicles present in the period
+      // Collect unique vehicle_ids from the period
+      const vehicleIdsInPeriod = new Set<number>();
+      (data || []).forEach(hodometro => {
+        if (hodometro.veiculo_id) {
+          vehicleIdsInPeriod.add(hodometro.veiculo_id);
+        }
+      });
+      
+      // Fetch first non-null reading for each vehicle (optimized query)
+      const firstReadingsByPlaca = new Map<string, { firstHodLido: number | null; firstTripLida: number | null }>();
+      
+      if (vehicleIdsInPeriod.size > 0) {
+        const { data: firstReadingsData, error: firstReadingsError } = await supabase
+          .from('hodometro')
+          .select(`
+            veiculo_id,
+            hod_lido,
+            trip_lida,
+            data,
+            hora,
+            bateria,
+            veiculo:veiculo_id (
+              placa
+            )
+          `)
+          .eq('company_id', companyId)
+          .in('veiculo_id', Array.from(vehicleIdsInPeriod))
+          .order('data', { ascending: true })
+          .order('hora', { ascending: true });
+        
+        if (firstReadingsError) throw firstReadingsError;
+        
+        // Build map: normalized_placa -> { firstHodLido, firstTripLida }
+        // Skip null readings and keep the first VALID reading
+        (firstReadingsData || []).forEach(reading => {
+          const veiculoData = Array.isArray(reading.veiculo) ? reading.veiculo[0] : reading.veiculo;
+          if (!veiculoData?.placa) return;
+          
+          const placaNormalizada = veiculoData.placa.trim().toUpperCase();
+          const isElectric = reading.bateria !== null && reading.bateria !== undefined;
+          
+          if (!firstReadingsByPlaca.has(placaNormalizada)) {
+            firstReadingsByPlaca.set(placaNormalizada, {
+              firstHodLido: null,
+              firstTripLida: null
+            });
+          }
+          
+          const entry = firstReadingsByPlaca.get(placaNormalizada)!;
+          
+          // For automobiles, capture first non-null hod_lido
+          if (!isElectric && entry.firstHodLido === null && reading.hod_lido !== null) {
+            entry.firstHodLido = reading.hod_lido;
+          }
+          
+          // For ciclomotors, capture first non-null trip_lida
+          if (isElectric && entry.firstTripLida === null && reading.trip_lida !== null) {
+            entry.firstTripLida = reading.trip_lida;
+          }
+          
+          firstReadingsByPlaca.set(placaNormalizada, entry);
+        });
+      }
+      
+      // STEP 3: Recalculate vehicleMileageMap using the correct formula:
+      // km_rodado = (latest reading in period) - (first-ever reading)
+      vehicleMileageMap.clear(); // Clear existing data
+      
+      // Build a map to track the latest reading per normalized placa
+      const latestReadingByPlaca = new Map<string, { reading: number; vehicleType: string; lastDate: string }>();
+      
+      for (const [key, data] of Array.from(dailyVehicleDataMap.entries())) {
+        const [date, _vehicleId] = key.split('_');
+        if (!data.veiculo_placa) continue;
+        
+        const placaNormalizada = data.veiculo_placa.trim().toUpperCase();
+        
+        // Get the latest reading for this vehicle type
+        let latestReading: number | null = null;
+        if (data.vehicleType === 'automovel' && data.lastReadingKm !== null) {
+          latestReading = data.lastReadingKm;
+        } else if (data.vehicleType === 'ciclomotor' && data.lastReadingTrip !== null) {
+          latestReading = data.lastReadingTrip;
+        }
+        
+        if (latestReading === null) continue;
+        
+        // Update if this is a more recent reading or first time seeing this placa
+        const existingEntry = latestReadingByPlaca.get(placaNormalizada);
+        if (!existingEntry || date > existingEntry.lastDate || 
+            (date === existingEntry.lastDate && latestReading > existingEntry.reading)) {
+          latestReadingByPlaca.set(placaNormalizada, {
+            reading: latestReading,
+            vehicleType: data.vehicleType,
+            lastDate: date
+          });
+        }
+      }
+      
+      // Now calculate km_rodado for each placa: latest - first-ever
+      for (const [placaNormalizada, latestData] of latestReadingByPlaca.entries()) {
+        const firstReading = firstReadingsByPlaca.get(placaNormalizada);
+        
+        if (!firstReading) {
+          console.warn(`No first-ever reading found for placa ${placaNormalizada}`);
+          continue;
+        }
+        
+        let km_rodado = 0;
+        
+        if (latestData.vehicleType === 'automovel' && firstReading.firstHodLido !== null) {
+          km_rodado = latestData.reading - firstReading.firstHodLido;
+        } else if (latestData.vehicleType === 'ciclomotor' && firstReading.firstTripLida !== null) {
+          km_rodado = latestData.reading - firstReading.firstTripLida;
+        }
+        
+        // Handle negative values (odometer reset or error)
+        if (km_rodado < 0) {
+          console.warn(`Negative km_rodado for placa ${placaNormalizada}: latest ${latestData.reading} - first ${latestData.vehicleType === 'automovel' ? firstReading.firstHodLido : firstReading.firstTripLida}`);
+          km_rodado = 0;
+        }
+        
+        if (km_rodado >= 0) {
+          vehicleMileageMap.set(placaNormalizada, {
+            placa: placaNormalizada,
+            totalKm: km_rodado,
+            lastDate: latestData.lastDate
+          });
+        }
       }
       
       // Convert maps to arrays for state
@@ -927,94 +1059,8 @@ const HodometrosDashboard = () => {
         return isNaN(num) ? 0 : num;
       };
       
-      // First, fetch the VERY FIRST reading ever for each vehicle (no date filter)
-      // And the most recent reading within the selected period
-      const { data: allHodometrosData, error: allHodometrosError } = await supabase
-        .from('hodometro')
-        .select(`
-          id_hodometro,
-          data,
-          hora,
-          hod_lido,
-          trip_lida,
-          bateria,
-          veiculo_id,
-          veiculo:veiculo_id (
-            veiculo_id,
-            placa
-          )
-        `)
-        .eq('company_id', companyId)
-        .order('veiculo_id')
-        .order('data')
-        .order('hora');
-      
-      if (allHodometrosError) throw allHodometrosError;
-      
-      // Step 1: Group by veiculo_id (reliable, won't drop data)
-      const allHodometrosByVehicle = new Map<number, any[]>();
-      (allHodometrosData || []).forEach(hod => {
-        if (!allHodometrosByVehicle.has(hod.veiculo_id)) {
-          allHodometrosByVehicle.set(hod.veiculo_id, []);
-        }
-        allHodometrosByVehicle.get(hod.veiculo_id)!.push(hod);
-      });
-      
-      // Step 2: Calculate km_rodado per veiculo_id
-      const totalKmRodadoByVehicleId = new Map<number, number>();
-      const vehicleIdToPlaca = new Map<number, string>();
-      
-      allHodometrosByVehicle.forEach((readings, veiculoId) => {
-        if (readings.length === 0) return;
-        
-        // Sort by date and time to ensure correct order
-        const sortedReadings = [...readings].sort((a, b) => {
-          const dateCompare = a.data.localeCompare(b.data);
-          if (dateCompare !== 0) return dateCompare;
-          return a.hora.localeCompare(b.hora);
-        });
-        
-        // First reading EVER (oldest)
-        const firstReading = sortedReadings[0];
-        
-        // Most recent reading within the selected period
-        const readingsInPeriod = sortedReadings.filter(r => 
-          r.data >= dateRange.startDate && r.data <= dateRange.endDate
-        );
-        
-        if (readingsInPeriod.length === 0) return; // No readings in period
-        
-        const lastReadingInPeriod = readingsInPeriod[readingsInPeriod.length - 1];
-        
-        // Determine if it's a ciclomotor (has bateria field)
-        const isCiclomotor = firstReading.bateria !== null && firstReading.bateria !== undefined;
-        
-        // Calculate total km_rodado from first ever to most recent in period
-        let totalKm = 0;
-        if (isCiclomotor) {
-          const firstValue = parseNumber(firstReading.trip_lida);
-          const lastValue = parseNumber(lastReadingInPeriod.trip_lida);
-          totalKm = lastValue - firstValue;
-        } else {
-          const firstValue = parseNumber(firstReading.hod_lido);
-          const lastValue = parseNumber(lastReadingInPeriod.hod_lido);
-          totalKm = lastValue - firstValue;
-        }
-        
-        // Ensure non-negative
-        if (totalKm < 0) totalKm = 0;
-        
-        totalKmRodadoByVehicleId.set(veiculoId, totalKm);
-        
-        // Map veiculo_id to normalized placa for later consolidation
-        const veiculo = Array.isArray(firstReading.veiculo) ? firstReading.veiculo[0] : firstReading.veiculo;
-        if (veiculo && veiculo.placa) {
-          vehicleIdToPlaca.set(veiculoId, veiculo.placa.toUpperCase());
-        }
-      });
-      
-      // Now fetch ALL bomba_gasolina records (no date filter) for total liters
-      const { data, error } = await supabase
+      // Step 1: Fetch all bomba_gasolina records first to identify which vehicles we need
+      const { data: bombasData, error: bombasError } = await supabase
         .from('bomba_gasolina')
         .select(`
           id,
@@ -1037,10 +1083,147 @@ const HodometrosDashboard = () => {
         .eq('company_id', companyId)
         .order('data', { ascending: false });
       
-      if (error) throw error;
+      if (bombasError) throw bombasError;
       
-      const bombas = data || [];
+      const bombas = bombasData || [];
       
+      // Collect unique vehicle_ids from bomba records
+      const vehicleIdsInBomba = new Set<number>();
+      bombas.forEach((bomba: any) => {
+        const veiculo = Array.isArray(bomba.veiculo) ? bomba.veiculo[0] : bomba.veiculo;
+        if (veiculo?.veiculo_id) {
+          vehicleIdsInBomba.add(veiculo.veiculo_id);
+        }
+      });
+      
+      // Step 2: Fetch historical hodometro readings ONLY for vehicles that have bomba records
+      // This is optimized and only gets what we need
+      const firstReadingsByPlaca = new Map<string, { firstHodLido: number | null; firstTripLida: number | null }>();
+      const totalKmRodadoByVehicleId = new Map<number, number>();
+      const vehicleIdToPlaca = new Map<number, string>();
+      
+      if (vehicleIdsInBomba.size > 0) {
+        const { data: allHodometrosData, error: allHodometrosError } = await supabase
+          .from('hodometro')
+          .select(`
+            id_hodometro,
+            data,
+            hora,
+            hod_lido,
+            trip_lida,
+            bateria,
+            veiculo_id,
+            veiculo:veiculo_id (
+              veiculo_id,
+              placa
+            )
+          `)
+          .eq('company_id', companyId)
+          .in('veiculo_id', Array.from(vehicleIdsInBomba))
+          .order('veiculo_id')
+          .order('data')
+          .order('hora');
+        
+        if (allHodometrosError) throw allHodometrosError;
+        
+        // Group by veiculo_id
+        const allHodometrosByVehicle = new Map<number, any[]>();
+        (allHodometrosData || []).forEach(hod => {
+          if (!allHodometrosByVehicle.has(hod.veiculo_id)) {
+            allHodometrosByVehicle.set(hod.veiculo_id, []);
+          }
+          allHodometrosByVehicle.get(hod.veiculo_id)!.push(hod);
+        });
+        
+        // Calculate km_rodado per veiculo_id: (latest in period) - (first-ever VALID reading)
+        allHodometrosByVehicle.forEach((readings, veiculoId) => {
+          if (readings.length === 0) return;
+          
+          // Sort by date and time to ensure correct order
+          const sortedReadings = [...readings].sort((a, b) => {
+            const dateCompare = a.data.localeCompare(b.data);
+            if (dateCompare !== 0) return dateCompare;
+            return a.hora.localeCompare(b.hora);
+          });
+          
+          // Determine vehicle type from any reading
+          const sampleReading = sortedReadings.find(r => r.bateria !== undefined);
+          const isCiclomotor = sampleReading && sampleReading.bateria !== null && sampleReading.bateria !== undefined;
+          
+          // Find FIRST VALID (non-null) reading
+          let firstValidReading = null;
+          for (const reading of sortedReadings) {
+            if (isCiclomotor && reading.trip_lida !== null) {
+              firstValidReading = reading;
+              break;
+            } else if (!isCiclomotor && reading.hod_lido !== null) {
+              firstValidReading = reading;
+              break;
+            }
+          }
+          
+          if (!firstValidReading) return; // No valid first reading
+          
+          // Filter readings within the selected period
+          const readingsInPeriod = sortedReadings.filter(r => 
+            r.data >= dateRange.startDate && r.data <= dateRange.endDate
+          );
+          
+          if (readingsInPeriod.length === 0) return; // No readings in period
+          
+          // Find LAST VALID reading in period
+          let lastValidReadingInPeriod = null;
+          for (let i = readingsInPeriod.length - 1; i >= 0; i--) {
+            const reading = readingsInPeriod[i];
+            if (isCiclomotor && reading.trip_lida !== null) {
+              lastValidReadingInPeriod = reading;
+              break;
+            } else if (!isCiclomotor && reading.hod_lido !== null) {
+              lastValidReadingInPeriod = reading;
+              break;
+            }
+          }
+          
+          if (!lastValidReadingInPeriod) return; // No valid reading in period
+          
+          // Calculate total km_rodado from first-ever valid to most recent valid in period
+          let totalKm = 0;
+          if (isCiclomotor) {
+            const firstValue = parseNumber(firstValidReading.trip_lida);
+            const lastValue = parseNumber(lastValidReadingInPeriod.trip_lida);
+            totalKm = lastValue - firstValue;
+          } else {
+            const firstValue = parseNumber(firstValidReading.hod_lido);
+            const lastValue = parseNumber(lastValidReadingInPeriod.hod_lido);
+            totalKm = lastValue - firstValue;
+          }
+          
+          // Ensure non-negative
+          if (totalKm < 0) {
+            console.warn(`Negative km_rodado for vehicle ${veiculoId}: ${totalKm}. Setting to 0.`);
+            totalKm = 0;
+          }
+          
+          totalKmRodadoByVehicleId.set(veiculoId, totalKm);
+          
+          // Map veiculo_id to normalized placa
+          const veiculo = Array.isArray(firstValidReading.veiculo) ? firstValidReading.veiculo[0] : firstValidReading.veiculo;
+          if (veiculo && veiculo.placa) {
+            const placaNormalizada = veiculo.placa.trim().toUpperCase();
+            vehicleIdToPlaca.set(veiculoId, placaNormalizada);
+            
+            // Also store in firstReadingsByPlaca for consistency
+            if (!firstReadingsByPlaca.has(placaNormalizada)) {
+              firstReadingsByPlaca.set(placaNormalizada, {
+                firstHodLido: isCiclomotor ? null : parseNumber(firstValidReading.hod_lido),
+                firstTripLida: isCiclomotor ? parseNumber(firstValidReading.trip_lida) : null
+              });
+            }
+          }
+        });
+      }
+      
+      // Step 3: Process bomba data and aggregate by normalized placa
       // Maps to aggregate data by vehicle (using placa as key to avoid duplicates)
       const vehicleStatsMap = new Map<string, VehicleFuelStats>();
       const kmVsPriceMap = new Map<string, { km: number; preco: number }>();
