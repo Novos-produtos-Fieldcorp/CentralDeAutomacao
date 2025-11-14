@@ -68,6 +68,11 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
       - Pre-computed URLs during data fetch for optimal performance
       - Thumbnail previews in table (video icon placeholder for videos)
       - Full-screen modal with native video player support
+      - **WiseApp Authentication Handling**: Graceful error handling for Rails Active Storage protected URLs
+        - Clear error messages when media requires WiseApp authentication
+        - "Abrir em nova aba" button (always visible) to open media in WiseApp directly
+        - Error fallback UI with explanation and external link button
+        - mediaLoadError state tracks loading failures for better UX
       - Error handling with detailed console logging
       - Supports WiseApp URLs and Supabase Storage URLs
     - Loading and error states with retry functionality
