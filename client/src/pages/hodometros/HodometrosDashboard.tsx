@@ -937,7 +937,11 @@ const HodometrosDashboard = () => {
           hod_lido,
           trip_lida,
           bateria,
-          veiculo_id
+          veiculo_id,
+          veiculo:veiculo_id (
+            veiculo_id,
+            placa
+          )
         `)
         .eq('company_id', companyId)
         .order('veiculo_id')
@@ -946,7 +950,7 @@ const HodometrosDashboard = () => {
       
       if (allHodometrosError) throw allHodometrosError;
       
-      // Group all hodometros by vehicle
+      // Step 1: Group by veiculo_id (reliable, won't drop data)
       const allHodometrosByVehicle = new Map<number, any[]>();
       (allHodometrosData || []).forEach(hod => {
         if (!allHodometrosByVehicle.has(hod.veiculo_id)) {
@@ -955,9 +959,10 @@ const HodometrosDashboard = () => {
         allHodometrosByVehicle.get(hod.veiculo_id)!.push(hod);
       });
       
-      // Calculate total km_rodado for each vehicle
-      // km_rodado = (most recent reading in period - FIRST reading EVER)
-      const totalKmRodadoByVehicle = new Map<number, number>();
+      // Step 2: Calculate km_rodado per veiculo_id
+      const totalKmRodadoByVehicleId = new Map<number, number>();
+      const vehicleIdToPlaca = new Map<number, string>();
+      
       allHodometrosByVehicle.forEach((readings, veiculoId) => {
         if (readings.length === 0) return;
         
@@ -998,7 +1003,13 @@ const HodometrosDashboard = () => {
         // Ensure non-negative
         if (totalKm < 0) totalKm = 0;
         
-        totalKmRodadoByVehicle.set(veiculoId, totalKm);
+        totalKmRodadoByVehicleId.set(veiculoId, totalKm);
+        
+        // Map veiculo_id to normalized placa for later consolidation
+        const veiculo = Array.isArray(firstReading.veiculo) ? firstReading.veiculo[0] : firstReading.veiculo;
+        if (veiculo && veiculo.placa) {
+          vehicleIdToPlaca.set(veiculoId, veiculo.placa.toUpperCase());
+        }
       });
       
       // Now fetch ALL bomba_gasolina records (no date filter) for total liters
@@ -1053,8 +1064,15 @@ const HodometrosDashboard = () => {
         
         // Aggregate by placa (normalized to uppercase) instead of veiculo_id
         if (!vehicleStatsMap.has(placaNormalizada)) {
-          // Get total km_rodado for this vehicle (most recent - first reading)
-          const totalKmForVehicle = totalKmRodadoByVehicle.get(veiculoId) ?? 0;
+          // Step 3: Consolidate km_rodado by normalized placa
+          // Sum km from all veiculo_ids that share this normalized placa
+          let totalKmForPlaca = 0;
+          totalKmRodadoByVehicleId.forEach((km, vId) => {
+            const placa = vehicleIdToPlaca.get(vId);
+            if (placa === placaNormalizada) {
+              totalKmForPlaca += km;
+            }
+          });
           
           vehicleStatsMap.set(placaNormalizada, {
             veiculo_id: veiculoId,
@@ -1062,7 +1080,7 @@ const HodometrosDashboard = () => {
             marca,
             totalLitros: 0,
             totalGasto: 0,
-            totalKm: totalKmForVehicle,
+            totalKm: totalKmForPlaca,
             mediaKmPorLitro: 0,
             abastecimentos: 0
           });
@@ -1076,12 +1094,12 @@ const HodometrosDashboard = () => {
         vehicleStatsMap.set(placaNormalizada, stats);
         
         // Aggregate km vs price by placa (normalized to uppercase)
-        const totalKmForVehicle = totalKmRodadoByVehicle.get(veiculoId) ?? 0;
-        if (totalKmForVehicle > 0) {
+        const totalKmForPlaca = vehicleStatsMap.get(placaNormalizada)?.totalKm ?? 0;
+        if (totalKmForPlaca > 0) {
           const existing = kmVsPriceMap.get(placaNormalizada) || { km: 0, preco: 0 };
-          // Only set km once per vehicle (not per bomba)
+          // Only set km once per placa (not per bomba)
           if (existing.km === 0) {
-            existing.km = totalKmForVehicle;
+            existing.km = totalKmForPlaca;
           }
           existing.preco += preco;
           kmVsPriceMap.set(placaNormalizada, existing);
