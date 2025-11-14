@@ -926,8 +926,9 @@ const HodometrosDashboard = () => {
         return isNaN(num) ? 0 : num;
       };
       
-      // First, fetch all hodometros for the period to calculate total km_rodado
-      const { data: hodometrosData, error: hodometrosError } = await supabase
+      // First, fetch the VERY FIRST reading ever for each vehicle (no date filter)
+      // And the most recent reading within the selected period
+      const { data: allHodometrosData, error: allHodometrosError } = await supabase
         .from('hodometro')
         .select(`
           id_hodometro,
@@ -939,27 +940,25 @@ const HodometrosDashboard = () => {
           veiculo_id
         `)
         .eq('company_id', companyId)
-        .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate)
         .order('veiculo_id')
         .order('data')
         .order('hora');
       
-      if (hodometrosError) throw hodometrosError;
+      if (allHodometrosError) throw allHodometrosError;
       
-      // Group hodometros by vehicle and calculate total km_rodado
-      // km_rodado = (most recent reading - first reading) for the entire period
-      const hodometrosByVehicle = new Map<number, any[]>();
-      (hodometrosData || []).forEach(hod => {
-        if (!hodometrosByVehicle.has(hod.veiculo_id)) {
-          hodometrosByVehicle.set(hod.veiculo_id, []);
+      // Group all hodometros by vehicle
+      const allHodometrosByVehicle = new Map<number, any[]>();
+      (allHodometrosData || []).forEach(hod => {
+        if (!allHodometrosByVehicle.has(hod.veiculo_id)) {
+          allHodometrosByVehicle.set(hod.veiculo_id, []);
         }
-        hodometrosByVehicle.get(hod.veiculo_id)!.push(hod);
+        allHodometrosByVehicle.get(hod.veiculo_id)!.push(hod);
       });
       
-      // Calculate total km_rodado for each vehicle (most recent - first reading)
+      // Calculate total km_rodado for each vehicle
+      // km_rodado = (most recent reading in period - FIRST reading EVER)
       const totalKmRodadoByVehicle = new Map<number, number>();
-      hodometrosByVehicle.forEach((readings, veiculoId) => {
+      allHodometrosByVehicle.forEach((readings, veiculoId) => {
         if (readings.length === 0) return;
         
         // Sort by date and time to ensure correct order
@@ -969,21 +968,30 @@ const HodometrosDashboard = () => {
           return a.hora.localeCompare(b.hora);
         });
         
+        // First reading EVER (oldest)
         const firstReading = sortedReadings[0];
-        const lastReading = sortedReadings[sortedReadings.length - 1];
+        
+        // Most recent reading within the selected period
+        const readingsInPeriod = sortedReadings.filter(r => 
+          r.data >= dateRange.startDate && r.data <= dateRange.endDate
+        );
+        
+        if (readingsInPeriod.length === 0) return; // No readings in period
+        
+        const lastReadingInPeriod = readingsInPeriod[readingsInPeriod.length - 1];
         
         // Determine if it's a ciclomotor (has bateria field)
         const isCiclomotor = firstReading.bateria !== null && firstReading.bateria !== undefined;
         
-        // Calculate total km_rodado
+        // Calculate total km_rodado from first ever to most recent in period
         let totalKm = 0;
         if (isCiclomotor) {
           const firstValue = parseNumber(firstReading.trip_lida);
-          const lastValue = parseNumber(lastReading.trip_lida);
+          const lastValue = parseNumber(lastReadingInPeriod.trip_lida);
           totalKm = lastValue - firstValue;
         } else {
           const firstValue = parseNumber(firstReading.hod_lido);
-          const lastValue = parseNumber(lastReading.hod_lido);
+          const lastValue = parseNumber(lastReadingInPeriod.hod_lido);
           totalKm = lastValue - firstValue;
         }
         
