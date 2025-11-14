@@ -13,6 +13,7 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
 import { useAuth } from '../../context/AuthContext';
 import { useModuleAccess } from '../../hooks/useModuleAccess';
+import { buildOdometerTimeline, calculateKmRodadoForPeriod, type HodometroReadingInput } from '../../utils/hodometroResetUtils';
 
 interface DailyMileage {
   date: string;
@@ -600,6 +601,7 @@ const HodometrosDashboard = () => {
       
       // Fetch first non-null reading for each vehicle (optimized query)
       const firstReadingsByPlaca = new Map<string, { firstHodLido: number | null; firstTripLida: number | null }>();
+      const readingsByPlaca = new Map<string, any[]>();
       
       if (vehicleIdsInPeriod.size > 0) {
         const { data: firstReadingsData, error: firstReadingsError } = await supabase
@@ -622,11 +624,8 @@ const HodometrosDashboard = () => {
         
         if (firstReadingsError) throw firstReadingsError;
         
-        // Build map: normalized_placa -> { firstHodLido, firstTripLida }
-        // Detect odometer resets and use first reading AFTER last reset as baseline
-        
+        // Build map using buildOdometerTimeline for reset detection
         // Group readings by normalized placa
-        const readingsByPlaca = new Map<string, any[]>();
         (firstReadingsData || []).forEach(reading => {
           const veiculoData = Array.isArray(reading.veiculo) ? reading.veiculo[0] : reading.veiculo;
           if (!veiculoData?.placa) return;
@@ -638,127 +637,69 @@ const HodometrosDashboard = () => {
           readingsByPlaca.get(placaNormalizada)!.push(reading);
         });
         
-        // Process each placa to detect resets
+        // Process each placa using buildOdometerTimeline
         readingsByPlaca.forEach((readings, placaNormalizada) => {
           if (readings.length === 0) return;
           
-          const isElectric = readings.some(r => r.bateria !== null && r.bateria !== undefined);
-          
-          // Track reset detection
-          let baselineHodLido: number | null = null;
-          let baselineTripLida: number | null = null;
-          let previousHodValue = -1;
-          let previousTripValue = -1;
-          
-          for (const reading of readings) {
-            const hodValue = reading.hod_lido ? parseFloat(reading.hod_lido) : 0;
-            const tripValue = reading.trip_lida ? parseFloat(reading.trip_lida) : 0;
-            
-            // Detect reset for automobiles (hod_lido)
-            if (!isElectric && hodValue > 0) {
-              if (previousHodValue > 0 && hodValue < previousHodValue) {
-                // Reset detected! Update baseline
-                baselineHodLido = hodValue;
-                previousHodValue = hodValue;
-              } else if (baselineHodLido === null) {
-                // First valid reading
-                baselineHodLido = hodValue;
-                previousHodValue = hodValue;
-              } else {
-                previousHodValue = hodValue;
-              }
-            }
-            
-            // Detect reset for ciclomotors (trip_lida)
-            if (isElectric && tripValue > 0) {
-              if (previousTripValue > 0 && tripValue < previousTripValue) {
-                // Reset detected! Update baseline
-                baselineTripLida = tripValue;
-                previousTripValue = tripValue;
-              } else if (baselineTripLida === null) {
-                // First valid reading
-                baselineTripLida = tripValue;
-                previousTripValue = tripValue;
-              } else {
-                previousTripValue = tripValue;
-              }
-            }
-          }
-          
-          // Store the baseline (after last reset)
+          // Convert to HodometroReadingInput format
+          const timelineInputs: HodometroReadingInput[] = readings.map((reading) => ({
+            data: reading.data,
+            hora: reading.hora ?? '00:00',
+            hod_lido: reading.hod_lido === null || reading.hod_lido === undefined ? null : String(reading.hod_lido),
+            trip_lida: reading.trip_lida === null || reading.trip_lida === undefined ? null : String(reading.trip_lida),
+            bateria: reading.bateria ?? null,
+          }));
+
+          // Build timeline with reset detection
+          const timeline = buildOdometerTimeline(timelineInputs);
+
+          // Store baseline per placa (always set, even if baseline is null)
           firstReadingsByPlaca.set(placaNormalizada, {
-            firstHodLido: baselineHodLido,
-            firstTripLida: baselineTripLida
+            firstHodLido: timeline.vehicleType === 'automovel' ? (timeline.baseline ?? null) : null,
+            firstTripLida: timeline.vehicleType === 'ciclomotor' ? (timeline.baseline ?? null) : null,
           });
         });
       }
       
-      // STEP 3: Recalculate vehicleMileageMap using the correct formula:
-      // km_rodado = (latest reading in period) - (first-ever reading)
+      // STEP 3: Recalculate vehicleMileageMap using buildOdometerTimeline
       vehicleMileageMap.clear(); // Clear existing data
       
-      // Build a map to track the latest reading per normalized placa
-      const latestReadingByPlaca = new Map<string, { reading: number; vehicleType: string; lastDate: string }>();
-      
-      for (const [key, data] of Array.from(dailyVehicleDataMap.entries())) {
-        const [date, _vehicleId] = key.split('_');
-        if (!data.veiculo_placa) continue;
+      // Rebuild using timeline data from firstReadingsByPlaca and period readings
+      readingsByPlaca.forEach((readings, placaNormalizada) => {
+        if (readings.length === 0) return;
         
-        const placaNormalizada = data.veiculo_placa.trim().toUpperCase();
-        
-        // Get the latest reading for this vehicle type
-        let latestReading: number | null = null;
-        if (data.vehicleType === 'automovel' && data.lastReadingKm !== null) {
-          latestReading = data.lastReadingKm;
-        } else if (data.vehicleType === 'ciclomotor' && data.lastReadingTrip !== null) {
-          latestReading = data.lastReadingTrip;
-        }
-        
-        if (latestReading === null) continue;
-        
-        // Update if this is a more recent reading or first time seeing this placa
-        const existingEntry = latestReadingByPlaca.get(placaNormalizada);
-        if (!existingEntry || date > existingEntry.lastDate || 
-            (date === existingEntry.lastDate && latestReading > existingEntry.reading)) {
-          latestReadingByPlaca.set(placaNormalizada, {
-            reading: latestReading,
-            vehicleType: data.vehicleType,
-            lastDate: date
-          });
-        }
-      }
-      
-      // Now calculate km_rodado for each placa: latest - first-ever
-      for (const [placaNormalizada, latestData] of latestReadingByPlaca.entries()) {
-        const firstReading = firstReadingsByPlaca.get(placaNormalizada);
-        
-        if (!firstReading) {
-          console.warn(`No first-ever reading found for placa ${placaNormalizada}`);
-          continue;
-        }
-        
-        let km_rodado = 0;
-        
-        if (latestData.vehicleType === 'automovel' && firstReading.firstHodLido !== null) {
-          km_rodado = latestData.reading - firstReading.firstHodLido;
-        } else if (latestData.vehicleType === 'ciclomotor' && firstReading.firstTripLida !== null) {
-          km_rodado = latestData.reading - firstReading.firstTripLida;
-        }
-        
-        // Handle negative values (odometer reset or error)
-        if (km_rodado < 0) {
-          console.warn(`Negative km_rodado for placa ${placaNormalizada}: latest ${latestData.reading} - first ${latestData.vehicleType === 'automovel' ? firstReading.firstHodLido : firstReading.firstTripLida}`);
-          km_rodado = 0;
-        }
-        
-        if (km_rodado >= 0) {
+        // Convert to HodometroReadingInput format
+        const timelineInputs: HodometroReadingInput[] = readings.map((reading) => ({
+          data: reading.data,
+          hora: reading.hora ?? '00:00',
+          hod_lido: reading.hod_lido === null || reading.hod_lido === undefined ? null : String(reading.hod_lido),
+          trip_lida: reading.trip_lida === null || reading.trip_lida === undefined ? null : String(reading.trip_lida),
+          bateria: reading.bateria ?? null,
+        }));
+
+        // Build timeline
+        const timeline = buildOdometerTimeline(timelineInputs);
+
+        // Calculate km rodado for the selected period
+        const readingsInPeriod = timelineInputs.filter((reading) =>
+          reading.data >= dateRange.startDate && reading.data <= dateRange.endDate
+        );
+
+        const kmRodadoPeriodo = calculateKmRodadoForPeriod(
+          timeline,
+          dateRange.startDate,
+          dateRange.endDate,
+          readingsInPeriod
+        );
+
+        if (kmRodadoPeriodo > 0 && timeline.latestDate) {
           vehicleMileageMap.set(placaNormalizada, {
             placa: placaNormalizada,
-            totalKm: km_rodado,
-            lastDate: latestData.lastDate
+            totalKm: kmRodadoPeriodo,
+            lastDate: timeline.latestDate
           });
         }
-      }
+      });
       
       // Convert maps to arrays for state
       const dailyMileageArray: DailyMileage[] = Array.from(dailyMileageMap.entries())
@@ -1174,7 +1115,7 @@ const HodometrosDashboard = () => {
           allHodometrosByVehicle.get(hod.veiculo_id)!.push(hod);
         });
         
-        // Calculate km_rodado per veiculo_id: (latest in period) - (first-ever VALID reading)
+        // Calculate km_rodado per veiculo_id using buildOdometerTimeline
         allHodometrosByVehicle.forEach((readings, veiculoId) => {
           if (readings.length === 0) return;
           
@@ -1185,95 +1126,47 @@ const HodometrosDashboard = () => {
             return a.hora.localeCompare(b.hora);
           });
           
-          // Determine vehicle type from any reading
-          const sampleReading = sortedReadings.find(r => r.bateria !== undefined);
-          const isCiclomotor = sampleReading && sampleReading.bateria !== null && sampleReading.bateria !== undefined;
-          
-          // Find FIRST VALID reading AFTER the last odometer reset
-          // Detect resets by tracking when the odometer value decreases
-          let baselineReading = null;
-          let previousValue = -1;
-          
-          for (const reading of sortedReadings) {
-            const currentValue = isCiclomotor 
-              ? parseNumber(reading.trip_lida) 
-              : parseNumber(reading.hod_lido);
-            
-            // Skip null/zero readings
-            if (currentValue === 0) continue;
-            
-            // Detect reset: current value is less than previous value
-            if (previousValue > 0 && currentValue < previousValue) {
-              // Reset detected! Use this as new baseline
-              baselineReading = reading;
-              previousValue = currentValue;
-            } else if (baselineReading === null) {
-              // First valid reading ever
-              baselineReading = reading;
-              previousValue = currentValue;
-            } else {
-              // Normal progression, update previous value
-              previousValue = currentValue;
-            }
+          // Convert to HodometroReadingInput format
+          const timelineInputs: HodometroReadingInput[] = sortedReadings.map((reading) => ({
+            data: reading.data,
+            hora: reading.hora ?? '00:00',
+            hod_lido: reading.hod_lido === null || reading.hod_lido === undefined ? null : String(reading.hod_lido),
+            trip_lida: reading.trip_lida === null || reading.trip_lida === undefined ? null : String(reading.trip_lida),
+            bateria: reading.bateria ?? null,
+          }));
+
+          // Build timeline with reset detection
+          const timeline = buildOdometerTimeline(timelineInputs);
+
+          // Get normalized placa from first reading
+          const originalPlaca = timelineInputs.length
+            ? (Array.isArray(sortedReadings[0].veiculo) ? sortedReadings[0].veiculo[0]?.placa : sortedReadings[0].veiculo?.placa)
+            : null;
+          const placaNormalizada = (originalPlaca || '').trim().toUpperCase();
+          vehicleIdToPlaca.set(veiculoId, placaNormalizada);
+
+          // Store baseline per placa
+          if (placaNormalizada && timeline.baseline !== null) {
+            firstReadingsByPlaca.set(placaNormalizada, {
+              firstHodLido: timeline.vehicleType === 'automovel' ? timeline.baseline : null,
+              firstTripLida: timeline.vehicleType === 'ciclomotor' ? timeline.baseline : null,
+            });
           }
-          
-          if (!baselineReading) return; // No valid baseline reading
-          
-          // Filter readings within the selected period
-          const readingsInPeriod = sortedReadings.filter(r => 
-            r.data >= dateRange.startDate && r.data <= dateRange.endDate
+
+          // Calculate km rodado for the selected period
+          const readingsInPeriod = timelineInputs.filter((reading) =>
+            reading.data >= dateRange.startDate && reading.data <= dateRange.endDate
           );
-          
-          if (readingsInPeriod.length === 0) return; // No readings in period
-          
-          // Find LAST VALID reading in period
-          let lastValidReadingInPeriod = null;
-          for (let i = readingsInPeriod.length - 1; i >= 0; i--) {
-            const reading = readingsInPeriod[i];
-            if (isCiclomotor && reading.trip_lida !== null) {
-              lastValidReadingInPeriod = reading;
-              break;
-            } else if (!isCiclomotor && reading.hod_lido !== null) {
-              lastValidReadingInPeriod = reading;
-              break;
-            }
-          }
-          
-          if (!lastValidReadingInPeriod) return; // No valid reading in period
-          
-          // Calculate total km_rodado from baseline (after last reset) to most recent valid in period
-          let totalKm = 0;
-          if (isCiclomotor) {
-            const baselineValue = parseNumber(baselineReading.trip_lida);
-            const lastValue = parseNumber(lastValidReadingInPeriod.trip_lida);
-            totalKm = lastValue - baselineValue;
-          } else {
-            const baselineValue = parseNumber(baselineReading.hod_lido);
-            const lastValue = parseNumber(lastValidReadingInPeriod.hod_lido);
-            totalKm = lastValue - baselineValue;
-          }
-          
-          // Ensure non-negative (should not happen with reset detection, but keep as safeguard)
-          if (totalKm < 0) {
-            console.warn(`Negative km_rodado for vehicle ${veiculoId}: ${totalKm}. Setting to 0.`);
-            totalKm = 0;
-          }
-          
-          totalKmRodadoByVehicleId.set(veiculoId, totalKm);
-          
-          // Map veiculo_id to normalized placa
-          const veiculo = Array.isArray(baselineReading.veiculo) ? baselineReading.veiculo[0] : baselineReading.veiculo;
-          if (veiculo && veiculo.placa) {
-            const placaNormalizada = veiculo.placa.trim().toUpperCase();
-            vehicleIdToPlaca.set(veiculoId, placaNormalizada);
-            
-            // Also store in firstReadingsByPlaca for consistency (using baseline after reset)
-            if (!firstReadingsByPlaca.has(placaNormalizada)) {
-              firstReadingsByPlaca.set(placaNormalizada, {
-                firstHodLido: isCiclomotor ? null : parseNumber(baselineReading.hod_lido),
-                firstTripLida: isCiclomotor ? parseNumber(baselineReading.trip_lida) : null
-              });
-            }
+
+          const kmRodadoPeriodo = calculateKmRodadoForPeriod(
+            timeline,
+            dateRange.startDate,
+            dateRange.endDate,
+            readingsInPeriod
+          );
+
+          if (kmRodadoPeriodo > 0) {
+            totalKmRodadoByVehicleId.set(veiculoId, kmRodadoPeriodo);
           }
         });
       }
