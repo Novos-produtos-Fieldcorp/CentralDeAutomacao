@@ -623,34 +623,73 @@ const HodometrosDashboard = () => {
         if (firstReadingsError) throw firstReadingsError;
         
         // Build map: normalized_placa -> { firstHodLido, firstTripLida }
-        // Skip null readings and keep the first VALID reading
+        // Detect odometer resets and use first reading AFTER last reset as baseline
+        
+        // Group readings by normalized placa
+        const readingsByPlaca = new Map<string, any[]>();
         (firstReadingsData || []).forEach(reading => {
           const veiculoData = Array.isArray(reading.veiculo) ? reading.veiculo[0] : reading.veiculo;
           if (!veiculoData?.placa) return;
           
           const placaNormalizada = veiculoData.placa.trim().toUpperCase();
-          const isElectric = reading.bateria !== null && reading.bateria !== undefined;
+          if (!readingsByPlaca.has(placaNormalizada)) {
+            readingsByPlaca.set(placaNormalizada, []);
+          }
+          readingsByPlaca.get(placaNormalizada)!.push(reading);
+        });
+        
+        // Process each placa to detect resets
+        readingsByPlaca.forEach((readings, placaNormalizada) => {
+          if (readings.length === 0) return;
           
-          if (!firstReadingsByPlaca.has(placaNormalizada)) {
-            firstReadingsByPlaca.set(placaNormalizada, {
-              firstHodLido: null,
-              firstTripLida: null
-            });
+          const isElectric = readings.some(r => r.bateria !== null && r.bateria !== undefined);
+          
+          // Track reset detection
+          let baselineHodLido: number | null = null;
+          let baselineTripLida: number | null = null;
+          let previousHodValue = -1;
+          let previousTripValue = -1;
+          
+          for (const reading of readings) {
+            const hodValue = reading.hod_lido ? parseFloat(reading.hod_lido) : 0;
+            const tripValue = reading.trip_lida ? parseFloat(reading.trip_lida) : 0;
+            
+            // Detect reset for automobiles (hod_lido)
+            if (!isElectric && hodValue > 0) {
+              if (previousHodValue > 0 && hodValue < previousHodValue) {
+                // Reset detected! Update baseline
+                baselineHodLido = hodValue;
+                previousHodValue = hodValue;
+              } else if (baselineHodLido === null) {
+                // First valid reading
+                baselineHodLido = hodValue;
+                previousHodValue = hodValue;
+              } else {
+                previousHodValue = hodValue;
+              }
+            }
+            
+            // Detect reset for ciclomotors (trip_lida)
+            if (isElectric && tripValue > 0) {
+              if (previousTripValue > 0 && tripValue < previousTripValue) {
+                // Reset detected! Update baseline
+                baselineTripLida = tripValue;
+                previousTripValue = tripValue;
+              } else if (baselineTripLida === null) {
+                // First valid reading
+                baselineTripLida = tripValue;
+                previousTripValue = tripValue;
+              } else {
+                previousTripValue = tripValue;
+              }
+            }
           }
           
-          const entry = firstReadingsByPlaca.get(placaNormalizada)!;
-          
-          // For automobiles, capture first non-null hod_lido
-          if (!isElectric && entry.firstHodLido === null && reading.hod_lido !== null) {
-            entry.firstHodLido = reading.hod_lido;
-          }
-          
-          // For ciclomotors, capture first non-null trip_lida
-          if (isElectric && entry.firstTripLida === null && reading.trip_lida !== null) {
-            entry.firstTripLida = reading.trip_lida;
-          }
-          
-          firstReadingsByPlaca.set(placaNormalizada, entry);
+          // Store the baseline (after last reset)
+          firstReadingsByPlaca.set(placaNormalizada, {
+            firstHodLido: baselineHodLido,
+            firstTripLida: baselineTripLida
+          });
         });
       }
       
@@ -1150,19 +1189,35 @@ const HodometrosDashboard = () => {
           const sampleReading = sortedReadings.find(r => r.bateria !== undefined);
           const isCiclomotor = sampleReading && sampleReading.bateria !== null && sampleReading.bateria !== undefined;
           
-          // Find FIRST VALID (non-null) reading
-          let firstValidReading = null;
+          // Find FIRST VALID reading AFTER the last odometer reset
+          // Detect resets by tracking when the odometer value decreases
+          let baselineReading = null;
+          let previousValue = -1;
+          
           for (const reading of sortedReadings) {
-            if (isCiclomotor && reading.trip_lida !== null) {
-              firstValidReading = reading;
-              break;
-            } else if (!isCiclomotor && reading.hod_lido !== null) {
-              firstValidReading = reading;
-              break;
+            const currentValue = isCiclomotor 
+              ? parseNumber(reading.trip_lida) 
+              : parseNumber(reading.hod_lido);
+            
+            // Skip null/zero readings
+            if (currentValue === 0) continue;
+            
+            // Detect reset: current value is less than previous value
+            if (previousValue > 0 && currentValue < previousValue) {
+              // Reset detected! Use this as new baseline
+              baselineReading = reading;
+              previousValue = currentValue;
+            } else if (baselineReading === null) {
+              // First valid reading ever
+              baselineReading = reading;
+              previousValue = currentValue;
+            } else {
+              // Normal progression, update previous value
+              previousValue = currentValue;
             }
           }
           
-          if (!firstValidReading) return; // No valid first reading
+          if (!baselineReading) return; // No valid baseline reading
           
           // Filter readings within the selected period
           const readingsInPeriod = sortedReadings.filter(r => 
@@ -1186,19 +1241,19 @@ const HodometrosDashboard = () => {
           
           if (!lastValidReadingInPeriod) return; // No valid reading in period
           
-          // Calculate total km_rodado from first-ever valid to most recent valid in period
+          // Calculate total km_rodado from baseline (after last reset) to most recent valid in period
           let totalKm = 0;
           if (isCiclomotor) {
-            const firstValue = parseNumber(firstValidReading.trip_lida);
+            const baselineValue = parseNumber(baselineReading.trip_lida);
             const lastValue = parseNumber(lastValidReadingInPeriod.trip_lida);
-            totalKm = lastValue - firstValue;
+            totalKm = lastValue - baselineValue;
           } else {
-            const firstValue = parseNumber(firstValidReading.hod_lido);
+            const baselineValue = parseNumber(baselineReading.hod_lido);
             const lastValue = parseNumber(lastValidReadingInPeriod.hod_lido);
-            totalKm = lastValue - firstValue;
+            totalKm = lastValue - baselineValue;
           }
           
-          // Ensure non-negative
+          // Ensure non-negative (should not happen with reset detection, but keep as safeguard)
           if (totalKm < 0) {
             console.warn(`Negative km_rodado for vehicle ${veiculoId}: ${totalKm}. Setting to 0.`);
             totalKm = 0;
@@ -1207,16 +1262,16 @@ const HodometrosDashboard = () => {
           totalKmRodadoByVehicleId.set(veiculoId, totalKm);
           
           // Map veiculo_id to normalized placa
-          const veiculo = Array.isArray(firstValidReading.veiculo) ? firstValidReading.veiculo[0] : firstValidReading.veiculo;
+          const veiculo = Array.isArray(baselineReading.veiculo) ? baselineReading.veiculo[0] : baselineReading.veiculo;
           if (veiculo && veiculo.placa) {
             const placaNormalizada = veiculo.placa.trim().toUpperCase();
             vehicleIdToPlaca.set(veiculoId, placaNormalizada);
             
-            // Also store in firstReadingsByPlaca for consistency
+            // Also store in firstReadingsByPlaca for consistency (using baseline after reset)
             if (!firstReadingsByPlaca.has(placaNormalizada)) {
               firstReadingsByPlaca.set(placaNormalizada, {
-                firstHodLido: isCiclomotor ? null : parseNumber(firstValidReading.hod_lido),
-                firstTripLida: isCiclomotor ? parseNumber(firstValidReading.trip_lida) : null
+                firstHodLido: isCiclomotor ? null : parseNumber(baselineReading.hod_lido),
+                firstTripLida: isCiclomotor ? parseNumber(baselineReading.trip_lida) : null
               });
             }
           }
