@@ -32,7 +32,12 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
     - **KM Rodado**: Calculated as (most recent reading in selected period - very first reading ever registered in the system)
     - **Total Liters**: Sum of all fuel refills since the beginning (all-time total, not period-limited)
     - **Average Consumption**: km/L = total km rodado ÷ total liters abastecidos (all-time averages)
-    - **Plate Normalization**: All plates normalized to UPPERCASE to prevent duplicates (e.g., "Hbz6f14" and "HBZ6F14" are treated as same vehicle). Calculation process: (1) Calculate km_rodado per veiculo_id (reliable), (2) Map each veiculo_id to normalized plate, (3) Consolidate stats by summing km from all veiculo_ids sharing the same normalized plate.
+  - **Plate Normalization (Applied Globally)**:
+    - **HodometrosLista.tsx**: Vehicle readings list consolidates by normalized plate (UPPERCASE)
+    - **Fuel Consumption Dashboard**: All consumption metrics grouped by normalized plate
+    - **HodometrosDashboard.tsx Charts**: "Quilometragem por Veículo" chart uses normalized plates
+    - Implementation: All plates normalized to UPPERCASE before aggregation to prevent duplicates (e.g., "Hbz6f14" and "HBZ6F14" treated as "HBZ6F14")
+    - Strategy: Calculate km_rodado per veiculo_id first (reliable), then consolidate by normalized plate for final display
 - **Vagas Module**: Supports inline creation of related entities, real-time dashboard statistics, and a toggle for table/card grid views with preference persistence.
 - **Deployment**: Configured for Replit with Vite dev server accepting all hosts (`0.0.0.0`) and Express backend bound to `0.0.0.0:5000`.
 

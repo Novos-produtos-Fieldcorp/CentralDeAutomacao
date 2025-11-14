@@ -27,8 +27,7 @@ interface DriverMileage {
 }
 
 interface VehicleMileage {
-  veiculo_id: number;
-  placa: string;
+  placa: string; // Normalized to UPPERCASE for consolidation
   totalKm: number;
   lastDate?: string;
 }
@@ -305,7 +304,8 @@ const HodometrosDashboard = () => {
       // Initialize maps for data processing
       const dailyMileageMap = new Map<string, { totalKm: number; formattedDate: string }>();
       const driverMileageMap = new Map<number, { nome: string; totalKm: number }>();
-      const vehicleMileageMap = new Map<number, { placa: string; totalKm: number; lastDate?: string }>();
+      // Group by NORMALIZED PLACA (uppercase) to avoid duplicates like "Hbz6f14" and "HBZ6F14"
+      const vehicleMileageMap = new Map<string, { placa: string; totalKm: number; lastDate?: string }>();
       const driverReadingsMap = new Map<number, { nome: string; count: number }>();
       const operationMileageMap = new Map<string, number>();
       
@@ -481,10 +481,11 @@ const HodometrosDashboard = () => {
                 driverMileageMap.set(currentDay.data.motorista_id, driverData);
               }
               
-              // Update vehicle mileage map
+              // Update vehicle mileage map (grouped by NORMALIZED PLACA to avoid duplicates)
               if (currentDay.data.veiculo_id && currentDay.data.veiculo_placa) {
-                const vehicleData = vehicleMileageMap.get(currentDay.data.veiculo_id) || {
-                  placa: currentDay.data.veiculo_placa,
+                const placaNormalizada = (currentDay.data.veiculo_placa || '').trim().toUpperCase();
+                const vehicleData = vehicleMileageMap.get(placaNormalizada) || {
+                  placa: placaNormalizada, // Always store normalized placa
                   totalKm: 0,
                   lastDate: currentDay.date
                 };
@@ -495,7 +496,7 @@ const HodometrosDashboard = () => {
                   vehicleData.lastDate = currentDay.date;
                 }
                 
-                vehicleMileageMap.set(currentDay.data.veiculo_id, vehicleData);
+                vehicleMileageMap.set(placaNormalizada, vehicleData);
               }
             }
           }
@@ -544,10 +545,11 @@ const HodometrosDashboard = () => {
             driverMileageMap.set(data.motorista_id, driverData);
           }
           
-          // Update vehicle mileage map
+          // Update vehicle mileage map (grouped by NORMALIZED PLACA to avoid duplicates)
           if (data.veiculo_id && data.veiculo_placa) {
-            const vehicleData = vehicleMileageMap.get(data.veiculo_id) || {
-              placa: data.veiculo_placa,
+            const placaNormalizada = (data.veiculo_placa || '').trim().toUpperCase();
+            const vehicleData = vehicleMileageMap.get(placaNormalizada) || {
+              placa: placaNormalizada, // Always store normalized placa
               totalKm: 0,
               lastDate: date
             };
@@ -558,7 +560,7 @@ const HodometrosDashboard = () => {
               vehicleData.lastDate = date;
             }
             
-            vehicleMileageMap.set(data.veiculo_id, vehicleData);
+            vehicleMileageMap.set(placaNormalizada, vehicleData);
           }
           }
         }
@@ -605,9 +607,8 @@ const HodometrosDashboard = () => {
         .sort((a, b) => b.totalKm - a.totalKm);
       
       const vehicleMileageArray: VehicleMileage[] = Array.from(vehicleMileageMap.entries())
-        .map(([veiculo_id, data]) => ({
-          veiculo_id: Number(veiculo_id),
-          placa: data.placa,
+        .map(([placaNormalizada, data]) => ({
+          placa: data.placa, // Already normalized to UPPERCASE
           totalKm: data.totalKm,
           lastDate: data.lastDate ? formatDateBR(data.lastDate) : undefined
         }))
@@ -1892,8 +1893,8 @@ const HodometrosDashboard = () => {
           
           {vehicleMileage.length > 0 ? (
             <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-              {vehicleMileage.map((vehicle, index) => (
-                <div key={index} className="space-y-2">
+              {vehicleMileage.map((vehicle) => (
+                <div key={vehicle.placa} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-black dark:text-gray-400">
                       {vehicle.placa}
