@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, MapPin, X, Download, AlertCircle, ChevronDown, Calendar, User, Camera, Clock, Video, Image as ImageIcon } from 'lucide-react';
+import { Search, MapPin, X, Download, AlertCircle, ChevronDown, Calendar, User, Camera, Clock, Video, Image as ImageIcon, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
@@ -34,6 +34,7 @@ export default function ComprovRotaLista() {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<'image' | 'video'>('image');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
+  const [mediaLoadError, setMediaLoadError] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days', false);
@@ -246,11 +247,17 @@ export default function ComprovRotaLista() {
     if (item.mediaUrl) {
       setSelectedPhoto(item.mediaUrl);
       setSelectedMediaType(item.isVideo ? 'video' : 'image');
+      setMediaLoadError(false);
       setShowPhotoModal(true);
     } else {
       toast.error('Mídia não disponível ou URL inválida');
       console.error('❌ [ComprovRota] Mídia não disponível para item:', item);
     }
+  };
+
+  const handleMediaError = (mediaUrl: string) => {
+    console.error('❌ [ComprovRota] Falha ao carregar mídia:', mediaUrl);
+    setMediaLoadError(true);
   };
 
   const exportToExcel = () => {
@@ -611,38 +618,68 @@ export default function ComprovRotaLista() {
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4"
           onClick={() => setShowPhotoModal(false)}
         >
-          <div className="relative max-w-4xl max-h-[90vh] w-full">
-            <button
-              onClick={() => setShowPhotoModal(false)}
-              data-testid="button-close-photo"
-              className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors"
-            >
-              <X className="h-8 w-8" />
-            </button>
-            
-            {selectedMediaType === 'video' ? (
-              <video
-                src={selectedPhoto}
-                controls
-                autoPlay
-                className="w-full h-full max-h-[85vh] rounded-lg"
-                onError={(e) => {
-                  console.error('❌ [ComprovRota] Erro ao carregar vídeo:', selectedPhoto);
-                  toast.error('Erro ao carregar vídeo');
-                }}
+          <div className="relative max-w-4xl max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute -top-12 right-0 flex items-center gap-3">
+              <a
+                href={selectedPhoto}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="link-open-external"
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                onClick={(e) => e.stopPropagation()}
               >
-                Seu navegador não suporta a tag de vídeo.
-              </video>
+                <ExternalLink className="h-4 w-4" />
+                Abrir em nova aba
+              </a>
+              <button
+                onClick={() => setShowPhotoModal(false)}
+                data-testid="button-close-photo"
+                className="text-white hover:text-gray-300 transition-colors p-2"
+              >
+                <X className="h-8 w-8" />
+              </button>
+            </div>
+            
+            {mediaLoadError ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
+                <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Erro ao carregar {selectedMediaType === 'video' ? 'vídeo' : 'foto'}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  A mídia pode estar protegida por autenticação ou a URL pode estar expirada.
+                </p>
+                <a
+                  href={selectedPhoto}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Tentar abrir em nova aba
+                </a>
+              </div>
             ) : (
-              <img
-                src={selectedPhoto}
-                alt="Comprovante"
-                className="w-full h-full object-contain rounded-lg"
-                onError={(e) => {
-                  console.error('❌ [ComprovRota] Erro ao carregar imagem:', selectedPhoto);
-                  toast.error('Erro ao carregar imagem');
-                }}
-              />
+              <>
+                {selectedMediaType === 'video' ? (
+                  <video
+                    src={selectedPhoto}
+                    controls
+                    autoPlay
+                    className="w-full h-full max-h-[85vh] rounded-lg bg-black"
+                    onError={() => handleMediaError(selectedPhoto)}
+                  >
+                    Seu navegador não suporta a tag de vídeo.
+                  </video>
+                ) : (
+                  <img
+                    src={selectedPhoto}
+                    alt="Comprovante"
+                    className="w-full h-full object-contain rounded-lg bg-white dark:bg-gray-900"
+                    onError={() => handleMediaError(selectedPhoto)}
+                  />
+                )}
+              </>
             )}
           </div>
         </div>
