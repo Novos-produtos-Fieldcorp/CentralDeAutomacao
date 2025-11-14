@@ -28,7 +28,10 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **Minuta Management**: Full minuta management in the Hodômetros module with search, filtering, and editing, including support for multiple `romaneio` numbers per minuta.
 - **Hodômetro km_rodado Calculation**: 
   - **List View**: Frontend dynamically calculates `km_rodado` values using two modes (INTER-DAY and INTRA-DAY), prioritizing the highest reading of each day for accuracy and handling both automobiles and ciclomotors.
-  - **Fuel Consumption Dashboard**: Uses simplified total km calculation (most recent reading - first reading) for the entire period to accurately compute average fuel consumption (km/L = total km ÷ total liters).
+  - **Fuel Consumption Dashboard**: 
+    - **KM Rodado**: Calculated as (most recent reading in selected period - very first reading ever registered in the system)
+    - **Total Liters**: Sum of all fuel refills since the beginning (all-time total, not period-limited)
+    - **Average Consumption**: km/L = total km rodado ÷ total liters abastecidos (all-time averages)
 - **Vagas Module**: Supports inline creation of related entities, real-time dashboard statistics, and a toggle for table/card grid views with preference persistence.
 - **Deployment**: Configured for Replit with Vite dev server accepting all hosts (`0.0.0.0`) and Express backend bound to `0.0.0.0:5000`.
 

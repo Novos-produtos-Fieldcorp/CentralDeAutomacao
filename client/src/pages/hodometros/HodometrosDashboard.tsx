@@ -1001,7 +1001,7 @@ const HodometrosDashboard = () => {
         totalKmRodadoByVehicle.set(veiculoId, totalKm);
       });
       
-      // Now fetch bomba_gasolina with joins
+      // Now fetch ALL bomba_gasolina records (no date filter) for total liters
       const { data, error } = await supabase
         .from('bomba_gasolina')
         .select(`
@@ -1023,8 +1023,6 @@ const HodometrosDashboard = () => {
           )
         `)
         .eq('company_id', companyId)
-        .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate)
         .order('data', { ascending: false });
       
       if (error) throw error;
