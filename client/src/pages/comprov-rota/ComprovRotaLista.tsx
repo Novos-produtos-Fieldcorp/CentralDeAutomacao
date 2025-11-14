@@ -16,8 +16,8 @@ interface ComprovRotaItem {
   id_motorista: number | null;
   company_id: number | null;
   foto: string | null;
-  latitude: number | null;
-  longitude: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   mediaUrl?: string | null;
   isVideo?: boolean;
   motorista?: {
@@ -60,8 +60,6 @@ export default function ComprovRotaLista() {
           id_motorista,
           company_id,
           foto,
-          latitude,
-          longitude,
           motorista:motorista!comprov_rota_id_motorista_fkey (
             motorista_id,
             nome
