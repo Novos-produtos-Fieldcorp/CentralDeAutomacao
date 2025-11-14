@@ -26,7 +26,34 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **Performance Optimization**: Optimized database queries and pagination for large datasets, particularly on pages like `Contratados.tsx`, reducing loading times significantly.
 - **Fuel Pump Integration**: Integrated `bomba_gasolina` table for odometer readings, including price, liters, and photo management with granular access control via the Admin page.
 - **Minuta Management**: Full minuta management in the Hodômetros module with search, filtering, and editing, including support for multiple `romaneio` numbers per minuta.
-- **Hodômetro km_rodado Calculation**: Frontend dynamically calculates `km_rodado` values using two modes (INTER-DAY and INTRA-DAY), prioritizing the highest reading of each day for accuracy and handling both automobiles and ciclomotors.
+- **Hodômetro km_rodado Calculation with Reset Detection**: 
+  - **Reset Detection Utility** (`client/src/utils/hodometroResetUtils.ts`):
+    - `buildOdometerTimeline()`: Detects odometer resets (when reading decreases by >100 km) and creates segments
+    - **Reset Tolerance**: 100 km threshold to ignore data entry errors (decreases < 100 km are treated as input mistakes)
+    - Returns baseline value (first reading after last reset) for accurate calculations
+    - Supports multiple resets throughout vehicle history
+    - Type-safe TypeScript implementation with proper interfaces
+    - Handles both automobiles (hod_lido) and ciclomotors (trip_lida)
+  - **Vehicle Mileage Chart** (Quilometragem por Veículo): km_rodado = (latest valid reading in period) - (baseline after last reset)
+    - Detects odometer resets chronologically
+    - Uses baseline after last reset, not first-ever reading
+    - Optimized: queries only vehicles present in the selected period
+    - Skips null readings to find first and last VALID values
+    - Groups by normalized plate (UPPERCASE) to consolidate duplicate entries
+    - Handles negative values by detecting resets, not just clamping to 0
+  - **List View**: Frontend dynamically calculates `km_rodado` values using two modes (INTER-DAY and INTRA-DAY), prioritizing the highest reading of each day for accuracy and handling both automobiles and ciclomotors.
+  - **Fuel Consumption Dashboard**: 
+    - **KM Rodado**: Calculated as (latest valid reading in selected period) - (baseline after last reset)
+    - Uses reset detection utility for accurate calculations across resets
+    - **Total Liters**: Sum of all fuel refills since the beginning (all-time total, not period-limited)
+    - **Average Consumption**: km/L = total km rodado ÷ total liters abastecidos (all-time averages)
+    - Uses same optimized reset-aware logic as Vehicle Mileage Chart for consistency
+  - **Plate Normalization (Applied Globally)**:
+    - **HodometrosLista.tsx**: Vehicle readings list consolidates by normalized plate (UPPERCASE)
+    - **Fuel Consumption Dashboard**: All consumption metrics grouped by normalized plate
+    - **HodometrosDashboard.tsx Charts**: "Quilometragem por Veículo" chart uses normalized plates
+    - Implementation: All plates normalized to UPPERCASE before aggregation to prevent duplicates (e.g., "Hbz6f14" and "HBZ6F14" treated as "HBZ6F14")
+    - Strategy: Calculate km_rodado per veiculo_id first (reliable), then consolidate by normalized plate for final display
 - **Vagas Module**: Supports inline creation of related entities, real-time dashboard statistics, and a toggle for table/card grid views with preference persistence.
 - **Deployment**: Configured for Replit with Vite dev server accepting all hosts (`0.0.0.0`) and Express backend bound to `0.0.0.0:5000`.
 
