@@ -168,8 +168,15 @@ const HodometrosLista = () => {
 
       // Processing response data
 
-      // Process data to get mileage by vehicle and date
-      const vehicleMap = new Map<number, {
+      // Helper function to normalize plate (UPPERCASE to avoid duplicates)
+      const normalizePlaca = (placa: string | null | undefined): string => {
+        if (!placa) return 'DESCONHECIDA';
+        return placa.trim().toUpperCase();
+      };
+
+      // Process data to get mileage by vehicle (grouped by NORMALIZED PLACA)
+      const vehicleMap = new Map<string, {
+        primaryVeiculoId: number; // Primary veiculo_id for reference
         placa: string;
         marca: string;
         tipo: string;
@@ -182,7 +189,7 @@ const HodometrosLista = () => {
 
       // Processing hodometro records
       
-      // First pass: Group readings by vehicle
+      // First pass: Group readings by NORMALIZED PLACA to consolidate duplicates
       (data || []).forEach((hodometro) => {
         // Skip records without required data
         if (!hodometro.veiculo_id || !hodometro.veiculo || !hodometro.motorista) {
@@ -198,6 +205,9 @@ const HodometrosLista = () => {
           ? (hodometro.veiculo[0] as any)?.placa || null
           : (hodometro.veiculo as any)?.placa || null;
 
+        // Normalize placa to UPPERCASE to consolidate duplicates (e.g., "Hbz6f14" and "HBZ6F14")
+        const placaNormalizada = normalizePlaca(veiculoPlaca);
+
         // Format reading - ensure proper type casting
         const formattedHodometro: HodometroReading = {
           ...hodometro,
@@ -212,9 +222,10 @@ const HodometrosLista = () => {
             : null
         };
         
-        // Get or create vehicle data
-        const vehicleData = vehicleMap.get(vehicleId) || {
-          placa: veiculoPlaca || '',
+        // Get or create vehicle data using NORMALIZED PLACA as key
+        const vehicleData = vehicleMap.get(placaNormalizada) || {
+          primaryVeiculoId: vehicleId, // Use first veiculo_id encountered
+          placa: placaNormalizada, // Always use normalized (UPPERCASE) placa for display
           marca: formattedHodometro.veiculo?.marca || '',
           tipo: formattedHodometro.veiculo?.tipo || '',
           totalKm: 0,
@@ -227,8 +238,8 @@ const HodometrosLista = () => {
         // Add reading to vehicle
         vehicleData.readings.push(formattedHodometro);
         
-        // Update vehicle map
-        vehicleMap.set(vehicleId, vehicleData);
+        // Update vehicle map (by normalized placa, not veiculo_id)
+        vehicleMap.set(placaNormalizada, vehicleData);
       });
 
       // Vehicle data processing completed
@@ -367,7 +378,7 @@ const HodometrosLista = () => {
       };
 
       // Recalculate km_rodado and compute aggregates from recalculated values
-      const vehiclesArray: VehicleData[] = Array.from(vehicleMap.entries()).map(([veiculo_id, vehicleData]) => {
+      const vehiclesArray: VehicleData[] = Array.from(vehicleMap.entries()).map(([placaNormalizada, vehicleData]) => {
         // Step 1: Recalculate km_rodado for all readings based on calculoUmPorDia flag
         const recalculatedReadings = recalculateKmRodado(vehicleData.readings, moduleAccess.calculoUmPorDia);
         
@@ -420,8 +431,8 @@ const HodometrosLista = () => {
         const avgKmPerDay = daysCount > 0 ? totalKm / daysCount : 0;
         
         return {
-          veiculo_id,
-          placa: vehicleData.placa,
+          veiculo_id: vehicleData.primaryVeiculoId, // Use primaryVeiculoId for reference
+          placa: vehicleData.placa, // Already normalized to UPPERCASE
           marca: vehicleData.marca,
           tipo: vehicleData.tipo,
           totalKm,
