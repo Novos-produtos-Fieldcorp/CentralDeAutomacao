@@ -27,11 +27,17 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **Fuel Pump Integration**: Integrated `bomba_gasolina` table for odometer readings, including price, liters, and photo management with granular access control via the Admin page.
 - **Minuta Management**: Full minuta management in the Hodômetros module with search, filtering, and editing, including support for multiple `romaneio` numbers per minuta.
 - **Hodômetro km_rodado Calculation**: 
+  - **Vehicle Mileage Chart** (Quilometragem por Veículo): km_rodado = (latest valid reading in period) - (first-ever valid reading in system)
+    - Optimized: queries only vehicles present in the selected period
+    - Skips null readings to find first and last VALID values
+    - Groups by normalized plate (UPPERCASE) to consolidate duplicate entries
+    - Handles negative values (odometer resets) by setting to 0
   - **List View**: Frontend dynamically calculates `km_rodado` values using two modes (INTER-DAY and INTRA-DAY), prioritizing the highest reading of each day for accuracy and handling both automobiles and ciclomotors.
   - **Fuel Consumption Dashboard**: 
-    - **KM Rodado**: Calculated as (most recent reading in selected period - very first reading ever registered in the system)
+    - **KM Rodado**: Calculated as (latest valid reading in selected period) - (first-ever valid reading in system)
     - **Total Liters**: Sum of all fuel refills since the beginning (all-time total, not period-limited)
     - **Average Consumption**: km/L = total km rodado ÷ total liters abastecidos (all-time averages)
+    - Uses same optimized logic as Vehicle Mileage Chart for consistency
   - **Plate Normalization (Applied Globally)**:
     - **HodometrosLista.tsx**: Vehicle readings list consolidates by normalized plate (UPPERCASE)
     - **Fuel Consumption Dashboard**: All consumption metrics grouped by normalized plate
