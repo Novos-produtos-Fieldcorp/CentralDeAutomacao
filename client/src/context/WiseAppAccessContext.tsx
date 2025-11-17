@@ -253,13 +253,13 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
             // Cache company data
             cacheData('wiseapp_company_cache', { companyId: company.company_id });
             
-            // Check if there's a token for this company
-            console.log('🔍 [WiseAppAccess] Buscando token para company_id:', company.company_id);
+            // Check if there's a token for this account
+            console.log('🔍 [WiseAppAccess] Buscando token para id_conta_wiseapp:', accountId);
             
             const { data: access, error: accessError } = await supabase
               .from('wiseapp_acesso')
               .select('wiseapp_acesso_id, access_token_wiseapp, nome, email')
-              .eq('company_id', company.company_id)
+              .eq('id_conta_wiseapp', accountId)
               .maybeSingle();
 
             console.log('📊 [WiseAppAccess] Resultado da busca:', {
@@ -301,7 +301,6 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
                       .insert([{ 
                         email: 'auto@sistema.com', 
                         nome: 'Token Automático', 
-                        company_id: company.company_id, 
                         id_conta_wiseapp: accountId, 
                         access_token_wiseapp: tokenData.token 
                       }]);
@@ -311,7 +310,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
                       const { data: newAccess } = await supabase
                         .from('wiseapp_acesso')
                         .select('wiseapp_acesso_id, access_token_wiseapp, nome')
-                        .eq('company_id', company.company_id)
+                        .eq('id_conta_wiseapp', accountId)
                         .eq('access_token_wiseapp', tokenData.token)
                         .single();
                       
