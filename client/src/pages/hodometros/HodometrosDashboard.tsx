@@ -1091,8 +1091,25 @@ const HodometrosDashboard = () => {
         return;
       }
       
-      // Step 2: Fetch bomba_gasolina records DURING the selected period for these vehicles
-      // This gives us the fuel consumed during the period
+      // Calculate yesterday (day before endDate) to exclude today's fuel refills
+      const yesterdayDate = dateRange.endDate 
+        ? (() => {
+            const parts = dateRange.endDate.split('-');
+            const year = parseInt(parts[0]);
+            const month = parseInt(parts[1]) - 1; // months are 0-indexed
+            const day = parseInt(parts[2]);
+            const endDate = new Date(year, month, day);
+            const yesterday = new Date(endDate);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yyyy = yesterday.getFullYear();
+            const mm = String(yesterday.getMonth() + 1).padStart(2, '0');
+            const dd = String(yesterday.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+          })()
+        : '9999-12-31'; // Fallback: get all
+      
+      // Step 2: Fetch bomba_gasolina records UP TO YESTERDAY (excludes today's refills)
+      // This gives us the fuel that was available for consumption during the period
       const { data: bombasData, error: bombasError } = await supabase
         .from('bomba_gasolina')
         .select(`
@@ -1110,7 +1127,7 @@ const HodometrosDashboard = () => {
         .eq('company_id', companyId)
         .in('veiculo_id', Array.from(vehicleIdsInPeriod))
         .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate)
+        .lte('data', yesterdayDate)
         .order('data', { ascending: false });
       
       if (bombasError) throw bombasError;
@@ -1250,7 +1267,7 @@ const HodometrosDashboard = () => {
       });
       
       // Calculate average km per liter for each vehicle
-      // Formula: km rodados no período / litros abastecidos DURANTE o período
+      // Formula: km rodados no período / litros abastecidos até ontem (exclui abastecimentos de hoje)
       const vehicleStats = Array.from(vehicleStatsMap.values()).map(stats => ({
         ...stats,
         mediaKmPorLitro: stats.totalLitros > 0 ? stats.totalKm / stats.totalLitros : 0
