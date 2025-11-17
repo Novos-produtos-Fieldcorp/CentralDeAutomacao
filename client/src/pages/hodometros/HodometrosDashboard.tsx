@@ -1044,8 +1044,60 @@ const HodometrosDashboard = () => {
         ? new Date(new Date(dateRange.startDate).getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         : null;
       
-      // Step 1: Fetch bomba_gasolina records UP TO the day before the selected period
-      // This gives us the fuel that was already in the tank before the period started
+      // Step 1: Fetch hodometro readings from the SELECTED PERIOD to identify vehicles that drove
+      const { data: hodometrosInPeriod, error: hodometrosError } = await supabase
+        .from('hodometro')
+        .select(`
+          id_hodometro,
+          data,
+          hora,
+          hod_lido,
+          trip_lida,
+          bateria,
+          veiculo_id,
+          veiculo:veiculo_id (
+            veiculo_id,
+            placa,
+            marca
+          )
+        `)
+        .eq('company_id', companyId)
+        .gte('data', dateRange.startDate)
+        .lte('data', dateRange.endDate)
+        .order('veiculo_id')
+        .order('data')
+        .order('hora');
+      
+      if (hodometrosError) throw hodometrosError;
+      
+      // Collect unique vehicle_ids that drove in the period
+      const vehicleIdsInPeriod = new Set<number>();
+      const vehicleDataMap = new Map<number, { placa: string; marca: string }>();
+      
+      (hodometrosInPeriod || []).forEach((hod: any) => {
+        if (hod.veiculo_id) {
+          vehicleIdsInPeriod.add(hod.veiculo_id);
+          const veiculo = Array.isArray(hod.veiculo) ? hod.veiculo[0] : hod.veiculo;
+          if (veiculo) {
+            vehicleDataMap.set(hod.veiculo_id, {
+              placa: veiculo.placa || 'Desconhecida',
+              marca: veiculo.marca || 'Desconhecida'
+            });
+          }
+        }
+      });
+      
+      if (vehicleIdsInPeriod.size === 0) {
+        setVehicleFuelStats([]);
+        setKmVsPriceData([]);
+        setTotalLitros(0);
+        setTotalGasto(0);
+        setAvgCustoPorLitro(0);
+        return;
+      }
+      
+      // Step 2: Fetch bomba_gasolina records UP TO the day before the period for these vehicles
+      // This gives us the fuel that was in the tank BEFORE the period started
       const { data: bombasData, error: bombasError } = await supabase
         .from('bomba_gasolina')
         .select(`
@@ -1054,19 +1106,14 @@ const HodometrosDashboard = () => {
           litro_lido,
           preco_lido,
           veiculo_id,
-          motorista_id,
-          hodometro_id,
           veiculo:veiculo_id (
             veiculo_id,
             placa,
             marca
-          ),
-          motorista:motorista_id (
-            motorista_id,
-            nome
           )
         `)
         .eq('company_id', companyId)
+        .in('veiculo_id', Array.from(vehicleIdsInPeriod))
         .lte('data', dayBeforePeriod || '9999-12-31')
         .order('data', { ascending: false });
       
@@ -1074,56 +1121,21 @@ const HodometrosDashboard = () => {
       
       const bombas = bombasData || [];
       
-      // Collect unique vehicle_ids from bomba records
-      const vehicleIdsInBomba = new Set<number>();
-      bombas.forEach((bomba: any) => {
-        const veiculo = Array.isArray(bomba.veiculo) ? bomba.veiculo[0] : bomba.veiculo;
-        if (veiculo?.veiculo_id) {
-          vehicleIdsInBomba.add(veiculo.veiculo_id);
-        }
-      });
-      
-      // Step 2: Fetch historical hodometro readings ONLY for vehicles that have bomba records
-      // This is optimized and only gets what we need
-      const firstReadingsByPlaca = new Map<string, { firstHodLido: number | null; firstTripLida: number | null }>();
+      // Step 3: Calculate KM rodado for each vehicle using hodometros from the period
       const totalKmRodadoByVehicleId = new Map<number, number>();
       const vehicleIdToPlaca = new Map<number, string>();
       
-      if (vehicleIdsInBomba.size > 0) {
-        const { data: allHodometrosData, error: allHodometrosError } = await supabase
-          .from('hodometro')
-          .select(`
-            id_hodometro,
-            data,
-            hora,
-            hod_lido,
-            trip_lida,
-            bateria,
-            veiculo_id,
-            veiculo:veiculo_id (
-              veiculo_id,
-              placa
-            )
-          `)
-          .eq('company_id', companyId)
-          .in('veiculo_id', Array.from(vehicleIdsInBomba))
-          .order('veiculo_id')
-          .order('data')
-          .order('hora');
+      // Group hodometros by veiculo_id
+      const hodometrosByVehicle = new Map<number, any[]>();
+      (hodometrosInPeriod || []).forEach(hod => {
+        if (!hodometrosByVehicle.has(hod.veiculo_id)) {
+          hodometrosByVehicle.set(hod.veiculo_id, []);
+        }
+        hodometrosByVehicle.get(hod.veiculo_id)!.push(hod);
+      });
         
-        if (allHodometrosError) throw allHodometrosError;
-        
-        // Group by veiculo_id
-        const allHodometrosByVehicle = new Map<number, any[]>();
-        (allHodometrosData || []).forEach(hod => {
-          if (!allHodometrosByVehicle.has(hod.veiculo_id)) {
-            allHodometrosByVehicle.set(hod.veiculo_id, []);
-          }
-          allHodometrosByVehicle.get(hod.veiculo_id)!.push(hod);
-        });
-        
-        // Calculate km_rodado per veiculo_id using buildOdometerTimeline
-        allHodometrosByVehicle.forEach((readings, veiculoId) => {
+        // Calculate km_rodado per veiculo_id for the selected period
+        hodometrosByVehicle.forEach((readings, veiculoId) => {
           if (readings.length === 0) return;
           
           // Sort by date and time to ensure correct order
@@ -1152,15 +1164,7 @@ const HodometrosDashboard = () => {
           const placaNormalizada = (originalPlaca || '').trim().toUpperCase();
           vehicleIdToPlaca.set(veiculoId, placaNormalizada);
 
-          // Store baseline per placa
-          if (placaNormalizada && timeline.baseline !== null) {
-            firstReadingsByPlaca.set(placaNormalizada, {
-              firstHodLido: timeline.vehicleType === 'automovel' ? timeline.baseline : null,
-              firstTripLida: timeline.vehicleType === 'ciclomotor' ? timeline.baseline : null,
-            });
-          }
-
-          // Calculate km rodado for the selected period
+          // Calculate km rodado for the selected period (within the date range)
           const readingsInPeriod = timelineInputs.filter((reading) =>
             reading.data >= dateRange.startDate && reading.data <= dateRange.endDate
           );
@@ -1176,9 +1180,8 @@ const HodometrosDashboard = () => {
             totalKmRodadoByVehicleId.set(veiculoId, kmRodadoPeriodo);
           }
         });
-      }
       
-      // Step 3: Process bomba data and aggregate by normalized placa
+      // Step 4: Process bomba data (historical fuel up to day before) and aggregate by normalized placa
       // Maps to aggregate data by vehicle (using placa as key to avoid duplicates)
       const vehicleStatsMap = new Map<string, VehicleFuelStats>();
       const kmVsPriceMap = new Map<string, { km: number; preco: number }>();
