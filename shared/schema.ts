@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar, numeric, date, bigint, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, numeric, date, bigint, jsonb, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -19,6 +19,7 @@ export const company = pgTable("company", {
   resumo_access: boolean("resumo_access").default(false),
   tags_access: boolean("tags_access").default(true),
   bomba_gasolina_access: boolean("bomba_gasolina_access").default(false),
+  comprov_rota_access: boolean("comprov_rota_access").default(false),
   calculo_um_por_dia: boolean("calculo_um_por_dia").default(false),
 
   created_at: timestamp("created_at").defaultNow(),
@@ -293,6 +294,27 @@ export const romaneio = pgTable("romaneio", {
   foto_romaneio: text("foto_romaneio"),
 });
 
+// Comprovante de Rota table
+export const comprov_rota = pgTable("comprov_rota", {
+  id: serial("id").primaryKey(),
+  created_at: timestamp("created_at").defaultNow(),
+  id_motorista: integer("id_motorista").references(() => motorista.motorista_id),
+  company_id: integer("company_id").references(() => company.company_id),
+  foto: text("foto"),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+});
+
+// Endereço Comprovante de Rota table
+export const end_comprov_rota = pgTable("end_comprov_rota", {
+  id: serial("id").primaryKey(),
+  comprov_rota_id: integer("comprov_rota_id").references(() => comprov_rota.id),
+  logradouro_id: integer("logradouro_id").references(() => logradouro.id_logradouro),
+  numero: integer("numero"),
+  complemento: text("complemento"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const motoristaRelations = relations(motorista, ({ one, many }) => ({
   company: one(company, {
@@ -453,6 +475,16 @@ export const insertMotoristaTagSchema = createInsertSchema(motorista_tags).omit(
   created_at: true,
 });
 
+export const insertComprovRotaSchema = createInsertSchema(comprov_rota).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertEndComprovRotaSchema = createInsertSchema(end_comprov_rota).omit({
+  id: true,
+  created_at: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -485,6 +517,10 @@ export type Tag = typeof tags.$inferSelect;
 export type InsertTag = z.infer<typeof insertTagSchema>;
 export type MotoristaTag = typeof motorista_tags.$inferSelect;
 export type InsertMotoristaTag = z.infer<typeof insertMotoristaTagSchema>;
+export type ComprovRota = typeof comprov_rota.$inferSelect;
+export type InsertComprovRota = z.infer<typeof insertComprovRotaSchema>;
+export type EndComprovRota = typeof end_comprov_rota.$inferSelect;
+export type InsertEndComprovRota = z.infer<typeof insertEndComprovRotaSchema>;
 
 // Job-related types
 export type Vaga = typeof vaga.$inferSelect;

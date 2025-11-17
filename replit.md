@@ -45,9 +45,13 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
   - **Fuel Consumption Dashboard**: 
     - **KM Rodado**: Calculated as (latest valid reading in selected period) - (baseline after last reset)
     - Uses reset detection utility for accurate calculations across resets
-    - **Total Liters**: Sum of all fuel refills since the beginning (all-time total, not period-limited)
-    - **Average Consumption**: km/L = total km rodado ÷ total liters abastecidos (all-time averages)
+    - **Total Liters**: Sum of fuel refills up to YESTERDAY (excludes today's refills)
+      - Fetches fuel records from startDate to (endDate - 1 day)
+      - Logic: .gte('data', startDate).lte('data', yesterdayDate)
+      - Excludes current day refills to reflect fuel already consumed
+    - **Average Consumption**: km/L = km rodados no período ÷ litros abastecidos até ontem
     - Uses same optimized reset-aware logic as Vehicle Mileage Chart for consistency
+    - This calculation reflects fuel efficiency: kilometers driven using fuel refilled before today
   - **Plate Normalization (Applied Globally)**:
     - **HodometrosLista.tsx**: Vehicle readings list consolidates by normalized plate (UPPERCASE)
     - **Fuel Consumption Dashboard**: All consumption metrics grouped by normalized plate
@@ -55,6 +59,37 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
     - Implementation: All plates normalized to UPPERCASE before aggregation to prevent duplicates (e.g., "Hbz6f14" and "HBZ6F14" treated as "HBZ6F14")
     - Strategy: Calculate km_rodado per veiculo_id first (reliable), then consolidate by normalized plate for final display
 - **Vagas Module**: Supports inline creation of related entities, real-time dashboard statistics, and a toggle for table/card grid views with preference persistence.
+- **Comprovante de Rota Module**: Tabbed interface with Dashboard and Lista (List) views following the same pattern as Hodômetros and Checklist modules:
+  - **Dashboard**: Statistics cards showing total comprovantes, today's count, monthly count, and active drivers; Top 5 drivers chart with visual progress bars
+  - **Lista**: Professional table layout matching HodometrosRelatorio aesthetics with:
+    - Period filter (Hoje, 15 dias, 30 dias, Personalizado with custom date range)
+    - Search by motorista name or ID with safe null handling
+    - **GPS Location Display** (ready, requires DB migration):
+      - UI fully implemented with null-safe rendering
+      - Table column with "Ver no mapa" link (opens in new tab)
+      - Modal displays GPS coordinates with "Abrir no Google Maps" button
+      - Proper handling of zero coordinates (equator/prime meridian)
+      - **To Enable**: Add columns to Supabase: `latitude: real`, `longitude: real` in comprov_rota table
+      - When columns exist, GPS features activate automatically
+    - Excel export functionality (includes GPS coordinates when available)
+    - Pagination (25 items per page)
+    - **Smart Media Loading System**: Comprehensive photo/video support with robust URL parsing
+      - Handles multiple formats: base64 (images/videos), complete URLs, JSON arrays, comma-separated lists, single filenames
+      - Auto-detects video vs image (MIME types + file extensions)
+      - Pre-computed URLs during data fetch for optimal performance
+      - Thumbnail previews in table (video icon placeholder for videos)
+      - Full-screen modal with native video player support
+      - **WiseApp Authentication Handling**: Graceful error handling for Rails Active Storage protected URLs
+        - Clear error messages when media requires WiseApp authentication
+        - "Abrir em nova aba" button (always visible) to open media in WiseApp directly
+        - Error fallback UI with explanation and external link button
+        - mediaLoadError state tracks loading failures for better UX
+      - Error handling with detailed console logging
+      - Supports WiseApp URLs and Supabase Storage URLs
+    - Loading and error states with retry functionality
+  - **Navigation**: Tab highlighting with `startsWith` logic for correct active state in nested routes
+  - **Data Integrity**: Proper normalization of Supabase relation arrays to single objects before state updates
+  - **Testing**: All interactive elements include data-testid attributes
 - **Deployment**: Configured for Replit with Vite dev server accepting all hosts (`0.0.0.0`) and Express backend bound to `0.0.0.0:5000`.
 
 ### System Design Choices

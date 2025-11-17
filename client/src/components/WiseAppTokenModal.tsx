@@ -6,7 +6,7 @@ import { createApiUrl } from '@/lib/api-config-supabase';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onTokenSaved: (token: string) => void;
+  onTokenSaved: (token: string, attendantId: number, attendantName: string) => void;
   companyId: number | null;
 }
 
@@ -42,7 +42,11 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       if (existing) {
         if (existing.access_token_wiseapp) {
           // Remove localStorage dependency for Netlify compatibility
-          onTokenSaved(existing.access_token_wiseapp);
+          onTokenSaved(
+            existing.access_token_wiseapp,
+            existing.wiseapp_acesso_id,
+            existing.nome || 'Atendente'
+          );
           onClose();
         } else {
           // Email exists but no token, go to tutorial without requiring name
@@ -204,8 +208,21 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
         if (updateError) throw updateError;
       }
 
+      // Fetch the updated user data to get attendantId
+      const { data: updatedUser, error: fetchError } = await supabase
+        .from('wiseapp_acesso')
+        .select('wiseapp_acesso_id, nome')
+        .eq('email', email)
+        .single();
+
+      if (fetchError) throw fetchError;
+
       // Remove localStorage dependency for Netlify compatibility
-      onTokenSaved(token);
+      onTokenSaved(
+        token,
+        updatedUser.wiseapp_acesso_id,
+        updatedUser.nome || attendantName || 'Atendente'
+      );
       onClose();
     } catch (err: any) {
       console.error('Erro ao salvar token:', err);

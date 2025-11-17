@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, Tags, FileText } from 'lucide-react';
+import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, Tags, FileText, MapPin } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
@@ -109,8 +109,9 @@ const Navbar = ({ onToggle }: NavbarProps) => {
     };
   }, [isExpanded, setIsExpanded]);
 
-  const menuItems = [
+  const allMenuItems = [
     { path: '/', icon: Home, label: 'Menu', isTitle: false, enabled: true },
+    { path: '/comprov-rota', icon: MapPin, label: 'Comprovante de Rota', needsAccess: true, enabled: moduleAccess.comprovRota },
     { path: '/checklist', icon: ClipboardCheck, label: 'Checklists', needsAccess: true, enabled: moduleAccess.checklist },
     { path: '/motoristas', icon: Users, label: 'Contratações', needsAccess: true, enabled: moduleAccess.motoristas },
     { path: '/veiculos', icon: Truck, label: 'Veículos', needsAccess: false, enabled: moduleAccess.veiculos },
@@ -120,6 +121,9 @@ const Navbar = ({ onToggle }: NavbarProps) => {
     { path: '/resumos-grupo', icon: MessagesSquare, label: 'Resumos em Grupo', needsAccess: true, enabled: moduleAccess.resumos },
     { path: '/tags-admin', icon: Tags, label: 'Marcadores', needsAccess: true, enabled: moduleAccess.tags },
   ];
+
+  // Filter menu items to only show enabled ones
+  const menuItems = allMenuItems.filter(item => item.enabled);
 
   // Function to get company initials or abbreviation based on length
   const getCompanyDisplay = () => {

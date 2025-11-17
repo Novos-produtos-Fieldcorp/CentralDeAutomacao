@@ -14,6 +14,7 @@ interface ModuleAccess {
   resumos: boolean;
   tags: boolean;
   comprovantes: boolean;
+  comprovRota: boolean;
   bomba: boolean;
   calculoUmPorDia: boolean;
 }
@@ -32,6 +33,7 @@ export const useModuleAccess = () => {
     resumos: true,
     tags: true,
     comprovantes: true,
+    comprovRota: false,
     bomba: false,
     calculoUmPorDia: false,
   });
@@ -50,7 +52,7 @@ export const useModuleAccess = () => {
         const { data: company, error: companyError } = await supabase
           .from("company")
           .select(
-            "checklist_access, motorista_access, hodometro_acsess, minuta_access, romaneio_access, resumo_access, tags_access, comprovante_access, bomba_gasolina_access, calculo_um_por_dia",
+            "checklist_access, motorista_access, hodometro_acsess, minuta_access, romaneio_access, resumo_access, tags_access, comprovante_access, comprov_rota_access, bomba_gasolina_access, calculo_um_por_dia",
           )
           .eq("company_id", companyId)
           .maybeSingle();
@@ -69,6 +71,7 @@ export const useModuleAccess = () => {
             resumos: true,
             tags: true,
             comprovantes: true,
+            comprovRota: false,
             bomba: false,
             calculoUmPorDia: false,
           });
@@ -87,6 +90,7 @@ export const useModuleAccess = () => {
             resumos: company.resumo_access || false,
             tags: company.tags_access || false,
             comprovantes: company.comprovante_access || false,
+            comprovRota: company.comprov_rota_access || false,
             bomba: company.bomba_gasolina_access || false,
             calculoUmPorDia: company.calculo_um_por_dia || false,
           });
@@ -103,6 +107,7 @@ export const useModuleAccess = () => {
             resumos: true,
             tags: true,
             comprovantes: true,
+            comprovRota: false,
             bomba: false,
             calculoUmPorDia: false,
           });
@@ -125,6 +130,7 @@ export const useModuleAccess = () => {
           resumos: true,
           tags: true,
           comprovantes: true,
+          comprovRota: false,
           bomba: false,
           calculoUmPorDia: false,
         });
