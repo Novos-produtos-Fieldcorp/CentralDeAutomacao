@@ -45,9 +45,10 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
   - **Fuel Consumption Dashboard**: 
     - **KM Rodado**: Calculated as (latest valid reading in selected period) - (baseline after last reset)
     - Uses reset detection utility for accurate calculations across resets
-    - **Total Liters**: Sum of all fuel refills since the beginning (all-time total, not period-limited)
-    - **Average Consumption**: km/L = total km rodado ÷ total liters abastecidos (all-time averages)
+    - **Total Liters**: Sum of fuel refills up to the day BEFORE the selected period starts (historical fuel in tank)
+    - **Average Consumption**: km/L = km rodados no período ÷ litros abastecidos até o dia anterior ao período
     - Uses same optimized reset-aware logic as Vehicle Mileage Chart for consistency
+    - This calculation reflects the fuel efficiency of previously-fueled kilometers during the selected period
   - **Plate Normalization (Applied Globally)**:
     - **HodometrosLista.tsx**: Vehicle readings list consolidates by normalized plate (UPPERCASE)
     - **Fuel Consumption Dashboard**: All consumption metrics grouped by normalized plate

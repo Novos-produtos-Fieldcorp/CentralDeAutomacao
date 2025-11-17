@@ -1039,7 +1039,13 @@ const HodometrosDashboard = () => {
         return isNaN(num) ? 0 : num;
       };
       
-      // Step 1: Fetch all bomba_gasolina records first to identify which vehicles we need
+      // Calculate the day before the period starts
+      const dayBeforePeriod = dateRange.startDate 
+        ? new Date(new Date(dateRange.startDate).getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        : null;
+      
+      // Step 1: Fetch bomba_gasolina records UP TO the day before the selected period
+      // This gives us the fuel that was already in the tank before the period started
       const { data: bombasData, error: bombasError } = await supabase
         .from('bomba_gasolina')
         .select(`
@@ -1061,6 +1067,7 @@ const HodometrosDashboard = () => {
           )
         `)
         .eq('company_id', companyId)
+        .lte('data', dayBeforePeriod || '9999-12-31')
         .order('data', { ascending: false });
       
       if (bombasError) throw bombasError;
@@ -1244,6 +1251,7 @@ const HodometrosDashboard = () => {
       });
       
       // Calculate average km per liter for each vehicle
+      // Formula: km rodados no período / litros abastecidos até o dia anterior ao período
       const vehicleStats = Array.from(vehicleStatsMap.values()).map(stats => ({
         ...stats,
         mediaKmPorLitro: stats.totalLitros > 0 ? stats.totalKm / stats.totalLitros : 0
