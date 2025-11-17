@@ -1250,7 +1250,7 @@ const HodometrosDashboard = () => {
       });
       
       // Calculate average km per liter for each vehicle
-      // Formula: km rodados no período / litros abastecidos até o dia anterior ao período
+      // Formula: km rodados no período / litros abastecidos DURANTE o período
       const vehicleStats = Array.from(vehicleStatsMap.values()).map(stats => ({
         ...stats,
         mediaKmPorLitro: stats.totalLitros > 0 ? stats.totalKm / stats.totalLitros : 0
