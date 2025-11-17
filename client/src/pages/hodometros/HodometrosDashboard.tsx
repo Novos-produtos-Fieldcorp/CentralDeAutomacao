@@ -1853,11 +1853,17 @@ const HodometrosDashboard = () => {
                   {(() => {
                     // Calculate max value once for all bars
                     const maxValue = Math.max(...vehicleFuelStats.map(s => s.mediaKmPorLitro), 1);
+                    console.log('🔍 [CHART DEBUG] Max value:', maxValue);
+                    console.log('🔍 [CHART DEBUG] Vehicle stats:', vehicleFuelStats.map(s => ({
+                      placa: s.placa,
+                      media: s.mediaKmPorLitro
+                    })));
                     
                     return vehicleFuelStats
                       .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
                       .map((stats, index) => {
                         const heightPercent = (stats.mediaKmPorLitro / maxValue) * 100;
+                        console.log(`📊 [BAR] ${stats.placa}: ${stats.mediaKmPorLitro.toFixed(2)} km/L = ${heightPercent.toFixed(1)}% height`);
                       
                       return (
                         <div 
