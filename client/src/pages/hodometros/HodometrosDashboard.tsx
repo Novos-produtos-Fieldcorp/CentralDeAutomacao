@@ -1040,9 +1040,24 @@ const HodometrosDashboard = () => {
       };
       
       // Calculate the day before the period starts
-      const dayBeforePeriod = dateRange.startDate 
-        ? new Date(new Date(dateRange.startDate).getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-        : null;
+      // Special handling for "all" period: use all-time data instead of "day before"
+      const dayBeforePeriod = periodType === 'all'
+        ? '9999-12-31' // For "all" period, get ALL historical fuel data
+        : dateRange.startDate 
+          ? (() => {
+              const parts = dateRange.startDate.split('-');
+              const year = parseInt(parts[0]);
+              const month = parseInt(parts[1]) - 1; // months are 0-indexed
+              const day = parseInt(parts[2]);
+              const startDate = new Date(year, month, day);
+              const previousDay = new Date(startDate);
+              previousDay.setDate(previousDay.getDate() - 1);
+              const yyyy = previousDay.getFullYear();
+              const mm = String(previousDay.getMonth() + 1).padStart(2, '0');
+              const dd = String(previousDay.getDate()).padStart(2, '0');
+              return `${yyyy}-${mm}-${dd}`;
+            })()
+          : '9999-12-31'; // Fallback: get all
       
       // Step 1: Fetch hodometro readings from the SELECTED PERIOD to identify vehicles that drove
       const { data: hodometrosInPeriod, error: hodometrosError } = await supabase
