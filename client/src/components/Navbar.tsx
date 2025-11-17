@@ -16,7 +16,7 @@ interface NavbarProps {
 const Navbar = ({ onToggle }: NavbarProps) => {
   const location = useLocation();
   // Fallback to local state if SidebarContext is not available
-  const [localExpanded, setLocalExpanded] = useState(true);
+  const [localExpanded, setLocalExpanded] = useState(false);
   const [, setIsManuallyExpanded] = useState(false);
   
   let isExpanded, setIsExpanded;
