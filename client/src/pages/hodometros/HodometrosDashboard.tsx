@@ -1873,8 +1873,8 @@ const HodometrosDashboard = () => {
                             <div 
                               className="w-full bg-gradient-to-t from-purple-500 to-purple-400 dark:from-purple-600 dark:to-purple-500 rounded-t-lg transition-all duration-500 hover:opacity-80 relative group"
                               style={{ 
-                                height: `${Math.max(10, heightPercent)}%`,
-                                minHeight: '20px'
+                                height: `${heightPercent}%`,
+                                minHeight: stats.mediaKmPorLitro > 0 ? '5px' : '0px'
                               }}
                             >
                               <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
