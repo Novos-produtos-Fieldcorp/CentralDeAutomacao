@@ -1453,8 +1453,8 @@ const HodometrosDashboard = () => {
           motorista:motorista_id ( motorista_id, nome )
         `)
         .eq('company_id', companyId)
-        .gte('created_at', dateRange.startDate)
-        .lte('created_at', endDateFull);
+        .gte('data', dateRange.startDate)
+        .lte('data', dateRange.endDate);
       
       if (!hodometrosError && hodometrosData) {
         hodometrosData.forEach((hodo: any) => {
