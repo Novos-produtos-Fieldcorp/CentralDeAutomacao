@@ -1849,54 +1849,50 @@ const HodometrosDashboard = () => {
             
             {vehicleFuelStats.length > 0 ? (
               <div className="overflow-x-auto">
-                <div className="min-w-[600px] h-[300px] flex items-end justify-center gap-3 p-4">
-                  {(() => {
-                    // Calculate max value once for all bars
-                    const maxValue = Math.max(...vehicleFuelStats.map(s => s.mediaKmPorLitro), 1);
-                    console.log('🔍 [CHART DEBUG] Max value:', maxValue);
-                    console.log('🔍 [CHART DEBUG] Vehicle stats:', vehicleFuelStats.map(s => ({
-                      placa: s.placa,
-                      media: s.mediaKmPorLitro
-                    })));
-                    
-                    return vehicleFuelStats
-                      .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
-                      .map((stats, index) => {
-                        const heightPercent = (stats.mediaKmPorLitro / maxValue) * 100;
-                        console.log(`📊 [BAR] ${stats.placa}: ${stats.mediaKmPorLitro.toFixed(2)} km/L = ${heightPercent.toFixed(1)}% height`);
-                      
-                      return (
-                        <div 
-                          key={stats.placa} 
-                          className="flex flex-col items-center gap-2"
-                          style={{ width: '80px' }}
-                          data-testid={`bar-vehicle-${stats.placa}`}
-                        >
-                          <div className="w-full flex flex-col items-center gap-1">
-                            <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
-                              {stats.mediaKmPorLitro > 0 ? stats.mediaKmPorLitro.toFixed(2) : '0'}
-                            </span>
+                <div className="min-w-[600px] p-4">
+                  {/* Chart Area */}
+                  <div className="relative" style={{ height: '300px' }}>
+                    <div className="absolute inset-0 flex items-end justify-around gap-2">
+                      {vehicleFuelStats
+                        .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
+                        .map((stats) => {
+                          const maxValue = Math.max(...vehicleFuelStats.map(s => s.mediaKmPorLitro), 1);
+                          const heightPx = (stats.mediaKmPorLitro / maxValue) * 280; // 280px = 300px - 20px padding
+                          
+                          return (
                             <div 
-                              className="w-full bg-gradient-to-t from-purple-500 to-purple-400 dark:from-purple-600 dark:to-purple-500 rounded-t-lg transition-all duration-500 hover:opacity-80 relative group"
-                              style={{ 
-                                height: `${heightPercent}%`,
-                                minHeight: stats.mediaKmPorLitro > 0 ? '5px' : '0px'
-                              }}
+                              key={stats.placa} 
+                              className="flex flex-col items-center gap-2 flex-1 max-w-[100px]"
+                              data-testid={`bar-vehicle-${stats.placa}`}
                             >
-                              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                {stats.placa}: {stats.mediaKmPorLitro.toFixed(2)} km/L
+                              {/* Value Label */}
+                              <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1">
+                                {stats.mediaKmPorLitro.toFixed(2)}
+                              </div>
+                              
+                              {/* Bar */}
+                              <div 
+                                className="w-full bg-gradient-to-t from-purple-500 to-purple-400 dark:from-purple-600 dark:to-purple-500 rounded-t transition-all duration-300 hover:opacity-80 group relative"
+                                style={{ 
+                                  height: `${heightPx}px`,
+                                  minHeight: stats.mediaKmPorLitro > 0 ? '8px' : '0px'
+                                }}
+                              >
+                                {/* Tooltip */}
+                                <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-3 py-1.5 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                  {stats.placa}: {stats.mediaKmPorLitro.toFixed(2)} km/L
+                                </div>
+                              </div>
+                              
+                              {/* Plate Label */}
+                              <div className="text-xs font-bold text-gray-900 dark:text-white uppercase mt-2">
+                                {stats.placa}
                               </div>
                             </div>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">
-                              {stats.placa}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
+                          );
+                        })}
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (
