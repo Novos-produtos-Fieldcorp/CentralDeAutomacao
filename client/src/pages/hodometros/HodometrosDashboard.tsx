@@ -1039,26 +1039,6 @@ const HodometrosDashboard = () => {
         return isNaN(num) ? 0 : num;
       };
       
-      // Calculate the day before the period starts
-      // Special handling for "all" period: use all-time data instead of "day before"
-      const dayBeforePeriod = periodType === 'all'
-        ? '9999-12-31' // For "all" period, get ALL historical fuel data
-        : dateRange.startDate 
-          ? (() => {
-              const parts = dateRange.startDate.split('-');
-              const year = parseInt(parts[0]);
-              const month = parseInt(parts[1]) - 1; // months are 0-indexed
-              const day = parseInt(parts[2]);
-              const startDate = new Date(year, month, day);
-              const previousDay = new Date(startDate);
-              previousDay.setDate(previousDay.getDate() - 1);
-              const yyyy = previousDay.getFullYear();
-              const mm = String(previousDay.getMonth() + 1).padStart(2, '0');
-              const dd = String(previousDay.getDate()).padStart(2, '0');
-              return `${yyyy}-${mm}-${dd}`;
-            })()
-          : '9999-12-31'; // Fallback: get all
-      
       // Step 1: Fetch hodometro readings from the SELECTED PERIOD to identify vehicles that drove
       const { data: hodometrosInPeriod, error: hodometrosError } = await supabase
         .from('hodometro')
@@ -1111,8 +1091,8 @@ const HodometrosDashboard = () => {
         return;
       }
       
-      // Step 2: Fetch bomba_gasolina records UP TO the day before the period for these vehicles
-      // This gives us the fuel that was in the tank BEFORE the period started
+      // Step 2: Fetch bomba_gasolina records DURING the selected period for these vehicles
+      // This gives us the fuel consumed during the period
       const { data: bombasData, error: bombasError } = await supabase
         .from('bomba_gasolina')
         .select(`
@@ -1129,7 +1109,8 @@ const HodometrosDashboard = () => {
         `)
         .eq('company_id', companyId)
         .in('veiculo_id', Array.from(vehicleIdsInPeriod))
-        .lte('data', dayBeforePeriod || '9999-12-31')
+        .gte('data', dateRange.startDate)
+        .lte('data', dateRange.endDate)
         .order('data', { ascending: false });
       
       if (bombasError) throw bombasError;
