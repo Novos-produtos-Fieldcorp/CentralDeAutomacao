@@ -60,7 +60,13 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
     - Strategy: Calculate km_rodado per veiculo_id first (reliable), then consolidate by normalized plate for final display
 - **Vagas Module**: Supports inline creation of related entities, real-time dashboard statistics, and a toggle for table/card grid views with preference persistence.
 - **Comprovante de Rota Module**: Tabbed interface with Dashboard and Lista (List) views following the same pattern as Hodômetros and Checklist modules:
-  - **Dashboard**: Statistics cards showing total comprovantes, today's count, monthly count, and active drivers; Top 5 drivers chart with visual progress bars
+  - **Dashboard**: 
+    - **Statistics Cards (3)**: Total Comprovantes (purple icon), Hoje (orange icon), Este Mês (green icon)
+    - **Top 5 Motoristas**: Chart with visual progress bars showing driver rankings
+    - **Media Analytics**: Two charts for photo/video analysis
+      * Pie chart (blue icon): Total photos vs videos distribution
+      * Bar chart (green icon): Daily photo/video comparison (last 7 days)
+    - **Color Palette**: Purple (MapPin), Orange (Calendar), Green (TrendingUp), Blue (Image/Users), Green (Video)
   - **Lista**: Professional table layout matching HodometrosRelatorio aesthetics with:
     - Period filter (Hoje, 15 dias, 30 dias, Personalizado with custom date range)
     - Search by motorista name or ID with safe null handling

@@ -207,7 +207,7 @@ export default function ComprovRotaDashboard() {
               </p>
             </div>
             <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
-              <MapPin className="h-8 w-8 text-gray-600 dark:text-gray-400" />
+              <MapPin className="h-8 w-8 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
         </div>
@@ -221,7 +221,7 @@ export default function ComprovRotaDashboard() {
               </p>
             </div>
             <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
-              <Calendar className="h-8 w-8 text-gray-600 dark:text-gray-400" />
+              <Calendar className="h-8 w-8 text-orange-600 dark:text-orange-400" />
             </div>
           </div>
         </div>
@@ -235,7 +235,7 @@ export default function ComprovRotaDashboard() {
               </p>
             </div>
             <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
-              <TrendingUp className="h-8 w-8 text-gray-600 dark:text-gray-400" />
+              <TrendingUp className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </div>
