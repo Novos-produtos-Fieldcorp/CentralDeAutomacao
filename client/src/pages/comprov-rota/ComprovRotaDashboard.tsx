@@ -404,29 +404,6 @@ export default function ComprovRotaDashboard() {
           )}
         </div>
       </div>
-
-      {/* Informações Adicionais */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
-          <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-            📍 Sobre os Comprovantes de Rota
-          </h4>
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            Os comprovantes de rota documentam as entregas e trajetos realizados pelos motoristas, 
-            incluindo fotos e informações de localização para melhor rastreabilidade.
-          </p>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-6 border border-green-200 dark:border-green-800">
-          <h4 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">
-            ✅ Dica
-          </h4>
-          <p className="text-sm text-green-800 dark:text-green-200">
-            Mantenha um registro consistente dos comprovantes para melhor controle e 
-            auditoria das operações de entrega da sua frota.
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
