@@ -85,11 +85,10 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
       - Backend endpoint: `POST /api/comprov-rota/download-zip`
       - Automatic file naming: `{dd-MM-yyyy_HH-mm-ss}_{motorista_nome}.{extensao}`
       - Supports photos (.jpg) and videos (.mp4)
-      - **Security Features (4-Layer SSRF Protection)**:
+      - **Security Features (3-Layer SSRF Protection)**:
         * Layer 1: Zod payload validation
         * Layer 2: Host whitelist (WiseApp, Supabase only)
-        * Layer 3: Disabled HTTP redirects (maxRedirects: 0)
-        * Layer 4: Explicit 3xx rejection via validateStatus
+        * Layer 3: Allow controlled redirects (maxRedirects: 5) - Required for WiseApp Rails Active Storage URLs
       - **Smart Download Strategy**:
         * Handles data URIs (base64) and HTTP(S) URLs
         * Automatic fallback: If WiseApp URL returns 404, tries Supabase Storage

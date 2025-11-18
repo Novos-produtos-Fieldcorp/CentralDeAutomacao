@@ -769,26 +769,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const response = await axios.get(item.mediaUrl, {
                 responseType: 'arraybuffer',
                 timeout: 30000, // 30 seconds timeout
-                maxRedirects: 0, // Prevent redirect-based SSRF attacks
+                maxRedirects: 5, // Allow redirects (WiseApp uses Rails Active Storage redirects)
                 validateStatus: (status) => {
-                  // Reject 3xx redirects explicitly (additional security layer)
-                  if (status >= 300 && status < 400) {
-                    return false; // Treat redirects as errors
-                  }
-                  return status >= 200 && status < 300; // Only accept 2xx
+                  // Accept 2xx and 3xx (redirects are followed automatically by axios)
+                  return status >= 200 && status < 400;
                 },
                 headers: {
                   'User-Agent': 'Mozilla/5.0'
                 }
               });
-
-              // Double-check: If somehow a redirect slipped through, reject it
-              if (response.status >= 300 && response.status < 400) {
-                console.error(`❌ [ZIP Download] Redirect detectado para item ${item.id}, rejeitando por segurança`);
-                failureCount++;
-                failureReasons['Redirect detectado'] = (failureReasons['Redirect detectado'] || 0) + 1;
-                continue;
-              }
 
               fileBuffer = Buffer.from(response.data);
               successCount++;
