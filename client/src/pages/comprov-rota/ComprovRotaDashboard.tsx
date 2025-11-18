@@ -124,7 +124,7 @@ export default function ComprovRotaDashboard() {
     <div className="space-y-6">
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-gray-300 dark:border-gray-600">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total de Comprovantes</p>
@@ -132,13 +132,13 @@ export default function ComprovRotaDashboard() {
                 {stats.totalComprovantes}
               </p>
             </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-              <MapPin className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
+              <MapPin className="h-8 w-8 text-gray-600 dark:text-gray-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-green-500">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-gray-300 dark:border-gray-600">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Hoje</p>
@@ -146,13 +146,13 @@ export default function ComprovRotaDashboard() {
                 {stats.comprovantesHoje}
               </p>
             </div>
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
-              <Calendar className="h-8 w-8 text-green-600 dark:text-green-400" />
+            <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
+              <Calendar className="h-8 w-8 text-gray-600 dark:text-gray-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-gray-300 dark:border-gray-600">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Este Mês</p>
@@ -160,13 +160,13 @@ export default function ComprovRotaDashboard() {
                 {stats.comprovantesEsteMes}
               </p>
             </div>
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-              <TrendingUp className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+            <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
+              <TrendingUp className="h-8 w-8 text-gray-600 dark:text-gray-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-orange-500">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-gray-300 dark:border-gray-600">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Motoristas Ativos</p>
@@ -174,8 +174,8 @@ export default function ComprovRotaDashboard() {
                 {stats.motoristasAtivos}
               </p>
             </div>
-            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full">
-              <Users className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+            <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
+              <Users className="h-8 w-8 text-gray-600 dark:text-gray-400" />
             </div>
           </div>
         </div>
