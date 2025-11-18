@@ -108,9 +108,11 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
         * Prevents false positives from URL-based detection (e.g., WiseApp Active Storage URLs don't show extensions)
       - Pre-computed URLs during data fetch for optimal performance
       - **No Thumbnails in Table**: Clean button-only interface for better performance and UX
-      - **Dual Action Buttons**:
-        * Photos: "Ver foto" button opens full-screen modal with location info
-        * Videos: "Baixar vídeo" button triggers automatic download with formatted filename
+      - **Icon-Only Media Buttons**:
+        * Photos: Camera icon (📷) opens full-screen modal with location info
+        * Videos: Video icon (🎬) opens video in new tab for browser-managed download/streaming
+        * Tooltips on hover show action description
+        * Icons sized at h-5 w-5 (20px) for clear visibility
       - **WiseApp Authentication Handling**: Graceful error handling for Rails Active Storage protected URLs
         - Clear error messages when media requires WiseApp authentication
         - "Abrir em nova aba" button (always visible) to open media in WiseApp directly

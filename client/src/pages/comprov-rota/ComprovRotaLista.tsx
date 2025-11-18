@@ -874,18 +874,13 @@ export default function ComprovRotaLista() {
                         <button
                           onClick={(e) => handleShowPhoto(item, e)}
                           data-testid={`button-view-photo-${item.id}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                          className="inline-flex items-center justify-center p-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                          title={item.isVideo ? 'Baixar vídeo' : 'Ver foto'}
                         >
                           {item.isVideo ? (
-                            <>
-                              <Video className="h-4 w-4" />
-                              Baixar vídeo
-                            </>
+                            <Video className="h-5 w-5" />
                           ) : (
-                            <>
-                              <Camera className="h-4 w-4" />
-                              Ver foto
-                            </>
+                            <Camera className="h-5 w-5" />
                           )}
                         </button>
                       ) : (
