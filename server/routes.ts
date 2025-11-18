@@ -23,6 +23,7 @@ import {
 } from "./utils/api-retry";
 import { getBulkMotoristaTags } from "./bulk-tags-api";
 import { registerBulkContactTagsRoute } from "./bulk-contact-tags-sync";
+import { reverseGeocode, reverseGeocodeBatch } from "./geocoding-service";
 // CPF agora é consultado diretamente do frontend
 
 // Job tracking system for progress monitoring
@@ -567,6 +568,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Erro geral ao consultar CEP:", error);
       res.status(500).json({
         error: "Erro interno do servidor ao consultar CEP",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
+  // Reverse geocoding: convert coordinates to address
+  app.get("/api/geocode/reverse", async (req, res) => {
+    try {
+      const { lat, lng } = req.query;
+
+      // Validate coordinates
+      if (!lat || !lng) {
+        return res.status(400).json({
+          error: "Latitude e longitude são obrigatórias",
+        });
+      }
+
+      const latitude = parseFloat(lat as string);
+      const longitude = parseFloat(lng as string);
+
+      if (isNaN(latitude) || isNaN(longitude)) {
+        return res.status(400).json({
+          error: "Coordenadas inválidas",
+        });
+      }
+
+      const address = await reverseGeocode(latitude, longitude);
+
+      if (!address) {
+        return res.status(404).json({
+          error: "Endereço não encontrado para as coordenadas fornecidas",
+        });
+      }
+
+      res.json({ address });
+    } catch (error) {
+      console.error("Erro ao fazer geocoding reverso:", error);
+      res.status(500).json({
+        error: "Erro interno ao buscar endereço",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
+  // Batch reverse geocoding for multiple coordinates
+  app.post("/api/geocode/reverse/batch", async (req, res) => {
+    try {
+      const { coordinates } = req.body;
+
+      if (!Array.isArray(coordinates) || coordinates.length === 0) {
+        return res.status(400).json({
+          error: "Array de coordenadas é obrigatório",
+        });
+      }
+
+      // Validate and parse coordinates
+      const parsedCoords = coordinates.map((coord: any) => ({
+        id: coord.id,
+        lat: parseFloat(coord.lat),
+        lng: parseFloat(coord.lng),
+      }));
+
+      const results = await reverseGeocodeBatch(parsedCoords);
+
+      res.json({ results });
+    } catch (error) {
+      console.error("Erro ao fazer geocoding reverso em lote:", error);
+      res.status(500).json({
+        error: "Erro interno ao buscar endereços",
         details: error instanceof Error ? error.message : "Erro desconhecido",
       });
     }

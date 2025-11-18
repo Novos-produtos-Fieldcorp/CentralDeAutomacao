@@ -18,6 +18,7 @@ interface ComprovRotaItem {
   foto: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  address?: string | null;
   mediaUrl?: string | null;
   isVideo?: boolean;
   motorista?: {
@@ -35,14 +36,18 @@ export default function ComprovRotaLista() {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<'image' | 'video'>('image');
-  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address?: string | null } | null>(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [mediaLoadError, setMediaLoadError] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
+  const fetchRequestId = useRef(0);
   
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days', false);
 
   const fetchComprovantes = useCallback(async () => {
+    // Increment request ID to track this fetch
+    const currentRequestId = ++fetchRequestId.current;
+    
     try {
       setLoading(true);
       setError(null);
@@ -79,6 +84,12 @@ export default function ComprovRotaLista() {
         throw error;
       }
 
+      // Check if this is still the current request
+      if (currentRequestId !== fetchRequestId.current) {
+        console.log(`⏭️ [ComprovRota] Descartando resultado desatualizado de fetchComprovantes`);
+        return;
+      }
+
       if (!data || data.length === 0) {
         setComprovantes([]);
         setLoading(false);
@@ -109,6 +120,12 @@ export default function ComprovRotaLista() {
         };
       });
 
+      // Check again before updating state (double-check)
+      if (currentRequestId !== fetchRequestId.current) {
+        console.log(`⏭️ [ComprovRota] Descartando resultado desatualizado após processamento`);
+        return;
+      }
+
       // Log de debug para primeiros itens
       if (normalizedData.length > 0) {
         console.log('📸 [ComprovRota] Amostra de dados carregados:');
@@ -120,15 +137,98 @@ export default function ComprovRotaLista() {
       }
 
       setComprovantes(normalizedData);
+      setLoading(false);
+      
+      // Fetch addresses using batch endpoint (passing request ID to prevent stale updates)
+      fetchAddressesBatch(normalizedData, currentRequestId);
     } catch (error) {
       console.error('Error fetching comprovantes:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar comprovantes';
       setError(errorMessage);
       toast.error('Erro ao carregar comprovantes: ' + errorMessage);
-    } finally {
       setLoading(false);
     }
   }, [dateRange, companyId]);
+
+  // Fetch addresses in batch
+  const fetchAddressesBatch = async (items: ComprovRotaItem[], requestId: number) => {
+    const itemsWithCoords = items.filter(item => 
+      item.latitude !== null && 
+      item.longitude !== null &&
+      !isNaN(item.latitude as number) &&
+      !isNaN(item.longitude as number)
+    );
+
+    if (itemsWithCoords.length === 0) return;
+
+    console.log(`📍 [ComprovRota] Buscando endereços para ${itemsWithCoords.length} localizações em lote`);
+
+    try {
+      const coordinates = itemsWithCoords.map(item => ({
+        id: item.id,
+        lat: item.latitude!,
+        lng: item.longitude!
+      }));
+
+      const response = await fetch('/api/geocode/reverse/batch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ coordinates }),
+      });
+
+      if (response.ok) {
+        // Check if this request is still current (prevent stale updates)
+        if (requestId !== fetchRequestId.current) {
+          console.log(`⏭️ [ComprovRota] Descartando resultado desatualizado (${requestId} vs ${fetchRequestId.current})`);
+          return;
+        }
+        
+        const data = await response.json();
+        const results = data.results as Array<{ id: number; address: string | null }>;
+        
+        // Update all addresses at once
+        setComprovantes(prev => 
+          prev.map(c => {
+            const result = results.find(r => r.id === c.id);
+            return result ? { ...c, address: result.address } : c;
+          })
+        );
+        
+        const successCount = results.filter(r => r.address).length;
+        console.log(`✅ [ComprovRota] ${successCount}/${results.length} endereços encontrados`);
+      } else {
+        // Only update if still current request
+        if (requestId !== fetchRequestId.current) return;
+        
+        console.warn(`⚠️ [ComprovRota] Falha ao buscar endereços em lote`);
+        
+        // Mark items as failed to prevent "Carregando..." stuck state
+        setComprovantes(prev => 
+          prev.map(c => 
+            itemsWithCoords.some(item => item.id === c.id) && !c.address
+              ? { ...c, address: null }
+              : c
+          )
+        );
+      }
+    } catch (error) {
+      // Only update if still current request
+      if (requestId !== fetchRequestId.current) return;
+      
+      console.error('❌ [ComprovRota] Erro ao buscar endereços em lote:', error);
+      
+      // Mark items as failed
+      setComprovantes(prev => 
+        prev.map(c => 
+          itemsWithCoords.some(item => item.id === c.id) && !c.address
+            ? { ...c, address: null }
+            : c
+        )
+      );
+    }
+  };
 
   useEffect(() => {
     fetchComprovantes();
@@ -267,7 +367,7 @@ export default function ComprovRotaLista() {
       setSelectedMediaType(item.isVideo ? 'video' : 'image');
       setSelectedLocation(
         item.latitude != null && item.longitude != null
-          ? { lat: item.latitude, lng: item.longitude }
+          ? { lat: item.latitude, lng: item.longitude, address: item.address }
           : null
       );
       setMediaLoadError(false);
@@ -289,6 +389,7 @@ export default function ComprovRotaLista() {
         'ID': item.id,
         'Data/Hora': format(new Date(item.created_at), 'dd/MM/yyyy HH:mm'),
         'Motorista': item.motorista?.nome || 'Não informado',
+        'Endereço': item.address || '-',
         'Latitude': item.latitude?.toFixed(6) || '-',
         'Longitude': item.longitude?.toFixed(6) || '-',
         'Tem Foto': item.foto ? 'Sim' : 'Não'
@@ -298,12 +399,13 @@ export default function ComprovRotaLista() {
       const ws = XLSX.utils.json_to_sheet(exportData);
       
       ws['!cols'] = [
-        { wch: 10 },
-        { wch: 18 },
-        { wch: 30 },
-        { wch: 12 },
-        { wch: 12 },
-        { wch: 12 }
+        { wch: 10 },  // ID
+        { wch: 18 },  // Data/Hora
+        { wch: 30 },  // Motorista
+        { wch: 50 },  // Endereço
+        { wch: 12 },  // Latitude
+        { wch: 12 },  // Longitude
+        { wch: 12 }   // Tem Foto
       ];
       
       XLSX.utils.book_append_sheet(wb, ws, 'Comprovantes');
@@ -575,19 +677,34 @@ export default function ComprovRotaLista() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4">
                       {item.latitude != null && item.longitude != null ? (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-green-500" />
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            {item.address ? (
+                              <span className="text-sm text-gray-900 dark:text-gray-100">
+                                {item.address}
+                              </span>
+                            ) : item.address === undefined ? (
+                              <span className="text-sm text-gray-400 dark:text-gray-500 italic">
+                                Carregando...
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-400 dark:text-gray-500">
+                                Coordenadas: {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
+                              </span>
+                            )}
+                          </div>
                           <a
                             href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             data-testid={`link-location-${item.id}`}
-                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline ml-6"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            Ver no mapa
+                            Ver no mapa →
                           </a>
                         </div>
                       ) : (
@@ -734,28 +851,33 @@ export default function ComprovRotaLista() {
                 
                 {/* Location info */}
                 {selectedLocation && (
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <MapPin className="h-5 w-5 text-green-500" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
                           Localização GPS
                         </p>
+                        {selectedLocation.address && (
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                            {selectedLocation.address}
+                          </p>
+                        )}
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
                         </p>
                       </div>
+                      <a
+                        href={`https://www.google.com/maps?q=${selectedLocation.lat},${selectedLocation.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid="link-location-modal"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex-shrink-0"
+                      >
+                        <MapPin className="h-4 w-4" />
+                        Abrir no Mapa
+                      </a>
                     </div>
-                    <a
-                      href={`https://www.google.com/maps?q=${selectedLocation.lat},${selectedLocation.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-testid="link-location-modal"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                    >
-                      <MapPin className="h-4 w-4" />
-                      Abrir no Google Maps
-                    </a>
                   </div>
                 )}
               </div>

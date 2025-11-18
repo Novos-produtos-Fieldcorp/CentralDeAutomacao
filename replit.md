@@ -64,14 +64,22 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
   - **Lista**: Professional table layout matching HodometrosRelatorio aesthetics with:
     - Period filter (Hoje, 15 dias, 30 dias, Personalizado with custom date range)
     - Search by motorista name or ID with safe null handling
-    - **GPS Location Display** (ACTIVE):
+    - **GPS Location Display with Reverse Geocoding** (ACTIVE):
       - Data fetched from `end_comprov_rota` table via LEFT JOIN on `id_comprov_rota`
       - Latitude/longitude stored as TEXT in database, converted to numbers in frontend
-      - Table column with "Ver no mapa" link (opens in Google Maps in new tab)
-      - Modal displays GPS coordinates with "Abrir no Google Maps" button
+      - **Reverse Geocoding via Nominatim (OpenStreetMap)**:
+        - Backend service (`server/geocoding-service.ts`) with in-memory cache (30-day TTL)
+        - Rate limiting: 1 request/second (Nominatim compliance)
+        - Batch endpoint: `POST /api/geocode/reverse/batch` for efficient processing
+        - Request tracking system prevents stale updates from race conditions
+      - Table column displays:
+        * Full address (when geocoded successfully)
+        * "Carregando..." state while fetching
+        * Coordinates as fallback if geocoding fails
+        * "Ver no mapa →" link (opens in Google Maps)
+      - Modal displays full address + coordinates with "Abrir no Mapa" button
       - Proper handling of missing coordinates (shows "Não disponível")
-      - Null-safe rendering for coordinates at equator/prime meridian (0,0)
-    - Excel export functionality (includes GPS coordinates when available)
+    - Excel export functionality (includes Address, Latitude, Longitude columns)
     - Pagination (25 items per page)
     - **Smart Media Loading System**: Comprehensive photo/video support with robust URL parsing
       - Handles multiple formats: base64 (images/videos), complete URLs, JSON arrays, comma-separated lists, single filenames
