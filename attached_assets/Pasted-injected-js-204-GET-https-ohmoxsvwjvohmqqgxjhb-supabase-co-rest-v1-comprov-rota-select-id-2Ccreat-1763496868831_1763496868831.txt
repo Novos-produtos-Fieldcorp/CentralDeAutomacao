@@ -1,0 +1,84 @@
+injected.js:204  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/comprov_rota?select=id%2Ccreated_at%2Cid_motorista%2Ccompany_id%2Cfoto%2Cmotorista%3Amotorista%21comprov_rota_id_motorista_fkey%28motorista_id%2Cnome%29%2Cend_comprov_rota%21end_comprov_rota_id_comprov_rota_fkey%28latitude%2Clongitude%2Cendereco%29&company_id=eq.12&created_at=gte.2025-10-20T00%3A00%3A00&created_at=lte.2025-11-18T23%3A59%3A59&order=created_at.desc 400 (Bad Request)
+apply @ injected.js:204
+(anonymous) @ @supabase_supabase-js.js?v=8987a219:4404
+(anonymous) @ @supabase_supabase-js.js?v=8987a219:4425
+fulfilled @ @supabase_supabase-js.js?v=8987a219:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=8987a219:4390
+(anonymous) @ @supabase_supabase-js.js?v=8987a219:4392
+__awaiter8 @ @supabase_supabase-js.js?v=8987a219:4374
+(anonymous) @ @supabase_supabase-js.js?v=8987a219:4415
+then @ @supabase_supabase-js.js?v=8987a219:90
+injected.js:27 Supabase query error: {code: '42703', details: null, hint: null, message: 'column end_comprov_rota_1.endereco does not exist'}
+(anonymous) @ injected.js:27
+(anonymous) @ ComprovRotaLista.tsx:87
+await in (anonymous)
+(anonymous) @ ComprovRotaLista.tsx:158
+commitHookEffectListMount @ chunk-276SZO74.js?v=8987a219:16915
+commitPassiveMountOnFiber @ chunk-276SZO74.js?v=8987a219:18156
+commitPassiveMountEffects_complete @ chunk-276SZO74.js?v=8987a219:18129
+commitPassiveMountEffects_begin @ chunk-276SZO74.js?v=8987a219:18119
+commitPassiveMountEffects @ chunk-276SZO74.js?v=8987a219:18109
+flushPassiveEffectsImpl @ chunk-276SZO74.js?v=8987a219:19490
+flushPassiveEffects @ chunk-276SZO74.js?v=8987a219:19447
+(anonymous) @ chunk-276SZO74.js?v=8987a219:19328
+workLoop @ chunk-276SZO74.js?v=8987a219:197
+flushWork @ chunk-276SZO74.js?v=8987a219:176
+performWorkUntilDeadline @ chunk-276SZO74.js?v=8987a219:384
+injected.js:27 Error fetching comprovantes: {code: '42703', details: null, hint: null, message: 'column end_comprov_rota_1.endereco does not exist'}
+(anonymous) @ injected.js:27
+(anonymous) @ ComprovRotaLista.tsx:149
+await in (anonymous)
+(anonymous) @ ComprovRotaLista.tsx:158
+commitHookEffectListMount @ chunk-276SZO74.js?v=8987a219:16915
+commitPassiveMountOnFiber @ chunk-276SZO74.js?v=8987a219:18156
+commitPassiveMountEffects_complete @ chunk-276SZO74.js?v=8987a219:18129
+commitPassiveMountEffects_begin @ chunk-276SZO74.js?v=8987a219:18119
+commitPassiveMountEffects @ chunk-276SZO74.js?v=8987a219:18109
+flushPassiveEffectsImpl @ chunk-276SZO74.js?v=8987a219:19490
+flushPassiveEffects @ chunk-276SZO74.js?v=8987a219:19447
+(anonymous) @ chunk-276SZO74.js?v=8987a219:19328
+workLoop @ chunk-276SZO74.js?v=8987a219:197
+flushWork @ chunk-276SZO74.js?v=8987a219:176
+performWorkUntilDeadline @ chunk-276SZO74.js?v=8987a219:384
+injected.js:204  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/comprov_rota?select=id%2Ccreated_at%2Cid_motorista%2Ccompany_id%2Cfoto%2Cmotorista%3Amotorista%21comprov_rota_id_motorista_fkey%28motorista_id%2Cnome%29%2Cend_comprov_rota%21end_comprov_rota_id_comprov_rota_fkey%28latitude%2Clongitude%2Cendereco%29&company_id=eq.12&created_at=gte.2025-10-20T00%3A00%3A00&created_at=lte.2025-11-18T23%3A59%3A59&order=created_at.desc 400 (Bad Request)
+apply @ injected.js:204
+(anonymous) @ @supabase_supabase-js.js?v=8987a219:4404
+(anonymous) @ @supabase_supabase-js.js?v=8987a219:4425
+fulfilled @ @supabase_supabase-js.js?v=8987a219:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=8987a219:4390
+(anonymous) @ @supabase_supabase-js.js?v=8987a219:4392
+__awaiter8 @ @supabase_supabase-js.js?v=8987a219:4374
+(anonymous) @ @supabase_supabase-js.js?v=8987a219:4415
+then @ @supabase_supabase-js.js?v=8987a219:90
+injected.js:27 Supabase query error: {code: '42703', details: null, hint: null, message: 'column end_comprov_rota_1.endereco does not exist'}
+(anonymous) @ injected.js:27
+(anonymous) @ ComprovRotaLista.tsx:87
+await in (anonymous)
+(anonymous) @ ComprovRotaLista.tsx:158
+commitHookEffectListMount @ chunk-276SZO74.js?v=8987a219:16915
+invokePassiveEffectMountInDEV @ chunk-276SZO74.js?v=8987a219:18324
+invokeEffectsInDev @ chunk-276SZO74.js?v=8987a219:19701
+commitDoubleInvokeEffectsInDEV @ chunk-276SZO74.js?v=8987a219:19686
+flushPassiveEffectsImpl @ chunk-276SZO74.js?v=8987a219:19503
+flushPassiveEffects @ chunk-276SZO74.js?v=8987a219:19447
+(anonymous) @ chunk-276SZO74.js?v=8987a219:19328
+workLoop @ chunk-276SZO74.js?v=8987a219:197
+flushWork @ chunk-276SZO74.js?v=8987a219:176
+performWorkUntilDeadline @ chunk-276SZO74.js?v=8987a219:384
+injected.js:27 Error fetching comprovantes: {code: '42703', details: null, hint: null, message: 'column end_comprov_rota_1.endereco does not exist'}
+(anonymous) @ injected.js:27
+(anonymous) @ ComprovRotaLista.tsx:149
+await in (anonymous)
+(anonymous) @ ComprovRotaLista.tsx:158
+commitHookEffectListMount @ chunk-276SZO74.js?v=8987a219:16915
+invokePassiveEffectMountInDEV @ chunk-276SZO74.js?v=8987a219:18324
+invokeEffectsInDev @ chunk-276SZO74.js?v=8987a219:19701
+commitDoubleInvokeEffectsInDEV @ chunk-276SZO74.js?v=8987a219:19686
+flushPassiveEffectsImpl @ chunk-276SZO74.js?v=8987a219:19503
+flushPassiveEffects @ chunk-276SZO74.js?v=8987a219:19447
+(anonymous) @ chunk-276SZO74.js?v=8987a219:19328
+workLoop @ chunk-276SZO74.js?v=8987a219:197
+flushWork @ chunk-276SZO74.js?v=8987a219:176
+performWorkUntilDeadline @ chunk-276SZO74.js?v=8987a219:384

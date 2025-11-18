@@ -71,14 +71,16 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
     - Period filter (Hoje, 15 dias, 30 dias, Personalizado with custom date range)
     - Search by motorista name or ID with safe null handling
     - **GPS Location Display** (ACTIVE):
-      - Data fetched from `end_comprov_rota` table via LEFT JOIN on `id_comprov_rota`
-      - Latitude/longitude stored as TEXT in database, converted to numbers in frontend
-      - **Address stored directly in database**: Field `endereco` contains complete address
-      - No external geocoding needed - all location data comes from Supabase
+      - **Latitude/Longitude**: Stored directly in `comprov_rota` table (not in `end_comprov_rota`)
+      - **Address Construction**: Built from nested relations via Supabase joins
+        * `end_comprov_rota` → `logradouro` → `bairro` → `cidade` → `estado`
+        * Format: "Logradouro, Número, Complemento - Bairro, Cidade - UF"
+        * Fields: `logradouro.logradouro`, `numero`, `complemento`, `bairro.bairro`, `cidade.cidade`, `estado.sigla_estado`
+      - **No External APIs**: Address built entirely from database relations (no geocoding needed)
       - Table column displays:
-        * Full address from database (when available)
+        * Full constructed address (when location data available)
         * Coordinates as fallback if address not available
-        * "Ver no mapa →" link (opens in Google Maps)
+        * "Ver no mapa →" link (opens Google Maps with coordinates)
       - Modal displays full address + coordinates with "Abrir no Mapa" button
       - Proper handling of missing coordinates (shows "Não disponível")
     - **Bulk Download System (ZIP)** (ACTIVE):

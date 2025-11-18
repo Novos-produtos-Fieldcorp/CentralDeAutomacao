@@ -68,14 +68,28 @@ export default function ComprovRotaLista() {
           id_motorista,
           company_id,
           foto,
+          latitude,
+          longitude,
           motorista:motorista!comprov_rota_id_motorista_fkey (
             motorista_id,
             nome
           ),
           end_comprov_rota!end_comprov_rota_id_comprov_rota_fkey (
-            latitude,
-            longitude,
-            endereco
+            numero,
+            complemento,
+            logradouro (
+              logradouro,
+              nr_cep,
+              bairro (
+                bairro,
+                cidade (
+                  cidade,
+                  estado (
+                    sigla_estado
+                  )
+                )
+              )
+            )
           )
         `)
         .eq('company_id', companyId)
@@ -104,14 +118,62 @@ export default function ComprovRotaLista() {
       const normalizedData = data.map(item => {
         const mediaUrl = getMediaUrl(item.foto);
         
-        // Extract location from end_comprov_rota (array -> first item)
+        // Extract latitude/longitude from comprov_rota directly (not from end_comprov_rota)
+        const latitude = item.latitude ? parseFloat(String(item.latitude)) : null;
+        const longitude = item.longitude ? parseFloat(String(item.longitude)) : null;
+        
+        // Extract address details from end_comprov_rota (array -> first item)
         const endComprov = Array.isArray(item.end_comprov_rota) 
           ? item.end_comprov_rota[0] 
           : item.end_comprov_rota;
         
-        const latitude = endComprov?.latitude ? parseFloat(endComprov.latitude) : null;
-        const longitude = endComprov?.longitude ? parseFloat(endComprov.longitude) : null;
-        const address = endComprov?.endereco || null;
+        // Build complete address from nested relations
+        let address: string | null = null;
+        if (endComprov) {
+          const logradouroData = Array.isArray(endComprov.logradouro) 
+            ? endComprov.logradouro[0] 
+            : endComprov.logradouro;
+          
+          if (logradouroData) {
+            const bairroData = Array.isArray(logradouroData.bairro) 
+              ? logradouroData.bairro[0] 
+              : logradouroData.bairro;
+            
+            const cidadeData = bairroData && (Array.isArray(bairroData.cidade) 
+              ? bairroData.cidade[0] 
+              : bairroData.cidade);
+            
+            const estadoData = cidadeData && (Array.isArray(cidadeData.estado) 
+              ? cidadeData.estado[0] 
+              : cidadeData.estado);
+            
+            // Construct address string: "Rua X, 123, Complemento - Bairro, Cidade - UF"
+            const parts: string[] = [];
+            
+            if (logradouroData.logradouro) {
+              parts.push(logradouroData.logradouro);
+            }
+            
+            if (endComprov.numero) {
+              parts[parts.length - 1] = `${parts[parts.length - 1] || ''}, ${endComprov.numero}`.trim();
+            }
+            
+            if (endComprov.complemento) {
+              parts[parts.length - 1] = `${parts[parts.length - 1] || ''}, ${endComprov.complemento}`.trim();
+            }
+            
+            const locationParts: string[] = [];
+            if (bairroData?.bairro) locationParts.push(bairroData.bairro);
+            if (cidadeData?.cidade) locationParts.push(cidadeData.cidade);
+            if (estadoData?.sigla_estado) locationParts[locationParts.length - 1] = `${locationParts[locationParts.length - 1] || ''} - ${estadoData.sigla_estado}`;
+            
+            if (locationParts.length > 0) {
+              parts.push(locationParts.join(', '));
+            }
+            
+            address = parts.filter(p => p).join(' - ');
+          }
+        }
         
         return {
           ...item,
