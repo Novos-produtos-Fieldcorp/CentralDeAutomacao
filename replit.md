@@ -79,6 +79,20 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
         * "Ver no mapa →" link (opens in Google Maps)
       - Modal displays full address + coordinates with "Abrir no Mapa" button
       - Proper handling of missing coordinates (shows "Não disponível")
+    - **Bulk Download System (ZIP)** (ACTIVE):
+      - Checkbox selection system (individual + select all)
+      - Download button appears when items are selected
+      - Backend endpoint: `POST /api/comprov-rota/download-zip`
+      - Automatic file naming: `{dd-MM-yyyy_HH-mm-ss}_{motorista_nome}.{extensao}`
+      - Supports photos (.jpg) and videos (.mp4)
+      - **Security Features (4-Layer SSRF Protection)**:
+        * Layer 1: Zod payload validation
+        * Layer 2: Host whitelist (WiseApp, Supabase only)
+        * Layer 3: Disabled HTTP redirects (maxRedirects: 0)
+        * Layer 4: Explicit 3xx rejection via validateStatus
+      - Handles data URIs (base64) and HTTP(S) URLs
+      - Continue-on-error: individual failures don't stop entire download
+      - Automatic cleanup of selection after successful download
     - Excel export functionality (includes Address, Latitude, Longitude columns)
     - Pagination (25 items per page)
     - **Smart Media Loading System**: Comprehensive photo/video support with robust URL parsing
