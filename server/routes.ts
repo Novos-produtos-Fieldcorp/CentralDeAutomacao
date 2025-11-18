@@ -27,6 +27,7 @@ import { reverseGeocode, reverseGeocodeBatch } from "./geocoding-service";
 import archiver from 'archiver';
 import axios from 'axios';
 import { format } from 'date-fns';
+import { z } from 'zod';
 // CPF agora é consultado diretamente do frontend
 
 // Job tracking system for progress monitoring
@@ -648,15 +649,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Download ZIP with selected comprov_rota photos/videos
   app.post("/api/comprov-rota/download-zip", async (req, res) => {
     try {
-      const { items } = req.body;
+      // Validate request payload with Zod
+      const zipDownloadSchema = z.object({
+        items: z.array(z.object({
+          id: z.number(),
+          created_at: z.string(),
+          mediaUrl: z.string().optional().nullable(),
+          isVideo: z.boolean().optional(),
+          motorista: z.object({
+            nome: z.string()
+          }).optional().nullable()
+        })).min(1, "Pelo menos um item é necessário")
+      });
 
-      if (!Array.isArray(items) || items.length === 0) {
+      const validationResult = zipDownloadSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        console.error('❌ [ZIP Download] Validação falhou:', validationResult.error.errors);
         return res.status(400).json({
-          error: "Nenhum item selecionado para download",
+          error: "Dados inválidos",
+          details: validationResult.error.errors
         });
       }
 
+      const { items } = validationResult.data;
+
       console.log(`📦 [ZIP Download] Preparando ZIP com ${items.length} arquivo(s)`);
+
+      // Whitelisted hosts for security (prevent SSRF)
+      const allowedHosts = [
+        'chat.wiseapp360.com',
+        'ohmoxsvwjvohmqqgxjhb.supabase.co',
+        'supabase.co'
+      ];
 
       // Set response headers for ZIP download
       res.setHeader('Content-Type', 'application/zip');
@@ -690,19 +715,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const extension = isVideo ? 'mp4' : 'jpg';
           const filename = `${date}_${motoristaName}.${extension}`;
 
-          console.log(`📥 [ZIP Download] Baixando: ${filename} de ${item.mediaUrl.substring(0, 80)}...`);
+          let fileBuffer: Buffer;
 
-          // Download file from URL
-          const response = await axios.get(item.mediaUrl, {
-            responseType: 'arraybuffer',
-            timeout: 30000, // 30 seconds timeout
-            headers: {
-              'User-Agent': 'Mozilla/5.0'
+          // Handle data: URIs (base64 encoded)
+          if (item.mediaUrl.startsWith('data:')) {
+            console.log(`📄 [ZIP Download] Processando data URI para ${filename}`);
+            const base64Data = item.mediaUrl.split(',')[1];
+            if (!base64Data) {
+              console.error(`❌ [ZIP Download] Data URI inválida para item ${item.id}`);
+              continue;
             }
-          });
+            fileBuffer = Buffer.from(base64Data, 'base64');
+          } 
+          // Handle HTTP(S) URLs with security validation
+          else if (item.mediaUrl.startsWith('http://') || item.mediaUrl.startsWith('https://')) {
+            // Security: Validate URL host against whitelist (prevent SSRF)
+            let urlHost: string;
+            try {
+              const parsedUrl = new URL(item.mediaUrl);
+              urlHost = parsedUrl.hostname;
+            } catch (urlError) {
+              console.error(`❌ [ZIP Download] URL inválida para item ${item.id}:`, item.mediaUrl);
+              continue;
+            }
+
+            // Check if host is whitelisted
+            const isAllowedHost = allowedHosts.some(allowed => 
+              urlHost === allowed || urlHost.endsWith(`.${allowed}`)
+            );
+
+            if (!isAllowedHost) {
+              console.error(`🚫 [ZIP Download] Host não permitido: ${urlHost} (item ${item.id})`);
+              continue;
+            }
+
+            console.log(`📥 [ZIP Download] Baixando: ${filename} de ${urlHost}`);
+
+            // Download file from validated URL (disable redirects to prevent SSRF)
+            const response = await axios.get(item.mediaUrl, {
+              responseType: 'arraybuffer',
+              timeout: 30000, // 30 seconds timeout
+              maxRedirects: 0, // Prevent redirect-based SSRF attacks
+              validateStatus: (status) => {
+                // Reject 3xx redirects explicitly (additional security layer)
+                if (status >= 300 && status < 400) {
+                  return false; // Treat redirects as errors
+                }
+                return status >= 200 && status < 300; // Only accept 2xx
+              },
+              headers: {
+                'User-Agent': 'Mozilla/5.0'
+              }
+            });
+
+            // Double-check: If somehow a redirect slipped through, reject it
+            if (response.status >= 300 && response.status < 400) {
+              console.error(`❌ [ZIP Download] Redirect detectado para item ${item.id}, rejeitando por segurança`);
+              continue;
+            }
+
+            fileBuffer = Buffer.from(response.data);
+          } 
+          else {
+            console.error(`❌ [ZIP Download] Tipo de URL não suportado para item ${item.id}: ${item.mediaUrl.substring(0, 30)}...`);
+            continue;
+          }
 
           // Add file to archive
-          archive.append(Buffer.from(response.data), { name: filename });
+          archive.append(fileBuffer, { name: filename });
           console.log(`✅ [ZIP Download] Adicionado ao ZIP: ${filename}`);
 
         } catch (itemError) {
