@@ -676,6 +676,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`📦 [ZIP Download] Preparando ZIP com ${items.length} arquivo(s)`);
 
+      // Counters for success/failure tracking
+      let successCount = 0;
+      let failureCount = 0;
+      const failureReasons: { [key: string]: number } = {};
+
       // Whitelisted hosts for security (prevent SSRF)
       const allowedHosts = [
         'chat.wiseapp360.com',
@@ -700,6 +705,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           if (!item.mediaUrl) {
             console.log(`⏭️ [ZIP Download] Item ${item.id} sem mídia, pulando...`);
+            failureCount++;
+            failureReasons['Sem URL de mídia'] = (failureReasons['Sem URL de mídia'] || 0) + 1;
             continue;
           }
 
@@ -715,7 +722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const extension = isVideo ? 'mp4' : 'jpg';
           const filename = `${date}_${motoristaName}.${extension}`;
 
-          let fileBuffer: Buffer;
+          let fileBuffer: Buffer | null = null;
 
           // Handle data: URIs (base64 encoded)
           if (item.mediaUrl.startsWith('data:')) {
@@ -723,9 +730,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const base64Data = item.mediaUrl.split(',')[1];
             if (!base64Data) {
               console.error(`❌ [ZIP Download] Data URI inválida para item ${item.id}`);
+              failureCount++;
+              failureReasons['Data URI inválida'] = (failureReasons['Data URI inválida'] || 0) + 1;
               continue;
             }
             fileBuffer = Buffer.from(base64Data, 'base64');
+            successCount++;
           } 
           // Handle HTTP(S) URLs with security validation
           else if (item.mediaUrl.startsWith('http://') || item.mediaUrl.startsWith('https://')) {
@@ -736,6 +746,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               urlHost = parsedUrl.hostname;
             } catch (urlError) {
               console.error(`❌ [ZIP Download] URL inválida para item ${item.id}:`, item.mediaUrl);
+              failureCount++;
+              failureReasons['URL malformada'] = (failureReasons['URL malformada'] || 0) + 1;
               continue;
             }
 
@@ -746,53 +758,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             if (!isAllowedHost) {
               console.error(`🚫 [ZIP Download] Host não permitido: ${urlHost} (item ${item.id})`);
+              failureCount++;
+              failureReasons['Host não permitido'] = (failureReasons['Host não permitido'] || 0) + 1;
               continue;
             }
 
             console.log(`📥 [ZIP Download] Baixando: ${filename} de ${urlHost}`);
 
-            // Download file from validated URL (disable redirects to prevent SSRF)
-            const response = await axios.get(item.mediaUrl, {
-              responseType: 'arraybuffer',
-              timeout: 30000, // 30 seconds timeout
-              maxRedirects: 0, // Prevent redirect-based SSRF attacks
-              validateStatus: (status) => {
-                // Reject 3xx redirects explicitly (additional security layer)
-                if (status >= 300 && status < 400) {
-                  return false; // Treat redirects as errors
+            // Try downloading from URL first
+            try {
+              const response = await axios.get(item.mediaUrl, {
+                responseType: 'arraybuffer',
+                timeout: 30000, // 30 seconds timeout
+                maxRedirects: 0, // Prevent redirect-based SSRF attacks
+                validateStatus: (status) => {
+                  // Reject 3xx redirects explicitly (additional security layer)
+                  if (status >= 300 && status < 400) {
+                    return false; // Treat redirects as errors
+                  }
+                  return status >= 200 && status < 300; // Only accept 2xx
+                },
+                headers: {
+                  'User-Agent': 'Mozilla/5.0'
                 }
-                return status >= 200 && status < 300; // Only accept 2xx
-              },
-              headers: {
-                'User-Agent': 'Mozilla/5.0'
+              });
+
+              // Double-check: If somehow a redirect slipped through, reject it
+              if (response.status >= 300 && response.status < 400) {
+                console.error(`❌ [ZIP Download] Redirect detectado para item ${item.id}, rejeitando por segurança`);
+                failureCount++;
+                failureReasons['Redirect detectado'] = (failureReasons['Redirect detectado'] || 0) + 1;
+                continue;
               }
-            });
 
-            // Double-check: If somehow a redirect slipped through, reject it
-            if (response.status >= 300 && response.status < 400) {
-              console.error(`❌ [ZIP Download] Redirect detectado para item ${item.id}, rejeitando por segurança`);
-              continue;
+              fileBuffer = Buffer.from(response.data);
+              successCount++;
+            } catch (urlError: any) {
+              // If WiseApp URL fails with 404, try Supabase Storage as fallback
+              if (urlError?.response?.status === 404 && urlHost.includes('wiseapp360.com')) {
+                console.log(`🔄 [ZIP Download] URL do WiseApp retornou 404, tentando Supabase Storage...`);
+                
+                // Try to get file from Supabase Storage comprovante bucket
+                try {
+                  // Use item ID as potential filename
+                  const possibleFilenames = [
+                    `${item.id}.jpg`,
+                    `${item.id}.mp4`,
+                    `comprovante_${item.id}.jpg`,
+                    `comprovante_${item.id}.mp4`
+                  ];
+                  
+                  let foundFile = false;
+                  for (const tryFilename of possibleFilenames) {
+                    try {
+                      const { data: storageData, error: storageError } = await supabaseBackend
+                        .storage
+                        .from('comprovante')
+                        .download(tryFilename);
+                      
+                      if (storageData && !storageError) {
+                        console.log(`✅ [ZIP Download] Arquivo encontrado no Supabase Storage: ${tryFilename}`);
+                        fileBuffer = Buffer.from(await storageData.arrayBuffer());
+                        foundFile = true;
+                        successCount++;
+                        break;
+                      }
+                    } catch {
+                      // Try next filename
+                      continue;
+                    }
+                  }
+                  
+                  if (!foundFile) {
+                    throw new Error('Arquivo não encontrado no Supabase Storage');
+                  }
+                } catch (storageError) {
+                  console.error(`❌ [ZIP Download] Fallback para Supabase Storage falhou para item ${item.id}`);
+                  failureCount++;
+                  failureReasons['Arquivo não encontrado (404)'] = (failureReasons['Arquivo não encontrado (404)'] || 0) + 1;
+                  continue;
+                }
+              } else {
+                // Re-throw if not a 404 from WiseApp
+                throw urlError;
+              }
             }
-
-            fileBuffer = Buffer.from(response.data);
           } 
           else {
             console.error(`❌ [ZIP Download] Tipo de URL não suportado para item ${item.id}: ${item.mediaUrl.substring(0, 30)}...`);
+            failureCount++;
+            failureReasons['Tipo de URL não suportado'] = (failureReasons['Tipo de URL não suportado'] || 0) + 1;
             continue;
           }
 
-          // Add file to archive
-          archive.append(fileBuffer, { name: filename });
-          console.log(`✅ [ZIP Download] Adicionado ao ZIP: ${filename}`);
+          // Add file to archive (only if buffer was successfully loaded)
+          if (fileBuffer) {
+            archive.append(fileBuffer, { name: filename });
+            console.log(`✅ [ZIP Download] Adicionado ao ZIP: ${filename}`);
+          } else {
+            console.error(`❌ [ZIP Download] FileBuffer não definido para item ${item.id}`);
+            failureCount++;
+            failureReasons['Buffer não criado'] = (failureReasons['Buffer não criado'] || 0) + 1;
+          }
 
-        } catch (itemError) {
-          console.error(`❌ [ZIP Download] Erro ao processar item ${item.id}:`, itemError);
+        } catch (itemError: any) {
+          failureCount++;
+          const errorMsg = itemError?.response?.status === 404 
+            ? 'Arquivo não encontrado (404)' 
+            : (itemError?.message || 'Erro desconhecido');
+          failureReasons[errorMsg] = (failureReasons[errorMsg] || 0) + 1;
+          console.error(`❌ [ZIP Download] Erro ao processar item ${item.id}:`, errorMsg);
           // Continue with next item even if one fails
         }
       }
 
       // Finalize archive
       await archive.finalize();
+      
+      // Log final statistics
+      console.log(`📊 [ZIP Download] Estatísticas finais:`);
+      console.log(`  ✅ Sucesso: ${successCount}/${items.length}`);
+      console.log(`  ❌ Falhas: ${failureCount}/${items.length}`);
+      if (failureCount > 0) {
+        console.log(`  📋 Razões das falhas:`);
+        Object.entries(failureReasons).forEach(([reason, count]) => {
+          console.log(`     - ${reason}: ${count}`);
+        });
+      }
+      
       console.log(`✅ [ZIP Download] ZIP finalizado e enviado`);
 
     } catch (error) {

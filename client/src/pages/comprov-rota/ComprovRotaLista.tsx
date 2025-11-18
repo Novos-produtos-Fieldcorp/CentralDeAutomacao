@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, MapPin, X, Download, AlertCircle, ChevronDown, Calendar, User, Camera, Clock, Video, Image as ImageIcon, ExternalLink, Archive } from 'lucide-react';
+import { Search, MapPin, X, Download, AlertCircle, ChevronDown, Calendar, User, Camera, Clock, Video, Image as ImageIcon, ExternalLink, Archive, CheckSquare } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
@@ -470,8 +470,18 @@ export default function ComprovRotaLista() {
       
       const response = await axios.post('/api/comprov-rota/download-zip', 
         { items: selectedItems },
-        { responseType: 'blob' }
+        { 
+          responseType: 'blob',
+          timeout: 120000 // 2 minutes timeout
+        }
       );
+
+      // Check if ZIP is empty (< 100 bytes typically means empty ZIP)
+      if (response.data.size < 100) {
+        toast.error('Nenhum arquivo pôde ser baixado. As URLs podem estar expiradas ou indisponíveis.');
+        console.error('ZIP vazio recebido. Verifique se as URLs dos arquivos são válidas.');
+        return;
+      }
 
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -483,11 +493,17 @@ export default function ComprovRotaLista() {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success(`${selectedIds.size} arquivo(s) baixado(s) com sucesso`);
+      toast.success('Download concluído! Verifique a pasta de downloads.');
       setSelectedIds(new Set()); // Clear selection after download
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error downloading ZIP:', error);
-      toast.error('Erro ao baixar arquivos');
+      if (error.response?.status === 400) {
+        toast.error('Erro: ' + (error.response.data.error || 'Dados inválidos'));
+      } else if (error.code === 'ECONNABORTED') {
+        toast.error('Tempo esgotado. Tente selecionar menos arquivos.');
+      } else {
+        toast.error('Erro ao baixar arquivos. Verifique se as URLs são válidas.');
+      }
     } finally {
       setIsDownloadingZip(false);
     }
@@ -675,26 +691,39 @@ export default function ComprovRotaLista() {
           )}
         </p>
         
-        {selectedIds.size > 0 && (
-          <button
-            onClick={handleDownloadZip}
-            disabled={isDownloadingZip}
-            data-testid="button-download-zip"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-lg transition-colors shadow-sm"
-          >
-            {isDownloadingZip ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Baixando...
-              </>
-            ) : (
-              <>
-                <Archive className="h-4 w-4" />
-                Baixar ZIP ({selectedIds.size})
-              </>
-            )}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {filteredComprovantes.length > 0 && (
+            <button
+              onClick={() => handleSelectAll(!(filteredComprovantes.length > 0 && filteredComprovantes.every(item => selectedIds.has(item.id))))}
+              data-testid="button-select-all"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors shadow-sm"
+            >
+              <CheckSquare className="h-4 w-4" />
+              {filteredComprovantes.every(item => selectedIds.has(item.id)) ? 'Desmarcar Todos' : 'Selecionar Todos'}
+            </button>
+          )}
+          
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleDownloadZip}
+              disabled={isDownloadingZip}
+              data-testid="button-download-zip"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-lg transition-colors shadow-sm"
+            >
+              {isDownloadingZip ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Baixando...
+                </>
+              ) : (
+                <>
+                  <Archive className="h-4 w-4" />
+                  Baixar ZIP ({selectedIds.size})
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table */}

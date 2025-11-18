@@ -80,7 +80,7 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
       - Modal displays full address + coordinates with "Abrir no Mapa" button
       - Proper handling of missing coordinates (shows "Não disponível")
     - **Bulk Download System (ZIP)** (ACTIVE):
-      - Checkbox selection system (individual + select all)
+      - Checkbox selection system (individual + "Selecionar Todos" button in header)
       - Download button appears when items are selected
       - Backend endpoint: `POST /api/comprov-rota/download-zip`
       - Automatic file naming: `{dd-MM-yyyy_HH-mm-ss}_{motorista_nome}.{extensao}`
@@ -90,8 +90,13 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
         * Layer 2: Host whitelist (WiseApp, Supabase only)
         * Layer 3: Disabled HTTP redirects (maxRedirects: 0)
         * Layer 4: Explicit 3xx rejection via validateStatus
-      - Handles data URIs (base64) and HTTP(S) URLs
+      - **Smart Download Strategy**:
+        * Handles data URIs (base64) and HTTP(S) URLs
+        * Automatic fallback: If WiseApp URL returns 404, tries Supabase Storage
+        * Tries multiple filename patterns: `{id}.jpg`, `{id}.mp4`, `comprovante_{id}.jpg`, etc.
+      - **Error Tracking**: Detailed statistics (success/failure counts, failure reasons) logged for debugging
       - Continue-on-error: individual failures don't stop entire download
+      - Frontend validation: Detects empty ZIPs and shows appropriate error messages
       - Automatic cleanup of selection after successful download
     - Excel export functionality (includes Address, Latitude, Longitude columns)
     - Pagination (25 items per page)
