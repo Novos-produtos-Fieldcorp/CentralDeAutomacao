@@ -102,7 +102,10 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
     - Pagination (25 items per page)
     - **Smart Media Loading System**: Comprehensive photo/video support with robust URL parsing
       - Handles multiple formats: base64 (images/videos), complete URLs, JSON arrays, comma-separated lists, single filenames
-      - Auto-detects video vs image (MIME types + file extensions)
+      - **Intelligent Type Detection**: Checks ORIGINAL `foto` field (not generated URL) for accurate video vs image detection
+        * Detects `data:video/` MIME types in base64
+        * Detects video file extensions (.mp4, .webm, .mov, etc.) in original data
+        * Prevents false positives from URL-based detection (e.g., WiseApp Active Storage URLs don't show extensions)
       - Pre-computed URLs during data fetch for optimal performance
       - Thumbnail previews in table (video icon placeholder for videos)
       - Full-screen modal with native video player support

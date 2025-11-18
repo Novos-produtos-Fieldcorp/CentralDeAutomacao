@@ -119,7 +119,8 @@ export default function ComprovRotaLista() {
           latitude: latitude,
           longitude: longitude,
           mediaUrl: mediaUrl,
-          isVideo: mediaUrl ? isVideoUrl(mediaUrl) : false
+          // Check the ORIGINAL foto field, not the generated URL
+          isVideo: isVideoData(item.foto)
         };
       });
 
@@ -261,18 +262,19 @@ export default function ComprovRotaLista() {
     return dateStr;
   };
 
-  const isVideoUrl = (url: string): boolean => {
-    if (!url) return false;
-    const lowerUrl = url.toLowerCase();
+  // Check if the ORIGINAL photo field contains video data (not the generated URL)
+  const isVideoData = (originalPhoto: string | null): boolean => {
+    if (!originalPhoto) return false;
+    const lowerPhoto = originalPhoto.toLowerCase();
     
     // Check for base64 video MIME types
-    if (lowerUrl.startsWith('data:video')) {
+    if (lowerPhoto.startsWith('data:video')) {
       return true;
     }
     
-    // Check for file extensions
+    // Check for video file extensions in the original data
     const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.m4v', '.mkv'];
-    return videoExtensions.some(ext => lowerUrl.includes(ext));
+    return videoExtensions.some(ext => lowerPhoto.includes(ext));
   };
 
   const getMediaUrl = (photo: string | null): string | null => {
