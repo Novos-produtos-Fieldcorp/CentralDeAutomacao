@@ -239,34 +239,6 @@ export default function ComprovRotaDashboard() {
             </div>
           </div>
         </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total de Fotos</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                {stats.totalFotos}
-              </p>
-            </div>
-            <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
-              <Image className="h-8 w-8 text-gray-600 dark:text-gray-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total de Vídeos</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                {stats.totalVideos}
-              </p>
-            </div>
-            <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
-              <Video className="h-8 w-8 text-gray-600 dark:text-gray-400" />
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Top Motoristas */}
@@ -319,7 +291,7 @@ export default function ComprovRotaDashboard() {
         {/* Gráfico de Pizza - Total Fotos vs Vídeos */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Image className="h-5 w-5 text-gray-600" />
+            <Image className="h-5 w-5 text-blue-600" />
             Total de Fotos vs Vídeos
           </h3>
           {stats.totalFotos === 0 && stats.totalVideos === 0 ? (
@@ -369,7 +341,7 @@ export default function ComprovRotaDashboard() {
         {/* Gráfico de Barras - Fotos e Vídeos por Dia */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Video className="h-5 w-5 text-gray-600" />
+            <Video className="h-5 w-5 text-green-600" />
             Fotos e Vídeos por Dia (Últimos 7 Dias)
           </h3>
           {mediaPorDia.length === 0 ? (
