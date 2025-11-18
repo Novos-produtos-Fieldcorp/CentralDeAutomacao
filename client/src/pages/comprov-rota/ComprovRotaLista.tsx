@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, MapPin, X, Download, AlertCircle, ChevronDown, Calendar, User, Camera, Clock, Video, Image as ImageIcon, ExternalLink } from 'lucide-react';
+import { Search, MapPin, X, Download, AlertCircle, ChevronDown, Calendar, User, Camera, Clock, Video, Image as ImageIcon, ExternalLink, Archive } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
@@ -9,6 +9,7 @@ import { useDateRange } from '../../hooks/useDateRange';
 import Pagination from '../../components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import * as XLSX from 'xlsx';
+import axios from 'axios';
 
 interface ComprovRotaItem {
   id: number;
@@ -39,6 +40,8 @@ export default function ComprovRotaLista() {
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address?: string | null } | null>(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [mediaLoadError, setMediaLoadError] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   const fetchRequestId = useRef(0);
   
@@ -433,6 +436,63 @@ export default function ComprovRotaLista() {
     }
   };
 
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      // Select all IDs from filtered data
+      const allIds = new Set(filteredComprovantes.map(item => item.id));
+      setSelectedIds(allIds);
+    } else {
+      // Deselect all
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectItem = (id: number, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleDownloadZip = async () => {
+    if (selectedIds.size === 0) {
+      toast.error('Selecione pelo menos um comprovante');
+      return;
+    }
+
+    setIsDownloadingZip(true);
+    try {
+      const selectedItems = comprovantes.filter(item => selectedIds.has(item.id));
+      
+      const response = await axios.post('/api/comprov-rota/download-zip', 
+        { items: selectedItems },
+        { responseType: 'blob' }
+      );
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `comprovantes_${format(new Date(), 'dd-MM-yyyy_HH-mm')}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`${selectedIds.size} arquivo(s) baixado(s) com sucesso`);
+      setSelectedIds(new Set()); // Clear selection after download
+    } catch (error) {
+      console.error('Error downloading ZIP:', error);
+      toast.error('Erro ao baixar arquivos');
+    } finally {
+      setIsDownloadingZip(false);
+    }
+  };
+
   const filteredComprovantes = comprovantes.filter(item => {
     const searchString = searchTerm.toLowerCase();
     return !searchTerm || 
@@ -604,11 +664,37 @@ export default function ComprovRotaLista() {
         </button>
       </div>
 
-      {/* Results count */}
+      {/* Results count and ZIP download button */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           {totalItems} comprovante{totalItems !== 1 ? 's' : ''} encontrado{totalItems !== 1 ? 's' : ''}
+          {selectedIds.size > 0 && (
+            <span className="ml-2 text-blue-600 dark:text-blue-400 font-medium">
+              ({selectedIds.size} selecionado{selectedIds.size !== 1 ? 's' : ''})
+            </span>
+          )}
         </p>
+        
+        {selectedIds.size > 0 && (
+          <button
+            onClick={handleDownloadZip}
+            disabled={isDownloadingZip}
+            data-testid="button-download-zip"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-lg transition-colors shadow-sm"
+          >
+            {isDownloadingZip ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Baixando...
+              </>
+            ) : (
+              <>
+                <Archive className="h-4 w-4" />
+                Baixar ZIP ({selectedIds.size})
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -617,6 +703,15 @@ export default function ComprovRotaLista() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
+                <th className="px-6 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={filteredComprovantes.length > 0 && filteredComprovantes.every(item => selectedIds.has(item.id))}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    data-testid="checkbox-select-all"
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   ID
                 </th>
@@ -637,7 +732,7 @@ export default function ComprovRotaLista() {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {paginatedComprovantes.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12">
+                  <td colSpan={6} className="px-6 py-12">
                     <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                       <MapPin className="h-12 w-12 mb-3 text-gray-300 dark:text-gray-600" />
                       <p className="text-lg font-medium">Nenhum comprovante encontrado</p>
@@ -656,6 +751,15 @@ export default function ComprovRotaLista() {
                     data-testid={`row-comprov-${item.id}`}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(item.id)}
+                        onChange={(e) => handleSelectItem(item.id, e.target.checked)}
+                        data-testid={`checkbox-item-${item.id}`}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
                         #{item.id}
