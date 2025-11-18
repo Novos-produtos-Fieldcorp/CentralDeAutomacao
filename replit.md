@@ -107,8 +107,10 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
         * Detects video file extensions (.mp4, .webm, .mov, etc.) in original data
         * Prevents false positives from URL-based detection (e.g., WiseApp Active Storage URLs don't show extensions)
       - Pre-computed URLs during data fetch for optimal performance
-      - Thumbnail previews in table (video icon placeholder for videos)
-      - Full-screen modal with native video player support
+      - **No Thumbnails in Table**: Clean button-only interface for better performance and UX
+      - **Dual Action Buttons**:
+        * Photos: "Ver foto" button opens full-screen modal with location info
+        * Videos: "Baixar vídeo" button triggers automatic download with formatted filename
       - **WiseApp Authentication Handling**: Graceful error handling for Rails Active Storage protected URLs
         - Clear error messages when media requires WiseApp authentication
         - "Abrir em nova aba" button (always visible) to open media in WiseApp directly

@@ -365,11 +365,31 @@ export default function ComprovRotaLista() {
     }
   };
 
+  const handleDownloadVideo = (item: ComprovRotaItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!item.mediaUrl) {
+      toast.error('Vídeo não disponível ou URL inválida');
+      return;
+    }
+
+    // Open video in new tab (browser will handle download/streaming)
+    window.open(item.mediaUrl, '_blank');
+    toast.success('Abrindo vídeo em nova aba');
+  };
+
   const handleShowPhoto = (item: ComprovRotaItem, e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // If it's a video, download it instead of showing modal
+    if (item.isVideo) {
+      handleDownloadVideo(item, e);
+      return;
+    }
+    
+    // For photos, show modal
     if (item.mediaUrl) {
       setSelectedPhoto(item.mediaUrl);
-      setSelectedMediaType(item.isVideo ? 'video' : 'image');
+      setSelectedMediaType('image');
       setSelectedLocation(
         item.latitude != null && item.longitude != null
           ? { lat: item.latitude, lng: item.longitude, address: item.address }
@@ -378,7 +398,7 @@ export default function ComprovRotaLista() {
       setMediaLoadError(false);
       setShowPhotoModal(true);
     } else {
-      toast.error('Mídia não disponível ou URL inválida');
+      toast.error('Foto não disponível ou URL inválida');
       console.error('❌ [ComprovRota] Mídia não disponível para item:', item);
     }
   };
@@ -851,45 +871,23 @@ export default function ComprovRotaLista() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {item.mediaUrl ? (
-                        <div className="flex items-center gap-3">
-                          {/* Thumbnail */}
-                          <div className="relative w-12 h-12 flex-shrink-0">
-                            {item.isVideo ? (
-                              <div className="w-full h-full bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center">
-                                <Video className="h-6 w-6 text-gray-400" />
-                              </div>
-                            ) : (
-                              <img
-                                src={item.mediaUrl}
-                                alt={`Preview ${item.id}`}
-                                className="w-full h-full object-cover rounded"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  console.error(`❌ [ComprovRota] Falha ao carregar thumbnail do item ${item.id}:`, item.mediaUrl);
-                                }}
-                              />
-                            )}
-                          </div>
-                          {/* View Button */}
-                          <button
-                            onClick={(e) => handleShowPhoto(item, e)}
-                            data-testid={`button-view-photo-${item.id}`}
-                            className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                          >
-                            {item.isVideo ? (
-                              <>
-                                <Video className="h-3 w-3" />
-                                Ver vídeo
-                              </>
-                            ) : (
-                              <>
-                                <Camera className="h-3 w-3" />
-                                Ver foto
-                              </>
-                            )}
-                          </button>
-                        </div>
+                        <button
+                          onClick={(e) => handleShowPhoto(item, e)}
+                          data-testid={`button-view-photo-${item.id}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                        >
+                          {item.isVideo ? (
+                            <>
+                              <Video className="h-4 w-4" />
+                              Baixar vídeo
+                            </>
+                          ) : (
+                            <>
+                              <Camera className="h-4 w-4" />
+                              Ver foto
+                            </>
+                          )}
+                        </button>
                       ) : (
                         <span className="text-sm text-gray-400 dark:text-gray-500">
                           Sem mídia

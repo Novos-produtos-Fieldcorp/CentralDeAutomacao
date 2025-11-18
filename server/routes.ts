@@ -616,37 +616,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // DEBUG: Temporary endpoint to inspect comprov_rota foto field content
-  app.get("/api/debug/comprov-rota-photos", async (req, res) => {
-    try {
-      const { data, error } = await supabaseBackend
-        .from('comprov_rota')
-        .select('id, foto')
-        .order('id', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-
-      const debug = data?.map(item => ({
-        id: item.id,
-        fotoLength: item.foto?.length || 0,
-        fotoFull: item.foto, // Full content
-        fotoEnd: item.foto?.substring(Math.max(0, (item.foto?.length || 0) - 50)), // Last 50 chars
-        fotoType: item.foto?.startsWith('data:') 
-          ? item.foto.substring(0, 30) 
-          : 'URL or filename',
-        hasVideoExtension: ['.mp4', '.webm', '.mov'].some(ext => 
-          item.foto?.toLowerCase().includes(ext)
-        )
-      }));
-
-      res.json({ debug });
-    } catch (error) {
-      console.error("Debug error:", error);
-      res.status(500).json({ error: "Debug failed" });
-    }
-  });
-
   // Batch reverse geocoding for multiple coordinates
   app.post("/api/geocode/reverse/batch", async (req, res) => {
     try {
