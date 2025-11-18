@@ -408,6 +408,32 @@ export default function ComprovRotaLista() {
     setMediaLoadError(true);
   };
 
+  const handleDownloadPhoto = async () => {
+    if (!selectedPhoto) return;
+
+    try {
+      toast.loading('Baixando foto...', { id: 'download-photo' });
+      
+      const response = await fetch(selectedPhoto);
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `foto_${format(new Date(), 'dd-MM-yyyy_HH-mm-ss')}.jpg`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Foto baixada com sucesso!', { id: 'download-photo' });
+    } catch (error) {
+      console.error('❌ [ComprovRota] Erro ao baixar foto:', error);
+      toast.error('Erro ao baixar foto', { id: 'download-photo' });
+    }
+  };
+
   const exportToExcel = () => {
     try {
       const exportData = comprovantes.map(item => ({
@@ -912,30 +938,41 @@ export default function ComprovRotaLista() {
       {/* Photo/Video Modal */}
       {showPhotoModal && selectedPhoto && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4"
+          className="fixed inset-0 bg-black bg-opacity-75 z-[9999] overflow-y-auto"
           onClick={() => setShowPhotoModal(false)}
         >
-          <div className="relative max-w-4xl max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="absolute -top-12 right-0 flex items-center gap-3">
-              <a
-                href={selectedPhoto}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="link-open-external"
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ExternalLink className="h-4 w-4" />
-                Abrir em nova aba
-              </a>
-              <button
-                onClick={() => setShowPhotoModal(false)}
-                data-testid="button-close-photo"
-                className="text-white hover:text-gray-300 transition-colors p-2"
-              >
-                <X className="h-8 w-8" />
-              </button>
-            </div>
+          {/* Fixed controls bar */}
+          <div className="sticky top-0 z-10 flex items-center justify-end gap-3 p-4 bg-gradient-to-b from-black/60 to-transparent" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={handleDownloadPhoto}
+              data-testid="button-download-photo"
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              Baixar Foto
+            </button>
+            <a
+              href={selectedPhoto}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="link-open-external"
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ExternalLink className="h-4 w-4" />
+              Abrir em nova aba
+            </a>
+            <button
+              onClick={() => setShowPhotoModal(false)}
+              data-testid="button-close-photo"
+              className="text-white hover:text-gray-300 transition-colors p-2"
+            >
+              <X className="h-8 w-8" />
+            </button>
+          </div>
+          
+          {/* Content container */}
+          <div className="relative max-w-7xl mx-auto px-4 pb-4" onClick={(e) => e.stopPropagation()}>
             
             {mediaLoadError ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
@@ -969,12 +1006,14 @@ export default function ComprovRotaLista() {
                     Seu navegador não suporta a tag de vídeo.
                   </video>
                 ) : (
-                  <img
-                    src={selectedPhoto}
-                    alt="Comprovante"
-                    className="w-full h-full object-contain rounded-lg bg-white dark:bg-gray-900"
-                    onError={() => handleMediaError(selectedPhoto)}
-                  />
+                  <div className="flex justify-center">
+                    <img
+                      src={selectedPhoto}
+                      alt="Comprovante"
+                      className="max-w-full max-h-[80vh] object-contain rounded-lg bg-white dark:bg-gray-900"
+                      onError={() => handleMediaError(selectedPhoto)}
+                    />
+                  </div>
                 )}
                 
                 {/* Location info */}
