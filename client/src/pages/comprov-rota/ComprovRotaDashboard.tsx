@@ -197,7 +197,7 @@ export default function ComprovRotaDashboard() {
   return (
     <div className="space-y-6">
       {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -250,6 +250,34 @@ export default function ComprovRotaDashboard() {
             </div>
             <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
               <Users className="h-8 w-8 text-gray-600 dark:text-gray-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total de Fotos</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                {stats.totalFotos}
+              </p>
+            </div>
+            <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
+              <Image className="h-8 w-8 text-gray-600 dark:text-gray-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total de Vídeos</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                {stats.totalVideos}
+              </p>
+            </div>
+            <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
+              <Video className="h-8 w-8 text-gray-600 dark:text-gray-400" />
             </div>
           </div>
         </div>
