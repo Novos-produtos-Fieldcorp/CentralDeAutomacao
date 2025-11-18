@@ -71,11 +71,11 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
     - Period filter (Hoje, 15 dias, 30 dias, Personalizado with custom date range)
     - Search by motorista name or ID with safe null handling
     - **GPS Location Display** (ACTIVE):
-      - **Latitude/Longitude**: Stored directly in `comprov_rota` table (not in `end_comprov_rota`)
+      - **Latitude/Longitude**: Stored in `end_comprov_rota` table as TEXT columns
       - **Address Construction**: Built from nested relations via Supabase joins
         * `end_comprov_rota` → `logradouro` → `bairro` → `cidade` → `estado`
         * Format: "Logradouro, Número, Complemento - Bairro, Cidade - UF"
-        * Fields: `logradouro.logradouro`, `numero`, `complemento`, `bairro.bairro`, `cidade.cidade`, `estado.sigla_estado`
+        * Fields: `logradouro.logradouro`, `numero`, `ds_complemento`, `bairro.bairro`, `cidade.cidade`, `estado.sigla_estado`
       - **No External APIs**: Address built entirely from database relations (no geocoding needed)
       - Table column displays:
         * Full constructed address (when location data available)

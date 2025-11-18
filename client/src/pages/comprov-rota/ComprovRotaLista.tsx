@@ -68,15 +68,15 @@ export default function ComprovRotaLista() {
           id_motorista,
           company_id,
           foto,
-          latitude,
-          longitude,
           motorista:motorista!comprov_rota_id_motorista_fkey (
             motorista_id,
             nome
           ),
           end_comprov_rota!end_comprov_rota_id_comprov_rota_fkey (
+            latitude,
+            longitude,
             numero,
-            complemento,
+            ds_complemento,
             logradouro (
               logradouro,
               nr_cep,
@@ -118,14 +118,14 @@ export default function ComprovRotaLista() {
       const normalizedData = data.map(item => {
         const mediaUrl = getMediaUrl(item.foto);
         
-        // Extract latitude/longitude from comprov_rota directly (not from end_comprov_rota)
-        const latitude = item.latitude ? parseFloat(String(item.latitude)) : null;
-        const longitude = item.longitude ? parseFloat(String(item.longitude)) : null;
-        
-        // Extract address details from end_comprov_rota (array -> first item)
+        // Extract location details from end_comprov_rota (array -> first item)
         const endComprov = Array.isArray(item.end_comprov_rota) 
           ? item.end_comprov_rota[0] 
           : item.end_comprov_rota;
+        
+        // Extract latitude/longitude from end_comprov_rota
+        const latitude = endComprov?.latitude ? parseFloat(String(endComprov.latitude)) : null;
+        const longitude = endComprov?.longitude ? parseFloat(String(endComprov.longitude)) : null;
         
         // Build complete address from nested relations
         let address: string | null = null;
@@ -158,8 +158,8 @@ export default function ComprovRotaLista() {
               parts[parts.length - 1] = `${parts[parts.length - 1] || ''}, ${endComprov.numero}`.trim();
             }
             
-            if (endComprov.complemento) {
-              parts[parts.length - 1] = `${parts[parts.length - 1] || ''}, ${endComprov.complemento}`.trim();
+            if (endComprov.ds_complemento) {
+              parts[parts.length - 1] = `${parts[parts.length - 1] || ''}, ${endComprov.ds_complemento}`.trim();
             }
             
             const locationParts: string[] = [];
