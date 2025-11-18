@@ -63,6 +63,10 @@ export default function ComprovRotaLista() {
           motorista:motorista!comprov_rota_id_motorista_fkey (
             motorista_id,
             nome
+          ),
+          end_comprov_rota!end_comprov_rota_id_comprov_rota_fkey (
+            latitude,
+            longitude
           )
         `)
         .eq('company_id', companyId)
@@ -84,11 +88,22 @@ export default function ComprovRotaLista() {
       // Normalizar motorista de array para objeto único e pré-computar URLs de mídia
       const normalizedData = data.map(item => {
         const mediaUrl = getMediaUrl(item.foto);
+        
+        // Extract location from end_comprov_rota (array -> first item)
+        const endComprov = Array.isArray(item.end_comprov_rota) 
+          ? item.end_comprov_rota[0] 
+          : item.end_comprov_rota;
+        
+        const latitude = endComprov?.latitude ? parseFloat(endComprov.latitude) : null;
+        const longitude = endComprov?.longitude ? parseFloat(endComprov.longitude) : null;
+        
         return {
           ...item,
           motorista: Array.isArray(item.motorista) 
             ? (item.motorista[0] ?? null) 
             : (item.motorista ?? null),
+          latitude: latitude,
+          longitude: longitude,
           mediaUrl: mediaUrl,
           isVideo: mediaUrl ? isVideoUrl(mediaUrl) : false
         };
