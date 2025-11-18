@@ -24,6 +24,9 @@ import {
 import { getBulkMotoristaTags } from "./bulk-tags-api";
 import { registerBulkContactTagsRoute } from "./bulk-contact-tags-sync";
 import { reverseGeocode, reverseGeocodeBatch } from "./geocoding-service";
+import archiver from 'archiver';
+import axios from 'axios';
+import { format } from 'date-fns';
 // CPF agora é consultado diretamente do frontend
 
 // Job tracking system for progress monitoring
@@ -639,6 +642,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: "Erro interno ao buscar endereços",
         details: error instanceof Error ? error.message : "Erro desconhecido",
       });
+    }
+  });
+
+  // Download ZIP with selected comprov_rota photos/videos
+  app.post("/api/comprov-rota/download-zip", async (req, res) => {
+    try {
+      const { items } = req.body;
+
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({
+          error: "Nenhum item selecionado para download",
+        });
+      }
+
+      console.log(`📦 [ZIP Download] Preparando ZIP com ${items.length} arquivo(s)`);
+
+      // Set response headers for ZIP download
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="comprovantes_${format(new Date(), 'dd-MM-yyyy_HH-mm')}.zip"`);
+
+      // Create ZIP archive
+      const archive = archiver('zip', {
+        zlib: { level: 9 } // Maximum compression
+      });
+
+      // Pipe archive to response
+      archive.pipe(res);
+
+      // Process each item
+      for (const item of items) {
+        try {
+          if (!item.mediaUrl) {
+            console.log(`⏭️ [ZIP Download] Item ${item.id} sem mídia, pulando...`);
+            continue;
+          }
+
+          // Format filename: {data}_{nome_motorista}.{extensao}
+          const date = format(new Date(item.created_at), 'dd-MM-yyyy_HH-mm-ss');
+          const motoristaName = (item.motorista?.nome || 'sem_motorista')
+            .replace(/[^a-zA-Z0-9]/g, '_') // Remove special chars
+            .replace(/_+/g, '_') // Replace multiple underscores with single
+            .toLowerCase();
+          
+          // Detect file extension
+          const isVideo = item.isVideo || item.mediaUrl.includes('.mp4') || item.mediaUrl.includes('.mov');
+          const extension = isVideo ? 'mp4' : 'jpg';
+          const filename = `${date}_${motoristaName}.${extension}`;
+
+          console.log(`📥 [ZIP Download] Baixando: ${filename} de ${item.mediaUrl.substring(0, 80)}...`);
+
+          // Download file from URL
+          const response = await axios.get(item.mediaUrl, {
+            responseType: 'arraybuffer',
+            timeout: 30000, // 30 seconds timeout
+            headers: {
+              'User-Agent': 'Mozilla/5.0'
+            }
+          });
+
+          // Add file to archive
+          archive.append(Buffer.from(response.data), { name: filename });
+          console.log(`✅ [ZIP Download] Adicionado ao ZIP: ${filename}`);
+
+        } catch (itemError) {
+          console.error(`❌ [ZIP Download] Erro ao processar item ${item.id}:`, itemError);
+          // Continue with next item even if one fails
+        }
+      }
+
+      // Finalize archive
+      await archive.finalize();
+      console.log(`✅ [ZIP Download] ZIP finalizado e enviado`);
+
+    } catch (error) {
+      console.error("❌ [ZIP Download] Erro ao gerar ZIP:", error);
+      
+      // Check if headers were already sent
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: "Erro ao gerar arquivo ZIP",
+          details: error instanceof Error ? error.message : "Erro desconhecido",
+        });
+      }
     }
   });
 
