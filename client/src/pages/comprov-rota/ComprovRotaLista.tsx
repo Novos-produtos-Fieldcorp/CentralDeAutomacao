@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, MapPin, X, Download, AlertCircle, ChevronDown, Calendar, User, Camera, Clock, Video, Image as ImageIcon, ExternalLink } from 'lucide-react';
+import { Search, MapPin, X, Download, AlertCircle, ChevronDown, Calendar, User, Camera, Clock, Video, Image as ImageIcon, ExternalLink, Archive, CheckSquare } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
@@ -9,6 +9,7 @@ import { useDateRange } from '../../hooks/useDateRange';
 import Pagination from '../../components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import * as XLSX from 'xlsx';
+import axios from 'axios';
 
 interface ComprovRotaItem {
   id: number;
@@ -18,6 +19,7 @@ interface ComprovRotaItem {
   foto: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  address?: string | null;
   mediaUrl?: string | null;
   isVideo?: boolean;
   motorista?: {
@@ -35,14 +37,20 @@ export default function ComprovRotaLista() {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<'image' | 'video'>('image');
-  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address?: string | null } | null>(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [mediaLoadError, setMediaLoadError] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
+  const fetchRequestId = useRef(0);
   
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days', false);
 
   const fetchComprovantes = useCallback(async () => {
+    // Increment request ID to track this fetch
+    const currentRequestId = ++fetchRequestId.current;
+    
     try {
       setLoading(true);
       setError(null);
@@ -63,6 +71,10 @@ export default function ComprovRotaLista() {
           motorista:motorista!comprov_rota_id_motorista_fkey (
             motorista_id,
             nome
+          ),
+          end_comprov_rota!end_comprov_rota_id_comprov_rota_fkey (
+            latitude,
+            longitude
           )
         `)
         .eq('company_id', companyId)
@@ -75,6 +87,12 @@ export default function ComprovRotaLista() {
         throw error;
       }
 
+      // Check if this is still the current request
+      if (currentRequestId !== fetchRequestId.current) {
+        console.log(`⏭️ [ComprovRota] Descartando resultado desatualizado de fetchComprovantes`);
+        return;
+      }
+
       if (!data || data.length === 0) {
         setComprovantes([]);
         setLoading(false);
@@ -84,15 +102,33 @@ export default function ComprovRotaLista() {
       // Normalizar motorista de array para objeto único e pré-computar URLs de mídia
       const normalizedData = data.map(item => {
         const mediaUrl = getMediaUrl(item.foto);
+        
+        // Extract location from end_comprov_rota (array -> first item)
+        const endComprov = Array.isArray(item.end_comprov_rota) 
+          ? item.end_comprov_rota[0] 
+          : item.end_comprov_rota;
+        
+        const latitude = endComprov?.latitude ? parseFloat(endComprov.latitude) : null;
+        const longitude = endComprov?.longitude ? parseFloat(endComprov.longitude) : null;
+        
         return {
           ...item,
           motorista: Array.isArray(item.motorista) 
             ? (item.motorista[0] ?? null) 
             : (item.motorista ?? null),
+          latitude: latitude,
+          longitude: longitude,
           mediaUrl: mediaUrl,
-          isVideo: mediaUrl ? isVideoUrl(mediaUrl) : false
+          // Check the ORIGINAL foto field, not the generated URL
+          isVideo: isVideoData(item.foto)
         };
       });
+
+      // Check again before updating state (double-check)
+      if (currentRequestId !== fetchRequestId.current) {
+        console.log(`⏭️ [ComprovRota] Descartando resultado desatualizado após processamento`);
+        return;
+      }
 
       // Log de debug para primeiros itens
       if (normalizedData.length > 0) {
@@ -105,15 +141,98 @@ export default function ComprovRotaLista() {
       }
 
       setComprovantes(normalizedData);
+      setLoading(false);
+      
+      // Fetch addresses using batch endpoint (passing request ID to prevent stale updates)
+      fetchAddressesBatch(normalizedData, currentRequestId);
     } catch (error) {
       console.error('Error fetching comprovantes:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar comprovantes';
       setError(errorMessage);
       toast.error('Erro ao carregar comprovantes: ' + errorMessage);
-    } finally {
       setLoading(false);
     }
   }, [dateRange, companyId]);
+
+  // Fetch addresses in batch
+  const fetchAddressesBatch = async (items: ComprovRotaItem[], requestId: number) => {
+    const itemsWithCoords = items.filter(item => 
+      item.latitude !== null && 
+      item.longitude !== null &&
+      !isNaN(item.latitude as number) &&
+      !isNaN(item.longitude as number)
+    );
+
+    if (itemsWithCoords.length === 0) return;
+
+    console.log(`📍 [ComprovRota] Buscando endereços para ${itemsWithCoords.length} localizações em lote`);
+
+    try {
+      const coordinates = itemsWithCoords.map(item => ({
+        id: item.id,
+        lat: item.latitude!,
+        lng: item.longitude!
+      }));
+
+      const response = await fetch('/api/geocode/reverse/batch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ coordinates }),
+      });
+
+      if (response.ok) {
+        // Check if this request is still current (prevent stale updates)
+        if (requestId !== fetchRequestId.current) {
+          console.log(`⏭️ [ComprovRota] Descartando resultado desatualizado (${requestId} vs ${fetchRequestId.current})`);
+          return;
+        }
+        
+        const data = await response.json();
+        const results = data.results as Array<{ id: number; address: string | null }>;
+        
+        // Update all addresses at once
+        setComprovantes(prev => 
+          prev.map(c => {
+            const result = results.find(r => r.id === c.id);
+            return result ? { ...c, address: result.address } : c;
+          })
+        );
+        
+        const successCount = results.filter(r => r.address).length;
+        console.log(`✅ [ComprovRota] ${successCount}/${results.length} endereços encontrados`);
+      } else {
+        // Only update if still current request
+        if (requestId !== fetchRequestId.current) return;
+        
+        console.warn(`⚠️ [ComprovRota] Falha ao buscar endereços em lote`);
+        
+        // Mark items as failed to prevent "Carregando..." stuck state
+        setComprovantes(prev => 
+          prev.map(c => 
+            itemsWithCoords.some(item => item.id === c.id) && !c.address
+              ? { ...c, address: null }
+              : c
+          )
+        );
+      }
+    } catch (error) {
+      // Only update if still current request
+      if (requestId !== fetchRequestId.current) return;
+      
+      console.error('❌ [ComprovRota] Erro ao buscar endereços em lote:', error);
+      
+      // Mark items as failed
+      setComprovantes(prev => 
+        prev.map(c => 
+          itemsWithCoords.some(item => item.id === c.id) && !c.address
+            ? { ...c, address: null }
+            : c
+        )
+      );
+    }
+  };
 
   useEffect(() => {
     fetchComprovantes();
@@ -143,18 +262,19 @@ export default function ComprovRotaLista() {
     return dateStr;
   };
 
-  const isVideoUrl = (url: string): boolean => {
-    if (!url) return false;
-    const lowerUrl = url.toLowerCase();
+  // Check if the ORIGINAL photo field contains video data (not the generated URL)
+  const isVideoData = (originalPhoto: string | null): boolean => {
+    if (!originalPhoto) return false;
+    const lowerPhoto = originalPhoto.toLowerCase();
     
     // Check for base64 video MIME types
-    if (lowerUrl.startsWith('data:video')) {
+    if (lowerPhoto.startsWith('data:video')) {
       return true;
     }
     
-    // Check for file extensions
+    // Check for video file extensions in the original data
     const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.m4v', '.mkv'];
-    return videoExtensions.some(ext => lowerUrl.includes(ext));
+    return videoExtensions.some(ext => lowerPhoto.includes(ext));
   };
 
   const getMediaUrl = (photo: string | null): string | null => {
@@ -245,20 +365,40 @@ export default function ComprovRotaLista() {
     }
   };
 
+  const handleDownloadVideo = (item: ComprovRotaItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!item.mediaUrl) {
+      toast.error('Vídeo não disponível ou URL inválida');
+      return;
+    }
+
+    // Open video in new tab (browser will handle download/streaming)
+    window.open(item.mediaUrl, '_blank');
+    toast.success('Abrindo vídeo em nova aba');
+  };
+
   const handleShowPhoto = (item: ComprovRotaItem, e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // If it's a video, download it instead of showing modal
+    if (item.isVideo) {
+      handleDownloadVideo(item, e);
+      return;
+    }
+    
+    // For photos, show modal
     if (item.mediaUrl) {
       setSelectedPhoto(item.mediaUrl);
-      setSelectedMediaType(item.isVideo ? 'video' : 'image');
+      setSelectedMediaType('image');
       setSelectedLocation(
         item.latitude != null && item.longitude != null
-          ? { lat: item.latitude, lng: item.longitude }
+          ? { lat: item.latitude, lng: item.longitude, address: item.address }
           : null
       );
       setMediaLoadError(false);
       setShowPhotoModal(true);
     } else {
-      toast.error('Mídia não disponível ou URL inválida');
+      toast.error('Foto não disponível ou URL inválida');
       console.error('❌ [ComprovRota] Mídia não disponível para item:', item);
     }
   };
@@ -268,12 +408,39 @@ export default function ComprovRotaLista() {
     setMediaLoadError(true);
   };
 
+  const handleDownloadPhoto = async () => {
+    if (!selectedPhoto) return;
+
+    try {
+      toast.loading('Baixando foto...', { id: 'download-photo' });
+      
+      const response = await fetch(selectedPhoto);
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `foto_${format(new Date(), 'dd-MM-yyyy_HH-mm-ss')}.jpg`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Foto baixada com sucesso!', { id: 'download-photo' });
+    } catch (error) {
+      console.error('❌ [ComprovRota] Erro ao baixar foto:', error);
+      toast.error('Erro ao baixar foto', { id: 'download-photo' });
+    }
+  };
+
   const exportToExcel = () => {
     try {
       const exportData = comprovantes.map(item => ({
         'ID': item.id,
         'Data/Hora': format(new Date(item.created_at), 'dd/MM/yyyy HH:mm'),
         'Motorista': item.motorista?.nome || 'Não informado',
+        'Endereço': item.address || '-',
         'Latitude': item.latitude?.toFixed(6) || '-',
         'Longitude': item.longitude?.toFixed(6) || '-',
         'Tem Foto': item.foto ? 'Sim' : 'Não'
@@ -283,12 +450,13 @@ export default function ComprovRotaLista() {
       const ws = XLSX.utils.json_to_sheet(exportData);
       
       ws['!cols'] = [
-        { wch: 10 },
-        { wch: 18 },
-        { wch: 30 },
-        { wch: 12 },
-        { wch: 12 },
-        { wch: 12 }
+        { wch: 10 },  // ID
+        { wch: 18 },  // Data/Hora
+        { wch: 30 },  // Motorista
+        { wch: 50 },  // Endereço
+        { wch: 12 },  // Latitude
+        { wch: 12 },  // Longitude
+        { wch: 12 }   // Tem Foto
       ];
       
       XLSX.utils.book_append_sheet(wb, ws, 'Comprovantes');
@@ -313,6 +481,79 @@ export default function ComprovRotaLista() {
     } catch (error) {
       console.error('Error exporting to Excel:', error);
       toast.error('Erro ao exportar para Excel');
+    }
+  };
+
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      // Select all IDs from filtered data
+      const allIds = new Set(filteredComprovantes.map(item => item.id));
+      setSelectedIds(allIds);
+    } else {
+      // Deselect all
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectItem = (id: number, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleDownloadZip = async () => {
+    if (selectedIds.size === 0) {
+      toast.error('Selecione pelo menos um comprovante');
+      return;
+    }
+
+    setIsDownloadingZip(true);
+    try {
+      const selectedItems = comprovantes.filter(item => selectedIds.has(item.id));
+      
+      const response = await axios.post('/api/comprov-rota/download-zip', 
+        { items: selectedItems },
+        { 
+          responseType: 'blob',
+          timeout: 120000 // 2 minutes timeout
+        }
+      );
+
+      // Check if ZIP is empty (< 100 bytes typically means empty ZIP)
+      if (response.data.size < 100) {
+        toast.error('Nenhum arquivo pôde ser baixado. As URLs podem estar expiradas ou indisponíveis.');
+        console.error('ZIP vazio recebido. Verifique se as URLs dos arquivos são válidas.');
+        return;
+      }
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `comprovantes_${format(new Date(), 'dd-MM-yyyy_HH-mm')}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Download concluído! Verifique a pasta de downloads.');
+      setSelectedIds(new Set()); // Clear selection after download
+    } catch (error: any) {
+      console.error('Error downloading ZIP:', error);
+      if (error.response?.status === 400) {
+        toast.error('Erro: ' + (error.response.data.error || 'Dados inválidos'));
+      } else if (error.code === 'ECONNABORTED') {
+        toast.error('Tempo esgotado. Tente selecionar menos arquivos.');
+      } else {
+        toast.error('Erro ao baixar arquivos. Verifique se as URLs são válidas.');
+      }
+    } finally {
+      setIsDownloadingZip(false);
     }
   };
 
@@ -487,11 +728,50 @@ export default function ComprovRotaLista() {
         </button>
       </div>
 
-      {/* Results count */}
+      {/* Results count and ZIP download button */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           {totalItems} comprovante{totalItems !== 1 ? 's' : ''} encontrado{totalItems !== 1 ? 's' : ''}
+          {selectedIds.size > 0 && (
+            <span className="ml-2 text-blue-600 dark:text-blue-400 font-medium">
+              ({selectedIds.size} selecionado{selectedIds.size !== 1 ? 's' : ''})
+            </span>
+          )}
         </p>
+        
+        <div className="flex items-center gap-2">
+          {filteredComprovantes.length > 0 && (
+            <button
+              onClick={() => handleSelectAll(!(filteredComprovantes.length > 0 && filteredComprovantes.every(item => selectedIds.has(item.id))))}
+              data-testid="button-select-all"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors shadow-sm"
+            >
+              <CheckSquare className="h-4 w-4" />
+              {filteredComprovantes.every(item => selectedIds.has(item.id)) ? 'Desmarcar Todos' : 'Selecionar Todos'}
+            </button>
+          )}
+          
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleDownloadZip}
+              disabled={isDownloadingZip}
+              data-testid="button-download-zip"
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-lg transition-colors shadow-sm"
+            >
+              {isDownloadingZip ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Baixando...
+                </>
+              ) : (
+                <>
+                  <Archive className="h-4 w-4" />
+                  Baixar ZIP ({selectedIds.size})
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -500,6 +780,15 @@ export default function ComprovRotaLista() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
+                <th className="px-6 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={filteredComprovantes.length > 0 && filteredComprovantes.every(item => selectedIds.has(item.id))}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    data-testid="checkbox-select-all"
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   ID
                 </th>
@@ -520,7 +809,7 @@ export default function ComprovRotaLista() {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {paginatedComprovantes.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12">
+                  <td colSpan={6} className="px-6 py-12">
                     <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                       <MapPin className="h-12 w-12 mb-3 text-gray-300 dark:text-gray-600" />
                       <p className="text-lg font-medium">Nenhum comprovante encontrado</p>
@@ -539,6 +828,15 @@ export default function ComprovRotaLista() {
                     data-testid={`row-comprov-${item.id}`}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(item.id)}
+                        onChange={(e) => handleSelectItem(item.id, e.target.checked)}
+                        data-testid={`checkbox-item-${item.id}`}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
                         #{item.id}
@@ -560,19 +858,34 @@ export default function ComprovRotaLista() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4">
                       {item.latitude != null && item.longitude != null ? (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-green-500" />
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            {item.address ? (
+                              <span className="text-sm text-gray-900 dark:text-gray-100">
+                                {item.address}
+                              </span>
+                            ) : item.address === undefined ? (
+                              <span className="text-sm text-gray-400 dark:text-gray-500 italic">
+                                Carregando...
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-400 dark:text-gray-500">
+                                Coordenadas: {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
+                              </span>
+                            )}
+                          </div>
                           <a
                             href={`https://www.google.com/maps?q=${item.latitude},${item.longitude}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             data-testid={`link-location-${item.id}`}
-                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline ml-6"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            Ver no mapa
+                            Ver no mapa →
                           </a>
                         </div>
                       ) : (
@@ -584,45 +897,18 @@ export default function ComprovRotaLista() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {item.mediaUrl ? (
-                        <div className="flex items-center gap-3">
-                          {/* Thumbnail */}
-                          <div className="relative w-12 h-12 flex-shrink-0">
-                            {item.isVideo ? (
-                              <div className="w-full h-full bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center">
-                                <Video className="h-6 w-6 text-gray-400" />
-                              </div>
-                            ) : (
-                              <img
-                                src={item.mediaUrl}
-                                alt={`Preview ${item.id}`}
-                                className="w-full h-full object-cover rounded"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  console.error(`❌ [ComprovRota] Falha ao carregar thumbnail do item ${item.id}:`, item.mediaUrl);
-                                }}
-                              />
-                            )}
-                          </div>
-                          {/* View Button */}
-                          <button
-                            onClick={(e) => handleShowPhoto(item, e)}
-                            data-testid={`button-view-photo-${item.id}`}
-                            className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                          >
-                            {item.isVideo ? (
-                              <>
-                                <Video className="h-3 w-3" />
-                                Ver vídeo
-                              </>
-                            ) : (
-                              <>
-                                <Camera className="h-3 w-3" />
-                                Ver foto
-                              </>
-                            )}
-                          </button>
-                        </div>
+                        <button
+                          onClick={(e) => handleShowPhoto(item, e)}
+                          data-testid={`button-view-photo-${item.id}`}
+                          className="inline-flex items-center justify-center p-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                          title={item.isVideo ? 'Baixar vídeo' : 'Ver foto'}
+                        >
+                          {item.isVideo ? (
+                            <Video className="h-5 w-5" />
+                          ) : (
+                            <Camera className="h-5 w-5" />
+                          )}
+                        </button>
                       ) : (
                         <span className="text-sm text-gray-400 dark:text-gray-500">
                           Sem mídia
@@ -652,30 +938,41 @@ export default function ComprovRotaLista() {
       {/* Photo/Video Modal */}
       {showPhotoModal && selectedPhoto && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4"
+          className="fixed inset-0 bg-black bg-opacity-75 z-[9999] overflow-y-auto"
           onClick={() => setShowPhotoModal(false)}
         >
-          <div className="relative max-w-4xl max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="absolute -top-12 right-0 flex items-center gap-3">
-              <a
-                href={selectedPhoto}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="link-open-external"
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ExternalLink className="h-4 w-4" />
-                Abrir em nova aba
-              </a>
-              <button
-                onClick={() => setShowPhotoModal(false)}
-                data-testid="button-close-photo"
-                className="text-white hover:text-gray-300 transition-colors p-2"
-              >
-                <X className="h-8 w-8" />
-              </button>
-            </div>
+          {/* Fixed controls bar */}
+          <div className="sticky top-0 z-10 flex items-center justify-end gap-3 p-4 bg-gradient-to-b from-black/60 to-transparent" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={handleDownloadPhoto}
+              data-testid="button-download-photo"
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              Baixar Foto
+            </button>
+            <a
+              href={selectedPhoto}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="link-open-external"
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ExternalLink className="h-4 w-4" />
+              Abrir em nova aba
+            </a>
+            <button
+              onClick={() => setShowPhotoModal(false)}
+              data-testid="button-close-photo"
+              className="text-white hover:text-gray-300 transition-colors p-2"
+            >
+              <X className="h-8 w-8" />
+            </button>
+          </div>
+          
+          {/* Content container */}
+          <div className="relative max-w-7xl mx-auto px-4 pb-4" onClick={(e) => e.stopPropagation()}>
             
             {mediaLoadError ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
@@ -709,38 +1006,45 @@ export default function ComprovRotaLista() {
                     Seu navegador não suporta a tag de vídeo.
                   </video>
                 ) : (
-                  <img
-                    src={selectedPhoto}
-                    alt="Comprovante"
-                    className="w-full h-full object-contain rounded-lg bg-white dark:bg-gray-900"
-                    onError={() => handleMediaError(selectedPhoto)}
-                  />
+                  <div className="flex justify-center">
+                    <img
+                      src={selectedPhoto}
+                      alt="Comprovante"
+                      className="max-w-full max-h-[80vh] object-contain rounded-lg bg-white dark:bg-gray-900"
+                      onError={() => handleMediaError(selectedPhoto)}
+                    />
+                  </div>
                 )}
                 
                 {/* Location info */}
                 {selectedLocation && (
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <MapPin className="h-5 w-5 text-green-500" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
                           Localização GPS
                         </p>
+                        {selectedLocation.address && (
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                            {selectedLocation.address}
+                          </p>
+                        )}
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
                         </p>
                       </div>
+                      <a
+                        href={`https://www.google.com/maps?q=${selectedLocation.lat},${selectedLocation.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid="link-location-modal"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex-shrink-0"
+                      >
+                        <MapPin className="h-4 w-4" />
+                        Abrir no Mapa
+                      </a>
                     </div>
-                    <a
-                      href={`https://www.google.com/maps?q=${selectedLocation.lat},${selectedLocation.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-testid="link-location-modal"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                    >
-                      <MapPin className="h-4 w-4" />
-                      Abrir no Google Maps
-                    </a>
                   </div>
                 )}
               </div>

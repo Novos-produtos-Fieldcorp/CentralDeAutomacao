@@ -60,25 +60,64 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
     - Strategy: Calculate km_rodado per veiculo_id first (reliable), then consolidate by normalized plate for final display
 - **Vagas Module**: Supports inline creation of related entities, real-time dashboard statistics, and a toggle for table/card grid views with preference persistence.
 - **Comprovante de Rota Module**: Tabbed interface with Dashboard and Lista (List) views following the same pattern as Hodômetros and Checklist modules:
-  - **Dashboard**: Statistics cards showing total comprovantes, today's count, monthly count, and active drivers; Top 5 drivers chart with visual progress bars
+  - **Dashboard**: 
+    - **Statistics Cards (3)**: Total Comprovantes (purple icon), Hoje (orange icon), Este Mês (green icon)
+    - **Top 5 Motoristas**: Chart with visual progress bars showing driver rankings
+    - **Media Analytics**: Two charts for photo/video analysis
+      * Pie chart (blue icon): Total photos vs videos distribution
+      * Bar chart (green icon): Daily photo/video comparison (last 7 days)
+    - **Color Palette**: Purple (MapPin), Orange (Calendar), Green (TrendingUp), Blue (Image/Users), Green (Video)
   - **Lista**: Professional table layout matching HodometrosRelatorio aesthetics with:
     - Period filter (Hoje, 15 dias, 30 dias, Personalizado with custom date range)
     - Search by motorista name or ID with safe null handling
-    - **GPS Location Display** (ready, requires DB migration):
-      - UI fully implemented with null-safe rendering
-      - Table column with "Ver no mapa" link (opens in new tab)
-      - Modal displays GPS coordinates with "Abrir no Google Maps" button
-      - Proper handling of zero coordinates (equator/prime meridian)
-      - **To Enable**: Add columns to Supabase: `latitude: real`, `longitude: real` in comprov_rota table
-      - When columns exist, GPS features activate automatically
-    - Excel export functionality (includes GPS coordinates when available)
+    - **GPS Location Display with Reverse Geocoding** (ACTIVE):
+      - Data fetched from `end_comprov_rota` table via LEFT JOIN on `id_comprov_rota`
+      - Latitude/longitude stored as TEXT in database, converted to numbers in frontend
+      - **Reverse Geocoding via Nominatim (OpenStreetMap)**:
+        - Backend service (`server/geocoding-service.ts`) with in-memory cache (30-day TTL)
+        - Rate limiting: 1 request/second (Nominatim compliance)
+        - Batch endpoint: `POST /api/geocode/reverse/batch` for efficient processing
+        - Request tracking system prevents stale updates from race conditions
+      - Table column displays:
+        * Full address (when geocoded successfully)
+        * "Carregando..." state while fetching
+        * Coordinates as fallback if geocoding fails
+        * "Ver no mapa →" link (opens in Google Maps)
+      - Modal displays full address + coordinates with "Abrir no Mapa" button
+      - Proper handling of missing coordinates (shows "Não disponível")
+    - **Bulk Download System (ZIP)** (ACTIVE):
+      - Checkbox selection system (individual + "Selecionar Todos" button in header)
+      - Download button appears when items are selected
+      - Backend endpoint: `POST /api/comprov-rota/download-zip`
+      - Automatic file naming: `{dd-MM-yyyy_HH-mm-ss}_{motorista_nome}.{extensao}`
+      - Supports photos (.jpg) and videos (.mp4)
+      - **Security Features (3-Layer SSRF Protection)**:
+        * Layer 1: Zod payload validation
+        * Layer 2: Host whitelist (WiseApp, Supabase only)
+        * Layer 3: Allow controlled redirects (maxRedirects: 5) - Required for WiseApp Rails Active Storage URLs
+      - **Smart Download Strategy**:
+        * Handles data URIs (base64) and HTTP(S) URLs
+        * Automatic fallback: If WiseApp URL returns 404, tries Supabase Storage
+        * Tries multiple filename patterns: `{id}.jpg`, `{id}.mp4`, `comprovante_{id}.jpg`, etc.
+      - **Error Tracking**: Detailed statistics (success/failure counts, failure reasons) logged for debugging
+      - Continue-on-error: individual failures don't stop entire download
+      - Frontend validation: Detects empty ZIPs and shows appropriate error messages
+      - Automatic cleanup of selection after successful download
+    - Excel export functionality (includes Address, Latitude, Longitude columns)
     - Pagination (25 items per page)
     - **Smart Media Loading System**: Comprehensive photo/video support with robust URL parsing
       - Handles multiple formats: base64 (images/videos), complete URLs, JSON arrays, comma-separated lists, single filenames
-      - Auto-detects video vs image (MIME types + file extensions)
+      - **Intelligent Type Detection**: Checks ORIGINAL `foto` field (not generated URL) for accurate video vs image detection
+        * Detects `data:video/` MIME types in base64
+        * Detects video file extensions (.mp4, .webm, .mov, etc.) in original data
+        * Prevents false positives from URL-based detection (e.g., WiseApp Active Storage URLs don't show extensions)
       - Pre-computed URLs during data fetch for optimal performance
-      - Thumbnail previews in table (video icon placeholder for videos)
-      - Full-screen modal with native video player support
+      - **No Thumbnails in Table**: Clean button-only interface for better performance and UX
+      - **Icon-Only Media Buttons**:
+        * Photos: Camera icon (📷) opens full-screen modal with location info
+        * Videos: Video icon (🎬) opens video in new tab for browser-managed download/streaming
+        * Tooltips on hover show action description
+        * Icons sized at h-5 w-5 (20px) for clear visibility
       - **WiseApp Authentication Handling**: Graceful error handling for Rails Active Storage protected URLs
         - Clear error messages when media requires WiseApp authentication
         - "Abrir em nova aba" button (always visible) to open media in WiseApp directly

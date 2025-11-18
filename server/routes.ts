@@ -23,6 +23,11 @@ import {
 } from "./utils/api-retry";
 import { getBulkMotoristaTags } from "./bulk-tags-api";
 import { registerBulkContactTagsRoute } from "./bulk-contact-tags-sync";
+import { reverseGeocode, reverseGeocodeBatch } from "./geocoding-service";
+import archiver from 'archiver';
+import axios from 'axios';
+import { format } from 'date-fns';
+import { z } from 'zod';
 // CPF agora é consultado diretamente do frontend
 
 // Job tracking system for progress monitoring
@@ -569,6 +574,318 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: "Erro interno do servidor ao consultar CEP",
         details: error instanceof Error ? error.message : "Erro desconhecido",
       });
+    }
+  });
+
+  // Reverse geocoding: convert coordinates to address
+  app.get("/api/geocode/reverse", async (req, res) => {
+    try {
+      const { lat, lng } = req.query;
+
+      // Validate coordinates
+      if (!lat || !lng) {
+        return res.status(400).json({
+          error: "Latitude e longitude são obrigatórias",
+        });
+      }
+
+      const latitude = parseFloat(lat as string);
+      const longitude = parseFloat(lng as string);
+
+      if (isNaN(latitude) || isNaN(longitude)) {
+        return res.status(400).json({
+          error: "Coordenadas inválidas",
+        });
+      }
+
+      const address = await reverseGeocode(latitude, longitude);
+
+      if (!address) {
+        return res.status(404).json({
+          error: "Endereço não encontrado para as coordenadas fornecidas",
+        });
+      }
+
+      res.json({ address });
+    } catch (error) {
+      console.error("Erro ao fazer geocoding reverso:", error);
+      res.status(500).json({
+        error: "Erro interno ao buscar endereço",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
+  // Batch reverse geocoding for multiple coordinates
+  app.post("/api/geocode/reverse/batch", async (req, res) => {
+    try {
+      const { coordinates } = req.body;
+
+      if (!Array.isArray(coordinates) || coordinates.length === 0) {
+        return res.status(400).json({
+          error: "Array de coordenadas é obrigatório",
+        });
+      }
+
+      // Validate and parse coordinates
+      const parsedCoords = coordinates.map((coord: any) => ({
+        id: coord.id,
+        lat: parseFloat(coord.lat),
+        lng: parseFloat(coord.lng),
+      }));
+
+      const results = await reverseGeocodeBatch(parsedCoords);
+
+      res.json({ results });
+    } catch (error) {
+      console.error("Erro ao fazer geocoding reverso em lote:", error);
+      res.status(500).json({
+        error: "Erro interno ao buscar endereços",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
+  // Download ZIP with selected comprov_rota photos/videos
+  app.post("/api/comprov-rota/download-zip", async (req, res) => {
+    try {
+      // Validate request payload with Zod
+      const zipDownloadSchema = z.object({
+        items: z.array(z.object({
+          id: z.number(),
+          created_at: z.string(),
+          mediaUrl: z.string().optional().nullable(),
+          isVideo: z.boolean().optional(),
+          motorista: z.object({
+            nome: z.string()
+          }).optional().nullable()
+        })).min(1, "Pelo menos um item é necessário")
+      });
+
+      const validationResult = zipDownloadSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        console.error('❌ [ZIP Download] Validação falhou:', validationResult.error.errors);
+        return res.status(400).json({
+          error: "Dados inválidos",
+          details: validationResult.error.errors
+        });
+      }
+
+      const { items } = validationResult.data;
+
+      console.log(`📦 [ZIP Download] Preparando ZIP com ${items.length} arquivo(s)`);
+
+      // Counters for success/failure tracking
+      let successCount = 0;
+      let failureCount = 0;
+      const failureReasons: { [key: string]: number } = {};
+
+      // Whitelisted hosts for security (prevent SSRF)
+      const allowedHosts = [
+        'chat.wiseapp360.com',
+        'ohmoxsvwjvohmqqgxjhb.supabase.co',
+        'supabase.co'
+      ];
+
+      // Set response headers for ZIP download
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="comprovantes_${format(new Date(), 'dd-MM-yyyy_HH-mm')}.zip"`);
+
+      // Create ZIP archive
+      const archive = archiver('zip', {
+        zlib: { level: 9 } // Maximum compression
+      });
+
+      // Pipe archive to response
+      archive.pipe(res);
+
+      // Process each item
+      for (const item of items) {
+        try {
+          if (!item.mediaUrl) {
+            console.log(`⏭️ [ZIP Download] Item ${item.id} sem mídia, pulando...`);
+            failureCount++;
+            failureReasons['Sem URL de mídia'] = (failureReasons['Sem URL de mídia'] || 0) + 1;
+            continue;
+          }
+
+          // Format filename: {data}_{nome_motorista}.{extensao}
+          const date = format(new Date(item.created_at), 'dd-MM-yyyy_HH-mm-ss');
+          const motoristaName = (item.motorista?.nome || 'sem_motorista')
+            .replace(/[^a-zA-Z0-9]/g, '_') // Remove special chars
+            .replace(/_+/g, '_') // Replace multiple underscores with single
+            .toLowerCase();
+          
+          // Use isVideo flag from frontend (already correctly detected from original foto field)
+          const extension = item.isVideo ? 'mp4' : 'jpg';
+          const filename = `${date}_${motoristaName}.${extension}`;
+
+          let fileBuffer: Buffer | null = null;
+
+          // Handle data: URIs (base64 encoded)
+          if (item.mediaUrl.startsWith('data:')) {
+            console.log(`📄 [ZIP Download] Processando data URI para ${filename}`);
+            const base64Data = item.mediaUrl.split(',')[1];
+            if (!base64Data) {
+              console.error(`❌ [ZIP Download] Data URI inválida para item ${item.id}`);
+              failureCount++;
+              failureReasons['Data URI inválida'] = (failureReasons['Data URI inválida'] || 0) + 1;
+              continue;
+            }
+            fileBuffer = Buffer.from(base64Data, 'base64');
+            successCount++;
+          } 
+          // Handle HTTP(S) URLs with security validation
+          else if (item.mediaUrl.startsWith('http://') || item.mediaUrl.startsWith('https://')) {
+            // Security: Validate URL host against whitelist (prevent SSRF)
+            let urlHost: string;
+            try {
+              const parsedUrl = new URL(item.mediaUrl);
+              urlHost = parsedUrl.hostname;
+            } catch (urlError) {
+              console.error(`❌ [ZIP Download] URL inválida para item ${item.id}:`, item.mediaUrl);
+              failureCount++;
+              failureReasons['URL malformada'] = (failureReasons['URL malformada'] || 0) + 1;
+              continue;
+            }
+
+            // Check if host is whitelisted
+            const isAllowedHost = allowedHosts.some(allowed => 
+              urlHost === allowed || urlHost.endsWith(`.${allowed}`)
+            );
+
+            if (!isAllowedHost) {
+              console.error(`🚫 [ZIP Download] Host não permitido: ${urlHost} (item ${item.id})`);
+              failureCount++;
+              failureReasons['Host não permitido'] = (failureReasons['Host não permitido'] || 0) + 1;
+              continue;
+            }
+
+            console.log(`📥 [ZIP Download] Baixando: ${filename} de ${urlHost}`);
+
+            // Try downloading from URL first
+            try {
+              const response = await axios.get(item.mediaUrl, {
+                responseType: 'arraybuffer',
+                timeout: 30000, // 30 seconds timeout
+                maxRedirects: 5, // Allow redirects (WiseApp uses Rails Active Storage redirects)
+                validateStatus: (status) => {
+                  // Accept 2xx and 3xx (redirects are followed automatically by axios)
+                  return status >= 200 && status < 400;
+                },
+                headers: {
+                  'User-Agent': 'Mozilla/5.0'
+                }
+              });
+
+              fileBuffer = Buffer.from(response.data);
+              successCount++;
+            } catch (urlError: any) {
+              // If WiseApp URL fails with 404, try Supabase Storage as fallback
+              if (urlError?.response?.status === 404 && urlHost.includes('wiseapp360.com')) {
+                console.log(`🔄 [ZIP Download] URL do WiseApp retornou 404, tentando Supabase Storage...`);
+                
+                // Try to get file from Supabase Storage comprovante bucket
+                try {
+                  // Use item ID as potential filename
+                  const possibleFilenames = [
+                    `${item.id}.jpg`,
+                    `${item.id}.mp4`,
+                    `comprovante_${item.id}.jpg`,
+                    `comprovante_${item.id}.mp4`
+                  ];
+                  
+                  let foundFile = false;
+                  for (const tryFilename of possibleFilenames) {
+                    try {
+                      const { data: storageData, error: storageError } = await supabaseBackend
+                        .storage
+                        .from('comprovante')
+                        .download(tryFilename);
+                      
+                      if (storageData && !storageError) {
+                        console.log(`✅ [ZIP Download] Arquivo encontrado no Supabase Storage: ${tryFilename}`);
+                        fileBuffer = Buffer.from(await storageData.arrayBuffer());
+                        foundFile = true;
+                        successCount++;
+                        break;
+                      }
+                    } catch {
+                      // Try next filename
+                      continue;
+                    }
+                  }
+                  
+                  if (!foundFile) {
+                    throw new Error('Arquivo não encontrado no Supabase Storage');
+                  }
+                } catch (storageError) {
+                  console.error(`❌ [ZIP Download] Fallback para Supabase Storage falhou para item ${item.id}`);
+                  failureCount++;
+                  failureReasons['Arquivo não encontrado (404)'] = (failureReasons['Arquivo não encontrado (404)'] || 0) + 1;
+                  continue;
+                }
+              } else {
+                // Re-throw if not a 404 from WiseApp
+                throw urlError;
+              }
+            }
+          } 
+          else {
+            console.error(`❌ [ZIP Download] Tipo de URL não suportado para item ${item.id}: ${item.mediaUrl.substring(0, 30)}...`);
+            failureCount++;
+            failureReasons['Tipo de URL não suportado'] = (failureReasons['Tipo de URL não suportado'] || 0) + 1;
+            continue;
+          }
+
+          // Add file to archive (only if buffer was successfully loaded)
+          if (fileBuffer) {
+            archive.append(fileBuffer, { name: filename });
+            console.log(`✅ [ZIP Download] Adicionado ao ZIP: ${filename}`);
+          } else {
+            console.error(`❌ [ZIP Download] FileBuffer não definido para item ${item.id}`);
+            failureCount++;
+            failureReasons['Buffer não criado'] = (failureReasons['Buffer não criado'] || 0) + 1;
+          }
+
+        } catch (itemError: any) {
+          failureCount++;
+          const errorMsg = itemError?.response?.status === 404 
+            ? 'Arquivo não encontrado (404)' 
+            : (itemError?.message || 'Erro desconhecido');
+          failureReasons[errorMsg] = (failureReasons[errorMsg] || 0) + 1;
+          console.error(`❌ [ZIP Download] Erro ao processar item ${item.id}:`, errorMsg);
+          // Continue with next item even if one fails
+        }
+      }
+
+      // Finalize archive
+      await archive.finalize();
+      
+      // Log final statistics
+      console.log(`📊 [ZIP Download] Estatísticas finais:`);
+      console.log(`  ✅ Sucesso: ${successCount}/${items.length}`);
+      console.log(`  ❌ Falhas: ${failureCount}/${items.length}`);
+      if (failureCount > 0) {
+        console.log(`  📋 Razões das falhas:`);
+        Object.entries(failureReasons).forEach(([reason, count]) => {
+          console.log(`     - ${reason}: ${count}`);
+        });
+      }
+      
+      console.log(`✅ [ZIP Download] ZIP finalizado e enviado`);
+
+    } catch (error) {
+      console.error("❌ [ZIP Download] Erro ao gerar ZIP:", error);
+      
+      // Check if headers were already sent
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: "Erro ao gerar arquivo ZIP",
+          details: error instanceof Error ? error.message : "Erro desconhecido",
+        });
+      }
     }
   });
 

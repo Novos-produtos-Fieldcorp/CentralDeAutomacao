@@ -1,20 +1,29 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Users, TrendingUp, Calendar } from 'lucide-react';
+import { MapPin, Users, TrendingUp, Calendar, Image, Video } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subDays, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface DashboardStats {
   totalComprovantes: number;
   comprovantesHoje: number;
   comprovantesEsteMes: number;
   motoristasAtivos: number;
+  totalFotos: number;
+  totalVideos: number;
 }
 
 interface ComprovantePorMotorista {
   motorista_nome: string;
   total: number;
+}
+
+interface MediaPorDia {
+  data: string;
+  fotos: number;
+  videos: number;
 }
 
 export default function ComprovRotaDashboard() {
@@ -24,9 +33,12 @@ export default function ComprovRotaDashboard() {
     totalComprovantes: 0,
     comprovantesHoje: 0,
     comprovantesEsteMes: 0,
-    motoristasAtivos: 0
+    motoristasAtivos: 0,
+    totalFotos: 0,
+    totalVideos: 0
   });
   const [comprovantesPorMotorista, setComprovantesPorMotorista] = useState<ComprovantePorMotorista[]>([]);
+  const [mediaPorDia, setMediaPorDia] = useState<MediaPorDia[]>([]);
 
   useEffect(() => {
     if (companyId) {
@@ -100,14 +112,76 @@ export default function ComprovRotaDashboard() {
         .sort((a, b) => b.total - a.total)
         .slice(0, 5);
 
+      // Buscar todos os comprovantes para análise de foto/vídeo
+      const { data: todosComprovantes } = await supabase
+        .from('comprov_rota')
+        .select('foto, created_at')
+        .eq('company_id', companyId)
+        .not('foto', 'is', null)
+        .order('created_at', { ascending: true });
+
+      // Função para detectar se é vídeo
+      const isVideo = (foto: string | null): boolean => {
+        if (!foto) return false;
+        const trimmed = foto.trim();
+        
+        // Check base64 video
+        if (trimmed.startsWith('data:video/')) return true;
+        
+        // Check video extensions in original data (before URL generation)
+        const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.flv', '.wmv', '.m4v'];
+        return videoExtensions.some(ext => trimmed.toLowerCase().includes(ext));
+      };
+
+      // Contar fotos e vídeos
+      let totalFotos = 0;
+      let totalVideos = 0;
+
+      // Agrupar por dia (últimos 7 dias)
+      const diasMap = new Map<string, { fotos: number; videos: number }>();
+      
+      todosComprovantes?.forEach(item => {
+        const ehVideo = isVideo(item.foto);
+        
+        if (ehVideo) {
+          totalVideos++;
+        } else {
+          totalFotos++;
+        }
+
+        // Agrupar por dia
+        const dia = format(parseISO(item.created_at), 'dd/MM');
+        const current = diasMap.get(dia) || { fotos: 0, videos: 0 };
+        
+        if (ehVideo) {
+          current.videos++;
+        } else {
+          current.fotos++;
+        }
+        
+        diasMap.set(dia, current);
+      });
+
+      // Converter para array e pegar últimos 7 dias
+      const mediaPorDiaData = Array.from(diasMap.entries())
+        .map(([data, values]) => ({
+          data,
+          fotos: values.fotos,
+          videos: values.videos
+        }))
+        .slice(-7);
+
       setStats({
         totalComprovantes: totalCount || 0,
         comprovantesHoje: hojeCount || 0,
         comprovantesEsteMes: mesCount || 0,
-        motoristasAtivos: motoristasUnicos.size
+        motoristasAtivos: motoristasUnicos.size,
+        totalFotos,
+        totalVideos
       });
 
       setComprovantesPorMotorista(topMotoristas);
+      setMediaPorDia(mediaPorDiaData);
 
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
@@ -123,8 +197,8 @@ export default function ComprovRotaDashboard() {
   return (
     <div className="space-y-6">
       {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total de Comprovantes</p>
@@ -132,13 +206,13 @@ export default function ComprovRotaDashboard() {
                 {stats.totalComprovantes}
               </p>
             </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-              <MapPin className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
+              <MapPin className="h-8 w-8 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-green-500">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Hoje</p>
@@ -146,13 +220,13 @@ export default function ComprovRotaDashboard() {
                 {stats.comprovantesHoje}
               </p>
             </div>
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
-              <Calendar className="h-8 w-8 text-green-600 dark:text-green-400" />
+            <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
+              <Calendar className="h-8 w-8 text-orange-600 dark:text-orange-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Este Mês</p>
@@ -160,22 +234,8 @@ export default function ComprovRotaDashboard() {
                 {stats.comprovantesEsteMes}
               </p>
             </div>
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-              <TrendingUp className="h-8 w-8 text-purple-600 dark:text-purple-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 border-orange-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Motoristas Ativos</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                {stats.motoristasAtivos}
-              </p>
-            </div>
-            <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full">
-              <Users className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+            <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
+              <TrendingUp className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </div>
@@ -226,26 +286,94 @@ export default function ComprovRotaDashboard() {
         )}
       </div>
 
-      {/* Informações Adicionais */}
+      {/* Gráficos de Fotos e Vídeos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
-          <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
-            📍 Sobre os Comprovantes de Rota
-          </h4>
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            Os comprovantes de rota documentam as entregas e trajetos realizados pelos motoristas, 
-            incluindo fotos e informações de localização para melhor rastreabilidade.
-          </p>
+        {/* Gráfico de Pizza - Total Fotos vs Vídeos */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Image className="h-5 w-5 text-blue-600" />
+            Total de Fotos vs Vídeos
+          </h3>
+          {stats.totalFotos === 0 && stats.totalVideos === 0 ? (
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+              Nenhuma mídia registrada
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Fotos', value: stats.totalFotos, color: '#3b82f6' },
+                    { name: 'Vídeos', value: stats.totalVideos, color: '#10b981' }
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {[
+                    { name: 'Fotos', value: stats.totalFotos, color: '#3b82f6' },
+                    { name: 'Vídeos', value: stats.totalVideos, color: '#10b981' }
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalFotos}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Fotos</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.totalVideos}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Vídeos</p>
+            </div>
+          </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-6 border border-green-200 dark:border-green-800">
-          <h4 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">
-            ✅ Dica
-          </h4>
-          <p className="text-sm text-green-800 dark:text-green-200">
-            Mantenha um registro consistente dos comprovantes para melhor controle e 
-            auditoria das operações de entrega da sua frota.
-          </p>
+        {/* Gráfico de Barras - Fotos e Vídeos por Dia */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Video className="h-5 w-5 text-green-600" />
+            Fotos e Vídeos por Dia (Últimos 7 Dias)
+          </h3>
+          {mediaPorDia.length === 0 ? (
+            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+              Nenhuma mídia registrada
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={mediaPorDia}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="data" 
+                  stroke="#9ca3af"
+                  style={{ fontSize: '12px' }}
+                />
+                <YAxis 
+                  stroke="#9ca3af"
+                  style={{ fontSize: '12px' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '6px'
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="fotos" fill="#3b82f6" name="Fotos" />
+                <Bar dataKey="videos" fill="#10b981" name="Vídeos" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
     </div>
