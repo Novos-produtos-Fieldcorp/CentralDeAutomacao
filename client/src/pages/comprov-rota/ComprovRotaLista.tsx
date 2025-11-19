@@ -9,7 +9,7 @@ import { useDateRange } from '../../hooks/useDateRange';
 import Pagination from '../../components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import * as XLSX from 'xlsx';
-import axios from 'axios';
+import JSZip from 'jszip';
 
 interface ComprovRotaItem {
   id: number;
@@ -488,6 +488,31 @@ export default function ComprovRotaLista() {
     setSelectedIds(newSelected);
   };
 
+  const dataURItoBlob = (dataURI: string): Blob | null => {
+    try {
+      // Extract MIME type and base64 data
+      const matches = dataURI.match(/^data:([^;]+);base64,(.+)$/);
+      if (!matches) return null;
+
+      const mimeType = matches[1];
+      const base64Data = matches[2];
+      
+      // Decode base64 to binary
+      const byteString = atob(base64Data);
+      const arrayBuffer = new ArrayBuffer(byteString.length);
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      for (let i = 0; i < byteString.length; i++) {
+        uint8Array[i] = byteString.charCodeAt(i);
+      }
+      
+      return new Blob([arrayBuffer], { type: mimeType });
+    } catch (error) {
+      console.error('Error converting data URI to blob:', error);
+      return null;
+    }
+  };
+
   const handleDownloadZip = async () => {
     if (selectedIds.size === 0) {
       toast.error('Selecione pelo menos um comprovante');
@@ -495,26 +520,83 @@ export default function ComprovRotaLista() {
     }
 
     setIsDownloadingZip(true);
+    const zip = new JSZip();
+    let successCount = 0;
+    let failCount = 0;
+
     try {
       const selectedItems = comprovantes.filter(item => selectedIds.has(item.id));
       
-      const response = await axios.post('/api/comprov-rota/download-zip', 
-        { items: selectedItems },
-        { 
-          responseType: 'blob',
-          timeout: 120000 // 2 minutes timeout
-        }
-      );
+      toast.loading(`Preparando download de ${selectedItems.length} arquivo(s)...`, { id: 'zip-download' });
 
-      // Check if ZIP is empty (< 100 bytes typically means empty ZIP)
-      if (response.data.size < 100) {
-        toast.error('Nenhum arquivo pôde ser baixado. As URLs podem estar expiradas ou indisponíveis.');
-        console.error('ZIP vazio recebido. Verifique se as URLs dos arquivos são válidas.');
+      // Download each file and add to ZIP
+      for (const item of selectedItems) {
+        try {
+          if (!item.mediaUrl) {
+            console.warn(`Item ${item.id} sem URL de mídia`);
+            failCount++;
+            continue;
+          }
+
+          // Format filename: {dd-MM-yyyy_HH-mm-ss}_{motorista_nome}.{extensao}
+          const timestamp = format(new Date(item.created_at), 'dd-MM-yyyy_HH-mm-ss');
+          const motoristaNome = item.motorista?.nome?.replace(/[^a-zA-Z0-9]/g, '_') || 'sem_nome';
+          const extension = item.isVideo ? 'mp4' : 'jpg';
+          const filename = `${timestamp}_${motoristaNome}.${extension}`;
+
+          let blob: Blob | null = null;
+
+          // Handle data URIs (base64)
+          if (item.mediaUrl.startsWith('data:')) {
+            blob = dataURItoBlob(item.mediaUrl);
+            if (!blob) {
+              console.warn(`Falha ao converter data URI para blob: ${filename}`);
+              failCount++;
+              continue;
+            }
+          } else {
+            // Handle HTTP(S) URLs
+            try {
+              const response = await fetch(item.mediaUrl);
+
+              if (!response.ok) {
+                console.warn(`Falha ao baixar ${filename}: ${response.status} ${response.statusText}`);
+                failCount++;
+                continue;
+              }
+
+              blob = await response.blob();
+            } catch (fetchError) {
+              console.warn(`Erro ao fazer fetch de ${filename}:`, fetchError);
+              failCount++;
+              continue;
+            }
+          }
+
+          if (blob) {
+            zip.file(filename, blob);
+            successCount++;
+          }
+
+          // Update progress
+          toast.loading(`Baixando ${successCount}/${selectedItems.length}...`, { id: 'zip-download' });
+        } catch (fileError) {
+          console.error(`Erro ao processar item ${item.id}:`, fileError);
+          failCount++;
+        }
+      }
+
+      if (successCount === 0) {
+        toast.error('Nenhum arquivo pôde ser baixado. Verifique se as URLs são válidas.', { id: 'zip-download' });
         return;
       }
 
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      // Generate ZIP
+      toast.loading('Gerando arquivo ZIP...', { id: 'zip-download' });
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+      // Download ZIP
+      const url = window.URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `comprovantes_${format(new Date(), 'dd-MM-yyyy_HH-mm')}.zip`);
@@ -523,17 +605,15 @@ export default function ComprovRotaLista() {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success('Download concluído! Verifique a pasta de downloads.');
+      const message = failCount > 0 
+        ? `${successCount} arquivo(s) baixado(s), ${failCount} falhou(ram)`
+        : `${successCount} arquivo(s) baixado(s) com sucesso!`;
+      
+      toast.success(message, { id: 'zip-download' });
       setSelectedIds(new Set()); // Clear selection after download
     } catch (error: any) {
       console.error('Error downloading ZIP:', error);
-      if (error.response?.status === 400) {
-        toast.error('Erro: ' + (error.response.data.error || 'Dados inválidos'));
-      } else if (error.code === 'ECONNABORTED') {
-        toast.error('Tempo esgotado. Tente selecionar menos arquivos.');
-      } else {
-        toast.error('Erro ao baixar arquivos. Verifique se as URLs são válidas.');
-      }
+      toast.error('Erro ao gerar ZIP: ' + error.message, { id: 'zip-download' });
     } finally {
       setIsDownloadingZip(false);
     }
