@@ -86,20 +86,20 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
     - **Bulk Download System (ZIP)** (ACTIVE):
       - Checkbox selection system (individual + "Selecionar Todos" button in header)
       - Download button appears when items are selected
-      - Backend endpoint: `POST /api/comprov-rota/download-zip`
+      - **Frontend-only implementation**: Uses JSZip to create ZIP files directly in the browser
+      - No backend dependency: Downloads work on static deployments (Netlify, etc.)
       - Automatic file naming: `{dd-MM-yyyy_HH-mm-ss}_{motorista_nome}.{extensao}`
       - Supports photos (.jpg) and videos (.mp4)
-      - **Security Features (3-Layer SSRF Protection)**:
-        * Layer 1: Zod payload validation
-        * Layer 2: Host whitelist (WiseApp, Supabase only)
-        * Layer 3: Allow controlled redirects (maxRedirects: 5) - Required for WiseApp Rails Active Storage URLs
-      - **Smart Download Strategy**:
-        * Handles data URIs (base64) and HTTP(S) URLs
-        * Automatic fallback: If WiseApp URL returns 404, tries Supabase Storage
-        * Tries multiple filename patterns: `{id}.jpg`, `{id}.mp4`, `comprovante_{id}.jpg`, etc.
-      - **Error Tracking**: Detailed statistics (success/failure counts, failure reasons) logged for debugging
-      - Continue-on-error: individual failures don't stop entire download
-      - Frontend validation: Detects empty ZIPs and shows appropriate error messages
+      - **Download Strategy**:
+        * Fetches each media file individually via CORS
+        * Adds files to ZIP with formatted names
+        * Progress feedback with toast notifications
+        * Continue-on-error: individual failures don't stop entire download
+      - **Error Handling**:
+        * Individual file download errors tracked separately
+        * Success/failure count shown in completion message
+        * Detailed console logging for debugging
+      - **Performance**: Handles multiple files in sequence with progress updates
       - Automatic cleanup of selection after successful download
     - Excel export functionality (includes Address, Latitude, Longitude columns)
     - Pagination (25 items per page)
