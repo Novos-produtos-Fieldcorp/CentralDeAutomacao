@@ -301,8 +301,6 @@ export const comprov_rota = pgTable("comprov_rota", {
   id_motorista: integer("id_motorista").references(() => motorista.motorista_id),
   company_id: integer("company_id").references(() => company.company_id),
   foto: text("foto"),
-  latitude: real("latitude"),
-  longitude: real("longitude"),
 });
 
 // Endereço Comprovante de Rota table
@@ -311,7 +309,9 @@ export const end_comprov_rota = pgTable("end_comprov_rota", {
   comprov_rota_id: integer("comprov_rota_id").references(() => comprov_rota.id),
   logradouro_id: integer("logradouro_id").references(() => logradouro.id_logradouro),
   numero: integer("numero"),
-  complemento: text("complemento"),
+  ds_complemento: text("ds_complemento"),
+  latitude: text("latitude"),
+  longitude: text("longitude"),
   created_at: timestamp("created_at").defaultNow(),
 });
 

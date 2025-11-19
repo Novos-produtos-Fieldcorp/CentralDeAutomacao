@@ -1275,7 +1275,6 @@ const Dashboard: React.FC = () => {
           .from("vw_contratados_completo")
           .select("cliente_id")
           .eq("company_id", companyId)
-          .eq("ativo", true)
           .eq("st_cadastro", "contratado")
           .not("cliente_id", "is", null),
 

@@ -74,7 +74,22 @@ export default function ComprovRotaLista() {
           ),
           end_comprov_rota!end_comprov_rota_id_comprov_rota_fkey (
             latitude,
-            longitude
+            longitude,
+            numero,
+            ds_complemento,
+            logradouro (
+              logradouro,
+              nr_cep,
+              bairro (
+                bairro,
+                cidade (
+                  cidade,
+                  estado (
+                    sigla_estado
+                  )
+                )
+              )
+            )
           )
         `)
         .eq('company_id', companyId)
@@ -103,13 +118,62 @@ export default function ComprovRotaLista() {
       const normalizedData = data.map(item => {
         const mediaUrl = getMediaUrl(item.foto);
         
-        // Extract location from end_comprov_rota (array -> first item)
+        // Extract location details from end_comprov_rota (array -> first item)
         const endComprov = Array.isArray(item.end_comprov_rota) 
           ? item.end_comprov_rota[0] 
           : item.end_comprov_rota;
         
-        const latitude = endComprov?.latitude ? parseFloat(endComprov.latitude) : null;
-        const longitude = endComprov?.longitude ? parseFloat(endComprov.longitude) : null;
+        // Extract latitude/longitude from end_comprov_rota
+        const latitude = endComprov?.latitude ? parseFloat(String(endComprov.latitude)) : null;
+        const longitude = endComprov?.longitude ? parseFloat(String(endComprov.longitude)) : null;
+        
+        // Build complete address from nested relations
+        let address: string | null = null;
+        if (endComprov) {
+          const logradouroData = Array.isArray(endComprov.logradouro) 
+            ? endComprov.logradouro[0] 
+            : endComprov.logradouro;
+          
+          if (logradouroData) {
+            const bairroData = Array.isArray(logradouroData.bairro) 
+              ? logradouroData.bairro[0] 
+              : logradouroData.bairro;
+            
+            const cidadeData = bairroData && (Array.isArray(bairroData.cidade) 
+              ? bairroData.cidade[0] 
+              : bairroData.cidade);
+            
+            const estadoData = cidadeData && (Array.isArray(cidadeData.estado) 
+              ? cidadeData.estado[0] 
+              : cidadeData.estado);
+            
+            // Construct address string: "Rua X, 123, Complemento - Bairro, Cidade - UF"
+            const parts: string[] = [];
+            
+            if (logradouroData.logradouro) {
+              parts.push(logradouroData.logradouro);
+            }
+            
+            if (endComprov.numero) {
+              parts[parts.length - 1] = `${parts[parts.length - 1] || ''}, ${endComprov.numero}`.trim();
+            }
+            
+            if (endComprov.ds_complemento) {
+              parts[parts.length - 1] = `${parts[parts.length - 1] || ''}, ${endComprov.ds_complemento}`.trim();
+            }
+            
+            const locationParts: string[] = [];
+            if (bairroData?.bairro) locationParts.push(bairroData.bairro);
+            if (cidadeData?.cidade) locationParts.push(cidadeData.cidade);
+            if (estadoData?.sigla_estado) locationParts[locationParts.length - 1] = `${locationParts[locationParts.length - 1] || ''} - ${estadoData.sigla_estado}`;
+            
+            if (locationParts.length > 0) {
+              parts.push(locationParts.join(', '));
+            }
+            
+            address = parts.filter(p => p).join(' - ');
+          }
+        }
         
         return {
           ...item,
@@ -118,6 +182,7 @@ export default function ComprovRotaLista() {
             : (item.motorista ?? null),
           latitude: latitude,
           longitude: longitude,
+          address: address,
           mediaUrl: mediaUrl,
           // Check the ORIGINAL foto field, not the generated URL
           isVideo: isVideoData(item.foto)
@@ -142,9 +207,6 @@ export default function ComprovRotaLista() {
 
       setComprovantes(normalizedData);
       setLoading(false);
-      
-      // Fetch addresses using batch endpoint (passing request ID to prevent stale updates)
-      fetchAddressesBatch(normalizedData, currentRequestId);
     } catch (error) {
       console.error('Error fetching comprovantes:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar comprovantes';
@@ -153,86 +215,6 @@ export default function ComprovRotaLista() {
       setLoading(false);
     }
   }, [dateRange, companyId]);
-
-  // Fetch addresses in batch
-  const fetchAddressesBatch = async (items: ComprovRotaItem[], requestId: number) => {
-    const itemsWithCoords = items.filter(item => 
-      item.latitude !== null && 
-      item.longitude !== null &&
-      !isNaN(item.latitude as number) &&
-      !isNaN(item.longitude as number)
-    );
-
-    if (itemsWithCoords.length === 0) return;
-
-    console.log(`📍 [ComprovRota] Buscando endereços para ${itemsWithCoords.length} localizações em lote`);
-
-    try {
-      const coordinates = itemsWithCoords.map(item => ({
-        id: item.id,
-        lat: item.latitude!,
-        lng: item.longitude!
-      }));
-
-      const response = await fetch('/api/geocode/reverse/batch', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ coordinates }),
-      });
-
-      if (response.ok) {
-        // Check if this request is still current (prevent stale updates)
-        if (requestId !== fetchRequestId.current) {
-          console.log(`⏭️ [ComprovRota] Descartando resultado desatualizado (${requestId} vs ${fetchRequestId.current})`);
-          return;
-        }
-        
-        const data = await response.json();
-        const results = data.results as Array<{ id: number; address: string | null }>;
-        
-        // Update all addresses at once
-        setComprovantes(prev => 
-          prev.map(c => {
-            const result = results.find(r => r.id === c.id);
-            return result ? { ...c, address: result.address } : c;
-          })
-        );
-        
-        const successCount = results.filter(r => r.address).length;
-        console.log(`✅ [ComprovRota] ${successCount}/${results.length} endereços encontrados`);
-      } else {
-        // Only update if still current request
-        if (requestId !== fetchRequestId.current) return;
-        
-        console.warn(`⚠️ [ComprovRota] Falha ao buscar endereços em lote`);
-        
-        // Mark items as failed to prevent "Carregando..." stuck state
-        setComprovantes(prev => 
-          prev.map(c => 
-            itemsWithCoords.some(item => item.id === c.id) && !c.address
-              ? { ...c, address: null }
-              : c
-          )
-        );
-      }
-    } catch (error) {
-      // Only update if still current request
-      if (requestId !== fetchRequestId.current) return;
-      
-      console.error('❌ [ComprovRota] Erro ao buscar endereços em lote:', error);
-      
-      // Mark items as failed
-      setComprovantes(prev => 
-        prev.map(c => 
-          itemsWithCoords.some(item => item.id === c.id) && !c.address
-            ? { ...c, address: null }
-            : c
-        )
-      );
-    }
-  };
 
   useEffect(() => {
     fetchComprovantes();

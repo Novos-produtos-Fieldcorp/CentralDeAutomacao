@@ -310,15 +310,17 @@ export default function ComprovRotaDashboard() {
                   cy="50%"
                   labelLine={false}
                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  innerRadius={60}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
+                  stroke="none"
                 >
                   {[
                     { name: 'Fotos', value: stats.totalFotos, color: '#3b82f6' },
                     { name: 'Vídeos', value: stats.totalVideos, color: '#10b981' }
                   ].map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                   ))}
                 </Pie>
                 <Tooltip />

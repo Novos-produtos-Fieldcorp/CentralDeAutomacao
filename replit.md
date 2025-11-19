@@ -70,19 +70,17 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
   - **Lista**: Professional table layout matching HodometrosRelatorio aesthetics with:
     - Period filter (Hoje, 15 dias, 30 dias, Personalizado with custom date range)
     - Search by motorista name or ID with safe null handling
-    - **GPS Location Display with Reverse Geocoding** (ACTIVE):
-      - Data fetched from `end_comprov_rota` table via LEFT JOIN on `id_comprov_rota`
-      - Latitude/longitude stored as TEXT in database, converted to numbers in frontend
-      - **Reverse Geocoding via Nominatim (OpenStreetMap)**:
-        - Backend service (`server/geocoding-service.ts`) with in-memory cache (30-day TTL)
-        - Rate limiting: 1 request/second (Nominatim compliance)
-        - Batch endpoint: `POST /api/geocode/reverse/batch` for efficient processing
-        - Request tracking system prevents stale updates from race conditions
+    - **GPS Location Display** (ACTIVE):
+      - **Latitude/Longitude**: Stored in `end_comprov_rota` table as TEXT columns
+      - **Address Construction**: Built from nested relations via Supabase joins
+        * `end_comprov_rota` → `logradouro` → `bairro` → `cidade` → `estado`
+        * Format: "Logradouro, Número, Complemento - Bairro, Cidade - UF"
+        * Fields: `logradouro.logradouro`, `numero`, `ds_complemento`, `bairro.bairro`, `cidade.cidade`, `estado.sigla_estado`
+      - **No External APIs**: Address built entirely from database relations (no geocoding needed)
       - Table column displays:
-        * Full address (when geocoded successfully)
-        * "Carregando..." state while fetching
-        * Coordinates as fallback if geocoding fails
-        * "Ver no mapa →" link (opens in Google Maps)
+        * Full constructed address (when location data available)
+        * Coordinates as fallback if address not available
+        * "Ver no mapa →" link (opens Google Maps with coordinates)
       - Modal displays full address + coordinates with "Abrir no Mapa" button
       - Proper handling of missing coordinates (shows "Não disponível")
     - **Bulk Download System (ZIP)** (ACTIVE):
