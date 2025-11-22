@@ -555,9 +555,19 @@ export default function ComprovRotaLista() {
               continue;
             }
           } else {
-            // Handle HTTP(S) URLs
+            // Handle HTTP(S) URLs - usar edge function para fazer proxy
             try {
-              const response = await fetch(item.mediaUrl);
+              // Usar a edge function do Supabase para fazer proxy (evita CORS)
+              const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+              const proxyUrl = `${supabaseUrl}/functions/v1/proxy-download`;
+              
+              const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: item.mediaUrl })
+              });
 
               if (!response.ok) {
                 console.warn(`Falha ao baixar ${filename}: ${response.status} ${response.statusText}`);
