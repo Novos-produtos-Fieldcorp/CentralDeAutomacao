@@ -1,0 +1,210 @@
+a0df91602a414c03.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1763829898452&sid=5c9664c8-7641-496f-a32f-6929ce137588&ec=2192&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ a0df91602a414c03.js:2
+(anonymous) @ becc4393c9fd3238.js:2
+i @ becc4393c9fd3238.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.u @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+e.<computed> @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+s @ e7f41799b4d05fca.js:2
+Promise.then
+l @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.u @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+e.<computed> @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.l @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+e.<computed> @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.l @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+e.<computed> @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.l @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+e.<computed> @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.r._notifyVisibilityChanged @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+lista:1 Access to fetch at 'https://chat.wiseapp360.com/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBeE9SQWc9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--55c5a64c1350d61fe0ad9ca89188fdb7e8e6f481/File.jpg' from origin 'https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+injected.js:214  GET https://chat.wiseapp360.com/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBeE9SQWc9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--55c5a64c1350d61fe0ad9ca89188fdb7e8e6f481/File.jpg net::ERR_FAILED
+apply @ injected.js:214
+handleDownloadZip @ ComprovRotaLista.tsx:560
+callCallback2 @ chunk-NFC5BX5N.js?v=b8dae574:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=b8dae574:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=b8dae574:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=b8dae574:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=b8dae574:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=b8dae574:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=b8dae574:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=b8dae574:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=b8dae574:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=b8dae574:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=b8dae574:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=b8dae574:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=b8dae574:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=b8dae574:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=b8dae574:5449
+injected.js:37 Erro ao fazer fetch de 18-11-2025_14-15-32_KAREN_SPERLONGO_LONGHI.jpg: TypeError: Failed to fetch
+    at Object.apply (injected.js:214:39)
+    at handleDownloadZip (ComprovRotaLista.tsx:560:38)
+    at HTMLUnknownElement.callCallback2 (chunk-NFC5BX5N.js?v=b8dae574:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-NFC5BX5N.js?v=b8dae574:3699:24)
+    at invokeGuardedCallback (chunk-NFC5BX5N.js?v=b8dae574:3733:39)
+    at invokeGuardedCallbackAndCatchFirstError (chunk-NFC5BX5N.js?v=b8dae574:3736:33)
+    at executeDispatch (chunk-NFC5BX5N.js?v=b8dae574:7014:11)
+    at processDispatchQueueItemsInOrder (chunk-NFC5BX5N.js?v=b8dae574:7034:15)
+    at processDispatchQueue (chunk-NFC5BX5N.js?v=b8dae574:7043:13)
+    at dispatchEventsForPlugins (chunk-NFC5BX5N.js?v=b8dae574:7051:11)
+(anonymous) @ injected.js:37
+handleDownloadZip @ ComprovRotaLista.tsx:570
+await in handleDownloadZip
+callCallback2 @ chunk-NFC5BX5N.js?v=b8dae574:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=b8dae574:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=b8dae574:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=b8dae574:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=b8dae574:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=b8dae574:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=b8dae574:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=b8dae574:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=b8dae574:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=b8dae574:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=b8dae574:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=b8dae574:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=b8dae574:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=b8dae574:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=b8dae574:5449
+lista:1 Access to fetch at 'https://chat.wiseapp360.com/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBd0tSQWc9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--a9b431e98256c3dda2079b394bc3cf0aa3996cbf/File.mp4' from origin 'https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+injected.js:214  GET https://chat.wiseapp360.com/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBd0tSQWc9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--a9b431e98256c3dda2079b394bc3cf0aa3996cbf/File.mp4 net::ERR_FAILED
+apply @ injected.js:214
+handleDownloadZip @ ComprovRotaLista.tsx:560
+await in handleDownloadZip
+callCallback2 @ chunk-NFC5BX5N.js?v=b8dae574:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=b8dae574:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=b8dae574:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=b8dae574:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=b8dae574:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=b8dae574:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=b8dae574:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=b8dae574:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=b8dae574:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=b8dae574:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=b8dae574:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=b8dae574:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=b8dae574:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=b8dae574:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=b8dae574:5449
+injected.js:37 Erro ao fazer fetch de 18-11-2025_14-12-49_KAREN_SPERLONGO_LONGHI.mp4: TypeError: Failed to fetch
+    at Object.apply (injected.js:214:39)
+    at handleDownloadZip (ComprovRotaLista.tsx:560:38)
+(anonymous) @ injected.js:37
+handleDownloadZip @ ComprovRotaLista.tsx:570
+await in handleDownloadZip
+callCallback2 @ chunk-NFC5BX5N.js?v=b8dae574:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=b8dae574:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=b8dae574:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=b8dae574:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=b8dae574:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=b8dae574:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=b8dae574:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=b8dae574:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=b8dae574:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=b8dae574:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=b8dae574:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=b8dae574:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=b8dae574:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=b8dae574:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=b8dae574:5449
+a0df91602a414c03.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1763829898963&sid=5c9664c8-7641-496f-a32f-6929ce137588&ec=2192&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ a0df91602a414c03.js:2
+(anonymous) @ becc4393c9fd3238.js:2
+i @ becc4393c9fd3238.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.u @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+e.<computed> @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+s @ e7f41799b4d05fca.js:2
+Promise.then
+l @ e7f41799b4d05fca.js:2
+s @ e7f41799b4d05fca.js:2
+Promise.then
+l @ e7f41799b4d05fca.js:2
+u @ e7f41799b4d05fca.js:2
+Promise.then
+l @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.u @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+e.<computed> @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+s @ e7f41799b4d05fca.js:2
+Promise.then
+l @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.u @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+e.<computed> @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.l @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+e.<computed> @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.l @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+e.<computed> @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.l @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+e.<computed> @ e7f41799b4d05fca.js:2
+value @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
+push.r._notifyVisibilityChanged @ e7f41799b4d05fca.js:2
+(anonymous) @ e7f41799b4d05fca.js:2
