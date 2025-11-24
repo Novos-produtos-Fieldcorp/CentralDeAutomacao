@@ -124,14 +124,31 @@ export default function WiseAppTokenModal({
     }
 
     try {
-      console.log('💾 Salvando token...');
+      console.log('🔐 Validando token com Chatwoot...');
+      
+      // Valida o token contra a API do Chatwoot
+      const validationResponse = await fetch('/api/validate-wiseapp-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      const validationData = await validationResponse.json();
+
+      if (!validationResponse.ok || !validationData.valid) {
+        throw new Error('Token inválido. Por favor, verifique se o token está correto.');
+      }
+
+      console.log('✅ Token válido no Chatwoot');
       
       const accountId = localStorage?.getItem('account_id');
       if (!accountId) {
         throw new Error('Account ID não encontrado - acesse via URL com account_id');
       }
 
-      console.log('💾 Salvando token...');
+      console.log('💾 Salvando token no banco...');
       
       const updateData: any = { 
         access_token_wiseapp: token 
