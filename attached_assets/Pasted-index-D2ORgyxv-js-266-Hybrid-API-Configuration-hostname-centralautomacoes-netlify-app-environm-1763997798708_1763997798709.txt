@@ -1,0 +1,46 @@
+index-D2ORgyxv.js:266 Hybrid API Configuration: {hostname: 'centralautomacoes.netlify.app', environment: 'Netlify (Supabase Functions)', apiBaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1', supabaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co', hasAnonKey: true, …}
+index-D2ORgyxv.js:265 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+hv @ index-D2ORgyxv.js:265
+nme @ index-D2ORgyxv.js:266
+_initSupabaseAuthClient @ index-D2ORgyxv.js:266
+ime @ index-D2ORgyxv.js:266
+vY @ index-D2ORgyxv.js:266
+(anonymous) @ index-D2ORgyxv.js:266
+index-D2ORgyxv.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-D2ORgyxv.js:1116 🔍 [WiseAppAccess] Account ID da URL: 6
+index-D2ORgyxv.js:1116 🔍 [WiseAppAccess] Buscando dados frescos do banco...
+index-D2ORgyxv.js:1116 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 6
+index-D2ORgyxv.js:1116 📊 [WiseAppAccess] Resultado da busca da empresa: {error: null, data: {…}}
+index-D2ORgyxv.js:1116 ✅ [WiseAppAccess] Empresa encontrada: {company_id: 1}
+index-D2ORgyxv.js:1116 🔍 [WiseAppAccess] Buscando token para id_conta_wiseapp: 6
+index-D2ORgyxv.js:1116 📊 [WiseAppAccess] Resultado da busca: {error: null, data: {…}, has_token: false}
+index-D2ORgyxv.js:1116 ❌ [WiseAppAccess] Nenhum token encontrado no banco, verificando cache...
+index-D2ORgyxv.js:1116 🔍 [WiseAppAccess] Token em cache: Não encontrado
+index-D2ORgyxv.js:1116 ❌ [WiseAppAccess] Nenhum token válido encontrado, mostrando modal de autenticação
+index-D2ORgyxv.js:1212 Dashboard data loaded: {agregados: 66, motoristas: 604, contratados: 64, totalVagas: 1, vagasAbertas: 1, …}
+index-D2ORgyxv.js:1116 📝 Email não encontrado, precisará do nome do atendente
+index-D2ORgyxv.js:1116 🔐 Validando token com Chatwoot...
+index-D2ORgyxv.js:1116 Erro ao salvar token: TypeError: Failed to fetch
+    at w (index-D2ORgyxv.js:1116:6479)
+    at Object.sde (index-D2ORgyxv.js:37:9873)
+    at ode (index-D2ORgyxv.js:37:10030)
+    at lde (index-D2ORgyxv.js:37:10090)
+    at bD (index-D2ORgyxv.js:37:31563)
+    at dG (index-D2ORgyxv.js:37:31981)
+    at index-D2ORgyxv.js:37:36914
+    at bF (index-D2ORgyxv.js:40:36984)
+    at PW (index-D2ORgyxv.js:37:9007)
+    at dC (index-D2ORgyxv.js:37:33271)
+w @ index-D2ORgyxv.js:1116
+await in w
+sde @ index-D2ORgyxv.js:37
+ode @ index-D2ORgyxv.js:37
+lde @ index-D2ORgyxv.js:37
+bD @ index-D2ORgyxv.js:37
+dG @ index-D2ORgyxv.js:37
+(anonymous) @ index-D2ORgyxv.js:37
+bF @ index-D2ORgyxv.js:40
+PW @ index-D2ORgyxv.js:37
+dC @ index-D2ORgyxv.js:37
+WT @ index-D2ORgyxv.js:37
+kde @ index-D2ORgyxv.js:37

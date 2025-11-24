@@ -98,23 +98,37 @@ export default function WiseAppTokenModal({
     try {
       console.log('🔐 Validando token com Chatwoot...');
       
-      // Validar token diretamente com a API do Chatwoot (sem proxy, funciona em Replit e Netlify)
-      const wiseappApiUrl = 'https://chat.wiseapp360.com';
-      const validationResponse = await fetch(`${wiseappApiUrl}/api/v1/profile`, {
-        method: 'GET',
+      // Tentar validar via endpoint local primeiro (Express em Replit)
+      let validationResponse = await fetch('/api/validate-wiseapp-token', {
+        method: 'POST',
         headers: {
-          'api_access_token': token.trim(),
           'Content-Type': 'application/json',
-        }
+        },
+        body: JSON.stringify({ token: token.trim() }),
+      }).catch(err => {
+        console.warn('⚠️ Endpoint local não disponível:', err.message);
+        return null;
       });
 
+      // Se falhar no endpoint local (Netlify), validar diretamente
+      if (!validationResponse) {
+        console.log('🔄 Tentando validar diretamente com Chatwoot...');
+        validationResponse = await fetch('https://chat.wiseapp360.com/api/v1/profile', {
+          method: 'GET',
+          headers: {
+            'api_access_token': token.trim(),
+            'Content-Type': 'application/json',
+          }
+        });
+      }
+
       if (!validationResponse.ok) {
-        console.error('❌ Chatwoot retornou erro:', validationResponse.status);
+        console.error('❌ Token inválido. Status:', validationResponse.status);
         throw new Error('Token inválido. Por favor, verifique se o token está correto.');
       }
 
       const validationData = await validationResponse.json();
-      console.log('✅ Token válido no Chatwoot para usuário:', validationData.name);
+      console.log('✅ Token válido para usuário:', validationData.userData?.name || validationData.name);
       
       const accountId = localStorage?.getItem('account_id');
       if (!accountId) {
