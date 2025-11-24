@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Lock } from 'lucide-react';
-import { createApiUrl, API_BASE_URL } from '@/lib/api-config-supabase';
 
 interface Props {
   open: boolean;
@@ -99,25 +98,23 @@ export default function WiseAppTokenModal({
     try {
       console.log('🔐 Validando token com Chatwoot...');
       
-      // Valida o token contra a API do Chatwoot (funciona em Replit e Netlify)
-      const validationUrl = `${API_BASE_URL}/validate-wiseapp-token`;
-      console.log('🔗 URL de validação:', validationUrl);
-      
-      const validationResponse = await fetch(validationUrl, {
-        method: 'POST',
+      // Validar token diretamente com a API do Chatwoot (sem proxy, funciona em Replit e Netlify)
+      const wiseappApiUrl = 'https://chat.wiseapp360.com';
+      const validationResponse = await fetch(`${wiseappApiUrl}/api/v1/profile`, {
+        method: 'GET',
         headers: {
+          'api_access_token': token.trim(),
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
+        }
       });
 
-      const validationData = await validationResponse.json();
-
-      if (!validationResponse.ok || !validationData.valid) {
+      if (!validationResponse.ok) {
+        console.error('❌ Chatwoot retornou erro:', validationResponse.status);
         throw new Error('Token inválido. Por favor, verifique se o token está correto.');
       }
 
-      console.log('✅ Token válido no Chatwoot');
+      const validationData = await validationResponse.json();
+      console.log('✅ Token válido no Chatwoot para usuário:', validationData.name);
       
       const accountId = localStorage?.getItem('account_id');
       if (!accountId) {
