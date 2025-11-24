@@ -131,42 +131,39 @@ export default function WiseAppTokenModal({
         throw new Error('Account ID não encontrado - acesse via URL com account_id');
       }
 
-      if (requiresAttendantName) {
-        console.log('📝 Inserindo novo registro com token');
-        const { error: insertError } = await supabase
-          .from('wiseapp_acesso')
-          .insert([{ 
-            email, 
-            nome: attendantName, 
-            id_conta_wiseapp: parseInt(accountId), 
-            access_token_wiseapp: token 
-          }]);
-
-        if (insertError) throw insertError;
-      } else {
-        console.log('🔄 Atualizando registro existente com token');
-        const updateData: any = { access_token_wiseapp: token };
-        if (attendantName) {
-          updateData.nome = attendantName;
-        }
-
-        const { error: updateError } = await supabase
-          .from('wiseapp_acesso')
-          .update(updateData)
-          .eq('email', email);
-
-        if (updateError) throw updateError;
+      console.log('💾 Salvando token com upsert');
+      const upsertData: any = { 
+        email, 
+        id_conta_wiseapp: parseInt(accountId), 
+        access_token_wiseapp: token 
+      };
+      
+      if (attendantName) {
+        upsertData.nome = attendantName;
       }
+
+      const { error: upsertError } = await supabase
+        .from('wiseapp_acesso')
+        .upsert([upsertData], { onConflict: 'email' });
+
+      if (upsertError) throw upsertError;
 
       console.log('✅ Token salvo com sucesso');
 
-      const { data: updatedUser, error: fetchError } = await supabase
+      const { data: userList, error: fetchError } = await supabase
         .from('wiseapp_acesso')
         .select('wiseapp_acesso_id, nome')
         .eq('email', email)
-        .single();
+        .order('wiseapp_acesso_id', { ascending: false })
+        .limit(1);
 
       if (fetchError) throw fetchError;
+      
+      const updatedUser = userList && userList.length > 0 ? userList[0] : null;
+      
+      if (!updatedUser) {
+        throw new Error('Falha ao recuperar dados do usuário');
+      }
 
       console.log('👤 Usuário atualizado:', updatedUser);
 
