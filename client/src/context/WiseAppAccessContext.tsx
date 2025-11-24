@@ -256,11 +256,15 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
             // Check if there's a token for this account
             console.log('🔍 [WiseAppAccess] Buscando token para id_conta_wiseapp:', accountId);
             
-            const { data: access, error: accessError } = await supabase
+            // Pegar apenas o registro mais recente caso haja múltiplos
+            const { data: accessList, error: accessError } = await supabase
               .from('wiseapp_acesso')
               .select('wiseapp_acesso_id, access_token_wiseapp, nome, email')
               .eq('id_conta_wiseapp', accountId)
-              .maybeSingle();
+              .order('wiseapp_acesso_id', { ascending: false })
+              .limit(1);
+            
+            const access = accessList && accessList.length > 0 ? accessList[0] : null;
 
             console.log('📊 [WiseAppAccess] Resultado da busca:', {
               error: accessError,
