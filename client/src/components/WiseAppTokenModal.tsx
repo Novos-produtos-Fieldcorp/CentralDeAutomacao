@@ -124,40 +124,15 @@ export default function WiseAppTokenModal({
     }
 
     try {
-      console.log('🔐 Validando token...');
+      console.log('💾 Salvando token...');
       
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
-      const validationUrl = `${supabaseUrl}/functions/v1/validate-wiseapp-token`;
-      
-      console.log('🌍 Ambiente:', window.location.hostname);
-      console.log('🔗 URL de validação:', validationUrl);
-      
-      const validationResponse = await fetch(validationUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      const validationData = await validationResponse.json();
-
-      if (!validationResponse.ok || !validationData.valid) {
-        if (validationResponse.status === 401) {
-          throw new Error('Token inválido. Por favor, verifique se copiou o token corretamente.');
-        }
-        throw new Error('Não foi possível validar o token. Tente novamente.');
-      }
-
-      const userData = validationData.userData;
-      console.log('✅ Token válido:', userData);
-
       const accountId = localStorage?.getItem('account_id');
       if (!accountId) {
         throw new Error('Account ID não encontrado - acesse via URL com account_id');
       }
 
       if (requiresAttendantName) {
+        console.log('📝 Inserindo novo registro com token');
         const { error: insertError } = await supabase
           .from('wiseapp_acesso')
           .insert([{ 
@@ -169,6 +144,7 @@ export default function WiseAppTokenModal({
 
         if (insertError) throw insertError;
       } else {
+        console.log('🔄 Atualizando registro existente com token');
         const updateData: any = { access_token_wiseapp: token };
         if (attendantName) {
           updateData.nome = attendantName;
@@ -182,6 +158,8 @@ export default function WiseAppTokenModal({
         if (updateError) throw updateError;
       }
 
+      console.log('✅ Token salvo com sucesso');
+
       const { data: updatedUser, error: fetchError } = await supabase
         .from('wiseapp_acesso')
         .select('wiseapp_acesso_id, nome')
@@ -189,6 +167,8 @@ export default function WiseAppTokenModal({
         .single();
 
       if (fetchError) throw fetchError;
+
+      console.log('👤 Usuário atualizado:', updatedUser);
 
       onTokenSaved(
         token,
@@ -199,14 +179,13 @@ export default function WiseAppTokenModal({
     } catch (err: any) {
       console.error('Erro ao salvar token:', err);
       
-      if (err.message.includes('Token inválido')) {
-        setError(err.message);
-      } else if (err.message.includes('validar')) {
-        setError(err.message);
+      if (err?.code === '23505') {
+        setError('Este email já está registrado. Use um email diferente.');
+      } else if (err?.code === '23502') {
+        setError('Dados obrigatórios não foram fornecidos.');
       } else {
         setError('Erro ao salvar o token. Tente novamente.');
       }
-      console.error(err);
     } finally {
       setLoading(false);
     }
