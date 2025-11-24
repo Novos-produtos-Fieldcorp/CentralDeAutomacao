@@ -60,34 +60,7 @@ export default function WiseAppTokenModal({
         }
       } else {
         setRequiresAttendantName(true);
-        
-        let accountId;
-        try {
-          accountId = localStorage?.getItem('account_id');
-          console.log('🔍 Account ID do localStorage:', accountId);
-        } catch (err) {
-          console.error('Erro ao acessar localStorage:', err);
-          throw new Error('Account ID não encontrado - acesse via URL com account_id');
-        }
-
-        if (!accountId) {
-          console.error('❌ Account ID está vazio ou null');
-          throw new Error('Account ID não encontrado. Por favor, acesse o sistema via URL com account_id.');
-        }
-
-        const accountIdNum = Number(accountId);
-        console.log('📝 Tentando inserir registro com:', { email, id_conta_wiseapp: accountIdNum });
-
-        const { error: insertError } = await supabase
-          .from('wiseapp_acesso')
-          .insert([{ email, id_conta_wiseapp: accountIdNum, access_token_wiseapp: null }]);
-
-        if (insertError) {
-          console.error('❌ Erro ao inserir registro:', insertError);
-          throw insertError;
-        }
-
-        console.log('✅ Registro criado com sucesso');
+        console.log('📝 Email não encontrado, precisará do nome do atendente');
         setStep('tutorial');
       }
     } catch (err: any) {
