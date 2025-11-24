@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { Lock } from 'lucide-react';
 import { createApiUrl } from '@/lib/api-config-supabase';
 
@@ -8,9 +7,10 @@ interface Props {
   onClose: () => void;
   onTokenSaved: (token: string, attendantId: number, attendantName: string) => void;
   companyId: number | null;
+  accountId?: string | null;
 }
 
-export default function WiseAppTokenModal({ open, onClose, onTokenSaved, companyId }: Props) {
+export default function WiseAppTokenModal({ open, onClose, onTokenSaved, companyId, accountId: accountIdProp }: Props) {
   const [step, setStep] = useState<'email' | 'tutorial' | 'token'>('email');
   const [requiresAttendantName, setRequiresAttendantName] = useState(false);
   const [email, setEmail] = useState('');
@@ -31,76 +31,47 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
 
     try {
-      const { data: existing, error: selectError } = await supabase
-        .from('wiseapp_acesso')
-        .select('wiseapp_acesso_id, email, nome, access_token_wiseapp')
-        .eq('email', email)
-        .single();
+      // Verificar email via backend (usa service key, bypassa RLS)
+      console.log('🔍 Verificando email via backend...');
+      
+      const checkUrl = createApiUrl('wiseapp/check-email');
+      const checkResponse = await fetch(checkUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
 
-      if (selectError && selectError.code !== 'PGRST116') throw selectError;
+      const checkData = await checkResponse.json();
 
-      if (existing) {
-        if (existing.access_token_wiseapp) {
-          // Remove localStorage dependency for Netlify compatibility
-          onTokenSaved(
-            existing.access_token_wiseapp,
-            existing.wiseapp_acesso_id,
-            existing.nome || 'Atendente'
-          );
-          onClose();
-        } else {
-          // Email exists but no token, go to tutorial without requiring name
-          setRequiresAttendantName(false);
-          setStep('tutorial');
-        }
+      if (!checkResponse.ok || !checkData.success) {
+        throw new Error(checkData.error || 'Erro ao verificar email');
+      }
+
+      if (checkData.hasToken) {
+        // Email existe e tem token - fazer login automático
+        console.log('✅ Email encontrado com token');
+        onTokenSaved(
+          checkData.token,
+          checkData.attendantId,
+          checkData.attendantName
+        );
+        onClose();
+      } else if (checkData.exists) {
+        // Email existe mas sem token - ir para tutorial sem exigir nome
+        console.log('📧 Email encontrado sem token');
+        setRequiresAttendantName(false);
+        setStep('tutorial');
       } else {
-        // Email doesn't exist, require attendant name in token step
+        // Email não existe - será novo usuário, exigir nome no próximo passo
+        console.log('📧 Email não encontrado - novo usuário');
         setRequiresAttendantName(true);
-        
-        // Get account_id from URL or use default for serverless compatibility
-        let accountId;
-        try {
-          accountId = localStorage?.getItem('account_id');
-          console.log('🔍 Account ID do localStorage:', accountId);
-        } catch (err) {
-          console.error('Erro ao acessar localStorage:', err);
-          throw new Error('Account ID não encontrado - acesse via URL com account_id');
-        }
-
-        if (!accountId) {
-          console.error('❌ Account ID está vazio ou null');
-          throw new Error('Account ID não encontrado. Por favor, acesse o sistema via URL com account_id.');
-        }
-
-        const accountIdNum = Number(accountId);
-        console.log('📝 Tentando inserir registro com:', { email, id_conta_wiseapp: accountIdNum });
-
-        // Insert initial record without name (will be added when token is saved)
-        const { error: insertError } = await supabase
-          .from('wiseapp_acesso')
-          .insert([{ email, id_conta_wiseapp: accountIdNum, access_token_wiseapp: null }]);
-
-        if (insertError) {
-          console.error('❌ Erro ao inserir registro:', insertError);
-          throw insertError;
-        }
-
-        console.log('✅ Registro criado com sucesso');
         setStep('tutorial');
       }
     } catch (err: any) {
-      console.error('Erro detalhado:', err);
-      
-      // Mensagem de erro mais específica
-      if (err?.message?.includes('Account ID')) {
-        setError(err.message);
-      } else if (err?.code === '23502') {
-        setError('Dados obrigatórios não foram fornecidos. Verifique se o account_id está configurado.');
-      } else {
-        setError('Erro ao verificar/criar acesso. Tente novamente.');
-      }
-      
-      setRequiresAttendantName(false); // Reset on error
+      console.error('Erro ao verificar email:', err);
+      setError(err.message || 'Erro ao verificar email. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -149,36 +120,44 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
       // Validar o token - usa createApiUrl para garantir compatibilidade multiambiente
       console.log('🔐 Validando token...');
       
-      // Obter accountId do localStorage
-      const accountId = localStorage?.getItem('account_id');
-      if (!accountId) {
+      // Obter accountId: prioridade para prop, fallback para localStorage
+      const accountId = accountIdProp || localStorage?.getItem('account_id') || null;
+      if (!accountId && requiresAttendantName) {
+        // accountId é obrigatório apenas para novos usuários
         throw new Error('Account ID não encontrado - acesse via URL com account_id');
       }
-
-      const validationUrl = createApiUrl('wiseapp/validate-token');
       
-      console.log('🌍 Ambiente:', window.location.hostname);
-      console.log('🔗 URL de validação:', validationUrl);
-      
-      const validationResponse = await fetch(validationUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, accountId }),
-      });
+      console.log('🔑 Account ID obtido:', accountId, 'via:', accountIdProp ? 'prop' : 'localStorage');
 
-      const validationData = await validationResponse.json();
+      // Validação de token - apenas necessária se fornecido accountId
+      if (accountId) {
+        const validationUrl = createApiUrl('wiseapp/validate-token');
+        
+        console.log('🌍 Ambiente:', window.location.hostname);
+        console.log('🔗 URL de validação:', validationUrl);
+        
+        const validationResponse = await fetch(validationUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token, accountId }),
+        });
 
-      if (!validationResponse.ok || !validationData.valid) {
-        if (validationResponse.status === 401 || validationData.error?.includes('inválido')) {
-          throw new Error('Token inválido. Por favor, verifique se copiou o token corretamente.');
+        const validationData = await validationResponse.json();
+
+        if (!validationResponse.ok || !validationData.valid) {
+          if (validationResponse.status === 401 || validationData.error?.includes('inválido')) {
+            throw new Error('Token inválido. Por favor, verifique se copiou o token corretamente.');
+          }
+          throw new Error(validationData.error || 'Não foi possível validar o token. Tente novamente.');
         }
-        throw new Error(validationData.error || 'Não foi possível validar o token. Tente novamente.');
-      }
 
-      const userData = validationData.profile || validationData.userData;
-      console.log('✅ Token válido:', userData);
+        const userData = validationData.profile || validationData.userData;
+        console.log('✅ Token válido:', userData);
+      } else {
+        console.log('⏩ Pulando validação de token (sem accountId - usuário existente)');
+      }
 
       // Salvar o token via backend (usando service key para contornar RLS)
       console.log('💾 Salvando token no banco...');

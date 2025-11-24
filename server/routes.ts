@@ -79,8 +79,13 @@ setInterval(cleanupOldJobs, 30 * 60 * 1000);
 const supabaseBackendUrl =
   process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co";
 const supabaseBackendKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.VITE_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ";
+
+// Log which key is being used (without exposing the actual key)
+console.log('🔑 Supabase Backend Client:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Using SERVICE_ROLE_KEY ✅' : 'Using ANON_KEY ⚠️');
+
 const supabaseBackend = createClient(supabaseBackendUrl, supabaseBackendKey, {
   db: { schema: "public" },
   auth: {
@@ -208,6 +213,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // WiseApp Token - Check if email exists and has token
+  app.post("/api/wiseapp/check-email", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email é obrigatório'
+        });
+      }
+
+      console.log(`🔍 Verificando email: ${email}...`);
+
+      // Check using service key to bypass RLS
+      const { data: existing, error: selectError } = await supabaseBackend
+        .from('wiseapp_acesso')
+        .select('wiseapp_acesso_id, email, nome, access_token_wiseapp')
+        .eq('email', email)
+        .single();
+
+      if (selectError && selectError.code !== 'PGRST116') {
+        console.error('❌ Erro ao buscar email:', selectError);
+        return res.status(500).json({
+          success: false,
+          error: 'Erro ao verificar email'
+        });
+      }
+
+      if (!existing) {
+        console.log('📧 Email não encontrado - novo usuário');
+        return res.json({
+          success: true,
+          exists: false,
+          requiresName: true
+        });
+      }
+
+      if (existing.access_token_wiseapp) {
+        console.log('✅ Email encontrado com token');
+        return res.json({
+          success: true,
+          exists: true,
+          hasToken: true,
+          attendantId: existing.wiseapp_acesso_id,
+          attendantName: existing.nome || 'Atendente',
+          token: existing.access_token_wiseapp
+        });
+      } else {
+        console.log('📧 Email encontrado sem token');
+        return res.json({
+          success: true,
+          exists: true,
+          hasToken: false,
+          requiresName: false
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Erro ao verificar email:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Erro interno ao verificar email'
+      });
+    }
+  });
+
   // WiseApp Token - Alias route for frontend createApiUrl compatibility
   app.post("/api/wiseapp/validate-token", async (req, res) => {
     try {
@@ -269,59 +341,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { token, email, attendantName, accountId, requiresAttendantName } = req.body;
 
-      if (!token || !email || !accountId) {
+      if (!token || !email) {
         return res.status(400).json({
           success: false,
-          error: 'Token, email e accountId são obrigatórios'
-        });
-      }
-
-      if (requiresAttendantName && !attendantName) {
-        return res.status(400).json({
-          success: false,
-          error: 'Nome do atendente é obrigatório para novos usuários'
-        });
-      }
-
-      console.log(`💾 Salvando token para ${email} (accountId: ${accountId})...`);
-
-      // Lookup company_id by id_conta_wiseapp usando service key (supabaseBackend)
-      const { data: companyData, error: companyError } = await supabaseBackend
-        .from('company')
-        .select('company_id')
-        .eq('id_conta_wiseapp', parseInt(accountId))
-        .single();
-
-      if (companyError || !companyData) {
-        console.error('❌ Empresa não encontrada:', companyError);
-        return res.status(404).json({
-          success: false,
-          error: 'Empresa não encontrada para esta conta WiseApp'
-        });
-      }
-
-      const companyId = companyData.company_id;
-      console.log(`📊 Company ID encontrado: ${companyId}`);
-
-      // Validação de autorização (opcional mas recomendado): verificar company-id header
-      const requestCompanyId = req.headers['company-id'];
-      if (requestCompanyId && parseInt(requestCompanyId as string) !== companyId) {
-        console.error(`⛔ Tentativa de acesso não autorizado: header company_id ${requestCompanyId} ≠ accountId company_id ${companyId}`);
-        return res.status(403).json({
-          success: false,
-          error: 'Acesso não autorizado para esta empresa'
+          error: 'Token e email são obrigatórios'
         });
       }
 
       if (requiresAttendantName) {
+        // Para novos usuários, accountId e attendantName são obrigatórios
+        if (!accountId) {
+          return res.status(400).json({
+            success: false,
+            error: 'Account ID é obrigatório para novos usuários'
+          });
+        }
+        if (!attendantName) {
+          return res.status(400).json({
+            success: false,
+            error: 'Nome do atendente é obrigatório para novos usuários'
+          });
+        }
+      }
+
+      console.log(`💾 Salvando token para ${email}${accountId ? ` (accountId: ${accountId})` : ''}...`);
+
+      let companyId: number | null = null;
+
+      // Se forneceu accountId, buscar company_id
+      if (accountId) {
+        const { data: companyData, error: companyError } = await supabaseBackend
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', parseInt(accountId))
+          .single();
+
+        if (companyError || !companyData) {
+          console.error('❌ Empresa não encontrada:', companyError);
+          return res.status(404).json({
+            success: false,
+            error: 'Empresa não encontrada para esta conta WiseApp'
+          });
+        }
+
+        companyId = companyData.company_id;
+        console.log(`📊 Company ID encontrado: ${companyId}`);
+
+        // Validação de autorização: verificar company-id header
+        const requestCompanyId = req.headers['company-id'];
+        if (requestCompanyId && parseInt(requestCompanyId as string) !== companyId) {
+          console.error(`⛔ Tentativa de acesso não autorizado: header company_id ${requestCompanyId} ≠ accountId company_id ${companyId}`);
+          return res.status(403).json({
+            success: false,
+            error: 'Acesso não autorizado para esta empresa'
+          });
+        }
+      } else {
+        // Sem accountId, buscar company_id do usuário existente
+        const { data: existingUser } = await supabaseBackend
+          .from('wiseapp_acesso')
+          .select('company_id, id_conta_wiseapp')
+          .eq('email', email)
+          .single();
+
+        if (existingUser) {
+          companyId = existingUser.company_id;
+          console.log(`📊 Company ID obtido do usuário existente: ${companyId}`);
+        }
+      }
+
+      if (requiresAttendantName) {
         // INSERT new user usando service key (bypassa RLS)
+        if (!companyId) {
+          return res.status(400).json({
+            success: false,
+            error: 'Company ID não pôde ser determinado'
+          });
+        }
+
         const { data: insertData, error: insertError} = await supabaseBackend
           .from('wiseapp_acesso')
           .insert([{
             email,
             nome: attendantName,
             company_id: companyId,
-            id_conta_wiseapp: parseInt(accountId),
+            id_conta_wiseapp: accountId ? parseInt(accountId) : null,
             access_token_wiseapp: token
           }])
           .select('wiseapp_acesso_id, nome')
@@ -346,11 +450,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // UPDATE existing user usando service key (bypassa RLS)
         const updateData: any = {
-          access_token_wiseapp: token,
-          company_id: companyId,
-          id_conta_wiseapp: parseInt(accountId)
+          access_token_wiseapp: token
         };
 
+        // Atualizar company_id e id_conta_wiseapp apenas se fornecidos
+        if (companyId) {
+          updateData.company_id = companyId;
+        }
+        if (accountId) {
+          updateData.id_conta_wiseapp = parseInt(accountId);
+        }
         if (attendantName) {
           updateData.nome = attendantName;
         }
