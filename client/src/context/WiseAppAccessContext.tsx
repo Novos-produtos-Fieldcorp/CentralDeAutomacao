@@ -86,18 +86,17 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
   });
   
   const [showModal, setShowModal] = useState(false);
-  const [isModalDismissible, setIsModalDismissible] = useState(true);
+  const [canCloseModal, setCanCloseModal] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [hasCheckedToken, setHasCheckedToken] = useState(false);
-  const [accountIdError, setAccountIdError] = useState('');
   const [searchParams] = useSearchParams();
 
   // Helper function to cache data with expiration
-  const cacheData = (key: string, data: any, expirationHours: number = 1) => { // Reduzir para 1 hora
+  const cacheData = (key: string, data: any, expirationHours: number = 1) => {
     try {
       const cache = {
         ...data,
-        expiresAt: Date.now() + (expirationHours * 60 * 60 * 1000) // 1 hour default
+        expiresAt: Date.now() + (expirationHours * 60 * 60 * 1000)
       };
       localStorage.setItem(key, JSON.stringify(cache));
     } catch (error) {
@@ -166,6 +165,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
         if (token && !validateToken()) {
           console.log('❌ [WiseAppAccess] Token expirado, mostrando modal');
           setShowModal(true);
+          setCanCloseModal(false);
         }
         setIsLoading(false);
         return;
@@ -186,9 +186,8 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       
       if (!accountId) {
         console.error('❌ [WiseAppAccess] Account ID não encontrado, mostrando modal');
-        setAccountIdError('Account ID não fornecido. Por favor, acesse via URL com ?account_id=XXX ou forneça acesso abaixo.');
         setShowModal(true);
-        setIsModalDismissible(false);
+        setCanCloseModal(false);
         setIsLoading(false);
         setHasCheckedToken(true);
         return;
@@ -287,6 +286,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
                 token_length: access.access_token_wiseapp.length
               });
               updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome);
+              setCanCloseModal(true);
               // WiseApp token fetched and cached successfully
             } else {
               console.log('❌ [WiseAppAccess] Nenhum token encontrado no banco, verificando cache...');
@@ -324,6 +324,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
                       
                       if (newAccess) {
                         updateToken(newAccess.access_token_wiseapp, newAccess.wiseapp_acesso_id, newAccess.nome);
+                        setCanCloseModal(true);
                         // Cached token successfully saved to database
                         return; // Don't show modal, we're done
                       }
@@ -339,15 +340,18 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
               // No token found and couldn't save cached token, show modal
               console.log('❌ [WiseAppAccess] Nenhum token válido encontrado, mostrando modal de autenticação');
               setShowModal(true);
+              setCanCloseModal(false);
             }
           } else {
             console.log('❌ [WiseAppAccess] Empresa não encontrada para Account ID:', accountId);
             setShowModal(true);
+            setCanCloseModal(false);
           }
         }
       } catch (error) {
         console.error('❌ [WiseAppAccess] Erro na verificação:', error);
         setShowModal(true);
+        setCanCloseModal(false);
       } finally {
         setIsLoading(false);
         setHasCheckedToken(true);
@@ -359,46 +363,18 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
 
   return (
     <WiseAppAccessContext.Provider value={{ token, companyId, attendantId, attendantName, isLoading }}>
-      {showModal && !token && isLoading ? (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[999]">
-          <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-xl max-w-md w-full">
-            <div className="text-center space-y-4">
-              <div className="text-6xl">⏳</div>
-              <h2 className="text-xl font-semibold">Verificando Autenticação</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Por favor, aguarde...</p>
-              <div className="flex justify-center">
-                <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
       {children}
       <WiseAppTokenModal
         open={showModal}
-        onClose={() => isModalDismissible && setShowModal(false)}
-        onTokenSaved={(newToken, attendantId, attendantName, newAccountId) => {
-          if (newAccountId) {
-            try {
-              localStorage.setItem('account_id', newAccountId.toString());
-            } catch (err) {
-              console.error('Error saving account_id:', err);
-            }
-          }
+        onClose={() => canCloseModal && setShowModal(false)}
+        onTokenSaved={(newToken, attendantId, attendantName) => {
           updateToken(newToken, attendantId || 0, attendantName || 'Atendente');
           setShowModal(false);
-          setIsModalDismissible(true);
-          setAccountIdError('');
+          setCanCloseModal(true);
           setHasCheckedToken(true);
         }}
         companyId={companyId}
-        isDismissible={isModalDismissible}
-        accountIdError={accountIdError}
-        onAccountIdProvided={(accountId) => {
-          localStorage.setItem('account_id', accountId.toString());
-          setAccountIdError('');
-          window.location.reload();
-        }}
+        isDismissible={canCloseModal}
       />
     </WiseAppAccessContext.Provider>
   );

@@ -6,11 +6,9 @@ import { createApiUrl } from '@/lib/api-config-supabase';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onTokenSaved: (token: string, attendantId: number, attendantName: string, accountId?: number) => void;
+  onTokenSaved: (token: string, attendantId: number, attendantName: string) => void;
   companyId: number | null;
   isDismissible?: boolean;
-  accountIdError?: string;
-  onAccountIdProvided?: (accountId: number) => void;
 }
 
 export default function WiseAppTokenModal({ 
@@ -18,23 +16,20 @@ export default function WiseAppTokenModal({
   onClose, 
   onTokenSaved, 
   companyId,
-  isDismissible = true,
-  accountIdError = '',
-  onAccountIdProvided
+  isDismissible = true
 }: Props) {
-  const [step, setStep] = useState<'email' | 'tutorial' | 'token' | 'account-id'>('email');
+  const [step, setStep] = useState<'email' | 'tutorial' | 'token'>('email');
   const [requiresAttendantName, setRequiresAttendantName] = useState(false);
   const [email, setEmail] = useState('');
   const [attendantName, setAttendantName] = useState('');
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [accountIdInput, setAccountIdInput] = useState('');
 
   const handleEmailSubmit = async () => {
     setLoading(true);
     setError('');
-    setRequiresAttendantName(false); // Reset the flag at start
+    setRequiresAttendantName(false);
 
     if (!email) {
       setError('Email é obrigatório.');
@@ -53,7 +48,6 @@ export default function WiseAppTokenModal({
 
       if (existing) {
         if (existing.access_token_wiseapp) {
-          // Remove localStorage dependency for Netlify compatibility
           onTokenSaved(
             existing.access_token_wiseapp,
             existing.wiseapp_acesso_id,
@@ -61,15 +55,12 @@ export default function WiseAppTokenModal({
           );
           onClose();
         } else {
-          // Email exists but no token, go to tutorial without requiring name
           setRequiresAttendantName(false);
           setStep('tutorial');
         }
       } else {
-        // Email doesn't exist, require attendant name in token step
         setRequiresAttendantName(true);
         
-        // Get account_id from URL or use default for serverless compatibility
         let accountId;
         try {
           accountId = localStorage?.getItem('account_id');
@@ -87,7 +78,6 @@ export default function WiseAppTokenModal({
         const accountIdNum = Number(accountId);
         console.log('📝 Tentando inserir registro com:', { email, id_conta_wiseapp: accountIdNum });
 
-        // Insert initial record without name (will be added when token is saved)
         const { error: insertError } = await supabase
           .from('wiseapp_acesso')
           .insert([{ email, id_conta_wiseapp: accountIdNum, access_token_wiseapp: null }]);
@@ -103,7 +93,6 @@ export default function WiseAppTokenModal({
     } catch (err: any) {
       console.error('Erro detalhado:', err);
       
-      // Mensagem de erro mais específica
       if (err?.message?.includes('Account ID')) {
         setError(err.message);
       } else if (err?.code === '23502') {
@@ -112,31 +101,9 @@ export default function WiseAppTokenModal({
         setError('Erro ao verificar/criar acesso. Tente novamente.');
       }
       
-      setRequiresAttendantName(false); // Reset on error
+      setRequiresAttendantName(false);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const validateToken = async (token: string, accountId: string): Promise<{ valid: boolean; error?: string }> => {
-    try {
-      const response = await fetch(createApiUrl('/wiseapp/validate-token'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, accountId }),
-      });
-
-      if (!response.ok) {
-        return { valid: false, error: 'Erro ao validar token' };
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error('Erro ao validar token:', error);
-      return { valid: false, error: 'Erro ao conectar com o servidor' };
     }
   };
 
@@ -150,7 +117,6 @@ export default function WiseAppTokenModal({
       return;
     }
 
-    // Se requer nome do atendente mas não foi fornecido
     if (requiresAttendantName && !attendantName) {
       setError('Nome do atendente é obrigatório.');
       setLoading(false);
@@ -158,7 +124,6 @@ export default function WiseAppTokenModal({
     }
 
     try {
-      // Validar o token usando Supabase Edge Function
       console.log('🔐 Validando token...');
       
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
@@ -187,14 +152,12 @@ export default function WiseAppTokenModal({
       const userData = validationData.userData;
       console.log('✅ Token válido:', userData);
 
-      // Obter accountId
       const accountId = localStorage?.getItem('account_id');
       if (!accountId) {
         throw new Error('Account ID não encontrado - acesse via URL com account_id');
       }
 
       if (requiresAttendantName) {
-        // NOVO USUÁRIO: Fazer INSERT com nome, email, token e id_conta_wiseapp
         const { error: insertError } = await supabase
           .from('wiseapp_acesso')
           .insert([{ 
@@ -206,7 +169,6 @@ export default function WiseAppTokenModal({
 
         if (insertError) throw insertError;
       } else {
-        // USUÁRIO EXISTENTE: Fazer UPDATE apenas do token (e nome se fornecido)
         const updateData: any = { access_token_wiseapp: token };
         if (attendantName) {
           updateData.nome = attendantName;
@@ -220,7 +182,6 @@ export default function WiseAppTokenModal({
         if (updateError) throw updateError;
       }
 
-      // Fetch the updated user data to get attendantId
       const { data: updatedUser, error: fetchError } = await supabase
         .from('wiseapp_acesso')
         .select('wiseapp_acesso_id, nome')
@@ -229,7 +190,6 @@ export default function WiseAppTokenModal({
 
       if (fetchError) throw fetchError;
 
-      // Remove localStorage dependency for Netlify compatibility
       onTokenSaved(
         token,
         updatedUser.wiseapp_acesso_id,
@@ -246,46 +206,40 @@ export default function WiseAppTokenModal({
       } else {
         setError('Erro ao salvar o token. Tente novamente.');
       }
-      setError(err.message || 'Erro ao salvar o token.');
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Reset requiresAttendantName when modal opens
   useEffect(() => {
-    if (open) {
-      if (accountIdError && !accountIdInput) {
-        setStep('account-id');
-      } else if (step === 'email') {
-        setRequiresAttendantName(false);
-        setAttendantName(''); // Also reset the name
-      }
+    if (open && step === 'email') {
+      setRequiresAttendantName(false);
+      setAttendantName('');
     }
-  }, [open, step, accountIdError, accountIdInput]);
-
-  const handleAccountIdSubmit = () => {
-    if (!accountIdInput || isNaN(Number(accountIdInput))) {
-      setError('Por favor, insira um ID de conta válido (número)');
-      return;
-    }
-    
-    if (onAccountIdProvided) {
-      onAccountIdProvided(Number(accountIdInput));
-    }
-  };
+  }, [open, step]);
 
   if (!open) return null;
 
   return (
-   <div className={`fixed inset-0 bg-black/40 flex items-center justify-center z-50 ${!isDismissible ? 'pointer-events-none' : ''}`} role="dialog" data-modal="wiseapp-token">
-     <div className={`bg-white dark:bg-gray-900 p-8 rounded-xl shadow-xl max-w-2xl w-full space-y-5 ${!isDismissible ? 'pointer-events-auto' : ''}`}>
-        <h2 className="text-xl font-semibold">
-          {step === 'email' && 'Autenticação WiseApp'}
-          {step === 'tutorial' && 'Como obter o Token da WiseApp'}
-          {step === 'token' && 'Cole seu Token abaixo'}
-        </h2>
+   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" role="dialog" data-modal="wiseapp-token">
+     <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-xl max-w-2xl w-full space-y-5 relative">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold flex-1">
+            {step === 'email' && 'Autenticação WiseApp'}
+            {step === 'tutorial' && 'Como obter o Token da WiseApp'}
+            {step === 'token' && 'Cole seu Token abaixo'}
+          </h2>
+          {isDismissible && (
+            <button 
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl leading-none"
+              aria-label="Fechar"
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
        
@@ -316,21 +270,20 @@ export default function WiseAppTokenModal({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="seuemail@empresa.com"
+          autoFocus
+          data-testid="input-email"
         />
       </div>
       
     </div>
 
-    {error && (
-      <p className="text-red-500 text-sm">{error}</p>
-    )}
-
     <button
       onClick={handleEmailSubmit}
       className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
       disabled={loading || !email}
+      data-testid="button-verify-email"
     >
-      Verificar
+      {loading ? 'Verificando...' : 'Verificar'}
     </button>
   </div>
 )}
@@ -366,10 +319,17 @@ export default function WiseAppTokenModal({
     </div>
 
     <div className="flex justify-between mt-4">
-      <button onClick={() => setStep('email')} className="text-sm text-gray-500">Voltar</button>
+      <button 
+        onClick={() => setStep('email')} 
+        className="text-sm text-gray-500"
+        data-testid="button-back"
+      >
+        Voltar
+      </button>
       <button
         onClick={() => setStep('token')}
         className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        data-testid="button-have-token"
       >
         Já tenho o Token
       </button>
@@ -392,6 +352,8 @@ export default function WiseAppTokenModal({
                   onChange={(e) => setAttendantName(e.target.value)}
                   placeholder="Seu nome completo"
                   required
+                  data-testid="input-attendant-name"
+                  autoFocus
                 />
               </div>
             )}
@@ -406,6 +368,8 @@ export default function WiseAppTokenModal({
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 placeholder="Cole seu access_token da WiseApp aqui"
+                data-testid="input-token"
+                autoFocus={!requiresAttendantName}
               />
             </div>
             
@@ -414,8 +378,9 @@ export default function WiseAppTokenModal({
                 onClick={handleTokenSubmit}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
                 disabled={loading || !token || (requiresAttendantName && !attendantName)}
+                data-testid="button-save-token"
               >
-                Salvar
+                {loading ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
           </div>
