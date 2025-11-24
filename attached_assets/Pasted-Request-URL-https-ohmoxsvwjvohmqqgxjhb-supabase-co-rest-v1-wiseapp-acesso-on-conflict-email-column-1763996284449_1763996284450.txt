@@ -1,0 +1,102 @@
+Request URL
+https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/wiseapp_acesso?on_conflict=email&columns=%22email%22%2C%22id_conta_wiseapp%22%2C%22access_token_wiseapp%22%2C%22nome%22
+Request Method
+POST
+Status Code
+400 Bad Request
+Remote Address
+104.18.38.10:443
+Referrer Policy
+strict-origin-when-cross-origin
+access-control-allow-origin
+https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev
+access-control-expose-headers
+Content-Encoding, Content-Location, Content-Range, Content-Type, Date, Location, Server, Transfer-Encoding, Range-Unit
+alt-svc
+h3=":443"; ma=86400
+cf-cache-status
+DYNAMIC
+cf-ray
+9a39c224ae21c50d-GRU
+content-encoding
+gzip
+content-type
+application/json; charset=utf-8
+date
+Mon, 24 Nov 2025 14:57:22 GMT
+priority
+u=1,i
+sb-gateway-version
+1
+sb-project-ref
+ohmoxsvwjvohmqqgxjhb
+sb-request-id
+019ab65e-92f4-7127-84a0-dd284c373174
+server
+cloudflare
+server-timing
+cfExtPri
+set-cookie
+__cf_bm=RPHUG.fMLTyZS.AuTusUr96nUgHLlqMTfpEhp6.CoPw-1763996242-1.0.1.1-1SWSWX5w6QE30lhJ6oEShVPV6PDE18OEPj4Zzic9CKGDlfUksd9dvRj6itjAQML6HGTfGO_nnxyTh1QQlPoqJATnOQ4TSligz9eCzwSDuv4; path=/; expires=Mon, 24-Nov-25 15:27:22 GMT; domain=.supabase.co; HttpOnly; Secure; SameSite=None
+strict-transport-security
+max-age=31536000; includeSubDomains; preload
+vary
+Accept-Encoding
+x-content-type-options
+nosniff
+x-envoy-attempt-count
+1
+x-envoy-upstream-service-time
+15
+:authority
+ohmoxsvwjvohmqqgxjhb.supabase.co
+:method
+POST
+:path
+/rest/v1/wiseapp_acesso?on_conflict=email&columns=%22email%22%2C%22id_conta_wiseapp%22%2C%22access_token_wiseapp%22%2C%22nome%22
+:scheme
+https
+accept
+*/*
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+en-US,en;q=0.9
+access-control-allow-headers
+authorization, x-client-info, apikey, content-type
+access-control-allow-origin
+*
+apikey
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ
+authorization
+Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ
+content-length
+126
+content-profile
+public
+content-type
+application/json
+origin
+https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev
+prefer
+resolution=merge-duplicates
+priority
+u=1, i
+referer
+https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/
+sec-ch-ua
+"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"macOS"
+sec-fetch-dest
+empty
+sec-fetch-mode
+cors
+sec-fetch-site
+cross-site
+user-agent
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36
+x-client-info
+supabase-js-web/2.58.0

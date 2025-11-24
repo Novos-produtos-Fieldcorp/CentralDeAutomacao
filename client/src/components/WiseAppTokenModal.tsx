@@ -131,22 +131,49 @@ export default function WiseAppTokenModal({
         throw new Error('Account ID não encontrado - acesse via URL com account_id');
       }
 
-      console.log('💾 Salvando token com upsert');
-      const upsertData: any = { 
-        email, 
-        id_conta_wiseapp: parseInt(accountId), 
+      console.log('💾 Salvando token...');
+      
+      const updateData: any = { 
         access_token_wiseapp: token 
       };
       
       if (attendantName) {
-        upsertData.nome = attendantName;
+        updateData.nome = attendantName;
       }
 
-      const { error: upsertError } = await supabase
+      // Tenta atualizar primeiro
+      const { error: updateError, count } = await supabase
         .from('wiseapp_acesso')
-        .upsert([upsertData], { onConflict: 'email' });
+        .update(updateData)
+        .eq('email', email);
 
-      if (upsertError) throw upsertError;
+      if (updateError) {
+        console.error('Erro ao atualizar:', updateError);
+        throw updateError;
+      }
+
+      // Se nenhuma linha foi atualizada, faz INSERT
+      if (!count || count === 0) {
+        console.log('📝 Nenhuma linha atualizada, inserindo novo registro');
+        const insertData: any = { 
+          email, 
+          id_conta_wiseapp: parseInt(accountId), 
+          access_token_wiseapp: token 
+        };
+        
+        if (attendantName) {
+          insertData.nome = attendantName;
+        }
+
+        const { error: insertError } = await supabase
+          .from('wiseapp_acesso')
+          .insert([insertData]);
+
+        if (insertError) {
+          console.error('Erro ao inserir:', insertError);
+          throw insertError;
+        }
+      }
 
       console.log('✅ Token salvo com sucesso');
 
