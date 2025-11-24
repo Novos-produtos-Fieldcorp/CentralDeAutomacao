@@ -146,30 +146,33 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
 
     try {
-      // Validar o token diretamente com a API do WiseApp
+      // Validar o token usando Supabase Edge Function
       console.log('🔐 Validando token...');
       
-      const wiseAppUrl = 'https://chat.wiseapp360.com/api/v1/profile';
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+      const validationUrl = `${supabaseUrl}/functions/v1/validate-wiseapp-token`;
       
       console.log('🌍 Ambiente:', window.location.hostname);
-      console.log('🔗 URL de validação:', wiseAppUrl);
+      console.log('🔗 URL de validação:', validationUrl);
       
-      const validationResponse = await fetch(wiseAppUrl, {
-        method: 'GET',
+      const validationResponse = await fetch(validationUrl, {
+        method: 'POST',
         headers: {
-          'api_access_token': token,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ token }),
       });
 
-      if (!validationResponse.ok) {
+      const validationData = await validationResponse.json();
+
+      if (!validationResponse.ok || !validationData.valid) {
         if (validationResponse.status === 401) {
           throw new Error('Token inválido. Por favor, verifique se copiou o token corretamente.');
         }
         throw new Error('Não foi possível validar o token. Tente novamente.');
       }
 
-      const userData = await validationResponse.json();
+      const userData = validationData.userData;
       console.log('✅ Token válido:', userData);
 
       // Obter accountId

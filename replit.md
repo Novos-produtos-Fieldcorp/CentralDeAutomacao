@@ -21,8 +21,17 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **Document Management**: Direct upload to Supabase Storage with validation.
 - **WiseApp Token Management**: 
   - Automatic retrieval of WiseApp tokens from the database based on `company_id`
-  - **Direct API Validation**: Token validation done directly against WiseApp API (`https://chat.wiseapp360.com/api/v1/profile`) without requiring deployed Supabase edge functions
+  - **Edge Function Validation**: Token validation using Supabase Edge Function (`validate-wiseapp-token`) that validates against WiseApp API (`https://chat.wiseapp360.com/api/v1/profile`)
   - **Multiple Records Handling**: When multiple access records exist for the same `id_conta_wiseapp`, the system automatically selects the most recent one (ordered by `wiseapp_acesso_id DESC`)
+  - **Edge Functions Available**:
+    * `validate-wiseapp-token`: Validates WiseApp access tokens
+    * `proxy-download`: Proxy for WiseApp file downloads (CORS bypass)
+    * `proxy-wiseapp`: Generic proxy for WiseApp API calls
+    * `group-summary-cron`: Automated group summary sending
+    * `manual-summary-trigger`: Manual trigger for summaries
+    * `sync-all-motoristas`: Full driver synchronization with WiseApp
+    * `sync-motoristas-bulk`: Bulk driver synchronization
+  - **Deployment**: Use `./deploy-edge-functions.sh all` to deploy all functions (see `QUICK_START_EDGE_FUNCTIONS.md`)
 - **Form Validation**: Enhanced CNH validation and real-time input sanitization.
 - **Pagination**: Comprehensive pagination system across lists with configurable page sizes.
 - **License Plate API**: Real-time vehicle data consultation via FIPE API for automatic form filling.
