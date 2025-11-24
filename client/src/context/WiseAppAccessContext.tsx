@@ -89,7 +89,6 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
   const [isLoading, setIsLoading] = useState(true);
   const [hasCheckedToken, setHasCheckedToken] = useState(false);
   const [searchParams] = useSearchParams();
-  const [accountId, setAccountId] = useState<string | null>(null);
 
   // Helper function to cache data with expiration
   const cacheData = (key: string, data: any, expirationHours: number = 1) => { // Reduzir para 1 hora
@@ -170,32 +169,20 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
         return;
       }
 
-      let foundAccountId = searchParams.get('account_id')?.trim();
-      console.log('🔍 [WiseAppAccess] Account ID da URL:', foundAccountId);
+      let accountId = searchParams.get('account_id')?.trim();
+      console.log('🔍 [WiseAppAccess] Account ID da URL:', accountId);
       
-      if (!foundAccountId) {
+      if (!accountId) {
         // Get from localStorage if available
         try {
-          foundAccountId = localStorage?.getItem('account_id') ?? undefined;
-          console.log('🔍 [WiseAppAccess] Account ID do localStorage:', foundAccountId);
+          accountId = localStorage?.getItem('account_id') ?? undefined;
+          console.log('🔍 [WiseAppAccess] Account ID do localStorage:', accountId);
         } catch {
-          foundAccountId = undefined;
+          accountId = undefined;
         }
       }
       
-      // Armazenar accountId no estado e localStorage
-      if (foundAccountId) {
-        setAccountId(foundAccountId);
-        // Persist to localStorage for future use
-        try {
-          localStorage.setItem('account_id', foundAccountId);
-          console.log('💾 [WiseAppAccess] Account ID salvo no localStorage:', foundAccountId);
-        } catch (storageError) {
-          console.error('❌ [WiseAppAccess] Erro ao salvar account_id no localStorage:', storageError);
-        }
-      }
-      
-      if (!foundAccountId) {
+      if (!accountId) {
         console.error('❌ [WiseAppAccess] Account ID não encontrado, mostrando modal');
         setShowModal(true);
         setIsLoading(false);
@@ -240,12 +227,12 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
           // Fetching fresh WiseApp token from database
           
           // Get company ID from account ID
-          console.log('🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp:', foundAccountId);
+          console.log('🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp:', accountId);
           
           const { data: company, error: companyError } = await supabase
             .from('company')
             .select('company_id')
-            .eq('id_conta_wiseapp', foundAccountId)
+            .eq('id_conta_wiseapp', accountId)
             .single();
 
           console.log('📊 [WiseAppAccess] Resultado da busca da empresa:', {
@@ -267,12 +254,12 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
             cacheData('wiseapp_company_cache', { companyId: company.company_id });
             
             // Check if there's a token for this account
-            console.log('🔍 [WiseAppAccess] Buscando token para id_conta_wiseapp:', foundAccountId);
+            console.log('🔍 [WiseAppAccess] Buscando token para id_conta_wiseapp:', accountId);
             
             const { data: access, error: accessError } = await supabase
               .from('wiseapp_acesso')
               .select('wiseapp_acesso_id, access_token_wiseapp, nome, email')
-              .eq('id_conta_wiseapp', foundAccountId)
+              .eq('id_conta_wiseapp', accountId)
               .maybeSingle();
 
             console.log('📊 [WiseAppAccess] Resultado da busca:', {
@@ -314,7 +301,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
                       .insert([{ 
                         email: 'auto@sistema.com', 
                         nome: 'Token Automático', 
-                        id_conta_wiseapp: foundAccountId, 
+                        id_conta_wiseapp: accountId, 
                         access_token_wiseapp: tokenData.token 
                       }]);
                     
@@ -323,7 +310,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
                       const { data: newAccess } = await supabase
                         .from('wiseapp_acesso')
                         .select('wiseapp_acesso_id, access_token_wiseapp, nome')
-                        .eq('id_conta_wiseapp', foundAccountId)
+                        .eq('id_conta_wiseapp', accountId)
                         .eq('access_token_wiseapp', tokenData.token)
                         .single();
                       
@@ -374,7 +361,6 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
           setHasCheckedToken(true);
         }}
         companyId={companyId}
-        accountId={accountId}
       />
     </WiseAppAccessContext.Provider>
   );
