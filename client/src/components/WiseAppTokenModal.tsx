@@ -6,18 +6,30 @@ import { createApiUrl } from '@/lib/api-config-supabase';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onTokenSaved: (token: string, attendantId: number, attendantName: string) => void;
+  onTokenSaved: (token: string, attendantId: number, attendantName: string, accountId?: number) => void;
   companyId: number | null;
+  isDismissible?: boolean;
+  accountIdError?: string;
+  onAccountIdProvided?: (accountId: number) => void;
 }
 
-export default function WiseAppTokenModal({ open, onClose, onTokenSaved, companyId }: Props) {
-  const [step, setStep] = useState<'email' | 'tutorial' | 'token'>('email');
+export default function WiseAppTokenModal({ 
+  open, 
+  onClose, 
+  onTokenSaved, 
+  companyId,
+  isDismissible = true,
+  accountIdError = '',
+  onAccountIdProvided
+}: Props) {
+  const [step, setStep] = useState<'email' | 'tutorial' | 'token' | 'account-id'>('email');
   const [requiresAttendantName, setRequiresAttendantName] = useState(false);
   const [email, setEmail] = useState('');
   const [attendantName, setAttendantName] = useState('');
   const [token, setToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [accountIdInput, setAccountIdInput] = useState('');
 
   const handleEmailSubmit = async () => {
     setLoading(true);
@@ -243,17 +255,32 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
 
   // Reset requiresAttendantName when modal opens
   useEffect(() => {
-    if (open && step === 'email') {
-      setRequiresAttendantName(false);
-      setAttendantName(''); // Also reset the name
+    if (open) {
+      if (accountIdError && !accountIdInput) {
+        setStep('account-id');
+      } else if (step === 'email') {
+        setRequiresAttendantName(false);
+        setAttendantName(''); // Also reset the name
+      }
     }
-  }, [open, step]);
+  }, [open, step, accountIdError, accountIdInput]);
+
+  const handleAccountIdSubmit = () => {
+    if (!accountIdInput || isNaN(Number(accountIdInput))) {
+      setError('Por favor, insira um ID de conta válido (número)');
+      return;
+    }
+    
+    if (onAccountIdProvided) {
+      onAccountIdProvided(Number(accountIdInput));
+    }
+  };
 
   if (!open) return null;
 
   return (
-   <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" role="dialog" data-modal="wiseapp-token">
-     <div className="bg-white dark:bg-gray-900 p-8 rounded-xl shadow-xl max-w-2xl w-full space-y-5">
+   <div className={`fixed inset-0 bg-black/40 flex items-center justify-center z-50 ${!isDismissible ? 'pointer-events-none' : ''}`} role="dialog" data-modal="wiseapp-token">
+     <div className={`bg-white dark:bg-gray-900 p-8 rounded-xl shadow-xl max-w-2xl w-full space-y-5 ${!isDismissible ? 'pointer-events-auto' : ''}`}>
         <h2 className="text-xl font-semibold">
           {step === 'email' && 'Autenticação WiseApp'}
           {step === 'tutorial' && 'Como obter o Token da WiseApp'}
