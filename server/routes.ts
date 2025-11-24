@@ -208,6 +208,200 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // WiseApp Token - Alias route for frontend createApiUrl compatibility
+  app.post("/api/wiseapp/validate-token", async (req, res) => {
+    try {
+      const { token, accountId } = req.body;
+
+      if (!token) {
+        return res.status(400).json({
+          valid: false,
+          error: 'Token é obrigatório'
+        });
+      }
+
+      if (!accountId) {
+        return res.status(400).json({
+          valid: false,
+          error: 'Account ID é obrigatório'
+        });
+      }
+
+      console.log(`🔍 Validando token para accountId ${accountId}...`);
+
+      // Validate token by calling WiseApp profile API
+      const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
+      const response = await fetch(`${wiseappApiUrl}/api/v1/profile`, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        console.log(`❌ Token inválido - API retornou ${response.status}`);
+        return res.json({
+          valid: false,
+          error: 'Token de acesso inválido ou expirado'
+        });
+      }
+
+      const profileData = await response.json();
+      console.log(`✅ Token validado com sucesso para ${profileData.name}!`);
+
+      return res.json({
+        valid: true,
+        profile: profileData
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao validar token:', error);
+      return res.json({
+        valid: false,
+        error: 'Erro ao conectar com o servidor de autenticação'
+      });
+    }
+  });
+
+  // WiseApp Token - Save token (privileged route using service key)
+  app.post("/api/wiseapp/save-token", async (req, res) => {
+    try {
+      const { token, email, attendantName, accountId, requiresAttendantName } = req.body;
+
+      if (!token || !email || !accountId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Token, email e accountId são obrigatórios'
+        });
+      }
+
+      if (requiresAttendantName && !attendantName) {
+        return res.status(400).json({
+          success: false,
+          error: 'Nome do atendente é obrigatório para novos usuários'
+        });
+      }
+
+      console.log(`💾 Salvando token para ${email} (accountId: ${accountId})...`);
+
+      // Lookup company_id by id_conta_wiseapp usando service key (supabaseBackend)
+      const { data: companyData, error: companyError } = await supabaseBackend
+        .from('company')
+        .select('company_id')
+        .eq('id_conta_wiseapp', parseInt(accountId))
+        .single();
+
+      if (companyError || !companyData) {
+        console.error('❌ Empresa não encontrada:', companyError);
+        return res.status(404).json({
+          success: false,
+          error: 'Empresa não encontrada para esta conta WiseApp'
+        });
+      }
+
+      const companyId = companyData.company_id;
+      console.log(`📊 Company ID encontrado: ${companyId}`);
+
+      // Validação de autorização (opcional mas recomendado): verificar company-id header
+      const requestCompanyId = req.headers['company-id'];
+      if (requestCompanyId && parseInt(requestCompanyId as string) !== companyId) {
+        console.error(`⛔ Tentativa de acesso não autorizado: header company_id ${requestCompanyId} ≠ accountId company_id ${companyId}`);
+        return res.status(403).json({
+          success: false,
+          error: 'Acesso não autorizado para esta empresa'
+        });
+      }
+
+      if (requiresAttendantName) {
+        // INSERT new user usando service key (bypassa RLS)
+        const { data: insertData, error: insertError} = await supabaseBackend
+          .from('wiseapp_acesso')
+          .insert([{
+            email,
+            nome: attendantName,
+            company_id: companyId,
+            id_conta_wiseapp: parseInt(accountId),
+            access_token_wiseapp: token
+          }])
+          .select('wiseapp_acesso_id, nome')
+          .single();
+
+        if (insertError) {
+          console.error('❌ Erro no INSERT:', insertError);
+          return res.status(500).json({
+            success: false,
+            error: `Erro ao criar usuário: ${insertError.message}`
+          });
+        }
+
+        console.log(`✅ Novo usuário criado com ID ${insertData.wiseapp_acesso_id}`);
+
+        return res.json({
+          success: true,
+          attendantId: insertData.wiseapp_acesso_id,
+          attendantName: insertData.nome
+        });
+
+      } else {
+        // UPDATE existing user usando service key (bypassa RLS)
+        const updateData: any = {
+          access_token_wiseapp: token,
+          company_id: companyId,
+          id_conta_wiseapp: parseInt(accountId)
+        };
+
+        if (attendantName) {
+          updateData.nome = attendantName;
+        }
+
+        const { error: updateError } = await supabaseBackend
+          .from('wiseapp_acesso')
+          .update(updateData)
+          .eq('email', email);
+
+        if (updateError) {
+          console.error('❌ Erro no UPDATE:', updateError);
+          return res.status(500).json({
+            success: false,
+            error: `Erro ao atualizar usuário: ${updateError.message}`
+          });
+        }
+
+        // Fetch updated user data usando service key
+        const { data: updatedUser, error: fetchError } = await supabaseBackend
+          .from('wiseapp_acesso')
+          .select('wiseapp_acesso_id, nome')
+          .eq('email', email)
+          .single();
+
+        if (fetchError || !updatedUser) {
+          console.error('❌ Erro ao buscar usuário atualizado:', fetchError);
+          return res.status(500).json({
+            success: false,
+            error: 'Erro ao buscar dados atualizados'
+          });
+        }
+
+        console.log(`✅ Usuário atualizado: ${updatedUser.wiseapp_acesso_id}`);
+
+        return res.json({
+          success: true,
+          attendantId: updatedUser.wiseapp_acesso_id,
+          attendantName: updatedUser.nome || attendantName || 'Atendente'
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Erro ao salvar token:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Erro interno ao salvar token'
+      });
+    }
+  });
+
+
 
   // Nova rota específica para buscar inboxes com cache otimizado por company_id
   app.get("/api/inboxes/:companyId", async (req, res) => {

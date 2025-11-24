@@ -146,11 +146,16 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
     }
 
     try {
-      // Validar o token usando Supabase Edge Function
+      // Validar o token - usa createApiUrl para garantir compatibilidade multiambiente
       console.log('🔐 Validando token...');
       
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
-      const validationUrl = `${supabaseUrl}/functions/v1/validate-wiseapp-token`;
+      // Obter accountId do localStorage
+      const accountId = localStorage?.getItem('account_id');
+      if (!accountId) {
+        throw new Error('Account ID não encontrado - acesse via URL com account_id');
+      }
+
+      const validationUrl = createApiUrl('wiseapp/validate-token');
       
       console.log('🌍 Ambiente:', window.location.hostname);
       console.log('🔗 URL de validação:', validationUrl);
@@ -160,82 +165,60 @@ export default function WiseAppTokenModal({ open, onClose, onTokenSaved, company
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, accountId }),
       });
 
       const validationData = await validationResponse.json();
 
       if (!validationResponse.ok || !validationData.valid) {
-        if (validationResponse.status === 401) {
+        if (validationResponse.status === 401 || validationData.error?.includes('inválido')) {
           throw new Error('Token inválido. Por favor, verifique se copiou o token corretamente.');
         }
-        throw new Error('Não foi possível validar o token. Tente novamente.');
+        throw new Error(validationData.error || 'Não foi possível validar o token. Tente novamente.');
       }
 
-      const userData = validationData.userData;
+      const userData = validationData.profile || validationData.userData;
       console.log('✅ Token válido:', userData);
 
-      // Obter accountId
-      const accountId = localStorage?.getItem('account_id');
-      if (!accountId) {
-        throw new Error('Account ID não encontrado - acesse via URL com account_id');
+      // Salvar o token via backend (usando service key para contornar RLS)
+      console.log('💾 Salvando token no banco...');
+      
+      const saveUrl = createApiUrl('wiseapp/save-token');
+      const saveResponse = await fetch(saveUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token,
+          email,
+          attendantName,
+          accountId,
+          requiresAttendantName
+        }),
+      });
+
+      const saveData = await saveResponse.json();
+
+      if (!saveResponse.ok || !saveData.success) {
+        throw new Error(saveData.error || 'Erro ao salvar o token no banco');
       }
 
-      if (requiresAttendantName) {
-        // NOVO USUÁRIO: Fazer INSERT com nome, email, token e id_conta_wiseapp
-        const { error: insertError } = await supabase
-          .from('wiseapp_acesso')
-          .insert([{ 
-            email, 
-            nome: attendantName, 
-            id_conta_wiseapp: parseInt(accountId), 
-            access_token_wiseapp: token 
-          }]);
+      console.log('✅ Token salvo com sucesso!', saveData);
 
-        if (insertError) throw insertError;
-      } else {
-        // USUÁRIO EXISTENTE: Fazer UPDATE apenas do token (e nome se fornecido)
-        const updateData: any = { access_token_wiseapp: token };
-        if (attendantName) {
-          updateData.nome = attendantName;
-        }
-
-        const { error: updateError } = await supabase
-          .from('wiseapp_acesso')
-          .update(updateData)
-          .eq('email', email);
-
-        if (updateError) throw updateError;
-      }
-
-      // Fetch the updated user data to get attendantId
-      const { data: updatedUser, error: fetchError } = await supabase
-        .from('wiseapp_acesso')
-        .select('wiseapp_acesso_id, nome')
-        .eq('email', email)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Remove localStorage dependency for Netlify compatibility
+      // Callback com os dados salvos
       onTokenSaved(
         token,
-        updatedUser.wiseapp_acesso_id,
-        updatedUser.nome || attendantName || 'Atendente'
+        saveData.attendantId,
+        saveData.attendantName
       );
       onClose();
     } catch (err: any) {
-      console.error('Erro ao salvar token:', err);
+      console.error('Erro ao processar token:', err);
       
-      if (err.message.includes('Token inválido')) {
-        setError(err.message);
-      } else if (err.message.includes('validar')) {
-        setError(err.message);
-      } else {
-        setError('Erro ao salvar o token. Tente novamente.');
-      }
-      setError(err.message || 'Erro ao salvar o token.');
-      console.error(err);
+      // Usar mensagem de erro específica ou fallback genérico
+      const errorMessage = err.message || 'Erro ao salvar o token. Tente novamente.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
