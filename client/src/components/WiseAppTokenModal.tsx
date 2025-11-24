@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Lock } from 'lucide-react';
-import { createApiUrl } from '@/lib/api-config-supabase';
+import { createApiUrl, API_BASE_URL } from '@/lib/api-config-supabase';
 
 interface Props {
   open: boolean;
@@ -99,8 +99,11 @@ export default function WiseAppTokenModal({
     try {
       console.log('🔐 Validando token com Chatwoot...');
       
-      // Valida o token contra a API do Chatwoot
-      const validationResponse = await fetch('/api/validate-wiseapp-token', {
+      // Valida o token contra a API do Chatwoot (funciona em Replit e Netlify)
+      const validationUrl = `${API_BASE_URL}/validate-wiseapp-token`;
+      console.log('🔗 URL de validação:', validationUrl);
+      
+      const validationResponse = await fetch(validationUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
