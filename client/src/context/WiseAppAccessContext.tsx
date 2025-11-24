@@ -105,7 +105,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
   };
 
   // Helper function to update token and cache
-  const updateToken = (newToken: string, newAttendantId: number, newAttendantName: string) => {
+  const updateToken = (newToken: string, newAttendantId: number, newAttendantName: string, accountIdToSave?: string) => {
     setToken(newToken);
     setAttendantId(newAttendantId);
     setAttendantName(newAttendantName);
@@ -116,6 +116,15 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       attendantId: newAttendantId, 
       attendantName: newAttendantName 
     });
+    
+    // Save account_id to localStorage so it persists
+    if (accountIdToSave) {
+      try {
+        localStorage.setItem('account_id', accountIdToSave);
+      } catch (error) {
+        console.error('Error saving account_id:', error);
+      }
+    }
   };
 
   // Helper function to validate token and clear if expired
@@ -285,7 +294,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
                 nome: access.nome,
                 token_length: access.access_token_wiseapp.length
               });
-              updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome);
+              updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome || 'Atendente', accountId);
               setCanCloseModal(true);
               // WiseApp token fetched and cached successfully
             } else {
