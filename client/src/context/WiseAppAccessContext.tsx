@@ -295,6 +295,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
                 token_length: access.access_token_wiseapp.length
               });
               updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome || 'Atendente', accountId);
+              setShowModal(true);
               setCanCloseModal(true);
               // WiseApp token fetched and cached successfully
             } else {
