@@ -1190,11 +1190,17 @@ const HodometrosDashboard = () => {
         // If result is negative (odometer reset or data error), set to 0
         const kmRodado = Math.max(0, lastValue - firstValue);
         
-        // Debug log for HBZ6F14
-        if (placaNormalizada === 'HBZ6F14') {
-          console.log('=== DEBUG HBZ6F14 (Consolidado por Placa) ===');
+        // Debug log for specific vehicles
+        if (placaNormalizada === 'HBZ6F14' || placaNormalizada === 'HLJ0G42') {
+          console.log(`=== DEBUG ${placaNormalizada} (Consolidado por Placa) ===`);
           console.log('Placa:', placaNormalizada);
           console.log('Total leituras válidas no período:', validReadingsInPeriod.length);
+          console.log('Todas as leituras:', validReadingsInPeriod.map(r => ({
+            data: r.data,
+            hora: r.hora,
+            hod_lido: r.hod_lido,
+            veiculo_id: r.veiculo_id
+          })));
           console.log('Primeira leitura:', {
             data: firstReading.data,
             hora: firstReading.hora,
