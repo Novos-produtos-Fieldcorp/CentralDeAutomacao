@@ -170,9 +170,10 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       // Don't check again if we already checked in this session
       if (hasCheckedToken) {
         console.log('🔍 [WiseAppAccess] Já verificado nesta sessão, validando token...');
-        // Validar token antes de finalizar
-        if (token && !validateToken()) {
-          console.log('❌ [WiseAppAccess] Token expirado, mostrando modal');
+        
+        // Se não tem token OU token expirado, mostrar modal
+        if (!token || !validateToken()) {
+          console.log('❌ [WiseAppAccess] Token ausente ou expirado, mostrando modal');
           setShowModal(true);
           setCanCloseModal(false);
         }
@@ -295,7 +296,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
                 token_length: access.access_token_wiseapp.length
               });
               updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome || 'Atendente', accountId);
-              setShowModal(true);
+              setShowModal(false);
               setCanCloseModal(true);
               // WiseApp token fetched and cached successfully
             } else {
