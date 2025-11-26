@@ -178,12 +178,13 @@ export function buildOdometerTimeline(
 
 /**
  * Calculate km_rodado for a specific date range using readings within the period.
+ * Uses CHRONOLOGICAL order: first reading (earliest date/time) and last reading (latest date/time).
  * 
  * @param timeline - Result from buildOdometerTimeline (used for vehicle type detection)
  * @param startDate - Start date of the period (YYYY-MM-DD)
  * @param endDate - End date of the period (YYYY-MM-DD)
- * @param readingsInPeriod - Readings within the specified period
- * @returns km_rodado for the period (última leitura - primeira leitura do período)
+ * @param readingsInPeriod - Readings within the specified period (should be sorted chronologically)
+ * @returns km_rodado for the period (última leitura cronológica - primeira leitura cronológica)
  */
 export function calculateKmRodadoForPeriod(
   timeline: OdometerTimelineResult,
@@ -195,31 +196,43 @@ export function calculateKmRodadoForPeriod(
     return 0;
   }
 
-  // Find first and last valid readings in period
-  let firstInPeriod: number | null = null;
-  let latestInPeriod: number | null = null;
-  let firstDate: string | null = null;
-  let latestDate: string | null = null;
+  // Sort readings chronologically by date and time
+  const sortedReadings = [...readingsInPeriod]
+    .filter(r => r.data >= startDate && r.data <= endDate)
+    .sort((a, b) => {
+      const dateCompare = a.data.localeCompare(b.data);
+      if (dateCompare !== 0) return dateCompare;
+      return (a.hora || '00:00').localeCompare(b.hora || '00:00');
+    });
 
-  for (const reading of readingsInPeriod) {
-    if (reading.data >= startDate && reading.data <= endDate) {
-      const value = timeline.vehicleType === 'ciclomotor'
-        ? parseNumber(reading.trip_lida)
-        : parseNumber(reading.hod_lido);
-      
-      if (value > 0) {
-        // Track latest reading (highest value in period)
-        if (latestInPeriod === null || value > latestInPeriod) {
-          latestInPeriod = value;
-          latestDate = reading.data;
-        }
-        
-        // Track first reading (lowest value in period, considering chronological order)
-        if (firstInPeriod === null || value < firstInPeriod) {
-          firstInPeriod = value;
-          firstDate = reading.data;
-        }
-      }
+  if (sortedReadings.length === 0) {
+    return 0;
+  }
+
+  // Find FIRST valid reading chronologically
+  let firstInPeriod: number | null = null;
+  for (const reading of sortedReadings) {
+    const value = timeline.vehicleType === 'ciclomotor'
+      ? parseNumber(reading.trip_lida)
+      : parseNumber(reading.hod_lido);
+    
+    if (value > 0) {
+      firstInPeriod = value;
+      break;
+    }
+  }
+
+  // Find LAST valid reading chronologically (iterate in reverse)
+  let latestInPeriod: number | null = null;
+  for (let i = sortedReadings.length - 1; i >= 0; i--) {
+    const reading = sortedReadings[i];
+    const value = timeline.vehicleType === 'ciclomotor'
+      ? parseNumber(reading.trip_lida)
+      : parseNumber(reading.hod_lido);
+    
+    if (value > 0) {
+      latestInPeriod = value;
+      break;
     }
   }
 
@@ -227,7 +240,7 @@ export function calculateKmRodadoForPeriod(
     return 0;
   }
 
-  // Calculate km_rodado: última leitura do período - primeira leitura do período
+  // Calculate km_rodado: última leitura cronológica - primeira leitura cronológica
   const kmRodado = latestInPeriod - firstInPeriod;
   return Math.max(0, kmRodado);
 }
