@@ -1224,13 +1224,34 @@ const HodometrosDashboard = () => {
       
       // Step 4: Process bomba data (historical fuel up to day before) and aggregate by normalized placa
       // Maps to aggregate data by vehicle (using placa as key to avoid duplicates)
-      const vehicleStatsMap = new Map<string, VehicleFuelStats>();
+      const vehicleStatsMap = new Map<string, VehicleFuelStats & { ultimoAbastecimento: number }>();
       const kmVsPriceMap = new Map<string, { km: number; preco: number }>();
+      
+      // Track last refuel per vehicle (by date) to exclude from consumption calculation
+      const lastRefuelByPlaca = new Map<string, { data: string; litros: number }>();
       
       let totalLitrosSum = 0;
       let totalGastoSum = 0;
       let validReadingsCount = 0;
       
+      // First pass: find the last (most recent) refuel for each vehicle
+      // bombas are already sorted by date descending, so first occurrence is the most recent
+      bombas.forEach((bomba: any) => {
+        const litros = parseNumber(bomba.litro_lido);
+        if (litros === 0) return;
+        
+        const veiculo = Array.isArray(bomba.veiculo) ? bomba.veiculo[0] : bomba.veiculo;
+        if (!veiculo || !veiculo.veiculo_id) return;
+        
+        const placaNormalizada = (veiculo.placa || 'Desconhecida').toUpperCase();
+        
+        // Only store if we haven't found the last refuel for this plate yet
+        if (!lastRefuelByPlaca.has(placaNormalizada)) {
+          lastRefuelByPlaca.set(placaNormalizada, { data: bomba.data, litros });
+        }
+      });
+      
+      // Second pass: aggregate all refuels
       bombas.forEach((bomba: any) => {
         const litros = parseNumber(bomba.litro_lido);
         const preco = parseNumber(bomba.preco_lido);
@@ -1245,6 +1266,9 @@ const HodometrosDashboard = () => {
         const placaNormalizada = (veiculo.placa || 'Desconhecida').toUpperCase();
         const marca = veiculo.marca || 'Desconhecida';
         
+        // Get the last refuel for this vehicle
+        const lastRefuel = lastRefuelByPlaca.get(placaNormalizada);
+        
         // Aggregate by placa (normalized to uppercase) instead of veiculo_id
         if (!vehicleStatsMap.has(placaNormalizada)) {
           // Get km_rodado directly from the placa-based map
@@ -1258,7 +1282,8 @@ const HodometrosDashboard = () => {
             totalGasto: 0,
             totalKm: totalKmForPlaca,
             mediaKmPorLitro: 0,
-            abastecimentos: 0
+            abastecimentos: 0,
+            ultimoAbastecimento: lastRefuel?.litros || 0
           });
         }
         
@@ -1288,11 +1313,16 @@ const HodometrosDashboard = () => {
       });
       
       // Calculate average km per liter for each vehicle
-      // Formula: km rodados no período / litros abastecidos até ontem (exclui abastecimentos de hoje)
-      const vehicleStats = Array.from(vehicleStatsMap.values()).map(stats => ({
-        ...stats,
-        mediaKmPorLitro: stats.totalLitros > 0 ? stats.totalKm / stats.totalLitros : 0
-      }));
+      // Formula: km rodados no período / (litros abastecidos - último abastecimento)
+      // The last refuel is excluded because it hasn't been consumed yet (still in the tank)
+      const vehicleStats = Array.from(vehicleStatsMap.values()).map(stats => {
+        // Subtract the last refuel from total liters for consumption calculation
+        const litrosConsumidos = stats.totalLitros - stats.ultimoAbastecimento;
+        return {
+          ...stats,
+          mediaKmPorLitro: litrosConsumidos > 0 ? stats.totalKm / litrosConsumidos : 0
+        };
+      });
       
       // Convert km vs price map to array
       const kmVsPrice = Array.from(kmVsPriceMap.entries()).map(([placa, data]) => ({
