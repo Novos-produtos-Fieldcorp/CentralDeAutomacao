@@ -1189,6 +1189,23 @@ const HodometrosDashboard = () => {
             readingsInPeriod
           );
 
+          // Debug log for HBZ6F14
+          if (placaNormalizada === 'HBZ6F14') {
+            console.log('=== DEBUG HBZ6F14 ===');
+            console.log('Placa:', placaNormalizada);
+            console.log('Veículo ID:', veiculoId);
+            console.log('Total leituras no período:', readingsInPeriod.length);
+            console.log('Leituras (data, hora, hod_lido):', readingsInPeriod.map(r => ({
+              data: r.data,
+              hora: r.hora,
+              hod_lido: r.hod_lido
+            })));
+            console.log('KM Rodado calculado:', kmRodadoPeriodo);
+            console.log('Timeline baseline:', timeline.baseline);
+            console.log('Timeline vehicleType:', timeline.vehicleType);
+            console.log('======================');
+          }
+
           if (kmRodadoPeriodo > 0) {
             totalKmRodadoByVehicleId.set(veiculoId, kmRodadoPeriodo);
           }
