@@ -177,13 +177,13 @@ export function buildOdometerTimeline(
 }
 
 /**
- * Calculate km_rodado for a specific date range using the timeline.
+ * Calculate km_rodado for a specific date range using readings within the period.
  * 
- * @param timeline - Result from buildOdometerTimeline
+ * @param timeline - Result from buildOdometerTimeline (used for vehicle type detection)
  * @param startDate - Start date of the period (YYYY-MM-DD)
  * @param endDate - End date of the period (YYYY-MM-DD)
  * @param readingsInPeriod - Readings within the specified period
- * @returns km_rodado for the period
+ * @returns km_rodado for the period (última leitura - primeira leitura do período)
  */
 export function calculateKmRodadoForPeriod(
   timeline: OdometerTimelineResult,
@@ -191,29 +191,43 @@ export function calculateKmRodadoForPeriod(
   endDate: string,
   readingsInPeriod: HodometroReadingInput[]
 ): number {
-  if (!timeline.baseline || readingsInPeriod.length === 0) {
+  if (readingsInPeriod.length === 0) {
     return 0;
   }
 
-  // Find latest reading in period
+  // Find first and last valid readings in period
+  let firstInPeriod: number | null = null;
   let latestInPeriod: number | null = null;
+  let firstDate: string | null = null;
+  let latestDate: string | null = null;
+
   for (const reading of readingsInPeriod) {
     if (reading.data >= startDate && reading.data <= endDate) {
       const value = timeline.vehicleType === 'ciclomotor'
         ? parseNumber(reading.trip_lida)
         : parseNumber(reading.hod_lido);
       
-      if (value > 0 && (latestInPeriod === null || value > latestInPeriod)) {
-        latestInPeriod = value;
+      if (value > 0) {
+        // Track latest reading (highest value in period)
+        if (latestInPeriod === null || value > latestInPeriod) {
+          latestInPeriod = value;
+          latestDate = reading.data;
+        }
+        
+        // Track first reading (lowest value in period, considering chronological order)
+        if (firstInPeriod === null || value < firstInPeriod) {
+          firstInPeriod = value;
+          firstDate = reading.data;
+        }
       }
     }
   }
 
-  if (latestInPeriod === null) {
+  if (latestInPeriod === null || firstInPeriod === null) {
     return 0;
   }
 
-  // Calculate km_rodado from baseline to latest in period
-  const kmRodado = latestInPeriod - timeline.baseline;
-  return Math.max(0, kmRodado); // Ensure non-negative
+  // Calculate km_rodado: última leitura do período - primeira leitura do período
+  const kmRodado = latestInPeriod - firstInPeriod;
+  return Math.max(0, kmRodado);
 }
