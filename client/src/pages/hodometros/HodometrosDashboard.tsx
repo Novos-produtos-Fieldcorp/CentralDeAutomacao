@@ -1135,81 +1135,86 @@ const HodometrosDashboard = () => {
       const bombas = bombasData || [];
       
       // Step 3: Calculate KM rodado for each vehicle using hodometros from the period
-      const totalKmRodadoByVehicleId = new Map<number, number>();
-      const vehicleIdToPlaca = new Map<number, string>();
+      // IMPORTANT: Group by NORMALIZED PLACA first to handle cases where the same physical
+      // vehicle has multiple vehicle_ids in the database
+      const totalKmRodadoByPlaca = new Map<string, number>();
+      const placaToVehicleId = new Map<string, number>(); // Keep track of one vehicle_id per placa for bomba lookup
       
-      // Group hodometros by veiculo_id
-      const hodometrosByVehicle = new Map<number, any[]>();
+      // Group hodometros by NORMALIZED PLACA (not by veiculo_id)
+      const hodometrosByPlaca = new Map<string, any[]>();
       (hodometrosInPeriod || []).forEach(hod => {
-        if (!hodometrosByVehicle.has(hod.veiculo_id)) {
-          hodometrosByVehicle.set(hod.veiculo_id, []);
+        const veiculo = Array.isArray(hod.veiculo) ? hod.veiculo[0] : hod.veiculo;
+        const originalPlaca = veiculo?.placa || '';
+        const placaNormalizada = originalPlaca.trim().toUpperCase();
+        
+        if (!placaNormalizada) return;
+        
+        if (!hodometrosByPlaca.has(placaNormalizada)) {
+          hodometrosByPlaca.set(placaNormalizada, []);
+          placaToVehicleId.set(placaNormalizada, hod.veiculo_id);
         }
-        hodometrosByVehicle.get(hod.veiculo_id)!.push(hod);
+        hodometrosByPlaca.get(placaNormalizada)!.push(hod);
       });
         
-        // Calculate km_rodado per veiculo_id for the selected period
-        hodometrosByVehicle.forEach((readings, veiculoId) => {
-          if (readings.length === 0) return;
-          
-          // Sort by date and time to ensure correct order
-          const sortedReadings = [...readings].sort((a, b) => {
-            const dateCompare = a.data.localeCompare(b.data);
-            if (dateCompare !== 0) return dateCompare;
-            return a.hora.localeCompare(b.hora);
-          });
-          
-          // Convert to HodometroReadingInput format
-          const timelineInputs: HodometroReadingInput[] = sortedReadings.map((reading) => ({
-            data: reading.data,
-            hora: reading.hora ?? '00:00',
-            hod_lido: reading.hod_lido === null || reading.hod_lido === undefined ? null : String(reading.hod_lido),
-            trip_lida: reading.trip_lida === null || reading.trip_lida === undefined ? null : String(reading.trip_lida),
-            bateria: reading.bateria ?? null,
-          }));
-
-          // Build timeline with reset detection
-          const timeline = buildOdometerTimeline(timelineInputs);
-
-          // Get normalized placa from first reading
-          const originalPlaca = timelineInputs.length
-            ? (Array.isArray(sortedReadings[0].veiculo) ? sortedReadings[0].veiculo[0]?.placa : sortedReadings[0].veiculo?.placa)
-            : null;
-          const placaNormalizada = (originalPlaca || '').trim().toUpperCase();
-          vehicleIdToPlaca.set(veiculoId, placaNormalizada);
-
-          // Calculate km rodado for the selected period (within the date range)
-          const readingsInPeriod = timelineInputs.filter((reading) =>
-            reading.data >= dateRange.startDate && reading.data <= dateRange.endDate
-          );
-
-          const kmRodadoPeriodo = calculateKmRodadoForPeriod(
-            timeline,
-            dateRange.startDate,
-            dateRange.endDate,
-            readingsInPeriod
-          );
-
-          // Debug log for HBZ6F14
-          if (placaNormalizada === 'HBZ6F14') {
-            console.log('=== DEBUG HBZ6F14 ===');
-            console.log('Placa:', placaNormalizada);
-            console.log('Veículo ID:', veiculoId);
-            console.log('Total leituras no período:', readingsInPeriod.length);
-            console.log('Leituras (data, hora, hod_lido):', readingsInPeriod.map(r => ({
-              data: r.data,
-              hora: r.hora,
-              hod_lido: r.hod_lido
-            })));
-            console.log('KM Rodado calculado:', kmRodadoPeriodo);
-            console.log('Timeline baseline:', timeline.baseline);
-            console.log('Timeline vehicleType:', timeline.vehicleType);
-            console.log('======================');
-          }
-
-          if (kmRodadoPeriodo > 0) {
-            totalKmRodadoByVehicleId.set(veiculoId, kmRodadoPeriodo);
-          }
+      // Calculate km_rodado per PLACA (consolidating all vehicle_ids with same plate)
+      hodometrosByPlaca.forEach((readings, placaNormalizada) => {
+        if (readings.length === 0) return;
+        
+        // Sort ALL readings for this placa by date and time (chronological order)
+        const sortedReadings = [...readings].sort((a, b) => {
+          const dateCompare = a.data.localeCompare(b.data);
+          if (dateCompare !== 0) return dateCompare;
+          return (a.hora || '00:00').localeCompare(b.hora || '00:00');
         });
+        
+        // Filter readings within the period and with valid hod_lido values
+        const validReadingsInPeriod = sortedReadings.filter(reading => {
+          if (reading.data < dateRange.startDate || reading.data > dateRange.endDate) return false;
+          const hodLido = reading.hod_lido;
+          return hodLido !== null && hodLido !== undefined && !isNaN(Number(hodLido)) && Number(hodLido) > 0;
+        });
+        
+        if (validReadingsInPeriod.length < 2) {
+          // Need at least 2 readings to calculate km rodado
+          return;
+        }
+        
+        // Get first and last readings chronologically
+        const firstReading = validReadingsInPeriod[0];
+        const lastReading = validReadingsInPeriod[validReadingsInPeriod.length - 1];
+        
+        const firstValue = Number(firstReading.hod_lido);
+        const lastValue = Number(lastReading.hod_lido);
+        
+        // Calculate km rodado as: last reading - first reading
+        // If result is negative (odometer reset or data error), set to 0
+        const kmRodado = Math.max(0, lastValue - firstValue);
+        
+        // Debug log for HBZ6F14
+        if (placaNormalizada === 'HBZ6F14') {
+          console.log('=== DEBUG HBZ6F14 (Consolidado por Placa) ===');
+          console.log('Placa:', placaNormalizada);
+          console.log('Total leituras válidas no período:', validReadingsInPeriod.length);
+          console.log('Primeira leitura:', {
+            data: firstReading.data,
+            hora: firstReading.hora,
+            hod_lido: firstReading.hod_lido,
+            veiculo_id: firstReading.veiculo_id
+          });
+          console.log('Última leitura:', {
+            data: lastReading.data,
+            hora: lastReading.hora,
+            hod_lido: lastReading.hod_lido,
+            veiculo_id: lastReading.veiculo_id
+          });
+          console.log('KM Rodado calculado:', kmRodado, `(${lastValue} - ${firstValue})`);
+          console.log('==============================================');
+        }
+
+        if (kmRodado > 0) {
+          totalKmRodadoByPlaca.set(placaNormalizada, kmRodado);
+        }
+      });
       
       // Step 4: Process bomba data (historical fuel up to day before) and aggregate by normalized placa
       // Maps to aggregate data by vehicle (using placa as key to avoid duplicates)
@@ -1236,15 +1241,8 @@ const HodometrosDashboard = () => {
         
         // Aggregate by placa (normalized to uppercase) instead of veiculo_id
         if (!vehicleStatsMap.has(placaNormalizada)) {
-          // Step 3: Consolidate km_rodado by normalized placa
-          // Sum km from all veiculo_ids that share this normalized placa
-          let totalKmForPlaca = 0;
-          totalKmRodadoByVehicleId.forEach((km, vId) => {
-            const placa = vehicleIdToPlaca.get(vId);
-            if (placa === placaNormalizada) {
-              totalKmForPlaca += km;
-            }
-          });
+          // Get km_rodado directly from the placa-based map
+          const totalKmForPlaca = totalKmRodadoByPlaca.get(placaNormalizada) || 0;
           
           vehicleStatsMap.set(placaNormalizada, {
             veiculo_id: veiculoId,
