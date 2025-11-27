@@ -5,7 +5,7 @@ import { Lock } from 'lucide-react';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onTokenSaved: (token: string, attendantId: number, attendantName: string) => void;
+  onTokenSaved: (token: string, attendantId: number, attendantName: string, email: string) => void;
   companyId: number | null;
   isDismissible?: boolean;
 }
@@ -50,7 +50,8 @@ export default function WiseAppTokenModal({
           onTokenSaved(
             existing.access_token_wiseapp,
             existing.wiseapp_acesso_id,
-            existing.nome || 'Atendente'
+            existing.nome || 'Atendente',
+            email
           );
           onClose();
         } else {
@@ -201,7 +202,8 @@ export default function WiseAppTokenModal({
       onTokenSaved(
         token,
         updatedUser.wiseapp_acesso_id,
-        updatedUser.nome || attendantName || 'Atendente'
+        updatedUser.nome || attendantName || 'Atendente',
+        email
       );
       onClose();
     } catch (err: any) {

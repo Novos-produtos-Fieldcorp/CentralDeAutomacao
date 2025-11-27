@@ -20,70 +20,30 @@ const WiseAppAccessContext = createContext<WiseAppAccessContextType>({
 });
 
 export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode }) => {
-  // Initialize from localStorage if available
-  const [token, setToken] = useState<string | null>(() => {
+  // Helper to check if session data is valid (not expired)
+  const getValidSessionData = () => {
     try {
-      const cached = localStorage.getItem('wiseapp_token_cache');
+      const cached = localStorage.getItem('wiseapp_session');
       if (cached) {
         const parsed = JSON.parse(cached);
         const isExpired = Date.now() > parsed.expiresAt;
         if (!isExpired) {
-          return parsed.token;
+          return parsed;
         }
       }
     } catch (error) {
-      // Error loading cached token
+      // Error loading cached session
     }
     return null;
-  });
+  };
   
-  const [companyId, setCompanyId] = useState<number | null>(() => {
-    try {
-      const cached = localStorage.getItem('wiseapp_company_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const isExpired = Date.now() > parsed.expiresAt;
-        if (!isExpired) {
-          return parsed.companyId;
-        }
-      }
-    } catch (error) {
-      // Error loading cached company
-    }
-    return null;
-  });
+  const validSession = getValidSessionData();
   
-  const [attendantId, setAttendantId] = useState<number | null>(() => {
-    try {
-      const cached = localStorage.getItem('wiseapp_attendant_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const isExpired = Date.now() > parsed.expiresAt;
-        if (!isExpired) {
-          return parsed.attendantId;
-        }
-      }
-    } catch (error) {
-      // Error loading cached attendant
-    }
-    return null;
-  });
-  
-  const [attendantName, setAttendantName] = useState<string | null>(() => {
-    try {
-      const cached = localStorage.getItem('wiseapp_attendant_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const isExpired = Date.now() > parsed.expiresAt;
-        if (!isExpired) {
-          return parsed.attendantName;
-        }
-      }
-    } catch (error) {
-      // Error loading cached attendant name
-    }
-    return null;
-  });
+  const [token, setToken] = useState<string | null>(validSession?.token || null);
+  const [companyId, setCompanyId] = useState<number | null>(validSession?.companyId || null);
+  const [attendantId, setAttendantId] = useState<number | null>(validSession?.attendantId || null);
+  const [attendantName, setAttendantName] = useState<string | null>(validSession?.attendantName || null);
+  const [authenticatedEmail, setAuthenticatedEmail] = useState<string | null>(validSession?.email || null);
   
   const [showModal, setShowModal] = useState(false);
   const [canCloseModal, setCanCloseModal] = useState(true);
@@ -91,75 +51,76 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
   const [hasCheckedToken, setHasCheckedToken] = useState(false);
   const [searchParams] = useSearchParams();
 
-  // Helper function to cache data with expiration
-  const cacheData = (key: string, data: any, expirationHours: number = 1) => {
+  // Helper function to save session data with expiration (1 hour default)
+  const saveSession = (data: {
+    token: string;
+    email: string;
+    companyId: number;
+    attendantId: number;
+    attendantName: string;
+    accountId?: string;
+  }, expirationHours: number = 1) => {
     try {
-      const cache = {
+      const session = {
         ...data,
         expiresAt: Date.now() + (expirationHours * 60 * 60 * 1000)
       };
-      localStorage.setItem(key, JSON.stringify(cache));
+      localStorage.setItem('wiseapp_session', JSON.stringify(session));
+      
+      // Also save account_id separately for URL-less access
+      if (data.accountId) {
+        localStorage.setItem('account_id', data.accountId);
+      }
     } catch (error) {
-      console.error('Error caching data:', error);
+      console.error('Error saving session:', error);
     }
   };
 
-  // Helper function to update token and cache
-  const updateToken = (newToken: string, newAttendantId: number, newAttendantName: string, accountIdToSave?: string) => {
+  // Helper function to update state and cache after successful authentication
+  const updateSession = (
+    newToken: string, 
+    newEmail: string,
+    newCompanyId: number,
+    newAttendantId: number, 
+    newAttendantName: string, 
+    accountIdToSave?: string
+  ) => {
     setToken(newToken);
+    setAuthenticatedEmail(newEmail);
+    setCompanyId(newCompanyId);
     setAttendantId(newAttendantId);
     setAttendantName(newAttendantName);
     
-    // Cache the token and attendant info
-    cacheData('wiseapp_token_cache', { token: newToken });
-    cacheData('wiseapp_attendant_cache', { 
-      attendantId: newAttendantId, 
-      attendantName: newAttendantName 
+    saveSession({
+      token: newToken,
+      email: newEmail,
+      companyId: newCompanyId,
+      attendantId: newAttendantId,
+      attendantName: newAttendantName,
+      accountId: accountIdToSave
     });
-    
-    // Save account_id to localStorage so it persists
-    if (accountIdToSave) {
-      try {
-        localStorage.setItem('account_id', accountIdToSave);
-      } catch (error) {
-        console.error('Error saving account_id:', error);
-      }
-    }
   };
 
-  // Helper function to validate token and clear if expired
-  const validateToken = () => {
-    try {
-      const cached = localStorage.getItem('wiseapp_token_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const isExpired = Date.now() > parsed.expiresAt;
-        if (isExpired) {
-          console.log('Token WiseApp expirado, limpando cache...');
-          clearCache();
-          return false;
-        }
-      }
-      return true;
-    } catch (error) {
-      console.error('Error validating token:', error);
-      clearCache();
-      return false;
-    }
+  // Helper function to validate session
+  const isSessionValid = () => {
+    const session = getValidSessionData();
+    return session && session.token && session.email;
   };
 
-  // Helper function to clear all cached data
-  const clearCache = () => {
+  // Helper function to clear all session data
+  const clearSession = () => {
     try {
+      localStorage.removeItem('wiseapp_session');
       localStorage.removeItem('wiseapp_token_cache');
       localStorage.removeItem('wiseapp_company_cache');
       localStorage.removeItem('wiseapp_attendant_cache');
       setToken(null);
+      setAuthenticatedEmail(null);
       setCompanyId(null);
       setAttendantId(null);
       setAttendantName(null);
     } catch (error) {
-      console.error('Error clearing cache:', error);
+      console.error('Error clearing session:', error);
     }
   };
 
@@ -167,30 +128,44 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
     const verificarAcesso = async () => {
       console.log('🔍 [WiseAppAccess] Iniciando verificação de acesso...');
       
-      // Don't check again if we already checked in this session
+      // Check for valid session first (user already authenticated with email)
       if (hasCheckedToken) {
-        console.log('🔍 [WiseAppAccess] Já verificado nesta sessão, validando token...');
+        console.log('🔍 [WiseAppAccess] Já verificado nesta sessão...');
         
-        // Se não tem token OU token expirado, mostrar modal
-        if (!token || !validateToken()) {
-          console.log('❌ [WiseAppAccess] Token ausente ou expirado, mostrando modal');
-          setShowModal(true);
-          setCanCloseModal(false);
+        // Only skip authentication if we have BOTH valid session AND authenticated email
+        if (isSessionValid() && authenticatedEmail) {
+          console.log('✅ [WiseAppAccess] Sessão válida com email:', authenticatedEmail);
+          setIsLoading(false);
+          return;
         }
+        
+        // Session invalid or no email - show modal
+        console.log('❌ [WiseAppAccess] Sessão inválida ou sem email autenticado, mostrando modal');
+        setShowModal(true);
+        setCanCloseModal(false);
         setIsLoading(false);
         return;
       }
 
+      // Get account_id from URL or localStorage
       let accountId = searchParams.get('account_id')?.trim();
       console.log('🔍 [WiseAppAccess] Account ID da URL:', accountId);
       
       if (!accountId) {
-        // Get from localStorage if available
         try {
           accountId = localStorage?.getItem('account_id') ?? undefined;
           console.log('🔍 [WiseAppAccess] Account ID do localStorage:', accountId);
         } catch {
           accountId = undefined;
+        }
+      }
+      
+      // Save account_id for future use
+      if (accountId) {
+        try {
+          localStorage.setItem('account_id', accountId);
+        } catch {
+          // Ignore storage errors
         }
       }
       
@@ -204,160 +179,57 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       }
 
       try {
-        // Check if we have valid cached data first
-        const cachedToken = localStorage.getItem('wiseapp_token_cache');
-        const cachedCompany = localStorage.getItem('wiseapp_company_cache');
-        const cachedAttendant = localStorage.getItem('wiseapp_attendant_cache');
+        // Check if we have a valid session with authenticated email
+        const session = getValidSessionData();
         
-        let useCache = false;
-        
-        if (cachedToken && cachedCompany && cachedAttendant) {
-          try {
-            const tokenData = JSON.parse(cachedToken);
-            const companyData = JSON.parse(cachedCompany);
-            const attendantData = JSON.parse(cachedAttendant);
-            
-            const isTokenValid = Date.now() < tokenData.expiresAt;
-            const isCompanyValid = Date.now() < companyData.expiresAt;
-            const isAttendantValid = Date.now() < attendantData.expiresAt;
-            
-            if (isTokenValid && isCompanyValid && isAttendantValid) {
-              // Using cached WiseApp token and data
-              setToken(tokenData.token);
-              setCompanyId(companyData.companyId);
-              setAttendantId(attendantData.attendantId);
-              setAttendantName(attendantData.attendantName);
-              useCache = true;
-            }
-          } catch (cacheError) {
-            // Error reading cache, fetching fresh data
-          }
+        if (session && session.email && session.token) {
+          console.log('✅ [WiseAppAccess] Sessão válida encontrada para:', session.email);
+          setToken(session.token);
+          setAuthenticatedEmail(session.email);
+          setCompanyId(session.companyId);
+          setAttendantId(session.attendantId);
+          setAttendantName(session.attendantName);
+          setShowModal(false);
+          setIsLoading(false);
+          setHasCheckedToken(true);
+          return;
         }
         
-        if (!useCache) {
-          console.log('🔍 [WiseAppAccess] Buscando dados frescos do banco...');
+        // No valid session - need to fetch company info and show authentication modal
+        console.log('🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp:', accountId);
+        
+        const { data: company, error: companyError } = await supabase
+          .from('company')
+          .select('company_id')
+          .eq('id_conta_wiseapp', accountId)
+          .single();
+
+        console.log('📊 [WiseAppAccess] Resultado da busca da empresa:', {
+          error: companyError,
+          data: company
+        });
+
+        if (companyError) {
+          console.error('❌ [WiseAppAccess] Erro ao buscar empresa:', companyError);
+          setShowModal(true);
+          setCanCloseModal(false);
+          setIsLoading(false);
+          setHasCheckedToken(true);
+          return;
+        }
+
+        if (company) {
+          console.log('✅ [WiseAppAccess] Empresa encontrada:', company);
+          setCompanyId(company.company_id);
           
-          // Fetching fresh WiseApp token from database
-          
-          // Get company ID from account ID
-          console.log('🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp:', accountId);
-          
-          const { data: company, error: companyError } = await supabase
-            .from('company')
-            .select('company_id')
-            .eq('id_conta_wiseapp', accountId)
-            .single();
-
-          console.log('📊 [WiseAppAccess] Resultado da busca da empresa:', {
-            error: companyError,
-            data: company
-          });
-
-          if (companyError) {
-            console.error('❌ [WiseAppAccess] Erro ao buscar empresa:', companyError);
-            setIsLoading(false);
-            return;
-          }
-
-          if (company) {
-            console.log('✅ [WiseAppAccess] Empresa encontrada:', company);
-            setCompanyId(company.company_id);
-            
-            // Cache company data
-            cacheData('wiseapp_company_cache', { companyId: company.company_id });
-            
-            // Check if there's a token for this account
-            console.log('🔍 [WiseAppAccess] Buscando token para id_conta_wiseapp:', accountId);
-            
-            // Pegar apenas o registro mais recente caso haja múltiplos
-            const { data: accessList, error: accessError } = await supabase
-              .from('wiseapp_acesso')
-              .select('wiseapp_acesso_id, access_token_wiseapp, nome, email')
-              .eq('id_conta_wiseapp', accountId)
-              .order('wiseapp_acesso_id', { ascending: false })
-              .limit(1);
-            
-            const access = accessList && accessList.length > 0 ? accessList[0] : null;
-
-            console.log('📊 [WiseAppAccess] Resultado da busca:', {
-              error: accessError,
-              data: access,
-              has_token: !!access?.access_token_wiseapp
-            });
-
-            if (accessError && accessError.code !== 'PGRST116') {
-              console.error('❌ [WiseAppAccess] Erro ao buscar token:', accessError);
-            }
-
-            if (access && access.access_token_wiseapp) {
-              console.log('✅ [WiseAppAccess] Token encontrado:', {
-                email: access.email,
-                nome: access.nome,
-                token_length: access.access_token_wiseapp.length
-              });
-              updateToken(access.access_token_wiseapp, access.wiseapp_acesso_id, access.nome || 'Atendente', accountId);
-              setShowModal(false);
-              setCanCloseModal(true);
-              // WiseApp token fetched and cached successfully
-            } else {
-              console.log('❌ [WiseAppAccess] Nenhum token encontrado no banco, verificando cache...');
-              
-              // Check if we have a valid cached token that could be saved to database
-              try {
-                const cachedToken = localStorage.getItem('wiseapp_token_cache');
-                console.log('🔍 [WiseAppAccess] Token em cache:', cachedToken ? 'Encontrado' : 'Não encontrado');
-                
-                if (cachedToken) {
-                  const tokenData = JSON.parse(cachedToken);
-                  const isTokenValid = Date.now() < tokenData.expiresAt;
-                  
-                  if (isTokenValid && tokenData.token) {
-                    // Found valid cached token, saving to database
-                    
-                    // Try to save the cached token to database
-                    const { error: insertError } = await supabase
-                      .from('wiseapp_acesso')
-                      .insert([{ 
-                        email: 'auto@sistema.com', 
-                        nome: 'Token Automático', 
-                        id_conta_wiseapp: accountId, 
-                        access_token_wiseapp: tokenData.token 
-                      }]);
-                    
-                    if (!insertError) {
-                      // Successfully saved, now fetch it back to get the ID
-                      const { data: newAccess } = await supabase
-                        .from('wiseapp_acesso')
-                        .select('wiseapp_acesso_id, access_token_wiseapp, nome')
-                        .eq('id_conta_wiseapp', accountId)
-                        .eq('access_token_wiseapp', tokenData.token)
-                        .single();
-                      
-                      if (newAccess) {
-                        updateToken(newAccess.access_token_wiseapp, newAccess.wiseapp_acesso_id, newAccess.nome);
-                        setCanCloseModal(true);
-                        // Cached token successfully saved to database
-                        return; // Don't show modal, we're done
-                      }
-                    } else {
-                      console.error('Error saving cached token to database:', insertError);
-                    }
-                  }
-                }
-              } catch (cacheError) {
-                // Error processing cached token
-              }
-              
-              // No token found and couldn't save cached token, show modal
-              console.log('❌ [WiseAppAccess] Nenhum token válido encontrado, mostrando modal de autenticação');
-              setShowModal(true);
-              setCanCloseModal(false);
-            }
-          } else {
-            console.log('❌ [WiseAppAccess] Empresa não encontrada para Account ID:', accountId);
-            setShowModal(true);
-            setCanCloseModal(false);
-          }
+          // ALWAYS show authentication modal - user must provide email
+          console.log('📧 [WiseAppAccess] Mostrando modal de autenticação (e-mail obrigatório)');
+          setShowModal(true);
+          setCanCloseModal(false);
+        } else {
+          console.log('❌ [WiseAppAccess] Empresa não encontrada para Account ID:', accountId);
+          setShowModal(true);
+          setCanCloseModal(false);
         }
       } catch (error) {
         console.error('❌ [WiseAppAccess] Erro na verificação:', error);
@@ -370,7 +242,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
     };
 
     verificarAcesso();
-  }, [searchParams]);
+  }, [searchParams, authenticatedEmail]);
 
   return (
     <WiseAppAccessContext.Provider value={{ token, companyId, attendantId, attendantName, isLoading }}>
@@ -378,8 +250,16 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       <WiseAppTokenModal
         open={showModal}
         onClose={() => canCloseModal && setShowModal(false)}
-        onTokenSaved={(newToken, attendantId, attendantName) => {
-          updateToken(newToken, attendantId || 0, attendantName || 'Atendente');
+        onTokenSaved={(newToken, newAttendantId, newAttendantName, email) => {
+          const accountId = searchParams.get('account_id')?.trim() || localStorage?.getItem('account_id') || '';
+          updateSession(
+            newToken, 
+            email || '', 
+            companyId || 0, 
+            newAttendantId || 0, 
+            newAttendantName || 'Atendente',
+            accountId
+          );
           setShowModal(false);
           setCanCloseModal(true);
           setHasCheckedToken(true);
