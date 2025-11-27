@@ -37,22 +37,44 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   const { data: tags = [], isLoading } = useQuery<Tag[]>({
     queryKey: ['local-tags', companyId, accountId],
     queryFn: async () => {
-      let query = supabase
-        .from('tag')
-        .select('*')
-        .eq('company_id', companyId);
-      
-      // Filter by id_conta_wiseapp if available to ensure proper data isolation
-      if (accountId) {
-        query = query.or(`id_conta_wiseapp.eq.${accountId},id_conta_wiseapp.is.null`);
-      }
-      
-      const { data, error } = await query.order('nome');
+      // First, try to query with id_conta_wiseapp filter if the column exists
+      // If column doesn't exist yet (migration pending), fall back to company_id only
+      try {
+        let query = supabase
+          .from('tag')
+          .select('*')
+          .eq('company_id', companyId);
+        
+        // Filter by id_conta_wiseapp if available to ensure proper data isolation
+        if (accountId) {
+          query = query.or(`id_conta_wiseapp.eq.${accountId},id_conta_wiseapp.is.null`);
+        }
+        
+        const { data, error } = await query.order('nome');
 
-      if (error) throw error;
-      return data || [];
+        if (error) {
+          // Check if error is about missing column
+          if (error.code === '42703' && error.message?.includes('id_conta_wiseapp')) {
+            console.warn('[TagAdministration] Coluna id_conta_wiseapp não existe ainda, usando fallback');
+            // Fallback: query without id_conta_wiseapp filter
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from('tag')
+              .select('*')
+              .eq('company_id', companyId)
+              .order('nome');
+            
+            if (fallbackError) throw fallbackError;
+            return fallbackData || [];
+          }
+          throw error;
+        }
+        return data || [];
+      } catch (error) {
+        console.error('[TagAdministration] Erro ao buscar tags:', error);
+        throw error;
+      }
     },
-    enabled: !!companyId,
+    enabled: !!companyId && accountId !== undefined,
   });
 
   const createTagMutation = useMutation({
@@ -70,21 +92,34 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         updated_at: new Date().toISOString()
       } as Tag);
 
-      const { data, error } = await supabase
+      // Try to insert with id_conta_wiseapp, fallback if column doesn't exist
+      const insertData: Record<string, any> = {
+        nome: tagData.nome,
+        cor: tagData.cor || '#3B82F6',
+        limite_max: tagData.limite_max || null,
+        company_id: tagData.company_id,
+        id_conta_wiseapp: accountId || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      let result = await supabase
         .from('tag')
-        .insert({
-          nome: tagData.nome,
-          cor: tagData.cor || '#3B82F6',
-          limite_max: tagData.limite_max || null,
-          company_id: tagData.company_id,
-          id_conta_wiseapp: accountId || null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .insert(insertData)
         .select();
 
-      if (error) throw error;
-      return data[0];
+      // If column doesn't exist, try without id_conta_wiseapp
+      if (result.error?.code === '42703' && result.error.message?.includes('id_conta_wiseapp')) {
+        console.warn('[TagAdministration] Coluna id_conta_wiseapp não existe, inserindo sem ela');
+        delete insertData.id_conta_wiseapp;
+        result = await supabase
+          .from('tag')
+          .insert(insertData)
+          .select();
+      }
+
+      if (result.error) throw result.error;
+      return result.data?.[0];
     },
     onSuccess: async () => {
       // Invalidar todas as queries relacionadas a tags

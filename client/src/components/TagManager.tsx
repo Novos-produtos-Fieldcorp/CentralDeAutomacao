@@ -22,22 +22,49 @@ export function TagManager({ companyId }: TagManagerProps) {
   const { data: localTags, isLoading: isLoadingLocal, error: localError } = useQuery({
     queryKey: ['local-tags', companyId, accountId],
     queryFn: async () => {
-      let query = supabase
-        .from('tag')
-        .select('*')
-        .eq('company_id', companyId);
+      console.log('[TagManager] Buscando tags locais para companyId:', companyId, 'accountId:', accountId);
       
-      // Filter by id_conta_wiseapp if available to ensure proper data isolation
-      if (accountId) {
-        query = query.or(`id_conta_wiseapp.eq.${accountId},id_conta_wiseapp.is.null`);
-      }
-      
-      const { data, error } = await query.order('nome');
+      // First, try to query with id_conta_wiseapp filter if the column exists
+      // If column doesn't exist yet (migration pending), fall back to company_id only
+      try {
+        let query = supabase
+          .from('tag')
+          .select('*')
+          .eq('company_id', companyId);
+        
+        // Filter by id_conta_wiseapp if available to ensure proper data isolation
+        if (accountId) {
+          query = query.or(`id_conta_wiseapp.eq.${accountId},id_conta_wiseapp.is.null`);
+        }
+        
+        const { data, error } = await query.order('nome');
 
-      if (error) throw error;
-      return data || [];
+        if (error) {
+          // Check if error is about missing column
+          if (error.code === '42703' && error.message?.includes('id_conta_wiseapp')) {
+            console.warn('[TagManager] Coluna id_conta_wiseapp não existe ainda, usando fallback');
+            // Fallback: query without id_conta_wiseapp filter
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from('tag')
+              .select('*')
+              .eq('company_id', companyId)
+              .order('nome');
+            
+            if (fallbackError) throw fallbackError;
+            console.log('[TagManager] Tags encontradas (fallback):', fallbackData?.length || 0);
+            return fallbackData || [];
+          }
+          throw error;
+        }
+        
+        console.log('[TagManager] Tags encontradas:', data?.length || 0);
+        return data || [];
+      } catch (error) {
+        console.error('[TagManager] Erro ao buscar tags:', error);
+        throw error;
+      }
     },
-    enabled: !!companyId,
+    enabled: !!companyId && accountId !== undefined,
   });
 
   // Query para buscar tags do WiseApp (apenas quando necessário)
@@ -104,61 +131,100 @@ export function TagManager({ companyId }: TagManagerProps) {
       // Salvar tags no Supabase
       // Saving tags to Supabase
 
-      // Primeiro, buscar tags existentes para evitar duplicatas (filtrado por accountId)
-      let existingQuery = supabase
-        .from('tag')
-        .select('nome')
-        .eq('company_id', companyId);
+      // Primeiro, buscar tags existentes para evitar duplicatas
+      // Try with id_conta_wiseapp filter, fallback if column doesn't exist
+      let existingTags: { nome: string }[] = [];
+      let columnExists = true;
       
-      // Filter by id_conta_wiseapp to ensure proper isolation
-      if (accountId) {
-        existingQuery = existingQuery.or(`id_conta_wiseapp.eq.${accountId},id_conta_wiseapp.is.null`);
+      try {
+        let existingQuery = supabase
+          .from('tag')
+          .select('nome')
+          .eq('company_id', companyId);
+        
+        // Filter by id_conta_wiseapp to ensure proper isolation
+        if (accountId) {
+          existingQuery = existingQuery.or(`id_conta_wiseapp.eq.${accountId},id_conta_wiseapp.is.null`);
+        }
+        
+        const { data, error: fetchError } = await existingQuery;
+
+        if (fetchError) {
+          // Check if error is about missing column
+          if (fetchError.code === '42703' && fetchError.message?.includes('id_conta_wiseapp')) {
+            console.warn('[TagManager] Coluna id_conta_wiseapp não existe, usando fallback');
+            columnExists = false;
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from('tag')
+              .select('nome')
+              .eq('company_id', companyId);
+            
+            if (fallbackError) throw fallbackError;
+            existingTags = fallbackData || [];
+          } else {
+            throw fetchError;
+          }
+        } else {
+          existingTags = data || [];
+        }
+      } catch (error) {
+        console.error('Erro ao buscar tags existentes:', error);
+        throw error;
       }
-      
-      const { data: existingTags, error: fetchError } = await existingQuery;
 
-      if (fetchError) {
-        console.error('Erro ao buscar tags existentes:', fetchError);
-        throw fetchError;
-      }
+      const existingTagNames = new Set(existingTags.map(tag => tag.nome.toLowerCase()));
 
-      const existingTagNames = new Set(existingTags?.map(tag => tag.nome.toLowerCase()) || []);
-
-      // Preparar tags para inserção (apenas as que não existem) com id_conta_wiseapp
+      // Preparar tags para inserção (apenas as que não existem)
       const tagsToInsert = wiseAppTagsData
         .filter((tag: any) => !existingTagNames.has((tag.name || tag.title || 'Tag').toLowerCase()))
-        .map((tag: any) => ({
-          nome: tag.name || tag.title || 'Tag',
-          cor: tag.color || '#3B82F6',
-          company_id: companyId,
-          id_conta_wiseapp: accountId || null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }));
-
-      // Processing tags for insertion
+        .map((tag: any) => {
+          const baseTag: Record<string, any> = {
+            nome: tag.name || tag.title || 'Tag',
+            cor: tag.color || '#3B82F6',
+            company_id: companyId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          // Only add id_conta_wiseapp if column exists
+          if (columnExists) {
+            baseTag.id_conta_wiseapp = accountId || null;
+          }
+          return baseTag;
+        });
 
       if (tagsToInsert.length > 0) {
         // Atualizar progresso
         toast.loading(`Salvando ${tagsToInsert.length} novos marcadores...`, { id: syncToast });
         
-        const { data: insertedTags, error: insertError } = await supabase
+        let insertResult = await supabase
           .from('tag')
           .insert(tagsToInsert)
           .select();
 
-        if (insertError) {
-          console.error('Erro ao inserir tags no Supabase:', insertError);
-          throw insertError;
+        // If column doesn't exist on insert, retry without it
+        if (insertResult.error?.code === '42703' && insertResult.error.message?.includes('id_conta_wiseapp')) {
+          console.warn('[TagManager] Retrying insert without id_conta_wiseapp');
+          const tagsWithoutAccountId = tagsToInsert.map((tag: Record<string, any>) => {
+            const { id_conta_wiseapp, ...rest } = tag;
+            return rest;
+          });
+          insertResult = await supabase
+            .from('tag')
+            .insert(tagsWithoutAccountId)
+            .select();
         }
 
-        // Tags inserted successfully
-        toast.success(`✅ ${tagsToInsert.length} marcadores sincronizados e salvos no banco de dados!`, {
+        if (insertResult.error) {
+          console.error('Erro ao inserir tags no Supabase:', insertResult.error);
+          throw insertResult.error;
+        }
+
+        toast.success(`${tagsToInsert.length} marcadores sincronizados e salvos!`, {
           id: syncToast,
           duration: 5000
         });
       } else {
-        toast.success('✅ Todos os marcadores já estão atualizados no banco de dados.', {
+        toast.success('Todos os marcadores já estão atualizados.', {
           id: syncToast,
           duration: 4000
         });
@@ -216,8 +282,20 @@ export function TagManager({ companyId }: TagManagerProps) {
     }
   };
 
+  // Aguardar autenticação WiseApp
+  if (accountId === undefined || accountId === null) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600 dark:text-gray-400">Aguardando autenticação WiseApp...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+          Por favor, faça login com seu e-mail para continuar.
+        </p>
+      </div>
+    );
+  }
+
   if (isLoading) {
-    return <div className="text-center">Carregando tags...</div>;
+    return <div className="text-center py-8 text-gray-600 dark:text-gray-400">Carregando tags...</div>;
   }
 
   return (
