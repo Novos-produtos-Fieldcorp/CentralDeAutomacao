@@ -20,7 +20,15 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **WhatsApp Integration**: Seamless photo capture and display using WiseApp API, with automatic storage in Supabase and real-time avatar updates.
 - **Document Management**: Direct upload to Supabase Storage with validation.
 - **WiseApp Token Management**: 
-  - Automatic retrieval of WiseApp tokens from the database based on `company_id`
+  - **Mandatory Email Authentication**: Users MUST provide their email before accessing the system
+    - Modal always appears on first access (even with valid `account_id`)
+    - Token is only auto-loaded if the entered email matches a saved email with associated token
+    - Non-dismissible modal until authentication completes
+  - **Unified Session Cache** (`wiseapp_session` in localStorage):
+    - Structure: `{ token, email, companyId, attendantId, attendantName, expiresAt }`
+    - 1-hour expiration by default
+    - Session only valid if BOTH token AND email are present
+    - Legacy separate caches (`wiseapp_token_cache`, `wiseapp_company_cache`, `wiseapp_attendant_cache`) are ignored
   - **Edge Function Validation**: Token validation using Supabase Edge Function (`validate-wiseapp-token`) that validates against WiseApp API (`https://chat.wiseapp360.com/api/v1/profile`)
   - **Multiple Records Handling**: When multiple access records exist for the same `id_conta_wiseapp`, the system automatically selects the most recent one (ordered by `wiseapp_acesso_id DESC`)
   - **Edge Functions Available**:
