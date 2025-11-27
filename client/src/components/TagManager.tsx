@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
-import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
 import { getWiseAppLabels } from "@/lib/directApiService";
 import { supabase } from "@/lib/supabase";
@@ -15,8 +14,9 @@ interface TagManagerProps {
 export function TagManager({ companyId }: TagManagerProps) {
   const [isSyncingWiseApp, setIsSyncingWiseApp] = useState(false);
   const queryClient = useQueryClient();
-  const { accountId } = useAuth();
-  const { token: wiseAppToken } = useWiseAppAccess();
+  // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
+  // instead of AuthContext (which may use accountId from URL)
+  const { token: wiseAppToken, accountId } = useWiseAppAccess();
 
   // Query para buscar tags do banco local
   const { data: localTags, isLoading: isLoadingLocal, error: localError } = useQuery({

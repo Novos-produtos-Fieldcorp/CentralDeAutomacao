@@ -10,6 +10,7 @@ interface WiseAppAccessContextType {
   companyId: number | null;
   attendantId: number | null;
   attendantName: string | null;
+  accountId: string | null;
   isLoading: boolean;
 }
 
@@ -18,6 +19,7 @@ const WiseAppAccessContext = createContext<WiseAppAccessContextType>({
   companyId: null,
   attendantId: null,
   attendantName: null,
+  accountId: null,
   isLoading: true,
 });
 
@@ -49,6 +51,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
   const [attendantId, setAttendantId] = useState<number | null>(validSession?.attendantId || null);
   const [attendantName, setAttendantName] = useState<string | null>(validSession?.attendantName || null);
   const [authenticatedEmail, setAuthenticatedEmail] = useState<string | null>(validSession?.email || null);
+  const [wiseappAccountId, setWiseappAccountId] = useState<string | null>(validSession?.accountId || null);
   
   const [showModal, setShowModal] = useState(false);
   const [canCloseModal, setCanCloseModal] = useState(true);
@@ -93,18 +96,22 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
     console.log('🔄 [WiseAppAccess] Atualizando sessão:', { 
       email: newEmail, 
       companyId: newCompanyId,
+      accountId: accountIdToSave,
       previousCompanyId: companyId,
+      previousAccountId: wiseappAccountId,
       authCompanyId 
     });
     
-    // Check if company changed - need to invalidate all queries
+    // Check if company or account changed - need to invalidate all queries
     const companyChanged = authCompanyId && authCompanyId !== newCompanyId;
+    const accountChanged = wiseappAccountId && wiseappAccountId !== accountIdToSave;
     
     setToken(newToken);
     setAuthenticatedEmail(newEmail);
     setCompanyId(newCompanyId);
     setAttendantId(newAttendantId);
     setAttendantName(newAttendantName);
+    setWiseappAccountId(accountIdToSave || null);
     
     saveSession({
       token: newToken,
@@ -116,12 +123,12 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
     });
     
     // CRITICAL: Sync companyId with AuthContext
-    console.log('🔄 [WiseAppAccess] Sincronizando companyId com AuthContext:', newCompanyId);
+    console.log('🔄 [WiseAppAccess] Sincronizando companyId com AuthContext:', newCompanyId, 'accountId:', accountIdToSave);
     updateCompanyFromSession(newCompanyId, accountIdToSave);
     
-    // If company changed, invalidate ALL queries to force refetch with new companyId
-    if (companyChanged) {
-      console.log('🔄 [WiseAppAccess] Empresa mudou! Invalidando todas as queries...');
+    // If company or account changed, invalidate ALL queries to force refetch with correct data
+    if (companyChanged || accountChanged) {
+      console.log('🔄 [WiseAppAccess] Empresa/conta mudou! Invalidando todas as queries...');
       queryClient.invalidateQueries();
     }
   };
@@ -139,11 +146,14 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       localStorage.removeItem('wiseapp_token_cache');
       localStorage.removeItem('wiseapp_company_cache');
       localStorage.removeItem('wiseapp_attendant_cache');
+      localStorage.removeItem('account_id');
       setToken(null);
       setAuthenticatedEmail(null);
       setCompanyId(null);
       setAttendantId(null);
       setAttendantName(null);
+      setWiseappAccountId(null);
+      console.log('🧹 [WiseAppAccess] Sessão limpa completamente (incluindo accountId)');
     } catch (error) {
       console.error('Error clearing session:', error);
     }
@@ -208,17 +218,20 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
         const session = getValidSessionData();
         
         if (session && session.email && session.token) {
-          console.log('✅ [WiseAppAccess] Sessão válida encontrada para:', session.email);
+          console.log('✅ [WiseAppAccess] Sessão válida encontrada para:', session.email, 'accountId:', session.accountId);
           setToken(session.token);
           setAuthenticatedEmail(session.email);
           setCompanyId(session.companyId);
           setAttendantId(session.attendantId);
           setAttendantName(session.attendantName);
+          setWiseappAccountId(session.accountId || null);
           
           // CRITICAL: Sync companyId with AuthContext from cached session
+          // Use the accountId from the session (associated with email), not from URL
+          const sessionAccountId = session.accountId || accountId;
           if (session.companyId) {
-            console.log('🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext:', session.companyId);
-            updateCompanyFromSession(session.companyId, accountId);
+            console.log('🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext:', session.companyId, 'accountId:', sessionAccountId);
+            updateCompanyFromSession(session.companyId, sessionAccountId);
             
             // If AuthContext has different company, invalidate queries
             if (authCompanyId && authCompanyId !== session.companyId) {
@@ -283,20 +296,26 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
   }, [searchParams, authenticatedEmail]);
 
   return (
-    <WiseAppAccessContext.Provider value={{ token, companyId, attendantId, attendantName, isLoading }}>
+    <WiseAppAccessContext.Provider value={{ token, companyId, attendantId, attendantName, accountId: wiseappAccountId, isLoading }}>
       {children}
       <WiseAppTokenModal
         open={showModal}
         onClose={() => canCloseModal && setShowModal(false)}
-        onTokenSaved={(newToken, newAttendantId, newAttendantName, email) => {
-          const accountId = searchParams.get('account_id')?.trim() || localStorage?.getItem('account_id') || '';
+        onTokenSaved={(newToken, newAttendantId, newAttendantName, email, wiseappAccountIdFromEmail) => {
+          // IMPORTANT: Use the accountId from the email (wiseappAccountIdFromEmail) if available
+          // This ensures we use the correct WiseApp account associated with the authenticated email
+          const fallbackAccountId = searchParams.get('account_id')?.trim() || localStorage?.getItem('account_id') || '';
+          const accountIdToUse = wiseappAccountIdFromEmail || fallbackAccountId;
+          
+          console.log('📧 [WiseAppAccess] Token salvo para email, usando accountId:', accountIdToUse, '(do email:', wiseappAccountIdFromEmail, ', fallback:', fallbackAccountId, ')');
+          
           updateSession(
             newToken, 
             email || '', 
             companyId || 0, 
             newAttendantId || 0, 
             newAttendantName || 'Atendente',
-            accountId
+            accountIdToUse
           );
           setShowModal(false);
           setCanCloseModal(true);

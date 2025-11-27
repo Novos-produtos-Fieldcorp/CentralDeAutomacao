@@ -4,7 +4,6 @@ import { Plus, Edit, Trash2, Tag as TagIcon, Save, X, AlertTriangle } from "luci
 import toast from "react-hot-toast";
 import { supabase } from '@/lib/supabase';
 import { getWiseAppLabels } from "@/lib/directApiService";
-import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
 import { createApiUrl } from '@/lib/api-config-supabase';
 
@@ -29,8 +28,9 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   const [deletingTag, setDeletingTag] = useState<Tag | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const queryClient = useQueryClient();
-  const { accountId } = useAuth();
-  const { token: wiseAppToken } = useWiseAppAccess();
+  // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
+  // instead of AuthContext (which may use accountId from URL)
+  const { token: wiseAppToken, accountId } = useWiseAppAccess();
 
   // Query para buscar todas as tags da empresa
   const { data: tags = [], isLoading } = useQuery<Tag[]>({

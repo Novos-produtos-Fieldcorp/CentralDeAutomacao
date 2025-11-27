@@ -5,7 +5,7 @@ import { Lock } from 'lucide-react';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onTokenSaved: (token: string, attendantId: number, attendantName: string, email: string) => void;
+  onTokenSaved: (token: string, attendantId: number, attendantName: string, email: string, wiseappAccountId?: string) => void;
   companyId: number | null;
   isDismissible?: boolean;
 }
@@ -39,7 +39,7 @@ export default function WiseAppTokenModal({
     try {
       const { data: existing, error: selectError } = await supabase
         .from('wiseapp_acesso')
-        .select('wiseapp_acesso_id, email, nome, access_token_wiseapp')
+        .select('wiseapp_acesso_id, email, nome, access_token_wiseapp, id_conta_wiseapp')
         .eq('email', email)
         .single();
 
@@ -47,11 +47,13 @@ export default function WiseAppTokenModal({
 
       if (existing) {
         if (existing.access_token_wiseapp) {
+          console.log('✅ Token encontrado para email, usando id_conta_wiseapp:', existing.id_conta_wiseapp);
           onTokenSaved(
             existing.access_token_wiseapp,
             existing.wiseapp_acesso_id,
             existing.nome || 'Atendente',
-            email
+            email,
+            existing.id_conta_wiseapp?.toString()
           );
           onClose();
         } else {
@@ -184,7 +186,7 @@ export default function WiseAppTokenModal({
 
       const { data: userList, error: fetchError } = await supabase
         .from('wiseapp_acesso')
-        .select('wiseapp_acesso_id, nome')
+        .select('wiseapp_acesso_id, nome, id_conta_wiseapp')
         .eq('email', email)
         .order('wiseapp_acesso_id', { ascending: false })
         .limit(1);
@@ -197,13 +199,14 @@ export default function WiseAppTokenModal({
         throw new Error('Falha ao recuperar dados do usuário');
       }
 
-      console.log('👤 Usuário atualizado:', updatedUser);
+      console.log('👤 Usuário atualizado:', updatedUser, 'id_conta_wiseapp:', updatedUser.id_conta_wiseapp);
 
       onTokenSaved(
         token,
         updatedUser.wiseapp_acesso_id,
         updatedUser.nome || attendantName || 'Atendente',
-        email
+        email,
+        updatedUser.id_conta_wiseapp?.toString() || accountId
       );
       onClose();
     } catch (err: any) {

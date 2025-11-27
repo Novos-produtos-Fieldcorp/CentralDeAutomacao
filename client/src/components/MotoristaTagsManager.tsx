@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, Tag as TagIcon, Edit, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { getWiseAppLabels } from "@/lib/directApiService";
-import { useAuth } from "@/context/AuthContext";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
 import { supabase } from '@/lib/supabase';
 
@@ -34,8 +33,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const queryClient = useQueryClient();
-  const { accountId } = useAuth();
-  const { token: wiseAppToken } = useWiseAppAccess();
+  // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
+  // instead of AuthContext (which may use accountId from URL)
+  const { token: wiseAppToken, accountId } = useWiseAppAccess();
 
   // Query para buscar tags do motorista  
   const { data: motoristaTagsData = [], isLoading: isLoadingMotorTags } = useQuery<Tag[]>({
