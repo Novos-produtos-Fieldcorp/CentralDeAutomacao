@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import WiseAppTokenModal from '../components/WiseAppTokenModal';
 import { useSearchParams } from 'react-router-dom';
+import { useAuth } from './AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface WiseAppAccessContextType {
   token: string | null;
@@ -20,6 +22,9 @@ const WiseAppAccessContext = createContext<WiseAppAccessContextType>({
 });
 
 export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode }) => {
+  const { updateCompanyFromSession, companyId: authCompanyId } = useAuth();
+  const queryClient = useQueryClient();
+  
   // Helper to check if session data is valid (not expired)
   const getValidSessionData = () => {
     try {
@@ -85,6 +90,16 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
     newAttendantName: string, 
     accountIdToSave?: string
   ) => {
+    console.log('🔄 [WiseAppAccess] Atualizando sessão:', { 
+      email: newEmail, 
+      companyId: newCompanyId,
+      previousCompanyId: companyId,
+      authCompanyId 
+    });
+    
+    // Check if company changed - need to invalidate all queries
+    const companyChanged = authCompanyId && authCompanyId !== newCompanyId;
+    
     setToken(newToken);
     setAuthenticatedEmail(newEmail);
     setCompanyId(newCompanyId);
@@ -99,6 +114,16 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       attendantName: newAttendantName,
       accountId: accountIdToSave
     });
+    
+    // CRITICAL: Sync companyId with AuthContext
+    console.log('🔄 [WiseAppAccess] Sincronizando companyId com AuthContext:', newCompanyId);
+    updateCompanyFromSession(newCompanyId, accountIdToSave);
+    
+    // If company changed, invalidate ALL queries to force refetch with new companyId
+    if (companyChanged) {
+      console.log('🔄 [WiseAppAccess] Empresa mudou! Invalidando todas as queries...');
+      queryClient.invalidateQueries();
+    }
   };
 
   // Helper function to validate session
@@ -189,6 +214,19 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
           setCompanyId(session.companyId);
           setAttendantId(session.attendantId);
           setAttendantName(session.attendantName);
+          
+          // CRITICAL: Sync companyId with AuthContext from cached session
+          if (session.companyId) {
+            console.log('🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext:', session.companyId);
+            updateCompanyFromSession(session.companyId, accountId);
+            
+            // If AuthContext has different company, invalidate queries
+            if (authCompanyId && authCompanyId !== session.companyId) {
+              console.log('🔄 [WiseAppAccess] CompanyId do cache diferente do AuthContext, invalidando queries...');
+              queryClient.invalidateQueries();
+            }
+          }
+          
           setShowModal(false);
           setIsLoading(false);
           setHasCheckedToken(true);
