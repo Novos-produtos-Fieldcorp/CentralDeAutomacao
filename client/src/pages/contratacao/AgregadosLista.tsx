@@ -2855,106 +2855,126 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="relative">
-                            {/* Tags atuais */}
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {motorista.motorista_id && motoristaTags[motorista.motorista_id]?.map((tag: any) => (
-                                <span
-                                  key={tag.id}
-                                  className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:opacity-75 group text-gray-900 dark:text-white"
-                                  style={{
-                                    backgroundColor: tag.cor + '30',
-                                    border: `1px solid ${tag.cor}50`
-                                  }}
-                                  title="Clique para remover este marcador"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRemoveTag(motorista.motorista_id, tag.id);
-                                  }}
-                                >
-                                  {tag.nome}
-                                  <X className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </span>
-                              ))}
-                            </div>
-
-                            {/* Botão para adicionar marcadores */}
-                            <div
-                              className="relative inline-block"
-                              ref={(el) => {
+                          <div 
+                            className="relative" 
+                            ref={(el) => {
+                              if (motorista.motorista_id) {
+                                motoristaTagDropdownRefs.current[motorista.motorista_id] = el;
+                              }
+                            }}
+                          >
+                            {/* Botão compacto estilo dropdown de clientes */}
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (motorista.motorista_id) {
-                                  motoristaTagDropdownRefs.current[motorista.motorista_id] = el;
+                                  const isOpening = !tagDropdownOpen[motorista.motorista_id];
+                                  if (isOpening) {
+                                    const buttonElement = e.currentTarget as HTMLElement;
+                                    const rect = buttonElement.getBoundingClientRect();
+                                    setTagDropdownPosition(prev => ({
+                                      ...prev,
+                                      [motorista.motorista_id!]: {
+                                        top: rect.bottom + 4,
+                                        left: rect.left,
+                                        width: 280
+                                      }
+                                    }));
+                                    setTagSearchTerm(prev => ({ ...prev, [motorista.motorista_id!]: '' }));
+                                  }
+                                  setTagDropdownOpen(prev => ({ ...prev, [motorista.motorista_id!]: isOpening }));
                                 }
                               }}
+                              disabled={updatingMotoristaTag === motorista.motorista_id}
                             >
-                              <button
-                                type="button"
-                                className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (motorista.motorista_id) {
-                                    const isOpening = !tagDropdownOpen[motorista.motorista_id];
+                              {updatingMotoristaTag === motorista.motorista_id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <>
+                                  {motorista.motorista_id && motoristaTags[motorista.motorista_id]?.length > 0 ? (
+                                    <>
+                                      <div className="flex items-center gap-0.5">
+                                        {motoristaTags[motorista.motorista_id].slice(0, 3).map((tag: any, idx: number) => (
+                                          <div 
+                                            key={tag.id}
+                                            className="w-2.5 h-2.5 rounded-full"
+                                            style={{ backgroundColor: tag.cor, marginLeft: idx > 0 ? '-2px' : 0 }}
+                                          />
+                                        ))}
+                                      </div>
+                                      <span>{motoristaTags[motorista.motorista_id].length}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Tag className="w-3 h-3" />
+                                      <span>0</span>
+                                    </>
+                                  )}
+                                  <ChevronDown className="w-3 h-3" />
+                                </>
+                              )}
+                            </button>
 
-                                    if (isOpening) {
-                                      // Calcular posição do dropdown e limpar campo de pesquisa
-                                      const buttonElement = e.currentTarget as HTMLElement;
-                                      const rect = buttonElement.getBoundingClientRect();
-                                      setTagDropdownPosition(prev => ({
-                                        ...prev,
-                                        [motorista.motorista_id!]: {
-                                          top: rect.bottom + 4, // Usar posição direta, sem window.scrollY
-                                          left: rect.left,      // Usar posição direta, sem window.scrollX
-                                          width: 256 // w-64 = 256px
-                                        }
-                                      }));
-                                      setTagSearchTerm(prev => ({
-                                        ...prev,
-                                        [motorista.motorista_id!]: ''
-                                      }));
-                                    }
-
-                                    setTagDropdownOpen(prev => ({
-                                      ...prev,
-                                      [motorista.motorista_id!]: isOpening
-                                    }));
-                                  }
-                                }}
-                                disabled={updatingMotoristaTag === motorista.motorista_id}
-                              >
-                                {updatingMotoristaTag === motorista.motorista_id ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Tag className="w-3 h-3" />
-                                )}
-                              </button>
-
-                              {/* Dropdown de tags disponíveis - usando createPortal para z-index correto */}
-                              {motorista.motorista_id && tagDropdownOpen[motorista.motorista_id] && tagDropdownPosition[motorista.motorista_id] &&
-                                createPortal(
-                                  <div
-                                    className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-2 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto"
-                                    style={{
-                                      position: 'fixed',
-                                      top: tagDropdownPosition[motorista.motorista_id].top,
-                                      left: tagDropdownPosition[motorista.motorista_id].left,
-                                      width: tagDropdownPosition[motorista.motorista_id].width,
-                                      zIndex: 9999
-                                    }}
-                                  >
-                                    <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                                      <input
-                                        type="text"
-                                        placeholder="Buscar marcadores..."
-                                        className="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                        value={tagSearchTerm[motorista.motorista_id!] || ''}
-                                        onChange={(e) => setTagSearchTerm(prev => ({
-                                          ...prev,
-                                          [motorista.motorista_id!]: e.target.value
-                                        }))}
-                                        autoFocus
-                                      />
+                            {/* Dropdown unificado - tags atuais + adicionar */}
+                            {motorista.motorista_id && tagDropdownOpen[motorista.motorista_id] && tagDropdownPosition[motorista.motorista_id] &&
+                              createPortal(
+                                <div 
+                                  className="bg-white dark:bg-gray-800 shadow-xl rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+                                  style={{
+                                    position: 'fixed',
+                                    top: tagDropdownPosition[motorista.motorista_id].top,
+                                    left: tagDropdownPosition[motorista.motorista_id].left,
+                                    width: tagDropdownPosition[motorista.motorista_id].width,
+                                    zIndex: 9999
+                                  }}
+                                >
+                                  {/* Tags atuais do motorista */}
+                                  {motoristaTags[motorista.motorista_id]?.length > 0 && (
+                                    <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                                      <div className="text-[10px] uppercase text-gray-500 dark:text-gray-400 font-semibold mb-1.5 px-1">Marcadores ativos</div>
+                                      <div className="flex flex-col gap-0.5 max-h-24 overflow-y-auto">
+                                        {motoristaTags[motorista.motorista_id].map((tag: any) => (
+                                          <div
+                                            key={tag.id}
+                                            className="flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 group"
+                                          >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              <div 
+                                                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                                style={{ backgroundColor: tag.cor }}
+                                              />
+                                              <span className="text-xs text-gray-700 dark:text-gray-300 truncate">{tag.nome}</span>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              className="p-0.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRemoveTag(motorista.motorista_id, tag.id);
+                                              }}
+                                            >
+                                              <X className="w-3 h-3" />
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
-                                    <div className="space-y-1">
+                                  )}
+
+                                  {/* Busca e lista de tags disponíveis */}
+                                  <div className="p-2">
+                                    <input
+                                      type="text"
+                                      placeholder="Buscar marcadores..."
+                                      className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
+                                      value={tagSearchTerm[motorista.motorista_id!] || ''}
+                                      onChange={(e) => setTagSearchTerm(prev => ({ ...prev, [motorista.motorista_id!]: e.target.value }))}
+                                      autoFocus
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                    <div className="max-h-32 overflow-y-auto">
                                       {tags
                                         .filter(tag => {
                                           const notAdded = !motorista.motorista_id || !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id);
@@ -2965,32 +2985,20 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                         .map((tag) => (
                                           <div
                                             key={tag.id}
-                                            className="flex items-center px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer select-none"
+                                            className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                                             onMouseDown={(e) => {
                                               e.preventDefault();
                                               e.stopPropagation();
                                               if (motorista.motorista_id && tag.id) {
                                                 handleAddTag(motorista.motorista_id, tag.id);
-                                                // Fechar dropdown e limpar pesquisa após adicionar marcador
-                                                setTimeout(() => {
-                                                  setTagDropdownOpen(prev => ({ ...prev, [motorista.motorista_id!]: false }));
-                                                  setTagDropdownPosition(prev => {
-                                                    const newState = { ...prev };
-                                                    delete newState[motorista.motorista_id!];
-                                                    return newState;
-                                                  });
-                                                  setTagSearchTerm(prev => ({ ...prev, [motorista.motorista_id!]: '' }));
-                                                }, 100);
                                               }
                                             }}
                                           >
                                             <div
-                                              className="w-3 h-3 rounded-full flex-shrink-0 mr-2"
+                                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                                               style={{ backgroundColor: tag.cor }}
                                             />
-                                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
-                                              {tag.nome}
-                                            </span>
+                                            <span className="text-xs text-gray-700 dark:text-gray-300 truncate">{tag.nome}</span>
                                           </div>
                                         ))}
                                       {tags.filter(tag => {
@@ -2999,16 +3007,16 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                         const matchesSearch = !searchTerm || tag.nome.toLowerCase().includes(searchTerm.toLowerCase());
                                         return notAdded && matchesSearch;
                                       }).length === 0 && (
-                                          <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-                                            {tagSearchTerm[motorista.motorista_id!] ? 'Nenhum marcador encontrado' : 'Todos os marcadores já foram adicionados'}
-                                          </div>
-                                        )}
+                                        <div className="px-2 py-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                                          {tagSearchTerm[motorista.motorista_id!] ? 'Nenhum marcador encontrado' : (tags.length === 0 ? 'Nenhum marcador disponível' : 'Todos os marcadores adicionados')}
+                                        </div>
+                                      )}
                                     </div>
-                                  </div>,
-                                  document.body
-                                )
-                              }
-                            </div>
+                                  </div>
+                                </div>,
+                                document.body
+                              )
+                            }
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
