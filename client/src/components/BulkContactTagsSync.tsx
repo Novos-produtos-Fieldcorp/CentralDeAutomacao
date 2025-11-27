@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshCw, Tag, Users, AlertCircle, CheckCircle, X, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAuth } from '@/context/AuthContext';
+import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 import { useCompanyData } from '@/hooks/useCompanyData';
 import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
 import { queryClient } from '@/lib/queryClient';
@@ -43,7 +43,8 @@ export function BulkContactTagsSync({ onSyncComplete, className = '' }: BulkCont
   const [progressStatus, setProgressStatus] = useState<ProgressStatus | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   
-  const { accountId } = useAuth();
+  // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
+  const { accountId } = useWiseAppAccess();
   const { companyId } = useCompanyData();
 
   // Polling function to get progress updates - CRITICAL FIX: Actually wait for completion

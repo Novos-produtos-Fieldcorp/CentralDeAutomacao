@@ -33,8 +33,10 @@ interface WiseAppContactsSyncHookReturn {
 export function useWiseAppContactsSync(): WiseAppContactsSyncHookReturn {
   const [configValid, setConfigValid] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
-  const { companyId, accountId } = useAuth();
-  const { token: wiseAppToken, companyId: wiseAppCompanyId } = useWiseAppAccess();
+  const { companyId } = useAuth();
+  // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
+  // instead of AuthContext (which may use accountId from URL)
+  const { token: wiseAppToken, companyId: wiseAppCompanyId, accountId } = useWiseAppAccess();
 
   // Individual contato sync mutation using secure backend
   const syncContatoMutation = useMutation({

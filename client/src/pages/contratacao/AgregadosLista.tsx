@@ -17,7 +17,6 @@ import toast from 'react-hot-toast';
 import { useFloatingChat } from '../../hooks/useFloatingChat';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { useAuth } from '../../context/AuthContext';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
 import { usePagination } from '../../hooks/usePagination';
 import Pagination from '../../components/Pagination';
@@ -179,8 +178,8 @@ const STATUS_OPTIONS = [
 const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const { accountId } = useAuth();
-  const { token: wiseAppToken } = useWiseAppAccess();
+  // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
+  const { token: wiseAppToken, accountId } = useWiseAppAccess();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

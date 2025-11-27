@@ -2,6 +2,7 @@ import React from 'react';
 import { MessageSquare, Users, Loader2, CheckCircle, XCircle, Key } from 'lucide-react';
 import { useWiseAppSync } from '../hooks/useWiseAppSync';
 import { useAuth } from '../context/AuthContext';
+import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { supabase } from '../lib/supabase';
 
 interface WiseAppSyncButtonProps {
@@ -25,7 +26,9 @@ export function WiseAppSyncButton({
     isBulkSyncing 
   } = useWiseAppSync();
   
-  const { accountId, companyId } = useAuth();
+  const { companyId } = useAuth();
+  // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
+  const { accountId } = useWiseAppAccess();
 
   // Função para capturar e salvar token do localStorage
   const captureAndSaveToken = async () => {

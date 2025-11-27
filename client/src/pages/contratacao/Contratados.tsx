@@ -25,7 +25,6 @@ import ContextMenu from '../../components/ContextMenu';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
-import { useAuth } from '../../context/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { searchWiseAppContact, applyWiseAppContactLabels, getWiseAppLabels } from '../../lib/directApiService';
 
@@ -100,8 +99,8 @@ const STATUS_OPTIONS = [
 const Contratados = () => {
   const { query, companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const { accountId } = useAuth();
-  const { token: wiseAppToken } = useWiseAppAccess();
+  // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
+  const { token: wiseAppToken, accountId } = useWiseAppAccess();
   const queryClient = useQueryClient();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [totalCount, setTotalCount] = useState(0);

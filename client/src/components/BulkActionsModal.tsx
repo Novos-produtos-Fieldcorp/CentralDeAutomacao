@@ -27,8 +27,10 @@ const BulkActionsModal = ({
   clientes = []
 }: BulkActionsModalProps) => {
   const { query } = useCompanyData();
-  const { companyId, accountId } = useAuth();
-  const { token: wiseAppToken } = useWiseAppAccess();
+  const { companyId } = useAuth();
+  // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
+  // instead of AuthContext (which may use accountId from URL)
+  const { token: wiseAppToken, accountId } = useWiseAppAccess();
   const [submitting, setSubmitting] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedClient, setSelectedClient] = useState<string>('');

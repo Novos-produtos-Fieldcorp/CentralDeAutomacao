@@ -25,7 +25,6 @@ import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
 import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 import { TableDropdown } from '../../components/TableDropdown';
 import BulkContactTagsSync from '../../components/BulkContactTagsSync';
-import { useAuth } from '../../context/AuthContext';
 import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
 import { useWiseAppContactsSync } from '../../hooks/useWiseAppContactsSync';
 import { queryClient, apiRequest } from '@/lib/queryClient';
@@ -985,8 +984,8 @@ const MotoristasLista = () => {
     }
   };
 
-  const { accountId } = useAuth();
-  const { token: wiseAppToken } = useWiseAppAccess();
+  // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
+  const { token: wiseAppToken, accountId } = useWiseAppAccess();
 
 
   const handleViewDocument = async (motorista: ViewMotorista | null) => {
