@@ -2276,27 +2276,29 @@ const MotoristasLista = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4">
                         <div className="relative">
-                          {/* Tags atuais */}
-                          <div className="flex flex-wrap gap-1 mb-2">
+                          {/* Tags em formato de lista vertical */}
+                          <div className="flex flex-col gap-0.5 mb-1">
                             {motoristaTags[motorista.motorista_id]?.map((tag: any) => (
-                              <span
+                              <div
                                 key={tag.id}
-                                className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:opacity-75 group text-gray-900 dark:text-white"
-                                style={{
-                                  backgroundColor: tag.cor + '30',
-                                  border: `1px solid ${tag.cor}50`
-                                }}
+                                className="flex items-center gap-1.5 text-xs cursor-pointer hover:opacity-75 group py-0.5"
                                 title="Clique para remover este marcador"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleRemoveTag(motorista.motorista_id, tag.id);
                                 }}
                               >
-                                {tag.nome}
-                                <X className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-                              </span>
+                                <div 
+                                  className="w-2 h-2 rounded-full flex-shrink-0"
+                                  style={{ backgroundColor: tag.cor }}
+                                />
+                                <span className="text-gray-700 dark:text-gray-300 truncate max-w-[120px]">
+                                  {tag.nome}
+                                </span>
+                                <X className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 flex-shrink-0" />
+                              </div>
                             ))}
                           </div>
 
@@ -2307,7 +2309,7 @@ const MotoristasLista = () => {
                           >
                             <button
                               type="button"
-                              className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                              className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const isOpening = !tagDropdownOpen[motorista.motorista_id];
