@@ -10,6 +10,8 @@ interface AuthContextType {
   companyId?: number;
   isLoading: boolean;
   accountId?: string;
+  updateCompanyFromSession: (newCompanyId: number, newAccountId?: string) => void;
+  clearAuthCache: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +44,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Extract account_id once and use it consistently
   const urlAccountId = searchParams.get('account_id')?.trim();
+
+  const updateCompanyFromSession = (newCompanyId: number, newAccountId?: string) => {
+    console.log('🔄 [AuthContext] Atualizando companyId da sessão WiseApp:', newCompanyId);
+    
+    if (companyId !== newCompanyId) {
+      console.log(`🔄 [AuthContext] CompanyId mudou: ${companyId} → ${newCompanyId}`);
+      setCompanyId(newCompanyId);
+      localStorage.setItem('companyId', newCompanyId.toString());
+      setIsAuthenticated(true);
+      localStorage.setItem('isAuthenticated', 'true');
+    }
+    
+    if (newAccountId && accountId !== newAccountId) {
+      console.log(`🔄 [AuthContext] AccountId mudou: ${accountId} → ${newAccountId}`);
+      setAccountId(newAccountId);
+      localStorage.setItem('account_id', newAccountId);
+    }
+  };
+
+  const clearAuthCache = () => {
+    console.log('🧹 [AuthContext] Limpando cache de autenticação');
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('companyId');
+    localStorage.removeItem('companyName');
+    localStorage.removeItem('account_id');
+    setIsAuthenticated(false);
+    setCompanyId(undefined);
+    setAccountId(undefined);
+    setHasCheckedAuth(false);
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -142,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, companyId, isLoading, accountId }}>
+    <AuthContext.Provider value={{ isAuthenticated, companyId, isLoading, accountId, updateCompanyFromSession, clearAuthCache }}>
       {children}
     </AuthContext.Provider>
   );
