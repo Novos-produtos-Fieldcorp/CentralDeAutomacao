@@ -170,6 +170,7 @@ const MotoristasLista = () => {
   });
   const [tagSearchFilter, setTagSearchFilter] = useState('');
   const [motoristaTags, setMotoristaTags] = useState<{[key: number]: any[]}>({});
+  const [expandedTags, setExpandedTags] = useState<{[key: number]: boolean}>({});
   const [tagDropdownOpen, setTagDropdownOpen] = useState<{[key: number]: boolean}>({});
   const [tagDropdownPosition, setTagDropdownPosition] = useState<{[key: number]: {top: number, left: number, width: number}}>({});
   const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
@@ -2278,29 +2279,78 @@ const MotoristasLista = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="relative">
-                          {/* Tags em formato de lista vertical */}
-                          <div className="flex flex-col gap-0.5 mb-1">
-                            {motoristaTags[motorista.motorista_id]?.map((tag: any) => (
-                              <div
-                                key={tag.id}
-                                className="flex items-center gap-1.5 text-xs cursor-pointer hover:opacity-75 group py-0.5"
-                                title="Clique para remover este marcador"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveTag(motorista.motorista_id, tag.id);
-                                }}
-                              >
-                                <div 
-                                  className="w-2 h-2 rounded-full flex-shrink-0"
-                                  style={{ backgroundColor: tag.cor }}
-                                />
-                                <span className="text-gray-700 dark:text-gray-300 truncate max-w-[120px]">
-                                  {tag.nome}
-                                </span>
-                                <X className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 flex-shrink-0" />
-                              </div>
-                            ))}
-                          </div>
+                          {/* Tags - mostra apenas uma ou lista completa */}
+                          {motoristaTags[motorista.motorista_id]?.length > 0 ? (
+                            <div className="flex flex-col gap-0.5 mb-1">
+                              {/* Primeira tag sempre visível */}
+                              {!expandedTags[motorista.motorista_id] ? (
+                                <div className="flex items-center gap-1">
+                                  <div
+                                    className="flex items-center gap-1.5 text-xs cursor-pointer hover:opacity-75 group py-0.5"
+                                    title="Clique para remover este marcador"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveTag(motorista.motorista_id, motoristaTags[motorista.motorista_id][0].id);
+                                    }}
+                                  >
+                                    <div 
+                                      className="w-2 h-2 rounded-full flex-shrink-0"
+                                      style={{ backgroundColor: motoristaTags[motorista.motorista_id][0].cor }}
+                                    />
+                                    <span className="text-gray-700 dark:text-gray-300 truncate max-w-[100px]">
+                                      {motoristaTags[motorista.motorista_id][0].nome}
+                                    </span>
+                                    <X className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 flex-shrink-0" />
+                                  </div>
+                                  {motoristaTags[motorista.motorista_id].length > 1 && (
+                                    <button
+                                      type="button"
+                                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedTags(prev => ({ ...prev, [motorista.motorista_id]: true }));
+                                      }}
+                                    >
+                                      +{motoristaTags[motorista.motorista_id].length - 1}
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                <>
+                                  {motoristaTags[motorista.motorista_id].map((tag: any) => (
+                                    <div
+                                      key={tag.id}
+                                      className="flex items-center gap-1.5 text-xs cursor-pointer hover:opacity-75 group py-0.5"
+                                      title="Clique para remover este marcador"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveTag(motorista.motorista_id, tag.id);
+                                      }}
+                                    >
+                                      <div 
+                                        className="w-2 h-2 rounded-full flex-shrink-0"
+                                        style={{ backgroundColor: tag.cor }}
+                                      />
+                                      <span className="text-gray-700 dark:text-gray-300 truncate max-w-[100px]">
+                                        {tag.nome}
+                                      </span>
+                                      <X className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 flex-shrink-0" />
+                                    </div>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    className="text-xs text-gray-500 dark:text-gray-400 hover:underline self-start"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedTags(prev => ({ ...prev, [motorista.motorista_id]: false }));
+                                    }}
+                                  >
+                                    recolher
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          ) : null}
 
                           {/* Botão para adicionar marcadores */}
                           <div 
