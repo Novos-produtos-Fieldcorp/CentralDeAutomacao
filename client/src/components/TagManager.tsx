@@ -18,15 +18,21 @@ export function TagManager({ companyId }: TagManagerProps) {
   // instead of AuthContext (which may use accountId from URL)
   const { token: wiseAppToken, accountId } = useWiseAppAccess();
 
-  // Query para buscar tags do banco local
+  // Query para buscar tags do banco local filtradas pelo accountId WiseApp
   const { data: localTags, isLoading: isLoadingLocal, error: localError } = useQuery({
-    queryKey: ['local-tags', companyId],
+    queryKey: ['local-tags', companyId, accountId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('tag')
         .select('*')
-        .eq('company_id', companyId)
-        .order('nome');
+        .eq('company_id', companyId);
+      
+      // Filter by id_conta_wiseapp if available to ensure proper data isolation
+      if (accountId) {
+        query = query.or(`id_conta_wiseapp.eq.${accountId},id_conta_wiseapp.is.null`);
+      }
+      
+      const { data, error } = await query.order('nome');
 
       if (error) throw error;
       return data || [];
@@ -98,11 +104,18 @@ export function TagManager({ companyId }: TagManagerProps) {
       // Salvar tags no Supabase
       // Saving tags to Supabase
 
-      // Primeiro, buscar tags existentes para evitar duplicatas
-      const { data: existingTags, error: fetchError } = await supabase
+      // Primeiro, buscar tags existentes para evitar duplicatas (filtrado por accountId)
+      let existingQuery = supabase
         .from('tag')
         .select('nome')
         .eq('company_id', companyId);
+      
+      // Filter by id_conta_wiseapp to ensure proper isolation
+      if (accountId) {
+        existingQuery = existingQuery.or(`id_conta_wiseapp.eq.${accountId},id_conta_wiseapp.is.null`);
+      }
+      
+      const { data: existingTags, error: fetchError } = await existingQuery;
 
       if (fetchError) {
         console.error('Erro ao buscar tags existentes:', fetchError);
@@ -111,13 +124,14 @@ export function TagManager({ companyId }: TagManagerProps) {
 
       const existingTagNames = new Set(existingTags?.map(tag => tag.nome.toLowerCase()) || []);
 
-      // Preparar tags para inserção (apenas as que não existem)
+      // Preparar tags para inserção (apenas as que não existem) com id_conta_wiseapp
       const tagsToInsert = wiseAppTagsData
         .filter((tag: any) => !existingTagNames.has((tag.name || tag.title || 'Tag').toLowerCase()))
         .map((tag: any) => ({
           nome: tag.name || tag.title || 'Tag',
           cor: tag.color || '#3B82F6',
           company_id: companyId,
+          id_conta_wiseapp: accountId || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));
@@ -150,7 +164,8 @@ export function TagManager({ companyId }: TagManagerProps) {
         });
       }
 
-      // Invalidar queries para atualizar UI
+      // Invalidar queries para atualizar UI (inclui accountId na key)
+      await queryClient.invalidateQueries({ queryKey: ['local-tags', companyId, accountId] });
       await queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       await queryClient.invalidateQueries({ queryKey: ['wiseapp-tags'] });
 

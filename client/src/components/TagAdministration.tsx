@@ -13,6 +13,7 @@ interface Tag {
   cor: string;
   company_id: number;
   limite_max: number | null;
+  id_conta_wiseapp: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -32,15 +33,21 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
   // instead of AuthContext (which may use accountId from URL)
   const { token: wiseAppToken, accountId } = useWiseAppAccess();
 
-  // Query para buscar todas as tags da empresa
+  // Query para buscar todas as tags da empresa filtradas pelo accountId WiseApp
   const { data: tags = [], isLoading } = useQuery<Tag[]>({
-    queryKey: ['local-tags', companyId],
+    queryKey: ['local-tags', companyId, accountId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('tag')
         .select('*')
-        .eq('company_id', companyId)
-        .order('nome');
+        .eq('company_id', companyId);
+      
+      // Filter by id_conta_wiseapp if available to ensure proper data isolation
+      if (accountId) {
+        query = query.or(`id_conta_wiseapp.eq.${accountId},id_conta_wiseapp.is.null`);
+      }
+      
+      const { data, error } = await query.order('nome');
 
       if (error) throw error;
       return data || [];
@@ -70,6 +77,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           cor: tagData.cor || '#3B82F6',
           limite_max: tagData.limite_max || null,
           company_id: tagData.company_id,
+          id_conta_wiseapp: accountId || null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -501,7 +509,8 @@ function CreateTagModal({ isOpen, onClose, onSave, isLoading, companyId }: Creat
       nome: formData.nome.trim(),
       cor: formData.cor,
       limite_max: formData.limite_max ? parseInt(formData.limite_max.toString()) : null,
-      company_id: companyId
+      company_id: companyId,
+      id_conta_wiseapp: null
     });
   };
 

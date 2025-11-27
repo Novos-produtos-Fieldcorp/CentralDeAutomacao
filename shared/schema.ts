@@ -61,6 +61,7 @@ export const tags = pgTable("tag", {
   cor: text("cor").default("#3B82F6"), // Default blue color
   limite_max: integer("limite_max"), // Maximum associates limit
   company_id: integer("company_id").references(() => company.company_id),
+  id_conta_wiseapp: text("id_conta_wiseapp"), // WiseApp account ID for isolation
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
 });
