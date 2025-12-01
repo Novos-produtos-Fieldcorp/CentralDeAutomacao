@@ -165,6 +165,10 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
   const switchAccount = (newAccountId: string, newCompanyId?: number | null) => {
     console.log('🔄 [WiseAppAccess] Trocando para conta:', newAccountId, 'company:', newCompanyId);
     
+    // CRITICAL: First remove ALL queries from cache to prevent stale data from wrong company
+    console.log('🧹 [WiseAppAccess] Removendo todas as queries do cache...');
+    queryClient.removeQueries();
+    
     // Update state
     setWiseappAccountId(newAccountId);
     if (newCompanyId !== undefined) {
@@ -184,12 +188,12 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       });
     }
     
-    // Sync with AuthContext
+    // Sync with AuthContext BEFORE invalidating queries
     if (newCompanyId !== undefined && newCompanyId !== null) {
       updateCompanyFromSession(newCompanyId, newAccountId);
     }
     
-    // Invalidate all queries to force refetch with new account
+    // Force refetch all queries with new account context
     console.log('🔄 [WiseAppAccess] Invalidando todas as queries após troca de conta...');
     queryClient.invalidateQueries();
   };

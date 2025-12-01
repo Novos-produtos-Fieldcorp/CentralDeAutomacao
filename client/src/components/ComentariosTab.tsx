@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MessageSquare, Send, Loader2, User } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -17,7 +17,7 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
   onUpdateSuccess
 }) => {
   const [comentario, setComentario] = useState('');
-  const { accountId } = useAuth();
+  const { accountId } = useCurrentAccount();
   const { attendantId } = useWiseAppAccess();
   
   // Use React Query hooks

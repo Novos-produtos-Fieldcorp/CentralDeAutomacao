@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus, LayoutGrid, LayoutList, Briefcase } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { Vaga } from '@shared/schema';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -26,7 +26,7 @@ interface VagasListProps {
 }
 
 const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
-  const { accountId } = useAuth();
+  const { accountId } = useCurrentAccount();
   const [selectedVaga, setSelectedVaga] = useState<VagaWithRelations | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   

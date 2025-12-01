@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube, Info } from 'lucide-react';
 import { useCompanyData } from '../hooks/useCompanyData';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -38,8 +38,9 @@ interface EnvioResumo {
 const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
 
 const ResumosGrupo = () => {
-  const { query, companyId } = useCompanyData();
-  const { accountId } = useAuth();
+  const { query, companyId: legacyCompanyId } = useCompanyData();
+  const { accountId, companyId } = useCurrentAccount();
+  const effectiveCompanyId = companyId || legacyCompanyId;
   const [loading, setLoading] = useState(true);
   const [grupos, setGrupos] = useState<GrupoResumo[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useCurrentAccount } from "./useCurrentAccount";
 import { supabase } from "../lib/supabase";
 import toast from "react-hot-toast";
 
@@ -20,7 +20,7 @@ interface ModuleAccess {
 }
 
 export const useModuleAccess = () => {
-  const { companyId, accountId } = useAuth();
+  const { companyId, accountId } = useCurrentAccount();
   const [loading, setLoading] = useState(true);
   const [moduleAccess, setModuleAccess] = useState<ModuleAccess>({
     checklist: true,
