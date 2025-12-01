@@ -1,9 +1,0 @@
-event_message,event_type,function_id,id,level,timestamp
-shutdown,Shutdown,d0cfab2b-172d-4c80-aebc-fbd074ec454c,873a1577-94a0-4713-98a6-e42c6d1a0e2d,log,1761335493285000
-shutdown,Shutdown,d0cfab2b-172d-4c80-aebc-fbd074ec454c,74fb9aba-48a8-4b43-b562-97a84387b445,log,1761335385190000
-shutdown,Shutdown,d0cfab2b-172d-4c80-aebc-fbd074ec454c,29164452-689c-481b-a79d-f1bbe79eeea0,log,1761335372883000
-shutdown,Shutdown,d0cfab2b-172d-4c80-aebc-fbd074ec454c,05688e14-f00e-4d0a-9df7-7d9ca7ce9e3a,log,1761335372883000
-shutdown,Shutdown,d0cfab2b-172d-4c80-aebc-fbd074ec454c,b8e125fc-ff9e-4b57-bf9f-95c52c576cab,log,1761335372883000
-booted (time: 23ms),Boot,d0cfab2b-172d-4c80-aebc-fbd074ec454c,11ab6278-b8b2-45d4-9a93-fa29b619c611,log,1761335293264000
-booted (time: 21ms),Boot,d0cfab2b-172d-4c80-aebc-fbd074ec454c,27e5ff06-13aa-4743-addc-09b06b6776b7,log,1761335185174000
-booted (time: 22ms),Boot,d0cfab2b-172d-4c80-aebc-fbd074ec454c,c542501e-fecc-4621-b8a9-3e60affddc02,log,1761335172867000
