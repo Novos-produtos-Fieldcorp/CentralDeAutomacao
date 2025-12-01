@@ -808,20 +808,47 @@ const Contratados = () => {
 
     try {
       const newDate = marcar ? new Date().toISOString().split('T')[0] : null;
+      const motoristaIds = Array.from(selectedItems);
 
-      // Atualiza no banco de dados
-      const { error } = await supabase
+      // Primeiro, buscar quais motoristas já têm registro
+      const { data: existingRecords, error: fetchError } = await supabase
         .from('motorista_eventos_cliente')
-        .upsert(
-          Array.from(selectedItems).map(id => ({
-            motorista_id: id,
+        .select('motorista_id')
+        .in('motorista_id', motoristaIds);
+
+      if (fetchError) throw fetchError;
+
+      const existingIds = new Set((existingRecords || []).map(r => r.motorista_id));
+      const idsToUpdate = motoristaIds.filter(id => existingIds.has(id));
+      const idsToInsert = motoristaIds.filter(id => !existingIds.has(id));
+
+      // Update registros existentes
+      if (idsToUpdate.length > 0) {
+        const { error: updateError } = await supabase
+          .from('motorista_eventos_cliente')
+          .update({
             treinamento: marcar,
             treinamento_data: newDate
-          })),
-          { onConflict: 'motorista_id' }
-        );
+          })
+          .in('motorista_id', idsToUpdate);
 
-      if (error) throw error;
+        if (updateError) throw updateError;
+      }
+
+      // Insert novos registros
+      if (idsToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from('motorista_eventos_cliente')
+          .insert(
+            idsToInsert.map(id => ({
+              motorista_id: id,
+              treinamento: marcar,
+              treinamento_data: newDate
+            }))
+          );
+
+        if (insertError) throw insertError;
+      }
 
       // Atualiza o estado local
       setContratados(prev =>
@@ -855,20 +882,47 @@ const Contratados = () => {
 
     try {
       const newDate = marcar ? new Date().toISOString().split('T')[0] : null;
+      const motoristaIds = Array.from(selectedItems);
 
-      // Atualiza no banco de dados
-      const { error } = await supabase
+      // Primeiro, buscar quais motoristas já têm registro
+      const { data: existingRecords, error: fetchError } = await supabase
         .from('motorista_eventos_cliente')
-        .upsert(
-          Array.from(selectedItems).map(id => ({
-            motorista_id: id,
+        .select('motorista_id')
+        .in('motorista_id', motoristaIds);
+
+      if (fetchError) throw fetchError;
+
+      const existingIds = new Set((existingRecords || []).map(r => r.motorista_id));
+      const idsToUpdate = motoristaIds.filter(id => existingIds.has(id));
+      const idsToInsert = motoristaIds.filter(id => !existingIds.has(id));
+
+      // Update registros existentes
+      if (idsToUpdate.length > 0) {
+        const { error: updateError } = await supabase
+          .from('motorista_eventos_cliente')
+          .update({
             integracao: marcar,
             integracao_data: newDate
-          })),
-          { onConflict: 'motorista_id' }
-        );
+          })
+          .in('motorista_id', idsToUpdate);
 
-      if (error) throw error;
+        if (updateError) throw updateError;
+      }
+
+      // Insert novos registros
+      if (idsToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from('motorista_eventos_cliente')
+          .insert(
+            idsToInsert.map(id => ({
+              motorista_id: id,
+              integracao: marcar,
+              integracao_data: newDate
+            }))
+          );
+
+        if (insertError) throw insertError;
+      }
 
       // Atualiza o estado local
       setContratados(prev =>
@@ -2054,14 +2108,24 @@ const Contratados = () => {
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {motorista.nome_motorista || ''}
-                              {motorista.ajudantes && motorista.ajudantes.length > 0 && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Ajudantes: {motorista.ajudantes.join(', ')}
-                                </div>
-                              )}
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {motorista.funcao}
+                            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                              <span>{motorista.funcao}</span>
+                              {motorista.ajudantes && motorista.ajudantes.length > 0 && (
+                                <span className="group/ajudantes relative inline-block cursor-help">
+                                  <span className="text-blue-600 dark:text-blue-400">
+                                    {motorista.ajudantes.length} Ajudante{motorista.ajudantes.length > 1 ? 's' : ''}
+                                  </span>
+                                  <div className="invisible group-hover/ajudantes:visible absolute left-0 top-full z-50 mt-1 w-max max-w-xs rounded-md bg-gray-900 dark:bg-gray-700 px-3 py-2 text-xs text-white shadow-lg">
+                                    <div className="font-medium mb-1">Ajudantes:</div>
+                                    {motorista.ajudantes.map((ajudante, index) => (
+                                      <div key={index} className="py-0.5">
+                                        {index + 1}. {ajudante}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
