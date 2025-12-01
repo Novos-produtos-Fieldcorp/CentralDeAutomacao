@@ -1,0 +1,102 @@
+Request URL
+https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/motorista_eventos_cliente?on_conflict=motorista_id&columns=%22motorista_id%22%2C%22treinamento%22%2C%22treinamento_data%22
+Request Method
+POST
+Status Code
+400 Bad Request
+Remote Address
+172.64.149.246:443
+Referrer Policy
+strict-origin-when-cross-origin
+access-control-allow-origin
+https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev
+access-control-expose-headers
+Content-Encoding, Content-Location, Content-Range, Content-Type, Date, Location, Server, Transfer-Encoding, Range-Unit
+alt-svc
+h3=":443"; ma=86400
+cf-cache-status
+DYNAMIC
+cf-ray
+9a72bc1f39bcad78-GRU
+content-encoding
+gzip
+content-type
+application/json; charset=utf-8
+date
+Mon, 01 Dec 2025 12:54:44 GMT
+priority
+u=1,i
+sb-gateway-version
+1
+sb-project-ref
+ohmoxsvwjvohmqqgxjhb
+sb-request-id
+019ad9fa-cf99-73ac-b643-ad6828401b45
+server
+cloudflare
+server-timing
+cfExtPri
+set-cookie
+__cf_bm=ZL_SjceBt9ZU9c.mu.EoDA0VJZ_LDfxRqr4LD.a_.2Y-1764593684-1.0.1.1-uw15AXamJESdk9D7Q5MwnN.rWKQStfDpnjHM6lAhWyJIdZcA3OqdPsxW9jToMrUwUGYnwRv9DbE7Tn7G2YIz3Uy9OItEzSlvAhsPKBv_dw0; path=/; expires=Mon, 01-Dec-25 13:24:44 GMT; domain=.supabase.co; HttpOnly; Secure; SameSite=None
+strict-transport-security
+max-age=31536000; includeSubDomains; preload
+vary
+Accept-Encoding
+x-content-type-options
+nosniff
+x-envoy-attempt-count
+1
+x-envoy-upstream-service-time
+3
+:authority
+ohmoxsvwjvohmqqgxjhb.supabase.co
+:method
+POST
+:path
+/rest/v1/motorista_eventos_cliente?on_conflict=motorista_id&columns=%22motorista_id%22%2C%22treinamento%22%2C%22treinamento_data%22
+:scheme
+https
+accept
+*/*
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+en-US,en;q=0.9
+access-control-allow-headers
+authorization, x-client-info, apikey, content-type
+access-control-allow-origin
+*
+apikey
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ
+authorization
+Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ
+content-length
+74
+content-profile
+public
+content-type
+application/json
+origin
+https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev
+prefer
+resolution=merge-duplicates
+priority
+u=1, i
+referer
+https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/
+sec-ch-ua
+"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"macOS"
+sec-fetch-dest
+empty
+sec-fetch-mode
+cors
+sec-fetch-site
+cross-site
+user-agent
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36
+x-client-info
+supabase-js-web/2.58.0
