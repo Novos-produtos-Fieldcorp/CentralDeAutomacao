@@ -210,12 +210,12 @@ const ResumosGrupo = () => {
 
   const handleAddGrupo = async () => {
     // Validar campos obrigatórios
-    if (!formData.nome_grupo.trim()) {
+    if (!formData.nome_grupo?.trim()) {
       toast.error('Nome do grupo é obrigatório');
       return;
     }
     
-    if (!formData.url_grupo.trim()) {
+    if (!formData.url_grupo?.trim()) {
       toast.error('URL do grupo é obrigatória');
       return;
     }
@@ -261,12 +261,12 @@ const ResumosGrupo = () => {
     if (!selectedGrupo) return;
 
     // Validar campos obrigatórios
-    if (!formData.nome_grupo.trim()) {
+    if (!formData.nome_grupo?.trim()) {
       toast.error('Nome do grupo é obrigatório');
       return;
     }
     
-    if (!formData.url_grupo.trim()) {
+    if (!formData.url_grupo?.trim()) {
       toast.error('URL do grupo é obrigatória');
       return;
     }
