@@ -1,14 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Check, Building2, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -26,6 +17,7 @@ export function AccountSwitcher() {
   const [accounts, setAccounts] = useState<WiseAppAccount[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const currentAccount = accounts.find(a => a.account_id === accountId);
 
@@ -59,6 +51,17 @@ export function AccountSwitcher() {
     }
   }, [token, isOpen]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleSwitchAccount = async (account: WiseAppAccount) => {
     if (account.account_id === accountId) {
       setIsOpen(false);
@@ -66,21 +69,17 @@ export function AccountSwitcher() {
     }
 
     try {
-      // Update localStorage
       localStorage.setItem('account_id', account.account_id);
       
-      // Call context switch function if available
       if (switchAccount) {
         switchAccount(account.account_id, account.company_id);
       }
 
-      // Invalidate all queries to force refetch with new account
       queryClient.invalidateQueries();
 
       toast.success(`Alternado para ${account.name}`);
       setIsOpen(false);
 
-      // Reload page to ensure all data is refreshed
       window.location.reload();
     } catch (error) {
       console.error('Erro ao trocar conta:', error);
@@ -88,77 +87,75 @@ export function AccountSwitcher() {
     }
   };
 
-  // Don't show if no token or only one account
   if (!token) return null;
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="gap-2 min-w-[140px] justify-between"
-          data-testid="button-account-switcher"
-        >
-          <div className="flex items-center gap-2 truncate">
-            <Building2 className="h-4 w-4 flex-shrink-0" />
-            <span className="truncate">
-              {currentAccount?.name || accountId || 'Conta'}
-            </span>
-          </div>
-          <ChevronDown className="h-4 w-4 flex-shrink-0" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[220px]">
-        <DropdownMenuLabel className="flex items-center justify-between">
-          <span>Alterar conta</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              fetchAccounts();
-            }}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        
-        {isLoading && accounts.length === 0 ? (
-          <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-            Carregando contas...
-          </div>
-        ) : accounts.length === 0 ? (
-          <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-            Nenhuma conta encontrada
-          </div>
-        ) : (
-          accounts.map((account) => (
-            <DropdownMenuItem
-              key={account.account_id}
-              onClick={() => handleSwitchAccount(account)}
-              className="flex items-center justify-between gap-2 cursor-pointer"
-              data-testid={`account-option-${account.account_id}`}
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md border border-gray-300 dark:border-gray-600 transition-colors min-w-[140px] justify-between"
+        data-testid="button-account-switcher"
+      >
+        <div className="flex items-center gap-2 truncate">
+          <Building2 className="h-4 w-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
+          <span className="truncate text-gray-800 dark:text-gray-200">
+            {currentAccount?.name || `Conta ${accountId}` || 'Conta'}
+          </span>
+        </div>
+        <ChevronDown className={`h-4 w-4 flex-shrink-0 text-gray-600 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Alterar conta</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                fetchAccounts();
+              }}
+              disabled={isLoading}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
             >
-              <div className="flex flex-col">
-                <span className="font-medium">{account.name}</span>
-                {account.role && (
-                  <span className="text-xs text-muted-foreground capitalize">
-                    {account.role === 'administrator' ? 'Administrador' : 'Agente'}
-                  </span>
-                )}
+              <RefreshCw className={`h-3.5 w-3.5 text-gray-500 dark:text-gray-400 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+          
+          <div className="py-1 max-h-60 overflow-y-auto">
+            {isLoading && accounts.length === 0 ? (
+              <div className="px-3 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                Carregando contas...
               </div>
-              {account.account_id === accountId && (
-                <Check className="h-4 w-4 text-primary" />
-              )}
-            </DropdownMenuItem>
-          ))
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+            ) : accounts.length === 0 ? (
+              <div className="px-3 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                Nenhuma conta encontrada
+              </div>
+            ) : (
+              accounts.map((account) => (
+                <button
+                  key={account.account_id}
+                  onClick={() => handleSwitchAccount(account)}
+                  className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between gap-2 transition-colors"
+                  data-testid={`account-option-${account.account_id}`}
+                >
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-medium text-gray-800 dark:text-gray-200 truncate">{account.name}</span>
+                    {account.role && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                        {account.role === 'administrator' ? 'Administrador' : 'Agente'}
+                      </span>
+                    )}
+                  </div>
+                  {account.account_id === accountId && (
+                    <Check className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

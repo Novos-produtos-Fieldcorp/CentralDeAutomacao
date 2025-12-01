@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { getWiseAppLabels } from "@/lib/directApiService";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
 import { createApiUrl } from '@/lib/api-config-supabase';
+import { AccountSwitcher } from './AccountSwitcher';
 
 interface Tag {
   id: number;
@@ -359,18 +360,22 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
           <TagIcon className="w-5 h-5" />
           Administração de Marcadores
         </h3>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-2 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Marcador
-        </button>
+        <div className="flex items-center gap-3">
+          <AccountSwitcher />
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-2 transition-colors"
+            data-testid="button-new-tag"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Marcador
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
