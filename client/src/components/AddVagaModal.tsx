@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, MapPin, Users, Building, Clock, FileText, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { insertVagaSchema, type InsertVaga, type Cliente, type Unidade, type Operacao, type StVaga, type Logradouro } from '@shared/schema';
@@ -27,7 +28,10 @@ interface AddVagaModalProps {
 }
 
 const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  const { accountId } = useAuth();
+  const { accountId: wiseappAccountId } = useWiseAppAccess();
+  const { accountId: authAccountId } = useAuth();
+  // Use WiseApp account ID (updated when switching accounts) as primary source
+  const accountId = wiseappAccountId || authAccountId;
   const [showNewUnidadeInput, setShowNewUnidadeInput] = useState(false);
   const [showNewOperacaoInput, setShowNewOperacaoInput] = useState(false);
   const [showNewStatusInput, setShowNewStatusInput] = useState(false);
