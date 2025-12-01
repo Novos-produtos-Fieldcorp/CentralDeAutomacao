@@ -16,6 +16,7 @@ export function AccountSwitcher() {
   const queryClient = useQueryClient();
   const [accounts, setAccounts] = useState<WiseAppAccount[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -62,28 +63,50 @@ export function AccountSwitcher() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const clearAccountCaches = (oldAccountId: string | null, newAccountId: string) => {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.includes('wiseapp-labels') ||
+        key.includes('wiseapp-contacts') ||
+        key.includes('tag-cache') ||
+        (oldAccountId && key.includes(oldAccountId))
+      )) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    console.log(`🧹 Limpou ${keysToRemove.length} caches ao trocar de conta`);
+  };
+
   const handleSwitchAccount = async (account: WiseAppAccount) => {
     if (account.account_id === accountId) {
       setIsOpen(false);
       return;
     }
 
+    setIsSwitching(true);
+    setIsOpen(false);
+
     try {
+      clearAccountCaches(accountId, account.account_id);
+      
       localStorage.setItem('account_id', account.account_id);
       
       if (switchAccount) {
         switchAccount(account.account_id, account.company_id);
       }
 
-      queryClient.invalidateQueries();
+      await queryClient.invalidateQueries();
+      await queryClient.refetchQueries({ type: 'active' });
 
       toast.success(`Alternado para ${account.name}`);
-      setIsOpen(false);
-
-      window.location.reload();
     } catch (error) {
       console.error('Erro ao trocar conta:', error);
       toast.error('Erro ao trocar de conta');
+    } finally {
+      setIsSwitching(false);
     }
   };
 
@@ -92,14 +115,19 @@ export function AccountSwitcher() {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md border border-gray-300 dark:border-gray-600 transition-colors min-w-[140px] justify-between"
+        onClick={() => !isSwitching && setIsOpen(!isOpen)}
+        disabled={isSwitching}
+        className={`flex items-center gap-2 px-3 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md border border-gray-300 dark:border-gray-600 transition-colors min-w-[140px] justify-between ${isSwitching ? 'opacity-70 cursor-wait' : ''}`}
         data-testid="button-account-switcher"
       >
         <div className="flex items-center gap-2 truncate">
-          <Building2 className="h-4 w-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
+          {isSwitching ? (
+            <RefreshCw className="h-4 w-4 flex-shrink-0 text-blue-500 animate-spin" />
+          ) : (
+            <Building2 className="h-4 w-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
+          )}
           <span className="truncate text-gray-800 dark:text-gray-200">
-            {currentAccount?.name || `Conta ${accountId}` || 'Conta'}
+            {isSwitching ? 'Alternando...' : (currentAccount?.name || `Conta ${accountId}` || 'Conta')}
           </span>
         </div>
         <ChevronDown className={`h-4 w-4 flex-shrink-0 text-gray-600 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
