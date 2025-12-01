@@ -12,6 +12,7 @@ interface WiseAppAccessContextType {
   attendantName: string | null;
   accountId: string | null;
   isLoading: boolean;
+  switchAccount?: (newAccountId: string, newCompanyId?: number | null) => void;
 }
 
 const WiseAppAccessContext = createContext<WiseAppAccessContextType>({
@@ -21,6 +22,7 @@ const WiseAppAccessContext = createContext<WiseAppAccessContextType>({
   attendantName: null,
   accountId: null,
   isLoading: true,
+  switchAccount: undefined,
 });
 
 export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode }) => {
@@ -157,6 +159,39 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
     } catch (error) {
       console.error('Error clearing session:', error);
     }
+  };
+
+  // Function to switch between WiseApp accounts
+  const switchAccount = (newAccountId: string, newCompanyId?: number | null) => {
+    console.log('🔄 [WiseAppAccess] Trocando para conta:', newAccountId, 'company:', newCompanyId);
+    
+    // Update state
+    setWiseappAccountId(newAccountId);
+    if (newCompanyId !== undefined) {
+      setCompanyId(newCompanyId);
+    }
+    
+    // Update localStorage
+    localStorage.setItem('account_id', newAccountId);
+    
+    // Update session in localStorage
+    const currentSession = getValidSessionData();
+    if (currentSession) {
+      saveSession({
+        ...currentSession,
+        accountId: newAccountId,
+        companyId: newCompanyId ?? currentSession.companyId
+      });
+    }
+    
+    // Sync with AuthContext
+    if (newCompanyId !== undefined && newCompanyId !== null) {
+      updateCompanyFromSession(newCompanyId, newAccountId);
+    }
+    
+    // Invalidate all queries to force refetch with new account
+    console.log('🔄 [WiseAppAccess] Invalidando todas as queries após troca de conta...');
+    queryClient.invalidateQueries();
   };
 
   useEffect(() => {
@@ -296,7 +331,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
   }, [searchParams, authenticatedEmail]);
 
   return (
-    <WiseAppAccessContext.Provider value={{ token, companyId, attendantId, attendantName, accountId: wiseappAccountId, isLoading }}>
+    <WiseAppAccessContext.Provider value={{ token, companyId, attendantId, attendantName, accountId: wiseappAccountId, isLoading, switchAccount }}>
       {children}
       <WiseAppTokenModal
         open={showModal}

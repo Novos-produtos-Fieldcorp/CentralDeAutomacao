@@ -208,6 +208,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para listar contas WiseApp disponíveis para um usuário
+  app.post("/api/wiseapp/available-accounts", async (req, res) => {
+    try {
+      const { token, email } = req.body;
+      
+      if (!token) {
+        return res.status(400).json({ error: "Token é obrigatório" });
+      }
+
+      console.log("🔍 Buscando contas disponíveis para usuário...");
+
+      const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.com";
+      
+      // Primeiro, validar o token e obter info do usuário
+      const profileResponse = await fetch(`${wiseappApiUrl}/api/v1/profile`, {
+        method: 'GET',
+        headers: {
+          'api_access_token': token,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!profileResponse.ok) {
+        return res.status(401).json({ error: "Token inválido" });
+      }
+
+      const userData = await profileResponse.json();
+      const userEmail = email || userData.email;
+      
+      console.log(`✅ Token válido para: ${userData.name} (${userEmail})`);
+
+      // Buscar todas as contas conhecidas do banco de dados para este email
+      const { data: userAccounts, error: dbError } = await supabaseBackend
+        .from('wiseapp_acesso')
+        .select('id_conta_wiseapp, nome, email')
+        .eq('email', userEmail);
+
+      if (dbError) {
+        console.error("Erro ao buscar contas do DB:", dbError);
+      }
+
+      // Buscar informações de todas as empresas com id_conta_wiseapp
+      const { data: companies, error: companiesError } = await supabaseBackend
+        .from('company')
+        .select('company_id, nome_company, id_conta_wiseapp')
+        .not('id_conta_wiseapp', 'is', null);
+
+      if (companiesError) {
+        console.error("Erro ao buscar empresas:", companiesError);
+      }
+
+      // Criar mapa de account_id para company name
+      const accountToCompany = new Map<string, { company_id: number; nome: string }>();
+      companies?.forEach(c => {
+        if (c.id_conta_wiseapp) {
+          accountToCompany.set(c.id_conta_wiseapp.toString(), {
+            company_id: c.company_id,
+            nome: c.nome_company
+          });
+        }
+      });
+
+      // Tentar buscar as contas do usuário via API do WiseApp
+      const validatedAccounts: Array<{
+        account_id: string;
+        name: string;
+        company_id: number | null;
+        role?: string;
+      }> = [];
+
+      // Pegar account_ids únicos do banco
+      const knownAccountIds = new Set<string>();
+      userAccounts?.forEach(ua => {
+        if (ua.id_conta_wiseapp) {
+          knownAccountIds.add(ua.id_conta_wiseapp.toString());
+        }
+      });
+      companies?.forEach(c => {
+        if (c.id_conta_wiseapp) {
+          knownAccountIds.add(c.id_conta_wiseapp.toString());
+        }
+      });
+
+      // Validar cada account_id conhecido
+      for (const accountId of knownAccountIds) {
+        try {
+          const accountResponse = await fetch(`${wiseappApiUrl}/api/v1/accounts/${accountId}`, {
+            method: 'GET',
+            headers: {
+              'api_access_token': token,
+              'Content-Type': 'application/json',
+            }
+          });
+
+          if (accountResponse.ok) {
+            const accountData = await accountResponse.json();
+            const companyInfo = accountToCompany.get(accountId);
+            
+            validatedAccounts.push({
+              account_id: accountId,
+              name: accountData.name || companyInfo?.nome || `Conta ${accountId}`,
+              company_id: companyInfo?.company_id || null,
+              role: accountData.role || 'agent'
+            });
+            
+            console.log(`✅ Conta ${accountId} (${accountData.name}) validada para usuário`);
+          }
+        } catch (err) {
+          console.log(`⚠️ Conta ${accountId} não acessível para este usuário`);
+        }
+      }
+
+      console.log(`📋 Total de ${validatedAccounts.length} contas disponíveis para ${userEmail}`);
+
+      res.json({
+        success: true,
+        user: {
+          name: userData.name,
+          email: userEmail
+        },
+        accounts: validatedAccounts
+      });
+
+    } catch (error) {
+      console.error("Erro ao buscar contas disponíveis:", error);
+      res.status(500).json({ 
+        error: "Erro interno ao buscar contas" 
+      });
+    }
+  });
 
   // Nova rota específica para buscar inboxes com cache otimizado por company_id
   app.get("/api/inboxes/:companyId", async (req, res) => {
