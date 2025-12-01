@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, MapPin, X, Download, AlertCircle, ChevronDown, Calendar, User, Camera, Clock, Video, Image as ImageIcon, ExternalLink, Archive, CheckSquare } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { useCurrentAccount } from '@/hooks/useCurrentAccount';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -29,7 +29,7 @@ interface ComprovRotaItem {
 }
 
 export default function ComprovRotaLista() {
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const [loading, setLoading] = useState(true);
   const [comprovantes, setComprovantes] = useState<ComprovRotaItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');

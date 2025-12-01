@@ -5,21 +5,36 @@ interface CurrentAccountData {
   accountId: string | null;
   companyId: number | null;
   isReady: boolean;
+  isLoading: boolean;
 }
 
 export const useCurrentAccount = (): CurrentAccountData => {
   const wiseAppAccess = useWiseAppAccess();
   const auth = useAuth();
   
-  const accountId = wiseAppAccess.accountId || auth.accountId || null;
-  const companyId = wiseAppAccess.companyId || auth.companyId || null;
+  // WiseAppAccess is the authoritative source when available
+  // Only fall back to Auth after WiseApp has finished loading AND has no data
+  const wiseAppIsLoaded = !wiseAppAccess.isLoading;
+  const hasWiseAppData = !!wiseAppAccess.accountId || !!wiseAppAccess.companyId;
   
-  const isReady = !wiseAppAccess.isLoading && (!!accountId || !!companyId);
+  // Use WiseApp data if it's loaded and has data, otherwise fall back to Auth
+  const accountId = hasWiseAppData 
+    ? wiseAppAccess.accountId 
+    : (wiseAppIsLoaded ? auth.accountId : null);
+    
+  const companyId = hasWiseAppData 
+    ? wiseAppAccess.companyId 
+    : (wiseAppIsLoaded ? auth.companyId : null);
+  
+  // Only ready when WiseApp has loaded AND we have both accountId and companyId
+  const isReady = wiseAppIsLoaded && !!accountId && !!companyId;
+  const isLoading = wiseAppAccess.isLoading;
   
   return {
-    accountId,
-    companyId,
-    isReady
+    accountId: accountId ?? null,
+    companyId: companyId ?? null,
+    isReady,
+    isLoading
   };
 };
 

@@ -169,13 +169,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
     console.log('🧹 [WiseAppAccess] Removendo todas as queries do cache...');
     queryClient.removeQueries();
     
-    // Update state
-    setWiseappAccountId(newAccountId);
-    if (newCompanyId !== undefined) {
-      setCompanyId(newCompanyId);
-    }
-    
-    // Update localStorage
+    // Update localStorage FIRST (synchronous, persistent)
     localStorage.setItem('account_id', newAccountId);
     
     // Update session in localStorage
@@ -188,14 +182,23 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
       });
     }
     
-    // Sync with AuthContext BEFORE invalidating queries
+    // Sync with AuthContext FIRST (before React state update)
     if (newCompanyId !== undefined && newCompanyId !== null) {
       updateCompanyFromSession(newCompanyId, newAccountId);
     }
     
-    // Force refetch all queries with new account context
-    console.log('🔄 [WiseAppAccess] Invalidando todas as queries após troca de conta...');
-    queryClient.invalidateQueries();
+    // Update React state AFTER AuthContext is synced
+    setWiseappAccountId(newAccountId);
+    if (newCompanyId !== undefined) {
+      setCompanyId(newCompanyId);
+    }
+    
+    // Delay cache invalidation until after state commits using microtask
+    // This ensures React Query refetches with the NEW account context
+    queueMicrotask(() => {
+      console.log('🔄 [WiseAppAccess] Invalidando todas as queries após troca de conta (post-commit)...');
+      queryClient.invalidateQueries();
+    });
   };
 
   useEffect(() => {

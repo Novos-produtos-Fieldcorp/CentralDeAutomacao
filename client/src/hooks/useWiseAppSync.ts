@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 // Removed direct API service - now using secure backend routes
-import { useAuth } from '@/context/AuthContext';
+import { useCurrentAccount } from '@/hooks/useCurrentAccount';
 import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 import { createApiUrl, supabaseApiRequest } from '@/lib/api-config-supabase';
 import { supabase } from '@/lib/supabase';
@@ -36,7 +36,7 @@ interface WiseAppSyncHookReturn {
 export function useWiseAppSync(): WiseAppSyncHookReturn {
   const [configValid, setConfigValid] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
   // instead of AuthContext (which may use accountId from URL)
   const { token: wiseAppToken, companyId: wiseAppCompanyId, accountId } = useWiseAppAccess();

@@ -3,7 +3,7 @@ import { X, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Motorista, Veiculo } from '../../types/database';
 import toast from 'react-hot-toast';
-import { useAuth } from '../../context/AuthContext';
+import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 
 interface CreateWeeklyChecklistModalProps {
   isOpen: boolean;
@@ -17,7 +17,7 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [statusItems, setStatusItems] = useState<{ status_id: number; status: string }[]>([]);
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   
   // Initialize with empty form data
   const emptyFormData = {

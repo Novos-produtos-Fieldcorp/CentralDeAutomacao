@@ -3,7 +3,7 @@ import { X, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { getCurrentDate, formatCEP } from '../utils/format';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { saveUserEmail, getUserEmail } from '../utils/cookies';
 
 interface AddAgregadoModalProps {
@@ -17,7 +17,7 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
   const [submitting, setSubmitting] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   
   const [formData, setFormData] = useState({
     cpf: '',

@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from './useCurrentAccount';
 import { createFilteredQuery } from '../lib/supabase';
 
 interface UseCompanyDataReturn {
@@ -7,7 +8,8 @@ interface UseCompanyDataReturn {
 }
 
 export const useCompanyData = () => {
-  const { companyId, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const { companyId } = useCurrentAccount();
 
   if (!isAuthenticated) {
     throw new Error('Authentication required');

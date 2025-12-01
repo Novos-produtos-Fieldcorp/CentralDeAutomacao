@@ -4,7 +4,7 @@ import { useCompanyData } from '../hooks/useCompanyData';
 import toast from 'react-hot-toast';
 import type { Cliente } from '../types/database';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { searchWiseAppContact } from '../lib/directApiService';
 import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
@@ -27,7 +27,7 @@ const BulkActionsModal = ({
   clientes = []
 }: BulkActionsModalProps) => {
   const { query } = useCompanyData();
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
   // instead of AuthContext (which may use accountId from URL)
   const { token: wiseAppToken, accountId } = useWiseAppAccess();

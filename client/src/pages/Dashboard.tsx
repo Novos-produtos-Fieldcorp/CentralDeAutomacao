@@ -21,7 +21,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import { useCurrentAccount } from "../hooks/useCurrentAccount";
 import { useModuleAccess } from "../hooks/useModuleAccess";
 import LoadingSpinner from "../components/LoadingSpinner";
 import {
@@ -1077,7 +1077,7 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
 
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const { loading: moduleAccessLoading, moduleAccess } = useModuleAccess();
   const [stats, setStats] = useState<DashboardStats>({
     agregados: 0,

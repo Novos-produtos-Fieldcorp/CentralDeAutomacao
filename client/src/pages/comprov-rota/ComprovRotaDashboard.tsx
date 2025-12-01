@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MapPin, Users, TrendingUp, Calendar, Image, Video } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { useCurrentAccount } from '@/hooks/useCurrentAccount';
 import { supabase } from '@/lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { format, subDays, startOfMonth, endOfMonth, parseISO } from 'date-fns';
@@ -27,7 +27,7 @@ interface MediaPorDia {
 }
 
 export default function ComprovRotaDashboard() {
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     totalComprovantes: 0,

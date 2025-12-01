@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import type { Veiculo, Motorista } from '../../types/database';
 import { VEHICLE_TYPES } from '../../constants/vehicleTypes';
 import toast from 'react-hot-toast';
-import { useAuth } from '../../context/AuthContext';
+import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import { consultarPlacaApi, validarPlaca, formatarPlaca } from '../../utils/placaService';
 
 interface EditVeiculoModalProps {
@@ -20,7 +20,7 @@ const EditVeiculoModal = ({ isOpen, onClose, veiculo, onUpdate, isEmpresa = fals
   const [submitting, setSubmitting] = useState(false);
   const [consultingPlaca, setConsultingPlaca] = useState(false);
   const [tiposVeiculo, setTiposVeiculo] = useState<Array<{ value: string; label: string }>>([]);
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const [formData, setFormData] = useState({
     placa: '',
     marca: '',

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, Edit2, Plus, Trash2, Copy, Check, FilePen } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import { formatCPF } from '../../utils/format';
@@ -245,7 +245,7 @@ const RomaneioCell: React.FC<{ romaneio: string[] | string | null }> = ({ romane
 };
 
 const HodometrosMinuta: React.FC = () => {
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   // moduleAccess removed — create modal removed
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days', false);
   

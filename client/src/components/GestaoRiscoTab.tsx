@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, AlertTriangle, Check, X, Loader2, ShieldAlert } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 
 interface GestaoRisco {
   id: number;
@@ -45,7 +45,7 @@ const GestaoRiscoTab: React.FC<GestaoRiscoTabProps> = ({
   motorista_id,
   onUpdateSuccess
 }) => {
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [statuses, setStatuses] = useState<Status[]>([]);
   const [loading, setLoading] = useState(true);

@@ -4,7 +4,7 @@ import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDas
 import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { useSidebar } from '../context/SidebarContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
@@ -30,7 +30,7 @@ const Navbar = ({ onToggle }: NavbarProps) => {
     setIsExpanded = setLocalExpanded;
   }
   const { moduleAccess } = useModuleAccess();
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const [companyName, setCompanyName] = useState('');
   const {} = useCompanyData();
   const [showCompanyTooltip, setShowCompanyTooltip] = useState(false);

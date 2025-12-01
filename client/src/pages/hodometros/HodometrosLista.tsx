@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, BarChart2, Download, X, Calendar, User, Truck, ChevronDown, ChevronUp, Eye, Clock, Camera, Gauge, Fuel } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { useAuth } from '../../context/AuthContext';
+import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import { usePagination } from '../../hooks/usePagination';
@@ -70,7 +70,7 @@ interface VehicleData {
 }
 
 const HodometrosLista = () => {
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const { moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
