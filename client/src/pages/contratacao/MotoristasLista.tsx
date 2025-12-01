@@ -2181,10 +2181,23 @@ const MotoristasLista = () => {
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {motorista.nome || 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                              <span>Motorista</span>
                               {motorista.ajudantes && motorista.ajudantes.length > 0 && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Ajudantes: {motorista.ajudantes.join(', ')}
-                                </div>
+                                <span className="group/ajudantes relative inline-block cursor-help">
+                                  <span className="text-blue-600 dark:text-blue-400">
+                                    {motorista.ajudantes.length} Ajudante{motorista.ajudantes.length > 1 ? 's' : ''}
+                                  </span>
+                                  <div className="invisible group-hover/ajudantes:visible absolute left-0 top-full z-50 mt-1 w-max max-w-xs rounded-md bg-gray-900 dark:bg-gray-700 px-3 py-2 text-xs text-white shadow-lg">
+                                    <div className="font-medium mb-1">Ajudantes:</div>
+                                    {motorista.ajudantes.map((ajudante, index) => (
+                                      <div key={index} className="py-0.5">
+                                        {index + 1}. {ajudante}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </span>
                               )}
                             </div>
                           </div>
