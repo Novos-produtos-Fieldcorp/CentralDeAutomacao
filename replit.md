@@ -20,7 +20,7 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **WhatsApp Integration**: Seamless photo capture and display using WiseApp API, with automatic storage in Supabase.
 - **Document Management**: Direct upload to Supabase Storage with validation.
 - **WiseApp Token Management**: Unified session cache, cross-context company synchronization, and token validation via Supabase Edge Functions. **Critical**: `WiseAppAccessContext` is the authoritative source for WiseApp `accountId` (derived from email's `id_conta_wiseapp` in database), not URL parameters.
-- **Company Data Isolation**: `WiseAppAccessContext.accountId` is used for all WiseApp API calls (tags sync, labels, etc.) to ensure data is scoped to the authenticated user's company, preventing cross-company data leakage.
+- **Company Data Isolation**: Centralized `useCurrentAccount()` hook (in `client/src/hooks/useCurrentAccount.ts`) provides tenant-scoped `accountId` and `companyId` from WiseAppAccessContext. ALL tenant-aware components MUST use this hook instead of reading from AuthContext directly. The `switchAccount` function uses `queueMicrotask` to delay cache invalidation until after state commits, preventing stale data leakage.
 - **Form Validation**: Enhanced CNH validation and real-time input sanitization.
 - **Pagination**: Comprehensive system across lists with configurable page sizes.
 - **License Plate API**: Real-time vehicle data consultation via FIPE API.
