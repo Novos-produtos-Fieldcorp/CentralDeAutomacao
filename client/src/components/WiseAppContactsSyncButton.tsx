@@ -33,7 +33,6 @@ export function WiseAppContactsSyncButton({
   // Função para capturar e salvar token do localStorage
   const captureAndSaveToken = async () => {
     try {
-      console.log(`[captureAndSaveToken] Tentando capturar token para company_id: ${companyId}, account_id: ${accountId}`);
       
       // Tentar várias formas de encontrar o token no localStorage
       const possibleKeys = [
@@ -55,7 +54,6 @@ export function WiseAppContactsSyncButton({
             if (parsed.token && typeof parsed.token === 'string') {
               foundToken = parsed.token;
               foundKey = key;
-              console.log(`[captureAndSaveToken] Token encontrado na chave: ${key}`);
               break;
             }
           } catch {
@@ -63,7 +61,6 @@ export function WiseAppContactsSyncButton({
             if (typeof stored === 'string' && stored.length > 10) {
               foundToken = stored;
               foundKey = key;
-              console.log(`[captureAndSaveToken] Token direto encontrado na chave: ${key}`);
               break;
             }
           }
@@ -71,20 +68,13 @@ export function WiseAppContactsSyncButton({
       }
       
       if (!foundToken) {
-        console.log('[captureAndSaveToken] Nenhum token encontrado no localStorage');
-        
-        // Listar todas as chaves do localStorage para debug
-        const allKeys = Object.keys(localStorage);
-        console.log('[captureAndSaveToken] Chaves disponíveis no localStorage:', allKeys);
         return false;
       }
       
       if (!companyId || !accountId) {
-        console.error('[captureAndSaveToken] company_id ou account_id não definidos:', { companyId, accountId });
+        console.error('[captureAndSaveToken] company_id ou account_id não definidos');
         return false;
       }
-      
-      console.log(`[captureAndSaveToken] Salvando token no banco (key: ${foundKey}, token length: ${foundToken.length})`);
       
       // Salvar token no banco de dados
       const tokenData = {
@@ -94,11 +84,6 @@ export function WiseAppContactsSyncButton({
         email: 'auto@sistema.com',
         id_conta_wiseapp: accountId
       };
-      
-      console.log('[captureAndSaveToken] Dados a serem salvos:', {
-        ...tokenData,
-        access_token_wiseapp: `${foundToken.substring(0, 10)}...`
-      });
       
       const { data, error } = await supabase
         .from('wiseapp_acesso')
@@ -112,7 +97,6 @@ export function WiseAppContactsSyncButton({
         return false;
       }
       
-      console.log('[captureAndSaveToken] ✅ Token salvo com sucesso!', data);
       return true;
       
     } catch (error) {
@@ -122,14 +106,10 @@ export function WiseAppContactsSyncButton({
   };
 
   const handleSync = async () => {
-    console.log(`[handleSync] Iniciando sync ${variant} ${contatoId ? `para contato ${contatoId}` : ''}`);
-    
     // Primeiro, tenta capturar e salvar o token automaticamente
     const tokenSaved = await captureAndSaveToken();
     
-    if (tokenSaved) {
-      console.log('[handleSync] Token capturado e salvo, prosseguindo com sincronização');
-    } else {
+    if (!tokenSaved) {
       console.warn('[handleSync] Não foi possível capturar token, tentando sincronização mesmo assim');
     }
     
@@ -195,7 +175,7 @@ export function WiseAppContactsSyncButton({
   return (
     <div className="flex items-center gap-2">
       {button}
-      <TestTokenButton />
+      {TestTokenButton}
     </div>
   );
 }

@@ -366,8 +366,6 @@ const ResumosGrupo = () => {
       const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
       const requestUrl = `${supabaseUrl}/functions/v1/manual-summary-trigger`;
       
-      console.log('Making request to:', requestUrl);
-      console.log('Request payload:', { group_id: grupo.id, company_id: companyId });
       
       // Call the manual-summary-trigger edge function
       const response = await fetch(requestUrl, {
@@ -383,12 +381,9 @@ const ResumosGrupo = () => {
         })
       });
       
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
       
       // Always read the response as text first to debug
       const responseText = await response.text();
-      console.log('Raw response:', responseText);
       
       if (!response.ok) {
         console.error('Error response:', responseText);
@@ -405,7 +400,6 @@ const ResumosGrupo = () => {
         throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`);
       }
       
-      console.log('Manual summary result:', result);
       
       if (result.success) {
         toast.success('Automação iniciada com sucesso');

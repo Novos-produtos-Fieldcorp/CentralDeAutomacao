@@ -94,8 +94,7 @@ const Admin = () => {
         minuta_access: d.hasOwnProperty('minuta_access') ? d.minuta_access : false
       }));
 
-  setAccessControls(normalized);
-  console.log('[Admin] fetched access controls', normalized);
+      setAccessControls(normalized);
     } catch (error) {
       console.error('Error fetching access controls:', error);
       toast.error('Erro ao carregar controles de acesso');
@@ -118,8 +117,6 @@ const Admin = () => {
     }
 
     try {
-      // DEBUG: show what we're about to send
-  console.log('[Admin] updating company field', { company_id: control.company_id, field, newValue });
 
       let updatedData = null;
       let error = null;
@@ -153,7 +150,6 @@ const Admin = () => {
           } else {
             updatedData = json?.data ?? null;
             error = json?.error ?? null;
-            console.log('[Admin] backend toggle minuta response', json ?? text);
             if (json?.error) {
               toast.error('Erro do backend: ' + (json.error.message || JSON.stringify(json.error)));
             }
@@ -170,7 +166,6 @@ const Admin = () => {
           .select();
   updatedData = supRes.data;
   error = supRes.error;
-  console.log('[Admin] supabase update response', { updatedData, error });
       }
 
       if (error) {
@@ -187,7 +182,6 @@ const Admin = () => {
       };
       
       setAccessControls(updatedControls);
-      console.log(`[Admin] local state updated for ${field} to ${updatedControls[index][field]}`);
       toast.success('Configuração atualizada com sucesso');
     } catch (error) {
       console.error(`Error toggling ${field}:`, error);
