@@ -35,6 +35,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   const [newOperacaoName, setNewOperacaoName] = useState('');
   const [newStatusName, setNewStatusName] = useState('');
   const [logradouros, setLogradouros] = useState<Logradouro[]>([]);
+  const [logradouroSearchFilter, setLogradouroSearchFilter] = useState('');
   const [vagaId, setVagaId] = useState<number | null>(null);
   const [enderecoData, setEnderecoData] = useState({
     numero: '',
@@ -42,6 +43,11 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     logradouro_id: '',
     st_end: false,
   });
+
+  // Filter logradouros based on search
+  const filteredLogradouros = logradouros.filter((log: any) =>
+    log.logradouro.toLowerCase().includes(logradouroSearchFilter.toLowerCase())
+  );
 
   // Get company data first
   const { data: companyData, isLoading: companyLoading } = useQuery({
@@ -568,18 +574,43 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Logradouro
                 </label>
-                <select
-                  value={enderecoData.logradouro_id}
-                  onChange={(e) => setEnderecoData({...enderecoData, logradouro_id: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">Selecione um logradouro</option>
-                  {logradouros.map((log: any) => (
-                    <option key={log.id_logradouro} value={log.id_logradouro}>
-                      {log.logradouro}
-                    </option>
-                  ))}
-                </select>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={logradouroSearchFilter}
+                    onChange={(e) => setLogradouroSearchFilter(e.target.value)}
+                    placeholder="Pesquisar logradouro..."
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  />
+                  {logradouroSearchFilter && (
+                    <div className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 max-h-48 overflow-y-auto">
+                      {filteredLogradouros.length > 0 ? (
+                        filteredLogradouros.map((log: any) => (
+                          <button
+                            key={log.id_logradouro}
+                            type="button"
+                            onClick={() => {
+                              setEnderecoData({...enderecoData, logradouro_id: log.id_logradouro.toString()});
+                              setLogradouroSearchFilter('');
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-blue-100 dark:hover:bg-blue-900 border-b border-gray-200 dark:border-gray-600 last:border-b-0 text-gray-800 dark:text-gray-200"
+                          >
+                            {log.logradouro}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-gray-500 dark:text-gray-400 text-sm">
+                          Nenhum logradouro encontrado
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {enderecoData.logradouro_id && (
+                    <div className="text-sm text-blue-600 dark:text-blue-400">
+                      ✓ {logradouros.find((l: any) => l.id_logradouro.toString() === enderecoData.logradouro_id)?.logradouro || 'Logradouro selecionado'}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
