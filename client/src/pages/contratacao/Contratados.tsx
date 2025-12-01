@@ -2109,8 +2109,23 @@ const Contratados = () => {
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {motorista.nome_motorista || ''}
                               {motorista.ajudantes && motorista.ajudantes.length > 0 && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Ajudantes: {motorista.ajudantes.join(', ')}
+                                <div className="text-xs text-gray-500 dark:text-gray-400 group/ajudantes relative inline-block">
+                                  <span className="cursor-help">
+                                    Ajudantes: {motorista.ajudantes.length === 1 
+                                      ? motorista.ajudantes[0]
+                                      : motorista.ajudantes.map((_, i) => i + 1).join(', ')
+                                    }
+                                  </span>
+                                  {motorista.ajudantes.length > 1 && (
+                                    <div className="invisible group-hover/ajudantes:visible absolute left-0 top-full z-50 mt-1 w-max max-w-xs rounded-md bg-gray-900 dark:bg-gray-700 px-3 py-2 text-xs text-white shadow-lg">
+                                      <div className="font-medium mb-1">Ajudantes:</div>
+                                      {motorista.ajudantes.map((ajudante, index) => (
+                                        <div key={index} className="py-0.5">
+                                          {index + 1}. {ajudante}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
