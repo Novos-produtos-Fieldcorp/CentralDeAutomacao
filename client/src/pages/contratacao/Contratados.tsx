@@ -808,20 +808,47 @@ const Contratados = () => {
 
     try {
       const newDate = marcar ? new Date().toISOString().split('T')[0] : null;
+      const motoristaIds = Array.from(selectedItems);
 
-      // Atualiza no banco de dados
-      const { error } = await supabase
+      // Primeiro, buscar quais motoristas já têm registro
+      const { data: existingRecords, error: fetchError } = await supabase
         .from('motorista_eventos_cliente')
-        .upsert(
-          Array.from(selectedItems).map(id => ({
-            motorista_id: id,
+        .select('motorista_id')
+        .in('motorista_id', motoristaIds);
+
+      if (fetchError) throw fetchError;
+
+      const existingIds = new Set((existingRecords || []).map(r => r.motorista_id));
+      const idsToUpdate = motoristaIds.filter(id => existingIds.has(id));
+      const idsToInsert = motoristaIds.filter(id => !existingIds.has(id));
+
+      // Update registros existentes
+      if (idsToUpdate.length > 0) {
+        const { error: updateError } = await supabase
+          .from('motorista_eventos_cliente')
+          .update({
             treinamento: marcar,
             treinamento_data: newDate
-          })),
-          { onConflict: 'motorista_id' }
-        );
+          })
+          .in('motorista_id', idsToUpdate);
 
-      if (error) throw error;
+        if (updateError) throw updateError;
+      }
+
+      // Insert novos registros
+      if (idsToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from('motorista_eventos_cliente')
+          .insert(
+            idsToInsert.map(id => ({
+              motorista_id: id,
+              treinamento: marcar,
+              treinamento_data: newDate
+            }))
+          );
+
+        if (insertError) throw insertError;
+      }
 
       // Atualiza o estado local
       setContratados(prev =>
@@ -855,20 +882,47 @@ const Contratados = () => {
 
     try {
       const newDate = marcar ? new Date().toISOString().split('T')[0] : null;
+      const motoristaIds = Array.from(selectedItems);
 
-      // Atualiza no banco de dados
-      const { error } = await supabase
+      // Primeiro, buscar quais motoristas já têm registro
+      const { data: existingRecords, error: fetchError } = await supabase
         .from('motorista_eventos_cliente')
-        .upsert(
-          Array.from(selectedItems).map(id => ({
-            motorista_id: id,
+        .select('motorista_id')
+        .in('motorista_id', motoristaIds);
+
+      if (fetchError) throw fetchError;
+
+      const existingIds = new Set((existingRecords || []).map(r => r.motorista_id));
+      const idsToUpdate = motoristaIds.filter(id => existingIds.has(id));
+      const idsToInsert = motoristaIds.filter(id => !existingIds.has(id));
+
+      // Update registros existentes
+      if (idsToUpdate.length > 0) {
+        const { error: updateError } = await supabase
+          .from('motorista_eventos_cliente')
+          .update({
             integracao: marcar,
             integracao_data: newDate
-          })),
-          { onConflict: 'motorista_id' }
-        );
+          })
+          .in('motorista_id', idsToUpdate);
 
-      if (error) throw error;
+        if (updateError) throw updateError;
+      }
+
+      // Insert novos registros
+      if (idsToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from('motorista_eventos_cliente')
+          .insert(
+            idsToInsert.map(id => ({
+              motorista_id: id,
+              integracao: marcar,
+              integracao_data: newDate
+            }))
+          );
+
+        if (insertError) throw insertError;
+      }
 
       // Atualiza o estado local
       setContratados(prev =>
