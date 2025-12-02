@@ -3,7 +3,7 @@ import { X, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Motorista, MotoristaWithAddress, Veiculo } from '../types/database';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { formatCEP } from '../utils/format';
 import WhatsAppAvatar from './WhatsAppAvatar';
 import { 
@@ -29,7 +29,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [addressWarnings, setAddressWarnings] = useState<string[]>([]);
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const { lookupCep } = useCepLookup();
   const [formData, setFormData] = useState({
     nome: '',

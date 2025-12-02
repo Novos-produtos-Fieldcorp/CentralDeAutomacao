@@ -6,13 +6,14 @@ import VeiculosEmpresa from './veiculos/VeiculosEmpresa';
 import VeiculosInfinito from './veiculos/VeiculosInfinito';
 import { useCallback } from 'react';
 import { useCompanyData } from '../hooks/useCompanyData';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { supabase } from '../lib/supabase';
 
 const Veiculos = () => {
   const location = useLocation();
-  const { companyId } = useCompanyData();
-  const { accountId } = useAuth();
+  const { companyId: legacyCompanyId } = useCompanyData();
+  const { accountId, companyId } = useCurrentAccount();
+  const effectiveCompanyId = companyId || legacyCompanyId;
   const [missingDataCount, setMissingDataCount] = useState(0);
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);

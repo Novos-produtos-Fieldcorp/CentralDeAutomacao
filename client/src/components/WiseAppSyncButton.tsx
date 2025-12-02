@@ -1,7 +1,7 @@
 import React from 'react';
 import { MessageSquare, Users, Loader2, CheckCircle, XCircle, Key } from 'lucide-react';
 import { useWiseAppSync } from '../hooks/useWiseAppSync';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { supabase } from '../lib/supabase';
 
@@ -26,7 +26,7 @@ export function WiseAppSyncButton({
     isBulkSyncing 
   } = useWiseAppSync();
   
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
   const { accountId } = useWiseAppAccess();
 

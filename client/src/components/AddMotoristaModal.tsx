@@ -3,7 +3,7 @@ import { X, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { getCurrentDate, formatCEP } from '../utils/format';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { saveUserEmail, getUserEmail } from '../utils/cookies';
 import { 
   validateCep, 
@@ -24,7 +24,7 @@ interface AddMotoristaModalProps {
 const AddMotoristaModal = ({ isOpen, onClose, onSuccess }: AddMotoristaModalProps) => {
   const [submitting, setSubmitting] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const [estados, setEstados] = useState<{ id_estado: number; sigla_estado: string }[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [addressWarnings, setAddressWarnings] = useState<string[]>([]);

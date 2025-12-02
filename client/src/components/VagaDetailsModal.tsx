@@ -4,7 +4,7 @@ import { Vaga } from '@shared/schema';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 
 interface VagaDetailsModalProps {
   vaga: Vaga;
@@ -21,7 +21,7 @@ interface DropdownData {
 }
 
 const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, isOpen, onClose, onUpdate }) => {
-  const { accountId } = useAuth();
+  const { accountId } = useCurrentAccount();
   const [isEditing, setIsEditing] = useState(false);
   const [currentVaga, setCurrentVaga] = useState(initialVaga);
   const [formData, setFormData] = useState({

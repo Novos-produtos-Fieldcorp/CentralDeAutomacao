@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save, Gauge, Fuel } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
-import { useAuth } from '../../context/AuthContext';
+import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import { useModuleAccess } from '../../hooks/useModuleAccess';
 import toast from 'react-hot-toast';
 
@@ -51,7 +51,7 @@ interface HodometroReading {
 }
 
 const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { initialTab: undefined }) => {
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const { moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

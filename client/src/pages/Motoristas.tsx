@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { Users, TruckIcon, LayoutDashboard, Kanban, CheckCircle2, Lock, ChevronRight, Building, Plus, Calendar, Clock } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
@@ -21,8 +21,9 @@ import AccessTooltip from '../components/AccessTooltip';
 
 const Motoristas = () => {
   const location = useLocation();
-  const { query, companyId } = useCompanyData();
-  const { accountId } = useAuth();
+  const { query, companyId: legacyCompanyId } = useCompanyData();
+  const { accountId, companyId } = useCurrentAccount();
+  const effectiveCompanyId = companyId || legacyCompanyId;
   const { moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);

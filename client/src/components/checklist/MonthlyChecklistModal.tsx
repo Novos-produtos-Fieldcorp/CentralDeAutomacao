@@ -3,7 +3,7 @@ import { X, Loader2, Camera } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Motorista, Veiculo, Checklist } from '../../types/database';
 import toast from 'react-hot-toast';
-import { useAuth } from '../../context/AuthContext';
+import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 
 interface MonthlyChecklistModalProps {
   isOpen: boolean;
@@ -18,7 +18,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [currentStep, setCurrentStep] = useState(1);
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   
   // Initialize with empty form data
   const emptyFormData = {

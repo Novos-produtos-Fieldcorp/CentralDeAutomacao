@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, MessageCircle, Users, Loader2 } from 'lucide-react';
 import { useFloatingChat } from '../hooks/useFloatingChat';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import MassMessageModal from './MassMessageModal';
 import axios from 'axios';
 
@@ -21,7 +21,7 @@ const MassMessageWithChatModal: React.FC<MassMessageWithChatModalProps> = ({
 }) => {
   const { startChat } = useFloatingChat();
   const { token: wiseAppToken } = useWiseAppAccess();
-  const { accountId } = useAuth();
+  const { accountId } = useCurrentAccount();
   
   const [showMassMessage, setShowMassMessage] = useState(false);
   const [showInboxSelector, setShowInboxSelector] = useState(false);

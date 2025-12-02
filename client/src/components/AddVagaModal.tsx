@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, MapPin, Users, Building, Clock, FileText, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { insertVagaSchema, type InsertVaga, type Cliente, type Unidade, type Operacao, type StVaga } from '@shared/schema';
+import { insertVagaSchema, type InsertVaga, type Cliente, type Unidade, type Operacao, type StVaga, type Logradouro } from '@shared/schema';
+import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
@@ -26,13 +28,30 @@ interface AddVagaModalProps {
 }
 
 const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  const { accountId } = useAuth();
+  const { accountId: wiseappAccountId } = useWiseAppAccess();
+  const { accountId: authAccountId } = useAuth();
+  // Use WiseApp account ID (updated when switching accounts) as primary source
+  const accountId = wiseappAccountId || authAccountId;
   const [showNewUnidadeInput, setShowNewUnidadeInput] = useState(false);
   const [showNewOperacaoInput, setShowNewOperacaoInput] = useState(false);
   const [showNewStatusInput, setShowNewStatusInput] = useState(false);
   const [newUnidadeName, setNewUnidadeName] = useState('');
   const [newOperacaoName, setNewOperacaoName] = useState('');
   const [newStatusName, setNewStatusName] = useState('');
+  const [logradouros, setLogradouros] = useState<Logradouro[]>([]);
+  const [logradouroSearchFilter, setLogradouroSearchFilter] = useState('');
+  const [vagaId, setVagaId] = useState<number | null>(null);
+  const [enderecoData, setEnderecoData] = useState({
+    numero: '',
+    ds_complemento: '',
+    logradouro_id: '',
+    st_end: false,
+  });
+
+  // Filter logradouros based on search
+  const filteredLogradouros = logradouros.filter((log: any) =>
+    log.logradouro.toLowerCase().includes(logradouroSearchFilter.toLowerCase())
+  );
 
   // Get company data first
   const { data: companyData, isLoading: companyLoading } = useQuery({
@@ -68,6 +87,15 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     enabled: !!companyId && isOpen,
   });
 
+  // Fetch logradouros
+  useEffect(() => {
+    const fetchLogradouros = async () => {
+      const { data, error } = await supabase.from('logradouro').select('*').limit(100);
+      if (!error && data) setLogradouros(data as unknown as Logradouro[]);
+    };
+    if (isOpen) fetchLogradouros();
+  }, [isOpen]);
+
   const {
     register,
     handleSubmit,
@@ -91,12 +119,25 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   // Create mutations for CRUD operations
   const createVagaMutation = useMutation({
     mutationFn: (vagaData: InsertVaga) => createVaga(vagaData),
-    onSuccess: () => {
+    onSuccess: (newVaga) => {
       toast.success('Vaga criada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['vagas', companyId] });
       reset();
       onSuccess();
       onClose();
+      
+      // Salvar endereço da vaga se logradouro foi selecionado
+      if (enderecoData.logradouro_id) {
+        supabase.from('end_vaga').insert({
+          vaga_id: newVaga.id,
+          logradouro_id: Number(enderecoData.logradouro_id),
+          numero: enderecoData.numero || null,
+          ds_complemento: enderecoData.ds_complemento || null,
+          st_end: enderecoData.st_end,
+        }).then(({ error }) => {
+          if (error) console.error('Erro ao salvar endereço:', error);
+        });
+      }
     },
     onError: (error) => {
       console.error('Error creating vaga:', error);
@@ -523,6 +564,97 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             {errors.dt_limite && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.dt_limite.message}</p>
             )}
+          </div>
+
+          {/* Address Information */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <MapPin className="w-5 h-5" />
+              Endereço da Vaga (Opcional)
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Logradouro
+                </label>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={logradouroSearchFilter}
+                    onChange={(e) => setLogradouroSearchFilter(e.target.value)}
+                    placeholder="Pesquisar logradouro..."
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  />
+                  {logradouroSearchFilter && (
+                    <div className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 max-h-48 overflow-y-auto">
+                      {filteredLogradouros.length > 0 ? (
+                        filteredLogradouros.map((log: any) => (
+                          <button
+                            key={log.id_logradouro}
+                            type="button"
+                            onClick={() => {
+                              setEnderecoData({...enderecoData, logradouro_id: log.id_logradouro.toString()});
+                              setLogradouroSearchFilter('');
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-blue-100 dark:hover:bg-blue-900 border-b border-gray-200 dark:border-gray-600 last:border-b-0 text-gray-800 dark:text-gray-200"
+                          >
+                            {log.logradouro}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-gray-500 dark:text-gray-400 text-sm">
+                          Nenhum logradouro encontrado
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {enderecoData.logradouro_id && (
+                    <div className="text-sm text-blue-600 dark:text-blue-400">
+                      ✓ {logradouros.find((l: any) => l.id_logradouro.toString() === enderecoData.logradouro_id)?.logradouro || 'Logradouro selecionado'}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Número
+                </label>
+                <input
+                  type="text"
+                  value={enderecoData.numero}
+                  onChange={(e) => setEnderecoData({...enderecoData, numero: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="Ex: 123"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Complemento
+                </label>
+                <input
+                  type="text"
+                  value={enderecoData.ds_complemento}
+                  onChange={(e) => setEnderecoData({...enderecoData, ds_complemento: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="Ex: Apto 12, Fundos"
+                />
+              </div>
+
+              <div className="flex items-center">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={enderecoData.st_end}
+                    onChange={(e) => setEnderecoData({...enderecoData, st_end: e.target.checked})}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Ativo</span>
+                </label>
+              </div>
+            </div>
           </div>
 
           {/* Actions */}

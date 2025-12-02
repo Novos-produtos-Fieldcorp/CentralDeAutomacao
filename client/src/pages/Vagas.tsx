@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Plus, MapPin, Calendar, Clock, Users, Building, LayoutDashboard } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import DashboardStats from '../components/DashboardStats';
 import VagasList from '../components/VagasList';
 import AddVagaModal from '../components/AddVagaModal';
@@ -15,7 +15,7 @@ interface DashboardData {
 
 const Vagas: React.FC = () => {
   const location = useLocation();
-  const { accountId } = useAuth();
+  const { accountId, companyId } = useCurrentAccount();
   const [showAddModal, setShowAddModal] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData>({
     totalVagas: 0,

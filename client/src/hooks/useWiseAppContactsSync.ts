@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { useAuth } from '@/context/AuthContext';
+import { useCurrentAccount } from '@/hooks/useCurrentAccount';
 import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 
 interface SyncResult {
@@ -33,7 +33,7 @@ interface WiseAppContactsSyncHookReturn {
 export function useWiseAppContactsSync(): WiseAppContactsSyncHookReturn {
   const [configValid, setConfigValid] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
   // instead of AuthContext (which may use accountId from URL)
   const { token: wiseAppToken, companyId: wiseAppCompanyId, accountId } = useWiseAppAccess();

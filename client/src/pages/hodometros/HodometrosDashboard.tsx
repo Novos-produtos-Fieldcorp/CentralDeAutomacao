@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatCPF } from '../../utils/format';
-import { useAuth } from '../../context/AuthContext';
+import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import { useModuleAccess } from '../../hooks/useModuleAccess';
 import { buildOdometerTimeline, calculateKmRodadoForPeriod, type HodometroReadingInput } from '../../utils/hodometroResetUtils';
 
@@ -121,7 +121,7 @@ interface KmVsPriceData {
 
 const HodometrosDashboard = () => {
   const { query } = useCompanyData();
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const { loading: moduleLoading, moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
   const [dailyMileage, setDailyMileage] = useState<DailyMileage[]>([]);

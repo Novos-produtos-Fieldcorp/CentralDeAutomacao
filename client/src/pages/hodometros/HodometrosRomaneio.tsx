@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, FilePen } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import { formatCPF } from '../../utils/format';
@@ -17,7 +17,7 @@ interface RomaneioWithRelations extends RomaneioType {
 }
 
 const HodometrosRomaneio: React.FC = () => {
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const { periodType, dateRange, pendingDateRange, updatePeriod, setDateRange } = useDateRange('30days', true);
   const [searchTerm, setSearchTerm] = useState('');
   const [romaneios, setRomaneios] = useState<RomaneioWithRelations[]>([]);

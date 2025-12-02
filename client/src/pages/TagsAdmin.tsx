@@ -1,11 +1,11 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { TagManager } from '../components/TagManager';
 
 const TagsAdmin = () => {
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   const { moduleAccess, loading } = useModuleAccess();
 
   if (loading) {

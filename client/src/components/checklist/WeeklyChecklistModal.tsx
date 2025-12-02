@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import type { Motorista, Veiculo, Checklist } from '../../types/database';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../LoadingSpinner';
-import { useAuth } from '../../context/AuthContext';
+import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 
 interface WeeklyChecklistModalProps {
   isOpen: boolean;
@@ -18,7 +18,7 @@ const WeeklyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: WeeklyC
   const [loading, setLoading] = useState(false);
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
-  const { companyId } = useAuth();
+  const { companyId } = useCurrentAccount();
   
   // Initialize with empty form data
   const emptyFormData = {
