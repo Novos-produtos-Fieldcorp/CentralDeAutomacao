@@ -1491,14 +1491,32 @@ const MotoristasLista = () => {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 p-6 rounded-xl shadow-lg border border-gray-200/70 dark:border-gray-700/70 backdrop-blur-sm">
-        {/* Ações */}
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-3">
-            {/* Bulk Contact Tags Sync Button */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        {/* Campo de busca */}
+        <div className="relative mb-4">
+          <input
+            type="text"
+            placeholder="Buscar por nome, CPF, email ou telefone..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+          />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Ações e Filtros */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
             <BulkContactTagsSync 
               onSyncComplete={(result) => {
-                // Atualizar tags dos motoristas após sincronização
                 if (result.success && motoristas && motoristas.length > 0) {
                   fetchAllMotoristaTags(motoristas);
                 }
@@ -1506,7 +1524,6 @@ const MotoristasLista = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            {/* Contador de filtros ativos */}
             {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
               ativoFilter !== '' || tagFilter.length > 0 || dateFilter !== 'all') && (
               <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
@@ -1514,8 +1531,6 @@ const MotoristasLista = () => {
                 <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tagFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
               </div>
             )}
-
-            {/* Botão limpar filtros */}
             {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
               ativoFilter !== '' || tagFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
               <button
@@ -1534,31 +1549,13 @@ const MotoristasLista = () => {
                 Limpar
               </button>
             )}
-          </div>
-        </div>
-
-        {/* Campo de busca inteligente */}
-        <div className="mb-4">
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-4 flex items-center">
-              <Search className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-            </div>
-            <input
-              type="text"
-              placeholder="Buscar por nome, CPF, email ou telefone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-12 py-3.5 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm group-focus-within:shadow-md"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm('')}
-                className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            )}
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus size={16} />
+              Adicionar Motorista
+            </button>
           </div>
         </div>
 
