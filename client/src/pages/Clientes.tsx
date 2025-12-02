@@ -396,6 +396,38 @@ const Clientes = () => {
         }
     };
 
+    const handleBulkUpdateStatus = async (newStatus: boolean) => {
+        if (!companyId || selectedItems.size === 0) return;
+
+        try {
+            const { error } = await supabase
+                .from('cliente')
+                .update({ st_cliente: newStatus })
+                .in('cliente_id', Array.from(selectedItems))
+                .eq('company_id', companyId);
+
+            if (error) throw error;
+
+            // Update local state
+            setClientes(clientes.map(c => 
+                selectedItems.has(c.cliente_id) 
+                    ? { ...c, st_cliente: newStatus }
+                    : c
+            ));
+
+            const action = newStatus ? 'ativado' : 'desativado';
+            const actionPlural = newStatus ? 'ativados' : 'desativados';
+            toast.success(`${selectedItems.size} cliente${selectedItems.size !== 1 ? 's' : ''} ${selectedItems.size !== 1 ? actionPlural : action} com sucesso`);
+
+            // Reset selection
+            setSelectedItems(new Set());
+            setSelectAll(false);
+        } catch (error) {
+            console.error('Error updating clientes status:', error);
+            toast.error('Erro ao atualizar status dos clientes');
+        }
+    };
+
     const handleSort = (key: keyof Cliente) => {
         setSortConfig(current => ({
             key,
@@ -524,6 +556,42 @@ const Clientes = () => {
                             </svg>
                         </div>
                     </div>
+
+                    {selectedItems.size > 0 && (
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 flex items-center justify-between gap-4 flex-wrap">
+                            <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                                {selectedItems.size} cliente{selectedItems.size !== 1 ? 's' : ''} selecionado{selectedItems.size !== 1 ? 's' : ''}
+                            </span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <button
+                                    onClick={() => handleBulkUpdateStatus(true)}
+                                    className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1.5"
+                                    data-testid="button-bulk-activate"
+                                >
+                                    <CheckCircle2 size={16} />
+                                    Ativar
+                                </button>
+                                <button
+                                    onClick={() => handleBulkUpdateStatus(false)}
+                                    className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1.5"
+                                    data-testid="button-bulk-deactivate"
+                                >
+                                    <X size={16} />
+                                    Desativar
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setSelectedItems(new Set());
+                                        setSelectAll(false);
+                                    }}
+                                    className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                    data-testid="button-bulk-clear"
+                                >
+                                    Limpar seleção
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="relative">
                         <div ref={tableContainerRef} className="overflow-x-auto w-full">
