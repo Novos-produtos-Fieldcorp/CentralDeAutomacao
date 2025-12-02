@@ -30,6 +30,7 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **Hodômetro km_rodado Calculation**: Advanced reset detection utility (`hodometroResetUtils.ts`) for accurate `km_rodado` calculation in charts and lists, handling both automobiles and ciclomotors. Includes a Fuel Consumption Dashboard with `km_rodado` and total liters calculations, grouped by normalized plate.
 - **Vagas Module**: Supports inline entity creation, real-time dashboard statistics, and configurable table/card grid views.
 - **Comprovante de Rota Module**: Tabbed interface with Dashboard and List views. Features include statistics cards, driver rankings, media analytics (photos/videos), GPS location display from database relations, and a bulk ZIP download system (frontend-only using JSZip). Smart media loading system handles various formats and WiseApp authentication.
+- **Database Schema Notes**: The `cliente` table uses `st_cliente` (not `ativo`) for active status. City data (`nome_cidade`) should be fetched from views like `vw_agregados_completo` or `vw_motoristas_completo`, not directly from `end_motorista` table.
 - **Deployment**: Configured for Replit with Vite dev server and Express backend.
 
 ### System Design Choices
