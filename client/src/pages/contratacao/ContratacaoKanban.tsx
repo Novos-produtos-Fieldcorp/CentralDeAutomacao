@@ -590,14 +590,13 @@ const ContratacaoKanban = () => {
     if (!companyId) return;
     try {
       const { data, error } = await supabase
-        .from('end_motorista')
+        .from('vw_agregados_completo')
         .select('nome_cidade')
         .eq('company_id', companyId)
-        .not('nome_cidade', 'is', null)
-        .order('nome_cidade');
+        .not('nome_cidade', 'is', null);
 
       if (error) throw error;
-      const uniqueCidades = Array.from(new Set(data.map(item => item.nome_cidade))).map(nome_cidade => ({ nome_cidade }));
+      const uniqueCidades = Array.from(new Set(data.map(item => item.nome_cidade))).filter(Boolean).map(nome_cidade => ({ nome_cidade }));
       setCidades(uniqueCidades);
     } catch (error) {
       console.error('Erro ao carregar cidades:', error);
@@ -611,7 +610,7 @@ const ContratacaoKanban = () => {
         .from('cliente')
         .select('cliente_id, nome')
         .eq('company_id', companyId)
-        .eq('ativo', true)
+        .eq('st_cliente', true)
         .order('nome');
 
       if (error) throw error;

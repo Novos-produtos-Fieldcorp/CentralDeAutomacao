@@ -1549,13 +1549,6 @@ const MotoristasLista = () => {
                 Limpar
               </button>
             )}
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus size={16} />
-              Adicionar Motorista
-            </button>
           </div>
         </div>
 
@@ -1600,7 +1593,7 @@ const MotoristasLista = () => {
         />
 
         {/* Filtros modernos */}
-        <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
+        <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[20]">
           <div className="flex flex-wrap gap-2">
             {/* Status Filter */}
             <div className="relative">
@@ -1627,7 +1620,7 @@ const MotoristasLista = () => {
                     bottom: '100%',
                     left: 0,
                     marginBottom: '4px',
-                    zIndex: 999999
+                    zIndex: 30
                   }}>
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
@@ -1696,7 +1689,7 @@ const MotoristasLista = () => {
                     bottom: '100%',
                     left: 0,
                     marginBottom: '4px',
-                    zIndex: 999999
+                    zIndex: 30
                   }}>
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
@@ -1739,7 +1732,7 @@ const MotoristasLista = () => {
             </div>
 
             {/* Cliente Filter */}
-            <div className="relative z-[50]">
+            <div className="relative z-[20]">
               <div className="relative group" ref={clienteDropdownRef}>
                 <button
                   type="button"
@@ -1768,7 +1761,7 @@ const MotoristasLista = () => {
                     bottom: '100%',
                     left: 0,
                     marginBottom: '4px',
-                    zIndex: 999999
+                    zIndex: 30
                   }}>
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
@@ -1832,7 +1825,7 @@ const MotoristasLista = () => {
 
 
             {/* Tags Filter */}
-            <div className="relative z-[50]">
+            <div className="relative z-[20]">
               <div className="relative group" ref={tagDropdownRef}>
                 <button
                   type="button"
@@ -1858,7 +1851,7 @@ const MotoristasLista = () => {
                       bottom: '100%',
                       left: 0,
                       marginBottom: '4px',
-                      zIndex: 999999
+                      zIndex: 30
                     }}>
 
                     <div className="px-3 py-2">
@@ -1965,7 +1958,7 @@ const MotoristasLista = () => {
             </div>
 
             {/* Status Ativo Filter */}
-            <div className="relative z-[50]">
+            <div className="relative z-[20]">
               <div className="relative group" ref={ativoDropdownRef}>
                 <button
                   type="button"
@@ -1981,7 +1974,7 @@ const MotoristasLista = () => {
                 </button>
 
                 {showAtivoDropdown && (
-                  <div className="absolute z-[999999] bottom-full mb-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
+                  <div className="absolute z-[30] bottom-full mb-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
                     <div 
                       className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
                       onClick={() => {
@@ -2015,7 +2008,7 @@ const MotoristasLista = () => {
             </div>
 
             {/* Período Filter */}
-            <div className="relative z-[50]">
+            <div className="relative z-[20]">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
                 <Calendar className="h-4 w-4 text-gray-400" />
               </div>
