@@ -789,7 +789,7 @@ const ContratacaoKanban = () => {
                         }}
                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
-                        Limpar
+                        Limpar Filtros
                       </button>
                     </div>
                   </div>
@@ -845,7 +845,7 @@ const ContratacaoKanban = () => {
                         }}
                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
-                        Limpar
+                        Limpar Filtros
                       </button>
                     </div>
                   </div>
@@ -900,7 +900,7 @@ const ContratacaoKanban = () => {
                         }}
                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
-                        Limpar
+                        Limpar Filtros
                       </button>
                     </div>
                   </div>

@@ -1556,7 +1556,7 @@ const Contratados = () => {
                                   setStatusFilter([]);
                                 }}
                               >
-                                Limpar
+                                Limpar Filtros
                               </button>
                             </div>
                           </div>
@@ -1638,7 +1638,7 @@ const Contratados = () => {
                                   setClienteFilter([]);
                                 }}
                               >
-                                Limpar
+                                Limpar Filtros
                               </button>
                             </div>
                           </div>
@@ -1724,7 +1724,7 @@ const Contratados = () => {
                                   setCidadeFilter([]);
                                 }}
                               >
-                                Limpar
+                                Limpar Filtros
                               </button>
                             </div>
                           </div>
@@ -1791,7 +1791,7 @@ const Contratados = () => {
                                   setTipoVeiculoFilter([]);
                                 }}
                               >
-                                Limpar
+                                Limpar Filtros
                               </button>
                             </div>
                           </div>
@@ -1876,7 +1876,7 @@ const Contratados = () => {
                                   setFuncaoFilter([]);
                                 }}
                               >
-                                Limpar
+                                Limpar Filtros
                               </button>
                             </div>
                           </div>
