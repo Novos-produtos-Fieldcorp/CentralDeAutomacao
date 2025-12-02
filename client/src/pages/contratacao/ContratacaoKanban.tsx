@@ -707,38 +707,38 @@ const ContratacaoKanban = () => {
 
   return (
     <div className="space-y-4 h-[calc(100vh-12rem)]">
-      {/* Modern Search and Filter Section */}
-      <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-lg border border-purple-200 dark:border-gray-600">
+      {/* Search and Filter Section - Standardized layout */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         {/* Search Bar */}
-        <div className="p-6 border-b border-purple-200 dark:border-gray-600">
-          <div className="relative max-w-2xl">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-600">
+          <div className="relative">
             <input
               type="text"
-              placeholder="Buscar por nome, CPF, telefone..."
+              placeholder="Buscar por nome, CPF, email ou telefone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-12 py-3 text-base bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-2 border-purple-300 dark:border-gray-500 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-gray-900 dark:text-gray-100 transition-all duration-300 shadow-sm"
+              className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
             />
             {isSearching ? (
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-500 border-t-transparent"></div>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
               </div>
             ) : (
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             )}
             {searchTerm && (
               <button
                 onClick={clearSearch}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
-                <X size={20} />
+                <X size={16} />
               </button>
             )}
           </div>
         </div>
 
-        {/* Advanced Filters */}
-        <div className="px-6 py-4">
+        {/* Filters Row */}
+        <div className="p-4">
           <div className="flex flex-wrap items-center gap-3">
             {/* Function Filter - Keep existing functionality */}
             <div className="flex items-center gap-2">
@@ -751,7 +751,7 @@ const ContratacaoKanban = () => {
                     onClick={() => setFuncaoFilter(button.value as 'todos' | 'Motorista' | 'Agregado')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                       funcaoFilter === button.value
-                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 shadow-sm'
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 shadow-sm'
                         : 'bg-white/60 text-gray-600 hover:bg-white hover:shadow-sm dark:bg-gray-700/60 dark:text-gray-300 dark:hover:bg-gray-600'
                     }`}
                   >
@@ -1017,16 +1017,16 @@ const ContratacaoKanban = () => {
               </select>
             </div>
 
-            {/* Clear all filters button */}
-            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || ativoFilter || funcaoFilter !== 'todos' || searchTerm) && (
-              <button
-                onClick={clearAllFilters}
-                className="px-3 py-2 text-sm bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50 rounded-md transition-colors flex items-center gap-2"
-              >
-                <X size={16} />
-                Limpar Filtros
-              </button>
-            )}
+          {/* Clear all filters button */}
+          {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || ativoFilter || funcaoFilter !== 'todos' || searchTerm) && (
+            <button
+              onClick={clearAllFilters}
+              className="px-3 py-2 text-sm bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50 rounded-md transition-colors flex items-center gap-2"
+            >
+              <X size={16} />
+              Limpar Filtros
+            </button>
+          )}
           </div>
         </div>
       </div>
