@@ -2632,9 +2632,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   setSelectedMotorista(null);
                   setIsUnifiedModalOpen(true);
                 }}
-                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm
-                text-blue-600"
+                className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm"
                 title="Adicionar agregado"
+                data-testid="button-add-agregado"
               >
                 <Plus size={18} />
                 <span>Adicionar Agregado</span>

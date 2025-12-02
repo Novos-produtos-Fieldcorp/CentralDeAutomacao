@@ -2039,7 +2039,8 @@ const MotoristasLista = () => {
           <button
             onClick={syncAllContatos}
             disabled={isBulkSyncing}
-            className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid="button-sync-contatos"
           >
             <svg 
               className={`w-4 h-4 ${isBulkSyncing ? 'animate-spin' : ''}`} 
@@ -2062,9 +2063,9 @@ const MotoristasLista = () => {
               setSelectedMotorista(null);
               setIsUnifiedModalOpen(true);
             }}
-            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm
-            text-blue-600"
+            className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm"
             title="Adicionar motorista"
+            data-testid="button-add-motorista"
           >
             <Plus className="w-4 h-4" />
             <span>Adicionar Motorista</span>
