@@ -987,7 +987,7 @@ const Contratados = () => {
 
     try {
       // Buscar o contato no WiseApp
-      const searchData = await searchWiseAppContact(accountId || '', wiseAppToken || '', motorista.telefone);
+      const searchData = await searchWiseAppContact(accountId || '', wiseAppToken || '', String(motorista.telefone));
       const contacts = searchData.payload || [];
 
       if (contacts.length === 0) return;
@@ -1049,7 +1049,7 @@ const Contratados = () => {
     setIsApplyingTag(true);
     try {
       // Primeiro, buscar o contato no WiseApp pelo telefone
-      const searchData = await searchWiseAppContact(accountId || '', wiseAppToken || '', selectedMotorista.telefone);
+      const searchData = await searchWiseAppContact(accountId || '', wiseAppToken || '', String(selectedMotorista.telefone));
       const contacts = searchData.payload || [];
 
       if (contacts.length === 0) {
@@ -1503,7 +1503,7 @@ const Contratados = () => {
               </button>
 
               <button
-                onClick={() => setShowAddModal(true)}
+                onClick={() => setIsUnifiedAgregadoModalOpen(true)}
                 className="inline-flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
                 title="Novo Contratado"
               >

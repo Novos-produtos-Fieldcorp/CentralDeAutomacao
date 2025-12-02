@@ -694,12 +694,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (showTipoVeiculoDropdown && tipoVeiculoDropdownRef.current && !tipoVeiculoDropdownRef.current.contains(target)) {
         setShowTipoVeiculoDropdown(false);
       }
-    }
-
-    // Verifica se o clique foi fora do dropdown de ativo/inativo
-    if (showAtivoDropdown && ativoDropdownRef.current && !ativoDropdownRef.current.contains(target)) {
-      setShowAtivoDropdown(false);
-      setAtivoDropdownPosition(null);
+      // Verifica se o clique foi fora do dropdown de ativo/inativo
+      if (showAtivoDropdown && ativoDropdownRef.current && !ativoDropdownRef.current.contains(target)) {
+        setShowAtivoDropdown(false);
+        setAtivoDropdownPosition(null);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
