@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Edit2, Search, Plus, FilePen, AlertCircle } from 'lucide-react';
+import { Edit2, Search, Plus, FilePen, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Veiculo, Motorista } from '../../types/database';
 import AddVeiculoModal from '../../components/veiculos/AddVeiculoModal';
@@ -277,6 +277,37 @@ const VeiculosEmpresa = () => {
     }
   };
 
+  const handleBulkUpdateStatus = async (newStatus: boolean) => {
+    if (!companyId || selectedItems.size === 0) return;
+
+    try {
+      const { error } = await supabase
+        .from('veiculo')
+        .update({ status_veiculo: newStatus })
+        .in('veiculo_id', Array.from(selectedItems));
+
+      if (error) throw error;
+
+      // Update local state
+      setVeiculos(veiculos.map(v => 
+        selectedItems.has(v.veiculo_id) 
+          ? { ...v, status_veiculo: newStatus }
+          : v
+      ));
+
+      const action = newStatus ? 'ativado' : 'desativado';
+      const actionPlural = newStatus ? 'ativados' : 'desativados';
+      toast.success(`${selectedItems.size} veículo${selectedItems.size !== 1 ? 's' : ''} ${selectedItems.size !== 1 ? actionPlural : action} com sucesso`);
+
+      // Reset selection
+      setSelectedItems(new Set());
+      setSelectAll(false);
+    } catch (error) {
+      console.error('Error updating veiculos status:', error);
+      toast.error('Erro ao atualizar status dos veículos');
+    }
+  };
+
   const handleContextMenu = (e: React.MouseEvent, veiculo: VeiculoWithMotorista) => {
     e.preventDefault();
     setContextMenu({
@@ -331,32 +362,41 @@ const VeiculosEmpresa = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center">
-          {selectedItems.size > 0 && (
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 rounded-full text-sm">
-              {selectedItems.size} selecionado{selectedItems.size !== 1 ? 's' : ''}
-            </span>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {selectedItems.size > 0 && (
+      {selectedItems.size > 0 && (
+        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 flex items-center justify-between gap-4 flex-wrap">
+          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+            {selectedItems.size} veículo{selectedItems.size !== 1 ? 's' : ''} selecionado{selectedItems.size !== 1 ? 's' : ''}
+          </span>
+          <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={() => setIsBulkDeleteModalOpen(true)}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 
-                      focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
-                      transition-colors flex items-center gap-2"
+              onClick={() => handleBulkUpdateStatus(true)}
+              className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1.5"
+              data-testid="button-bulk-activate"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 6h18"></path>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-              </svg>
-              Excluir Selecionados
+              <CheckCircle2 size={16} />
+              Ativar
             </button>
-          )}
+            <button
+              onClick={() => handleBulkUpdateStatus(false)}
+              className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1.5"
+              data-testid="button-bulk-deactivate"
+            >
+              <X size={16} />
+              Desativar
+            </button>
+            <button
+              onClick={() => {
+                setSelectedItems(new Set());
+                setSelectAll(false);
+              }}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              data-testid="button-bulk-clear"
+            >
+              Limpar
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
