@@ -126,7 +126,7 @@ const VeiculosAgregados = () => {
 
       if (debouncedSearchTerm) {
         query = query.or(
-          `placa.ilike.%${debouncedSearchTerm}%,tipo_veiculo.ilike.%${debouncedSearchTerm}%,nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`
+          `placa.ilike.%${debouncedSearchTerm}%,marca_veiculo.ilike.%${debouncedSearchTerm}%,tipo.ilike.%${debouncedSearchTerm}%,nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`
         );
       }
 
