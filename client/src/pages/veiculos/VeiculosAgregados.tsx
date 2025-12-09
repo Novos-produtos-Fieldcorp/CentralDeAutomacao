@@ -124,9 +124,9 @@ const VeiculosAgregados = () => {
         .eq('company_id', companyId)
         .eq('st_cadastro', 'contratado');
 
-      if (searchTerm) {
+      if (debouncedSearchTerm) {
         query = query.or(
-          `placa.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%,nome_motorista.ilike.%${searchTerm}%,cpf.ilike.%${searchTerm}%`
+          `placa.ilike.%${debouncedSearchTerm}%,marca.ilike.%${debouncedSearchTerm}%,tipo.ilike.%${debouncedSearchTerm}%,nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`
         );
       }
 
