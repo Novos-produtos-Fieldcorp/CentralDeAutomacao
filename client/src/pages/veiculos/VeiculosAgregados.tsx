@@ -126,7 +126,7 @@ const VeiculosAgregados = () => {
 
       if (debouncedSearchTerm) {
         query = query.or(
-          `placa.ilike.%${debouncedSearchTerm}%,marca.ilike.%${debouncedSearchTerm}%,tipo.ilike.%${debouncedSearchTerm}%,nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`
+          `placa.ilike.%${debouncedSearchTerm}%,tipo_veiculo.ilike.%${debouncedSearchTerm}%,nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`
         );
       }
 
@@ -147,8 +147,9 @@ const VeiculosAgregados = () => {
         .sort((a, b) => (a.placa || '').localeCompare(b.placa || ''));
 
       setVeiculos(veiculosContratados);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao carregar veículos';
+    } catch (error: any) {
+      console.error('Error fetching veiculos (full):', error);
+      const errorMessage = error?.message || error?.error?.message || JSON.stringify(error) || 'Erro desconhecido ao carregar veículos';
       console.error('Error fetching veiculos:', errorMessage);
       setError(errorMessage);
       toast.error(errorMessage);
