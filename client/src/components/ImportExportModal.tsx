@@ -270,43 +270,61 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
       return;
     }
 
+    if (!companyId) {
+      toast.error('Erro: ID da empresa não encontrado. Recarregue a página.');
+      return;
+    }
+
     setIsProcessing(true);
     try {
       const selectedData = previewData.filter((_, index) => selectedRows.has(index));
-      await handleImportFromPreview(selectedData);
-      toast.success(`${selectedData.length} registro(s) importado(s) com sucesso!`);
-      setImportStep('upload');
-      setFile(null);
-      setPreviewData([]);
-      setSelectedRows(new Set());
-      onClose();
+      console.log('Importing data:', selectedData, 'companyId:', companyId, 'dataType:', dataType);
+      
+      const result = await handleImportFromPreview(selectedData);
+      
+      if (result && result.failedCount > 0) {
+        toast.error(`${result.failedCount} registro(s) falharam. ${result.successCount} importado(s) com sucesso.`);
+        if (result.errors && result.errors.length > 0) {
+          console.error('Import errors:', result.errors);
+        }
+      } else if (result && result.successCount > 0) {
+        toast.success(`${result.successCount} registro(s) importado(s) com sucesso!`);
+        setImportStep('upload');
+        setFile(null);
+        setPreviewData([]);
+        setSelectedRows(new Set());
+        onClose();
+      } else {
+        toast.error('Nenhum registro foi importado. Verifique os dados.');
+      }
     } catch (error) {
       console.error('Error importing selected rows:', error);
-      toast.error('Erro ao importar registros selecionados');
+      toast.error('Erro ao importar registros selecionados: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleImportFromPreview = async (data: any[]) => {
+  const handleImportFromPreview = async (data: any[]): Promise<{ successCount: number; failedCount: number; errors: Array<{ row: number; message: string }> }> => {
     try {
+      let result = { successCount: 0, failedCount: 0, errors: [] as Array<{ row: number; message: string }> };
+      
       switch (dataType) {
         case 'motoristas':
-          await importMotoristas(data);
+          result = await importMotoristas(data);
           break;
         case 'clientes':
-          await importClientes(data);
+          result = await importClientes(data);
           break;
         case 'veiculos':
-          await importVeiculos(data);
+          result = await importVeiculos(data);
           break;
       }
       
-      return Promise.resolve();
+      return result;
     } catch (error) {
       console.error('Error importing data:', error);
-      toast.error('Erro ao importar dados');
-      return Promise.reject(error);
+      throw error;
     }
   };
 
@@ -1072,7 +1090,9 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
           setShowPreviewModal(false);
           setImportStep('upload');
         }}
-        onImport={handleImportFromPreview}
+        onImport={async (data: any[]) => {
+          await handleImportFromPreview(data);
+        }}
         fileType={dataType}
       />
     </div>
