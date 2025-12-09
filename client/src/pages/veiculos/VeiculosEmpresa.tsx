@@ -335,9 +335,9 @@ const VeiculosEmpresa = () => {
     .filter(veiculo => {
       const searchString = debouncedSearchTerm.toLowerCase();
       return !debouncedSearchTerm || 
-        veiculo.placa.toLowerCase().includes(searchString) ||
-        veiculo.marca.toLowerCase().includes(searchString) ||
-        veiculo.tipo.toLowerCase().includes(searchString);
+        (veiculo.placa || '').toLowerCase().includes(searchString) ||
+        (veiculo.marca || '').toLowerCase().includes(searchString) ||
+        (veiculo.tipo || '').toLowerCase().includes(searchString);
     })
     .sort((a, b) => {
       const aValue = a[sortConfig.key];

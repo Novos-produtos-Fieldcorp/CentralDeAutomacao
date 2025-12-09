@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, Tags, FileText, MapPin } from 'lucide-react';
+import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, Tags, FileText, MapPin, FileUp } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
@@ -8,6 +8,7 @@ import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { useSidebar } from '../context/SidebarContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import ImportExportModal from './ImportExportModal';
 
 interface NavbarProps {
   onToggle?: (isExpanded: boolean) => void;
@@ -18,6 +19,7 @@ const Navbar = ({ onToggle }: NavbarProps) => {
   // Fallback to local state if SidebarContext is not available
   const [localExpanded, setLocalExpanded] = useState(false);
   const [, setIsManuallyExpanded] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   
   let isExpanded, setIsExpanded;
   try {
@@ -263,11 +265,48 @@ const Navbar = ({ onToggle }: NavbarProps) => {
           </div>
         </div>
         
+        {/* Import/Export Button */}
+        <div className="px-3 py-2">
+          <div className="relative group h-11">
+            {!isExpanded && (
+              <div className="fixed left-20 ml-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none whitespace-nowrap z-[9999] shadow-md" style={{ top: 'var(--tooltip-y, 50%)', transform: 'translateY(-50%)' }}>
+                Importar em Massa
+                <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-600 rotate-45"></div>
+              </div>
+            )}
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="group flex items-center h-11 w-full px-3 rounded-lg text-sm font-medium
+                        transition-all duration-500 relative
+                        text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+              onMouseEnter={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                document.documentElement.style.setProperty('--tooltip-y', `${rect.top + rect.height/2}px`);
+              }}
+              data-testid="button-import-massa"
+            >
+              <div className="flex items-center justify-center w-9 h-9">
+                <FileUp className="w-5 h-5 text-gray-400 dark:text-gray-500 transition-colors duration-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+              </div>
+              <div className={`overflow-hidden transition-all duration-500 ease-in-out flex-1 min-w-0
+                             ${isExpanded ? 'max-w-full opacity-100 ml-3' : 'max-w-0 opacity-0 ml-0'}`}>
+                <span className="whitespace-nowrap">Importar em Massa</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
         {/* Theme Toggle */}
         <div className="p-3 mt-auto">
           <ThemeToggle isExpanded={isExpanded} />
         </div>
       </div>
+
+      {/* Import/Export Modal */}
+      <ImportExportModal 
+        isOpen={showImportModal} 
+        onClose={() => setShowImportModal(false)} 
+      />
     </nav>
   );
 };
