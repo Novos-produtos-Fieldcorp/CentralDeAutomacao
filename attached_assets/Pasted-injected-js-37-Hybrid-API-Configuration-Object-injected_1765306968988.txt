@@ -1,0 +1,405 @@
+injected.js:37 Hybrid API Configuration: Object
+injected.js:37 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+(anonymous) @ injected.js:37
+injected.js:37 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+injected.js:37 🔍 [WiseAppAccess] Account ID da URL: undefined
+injected.js:37 🔍 [WiseAppAccess] Account ID do localStorage: 6
+injected.js:37 ✅ [WiseAppAccess] Sessão válida encontrada para: gabriel.mauro@fieldcorp.com.br accountId: 6
+injected.js:37 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 1 accountId: 6
+injected.js:37 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 1
+injected.js:37 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+injected.js:37 🔍 [WiseAppAccess] Account ID da URL: undefined
+injected.js:37 🔍 [WiseAppAccess] Account ID do localStorage: 6
+injected.js:37 ✅ [WiseAppAccess] Sessão válida encontrada para: gabriel.mauro@fieldcorp.com.br accountId: 6
+injected.js:37 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 1 accountId: 6
+injected.js:37 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 1
+injected.js:37 Dashboard data loaded: Object
+injected.js:37 Dashboard data loaded: Object
+injected.js:37 Error fetching veiculos: Erro desconhecido ao carregar veículos
+(anonymous) @ injected.js:37
+injected.js:37 [TagManager] Buscando tags locais para companyId: 1 accountId: 6
+injected.js:37 [TagManager] Tags encontradas: 18
+injected.js:37 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at ImportExportModal (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/ImportExportModal.tsx:68:30)
+    at nav
+    at Navbar (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/Navbar.tsx:29:19)
+    at div
+    at SidebarLayoutContent (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/SidebarLayout.tsx:20:33)
+    at SidebarProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/SidebarContext.tsx:20:35)
+    at SidebarLayout (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/SidebarLayout.tsx:61:26)
+    at ProtectedRoute (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/App.tsx?v=Xfcp7-cezkhwQdt0J1oPM:48:29)
+    at RenderedRoute (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:5624:26)
+    at Routes (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:6500:3)
+    at AppRoutes
+    at ChatProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ChatContext.tsx:21:32)
+    at WiseAppAccessProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/WiseAppAccessContext.tsx:33:41)
+    at AuthProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/AuthContext.tsx:32:32)
+    at Router (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:6443:13)
+    at BrowserRouter (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:9545:3)
+    at ChecklistProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ChecklistContext.tsx:68:37)
+    at ThemeProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ThemeContext.tsx:20:33)
+    at QueryClientProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=95ef4e2c:3081:3)
+    at App
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+printWarning @ react_jsx-dev-runtime.js?v=95ef4e2c:64
+error @ react_jsx-dev-runtime.js?v=95ef4e2c:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=95ef4e2c:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=95ef4e2c:874
+ImportExportModal @ ImportExportModal.tsx:947
+renderWithHooks @ chunk-NFC5BX5N.js?v=95ef4e2c:11548
+updateFunctionComponent @ chunk-NFC5BX5N.js?v=95ef4e2c:14582
+beginWork @ chunk-NFC5BX5N.js?v=95ef4e2c:15924
+beginWork$1 @ chunk-NFC5BX5N.js?v=95ef4e2c:19753
+performUnitOfWork @ chunk-NFC5BX5N.js?v=95ef4e2c:19198
+workLoopSync @ chunk-NFC5BX5N.js?v=95ef4e2c:19137
+renderRootSync @ chunk-NFC5BX5N.js?v=95ef4e2c:19116
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=95ef4e2c:18874
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=95ef4e2c:9119
+(anonymous) @ chunk-NFC5BX5N.js?v=95ef4e2c:18627
+injected.js:37 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at ImportExportModal (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/ImportExportModal.tsx:68:30)
+    at nav
+    at Navbar (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/Navbar.tsx:29:19)
+    at div
+    at SidebarLayoutContent (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/SidebarLayout.tsx:20:33)
+    at SidebarProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/SidebarContext.tsx:20:35)
+    at SidebarLayout (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/SidebarLayout.tsx:61:26)
+    at ProtectedRoute (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/App.tsx?v=Xfcp7-cezkhwQdt0J1oPM:48:29)
+    at RenderedRoute (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:5624:26)
+    at Routes (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:6500:3)
+    at AppRoutes
+    at ChatProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ChatContext.tsx:21:32)
+    at WiseAppAccessProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/WiseAppAccessContext.tsx:33:41)
+    at AuthProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/AuthContext.tsx:32:32)
+    at Router (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:6443:13)
+    at BrowserRouter (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:9545:3)
+    at ChecklistProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ChecklistContext.tsx:68:37)
+    at ThemeProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ThemeContext.tsx:20:33)
+    at QueryClientProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=95ef4e2c:3081:3)
+    at App
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+printWarning @ react_jsx-dev-runtime.js?v=95ef4e2c:64
+error @ react_jsx-dev-runtime.js?v=95ef4e2c:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=95ef4e2c:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=95ef4e2c:874
+ImportExportModal @ ImportExportModal.tsx:947
+renderWithHooks @ chunk-NFC5BX5N.js?v=95ef4e2c:11548
+updateFunctionComponent @ chunk-NFC5BX5N.js?v=95ef4e2c:14587
+beginWork @ chunk-NFC5BX5N.js?v=95ef4e2c:15924
+beginWork$1 @ chunk-NFC5BX5N.js?v=95ef4e2c:19753
+performUnitOfWork @ chunk-NFC5BX5N.js?v=95ef4e2c:19198
+workLoopSync @ chunk-NFC5BX5N.js?v=95ef4e2c:19137
+renderRootSync @ chunk-NFC5BX5N.js?v=95ef4e2c:19116
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=95ef4e2c:18874
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=95ef4e2c:9119
+(anonymous) @ chunk-NFC5BX5N.js?v=95ef4e2c:18627
+injected.js:37 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at ImportExportModal (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/ImportExportModal.tsx:68:30)
+    at nav
+    at Navbar (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/Navbar.tsx:29:19)
+    at div
+    at SidebarLayoutContent (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/SidebarLayout.tsx:20:33)
+    at SidebarProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/SidebarContext.tsx:20:35)
+    at SidebarLayout (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/SidebarLayout.tsx:61:26)
+    at ProtectedRoute (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/App.tsx?v=Xfcp7-cezkhwQdt0J1oPM:48:29)
+    at RenderedRoute (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:5624:26)
+    at Routes (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:6500:3)
+    at AppRoutes
+    at ChatProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ChatContext.tsx:21:32)
+    at WiseAppAccessProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/WiseAppAccessContext.tsx:33:41)
+    at AuthProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/AuthContext.tsx:32:32)
+    at Router (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:6443:13)
+    at BrowserRouter (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:9545:3)
+    at ChecklistProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ChecklistContext.tsx:68:37)
+    at ThemeProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ThemeContext.tsx:20:33)
+    at QueryClientProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=95ef4e2c:3081:3)
+    at App
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+printWarning @ react_jsx-dev-runtime.js?v=95ef4e2c:64
+error @ react_jsx-dev-runtime.js?v=95ef4e2c:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=95ef4e2c:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=95ef4e2c:874
+ImportExportModal @ ImportExportModal.tsx:947
+renderWithHooks @ chunk-NFC5BX5N.js?v=95ef4e2c:11548
+updateFunctionComponent @ chunk-NFC5BX5N.js?v=95ef4e2c:14582
+beginWork @ chunk-NFC5BX5N.js?v=95ef4e2c:15924
+beginWork$1 @ chunk-NFC5BX5N.js?v=95ef4e2c:19753
+performUnitOfWork @ chunk-NFC5BX5N.js?v=95ef4e2c:19198
+workLoopSync @ chunk-NFC5BX5N.js?v=95ef4e2c:19137
+renderRootSync @ chunk-NFC5BX5N.js?v=95ef4e2c:19116
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=95ef4e2c:18874
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=95ef4e2c:9119
+flushSync @ chunk-NFC5BX5N.js?v=95ef4e2c:18959
+finishEventHandler @ chunk-NFC5BX5N.js?v=95ef4e2c:3569
+batchedUpdates @ chunk-NFC5BX5N.js?v=95ef4e2c:3582
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=95ef4e2c:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=95ef4e2c:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=95ef4e2c:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=95ef4e2c:5449
+injected.js:37 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at ImportExportModal (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/ImportExportModal.tsx:68:30)
+    at nav
+    at Navbar (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/Navbar.tsx:29:19)
+    at div
+    at SidebarLayoutContent (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/SidebarLayout.tsx:20:33)
+    at SidebarProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/SidebarContext.tsx:20:35)
+    at SidebarLayout (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/SidebarLayout.tsx:61:26)
+    at ProtectedRoute (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/App.tsx?v=Xfcp7-cezkhwQdt0J1oPM:48:29)
+    at RenderedRoute (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:5624:26)
+    at Routes (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:6500:3)
+    at AppRoutes
+    at ChatProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ChatContext.tsx:21:32)
+    at WiseAppAccessProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/WiseAppAccessContext.tsx:33:41)
+    at AuthProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/AuthContext.tsx:32:32)
+    at Router (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:6443:13)
+    at BrowserRouter (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:9545:3)
+    at ChecklistProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ChecklistContext.tsx:68:37)
+    at ThemeProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ThemeContext.tsx:20:33)
+    at QueryClientProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=95ef4e2c:3081:3)
+    at App
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+printWarning @ react_jsx-dev-runtime.js?v=95ef4e2c:64
+error @ react_jsx-dev-runtime.js?v=95ef4e2c:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=95ef4e2c:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=95ef4e2c:874
+ImportExportModal @ ImportExportModal.tsx:947
+renderWithHooks @ chunk-NFC5BX5N.js?v=95ef4e2c:11548
+updateFunctionComponent @ chunk-NFC5BX5N.js?v=95ef4e2c:14587
+beginWork @ chunk-NFC5BX5N.js?v=95ef4e2c:15924
+beginWork$1 @ chunk-NFC5BX5N.js?v=95ef4e2c:19753
+performUnitOfWork @ chunk-NFC5BX5N.js?v=95ef4e2c:19198
+workLoopSync @ chunk-NFC5BX5N.js?v=95ef4e2c:19137
+renderRootSync @ chunk-NFC5BX5N.js?v=95ef4e2c:19116
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=95ef4e2c:18874
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=95ef4e2c:9119
+flushSync @ chunk-NFC5BX5N.js?v=95ef4e2c:18959
+finishEventHandler @ chunk-NFC5BX5N.js?v=95ef4e2c:3569
+batchedUpdates @ chunk-NFC5BX5N.js?v=95ef4e2c:3582
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=95ef4e2c:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=95ef4e2c:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=95ef4e2c:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=95ef4e2c:5449
+injected.js:37 Supabase veiculo operation failed (3 retries left): {code: 'PGRST204', details: null, hint: null, message: "Could not find the 'cliente_id' column of 'veiculo' in the schema cache"}
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+handleSupabaseError @ supabase.ts:275
+await in handleSupabaseError
+insert @ supabase.ts:315
+importVeiculos @ ImportExportModal.tsx:645
+handleImportFromPreview @ ImportExportModal.tsx:320
+onImport @ ImportExportModal.tsx:1094
+handleImport @ ImportPreviewModal.tsx:421
+callCallback2 @ chunk-NFC5BX5N.js?v=95ef4e2c:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=95ef4e2c:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=95ef4e2c:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=95ef4e2c:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=95ef4e2c:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=95ef4e2c:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=95ef4e2c:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=95ef4e2c:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=95ef4e2c:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=95ef4e2c:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=95ef4e2c:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=95ef4e2c:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=95ef4e2c:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=95ef4e2c:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=95ef4e2c:5449
+injected.js:37 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at ImportExportModal (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/ImportExportModal.tsx:68:30)
+    at nav
+    at Navbar (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/Navbar.tsx:29:19)
+    at div
+    at SidebarLayoutContent (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/SidebarLayout.tsx:20:33)
+    at SidebarProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/SidebarContext.tsx:20:35)
+    at SidebarLayout (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/SidebarLayout.tsx:61:26)
+    at ProtectedRoute (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/App.tsx?v=Xfcp7-cezkhwQdt0J1oPM:48:29)
+    at RenderedRoute (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:5624:26)
+    at Routes (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:6500:3)
+    at AppRoutes
+    at ChatProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ChatContext.tsx:21:32)
+    at WiseAppAccessProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/WiseAppAccessContext.tsx:33:41)
+    at AuthProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/AuthContext.tsx:32:32)
+    at Router (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:6443:13)
+    at BrowserRouter (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:9545:3)
+    at ChecklistProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ChecklistContext.tsx:68:37)
+    at ThemeProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ThemeContext.tsx:20:33)
+    at QueryClientProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=95ef4e2c:3081:3)
+    at App
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+printWarning @ react_jsx-dev-runtime.js?v=95ef4e2c:64
+error @ react_jsx-dev-runtime.js?v=95ef4e2c:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=95ef4e2c:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=95ef4e2c:874
+ImportExportModal @ ImportExportModal.tsx:947
+renderWithHooks @ chunk-NFC5BX5N.js?v=95ef4e2c:11548
+updateFunctionComponent @ chunk-NFC5BX5N.js?v=95ef4e2c:14582
+beginWork @ chunk-NFC5BX5N.js?v=95ef4e2c:15924
+beginWork$1 @ chunk-NFC5BX5N.js?v=95ef4e2c:19753
+performUnitOfWork @ chunk-NFC5BX5N.js?v=95ef4e2c:19198
+workLoopSync @ chunk-NFC5BX5N.js?v=95ef4e2c:19137
+renderRootSync @ chunk-NFC5BX5N.js?v=95ef4e2c:19116
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=95ef4e2c:18874
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=95ef4e2c:9119
+(anonymous) @ chunk-NFC5BX5N.js?v=95ef4e2c:18627
+injected.js:37 Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at ImportExportModal (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/ImportExportModal.tsx:68:30)
+    at nav
+    at Navbar (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/Navbar.tsx:29:19)
+    at div
+    at SidebarLayoutContent (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/SidebarLayout.tsx:20:33)
+    at SidebarProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/SidebarContext.tsx:20:35)
+    at SidebarLayout (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/components/SidebarLayout.tsx:61:26)
+    at ProtectedRoute (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/App.tsx?v=Xfcp7-cezkhwQdt0J1oPM:48:29)
+    at RenderedRoute (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:5624:26)
+    at Routes (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:6500:3)
+    at AppRoutes
+    at ChatProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ChatContext.tsx:21:32)
+    at WiseAppAccessProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/WiseAppAccessContext.tsx:33:41)
+    at AuthProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/AuthContext.tsx:32:32)
+    at Router (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:6443:13)
+    at BrowserRouter (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-router-dom.js?v=95ef4e2c:9545:3)
+    at ChecklistProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ChecklistContext.tsx:68:37)
+    at ThemeProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/src/context/ThemeContext.tsx:20:33)
+    at QueryClientProvider (https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=95ef4e2c:3081:3)
+    at App
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+(anonymous) @ injected.js:37
+printWarning @ react_jsx-dev-runtime.js?v=95ef4e2c:64
+error @ react_jsx-dev-runtime.js?v=95ef4e2c:48
+validateFragmentProps @ react_jsx-dev-runtime.js?v=95ef4e2c:796
+jsxWithValidation @ react_jsx-dev-runtime.js?v=95ef4e2c:874
+ImportExportModal @ ImportExportModal.tsx:947
+renderWithHooks @ chunk-NFC5BX5N.js?v=95ef4e2c:11548
+updateFunctionComponent @ chunk-NFC5BX5N.js?v=95ef4e2c:14587
+beginWork @ chunk-NFC5BX5N.js?v=95ef4e2c:15924
+beginWork$1 @ chunk-NFC5BX5N.js?v=95ef4e2c:19753
+performUnitOfWork @ chunk-NFC5BX5N.js?v=95ef4e2c:19198
+workLoopSync @ chunk-NFC5BX5N.js?v=95ef4e2c:19137
+renderRootSync @ chunk-NFC5BX5N.js?v=95ef4e2c:19116
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=95ef4e2c:18874
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=95ef4e2c:9119
+(anonymous) @ chunk-NFC5BX5N.js?v=95ef4e2c:18627

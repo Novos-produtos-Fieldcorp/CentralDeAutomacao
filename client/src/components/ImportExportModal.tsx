@@ -638,7 +638,6 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
           cubagem: vehicle.Cubagem || '',
           status_veiculo: true,
           motorista_id: null,
-          cliente_id: null,
           company_id: companyId
         };
 
@@ -944,7 +943,7 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
 
           <div>
             {importStep === 'upload' && (
-                <React.Fragment>
+                <div>
                   <div className="space-y-6">
                     <div className="flex items-center justify-between mb-4">
                       <div>
@@ -1003,7 +1002,7 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
                       Iniciar Importação
                     </button>
                   </div>
-                </React.Fragment>
+                </div>
               )}
 
               {importStep === 'preview' && renderPreviewTable()}
