@@ -127,8 +127,11 @@ const ContratacaoDashboard = () => {
         const contratosAtivos = allUniqueData.filter(m => m.st_cadastro === 'contratado').length;
         const rejeitados = allUniqueData.filter(m => m.st_cadastro === 'rejeitado').length;
 
-        // Calculate monthly registrations using date-filtered data
-        const monthlyData = calculateMonthlyRegistrations([...motoristasData, ...agregadosData]);
+        // Calculate monthly registrations using date-filtered data (unique motoristas only)
+        const uniqueMonthlyData = [...motoristasData, ...agregadosData].filter((m, index, self) => 
+          index === self.findIndex(item => item.motorista_id === m.motorista_id)
+        );
+        const monthlyData = calculateMonthlyRegistrations(uniqueMonthlyData);
 
         // Initialize clientesContratados with all clients
         const clientesContratados = (clientesData || []).reduce((acc: { [key: string]: { total: number, motoristas: number, agregados: number, cliente_id: number } }, cliente) => {
