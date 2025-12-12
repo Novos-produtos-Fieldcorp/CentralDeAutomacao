@@ -114,12 +114,18 @@ const ContratacaoDashboard = () => {
       const agregadosData = agregadosDataResponse.data || [];
 
       if (totalMotoristasData && totalAgregadosData && motoristasData && agregadosData) {
-        const totalMotoristas = totalMotoristasData.length;
-        const totalAgregados = totalAgregadosData.length;
-        const documentacao = [...totalMotoristasData, ...totalAgregadosData].filter(m => m.st_cadastro === 'documentacao').length;
-        const qualificados = [...totalMotoristasData, ...totalAgregadosData].filter(m => m.st_cadastro === 'qualificado').length;
-        const contratosAtivos = [...totalMotoristasData, ...totalAgregadosData].filter(m => m.st_cadastro === 'contratado').length;
-        const rejeitados = [...totalMotoristasData, ...totalAgregadosData].filter(m => m.st_cadastro === 'rejeitado').length;
+        const uniqueMotoristasIds = new Set(totalMotoristasData.map(m => m.motorista_id));
+        const uniqueAgregadosIds = new Set(totalAgregadosData.map(m => m.motorista_id));
+        const totalMotoristas = uniqueMotoristasIds.size;
+        const totalAgregados = uniqueAgregadosIds.size;
+        
+        const allUniqueData = [...totalMotoristasData, ...totalAgregadosData].filter((m, index, self) => 
+          index === self.findIndex(item => item.motorista_id === m.motorista_id)
+        );
+        const documentacao = allUniqueData.filter(m => m.st_cadastro === 'documentacao').length;
+        const qualificados = allUniqueData.filter(m => m.st_cadastro === 'qualificado').length;
+        const contratosAtivos = allUniqueData.filter(m => m.st_cadastro === 'contratado').length;
+        const rejeitados = allUniqueData.filter(m => m.st_cadastro === 'rejeitado').length;
 
         // Calculate monthly registrations using date-filtered data
         const monthlyData = calculateMonthlyRegistrations([...motoristasData, ...agregadosData]);
@@ -138,9 +144,9 @@ const ContratacaoDashboard = () => {
         // Add "Sem Cliente" category
         clientesContratados['Sem Cliente'] = { total: 0, motoristas: 0, agregados: 0, cliente_id: 0 };
 
-        // Calculate contractors by client using total data
+        // Calculate contractors by client using total data (unique motoristas only)
         const clientesIdsDaCompany = new Set((clientesData || []).map(c => c.cliente_id));
-        [...totalMotoristasData, ...totalAgregadosData]
+        allUniqueData
           .filter(m => m.st_cadastro === 'contratado')
           .forEach(curr => {
             const clientName = curr.cliente?.nome || 'Sem Cliente';
