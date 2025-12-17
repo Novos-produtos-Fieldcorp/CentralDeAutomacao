@@ -74,6 +74,10 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   
+  // Local state for date inputs to prevent search on every keystroke
+  const [localStartDate, setLocalStartDate] = useState(dateRange.startDate);
+  const [localEndDate, setLocalEndDate] = useState(dateRange.endDate);
+  
   // Edit modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedReading, setSelectedReading] = useState<HodometroReading | null>(null);
@@ -192,6 +196,12 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
     // Only fetch when date range actually changes
     fetchReadings();
   }, [fetchReadings]);
+
+  // Sync local date states when dateRange changes externally (e.g., period selection)
+  useEffect(() => {
+    setLocalStartDate(dateRange.startDate);
+    setLocalEndDate(dateRange.endDate);
+  }, [dateRange.startDate, dateRange.endDate]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -701,13 +711,14 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
             <input
               type="date"
               data-testid="input-custom-start-date-hodometros-relatorio"
-              value={dateRange.startDate}
-              onChange={(e) => {
-                const newDate = e.target.value;
-                if (validateDate(newDate)) {
-                  setDateRange({ ...dateRange, startDate: e.target.value });
+              value={localStartDate}
+              onChange={(e) => setLocalStartDate(e.target.value)}
+              onBlur={() => {
+                if (validateDate(localStartDate)) {
+                  setDateRange({ ...dateRange, startDate: localStartDate });
                 } else {
                   toast.error('Por favor selecione uma data entre 2020 e 2099');
+                  setLocalStartDate(dateRange.startDate);
                 }
               }}
               min="2020-01-01"
@@ -722,13 +733,14 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
             <input
               type="date"
               data-testid="input-custom-end-date-hodometros-relatorio"
-              value={dateRange.endDate}
-              onChange={(e) => {
-                const newDate = e.target.value;
-                if (validateDate(newDate)) {
-                  setDateRange({ ...dateRange, endDate: e.target.value });
+              value={localEndDate}
+              onChange={(e) => setLocalEndDate(e.target.value)}
+              onBlur={() => {
+                if (validateDate(localEndDate)) {
+                  setDateRange({ ...dateRange, endDate: localEndDate });
                 } else {
                   toast.error('Por favor selecione uma data entre 2020 e 2099');
+                  setLocalEndDate(dateRange.endDate);
                 }
               }}
               min="2020-01-01"
