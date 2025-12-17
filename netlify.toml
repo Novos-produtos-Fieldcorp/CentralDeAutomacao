@@ -19,6 +19,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/wiseapp/available-accounts"
+  to = "/.netlify/functions/available-accounts"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
