@@ -1842,31 +1842,29 @@ const HodometrosDashboard = () => {
         )}
       </div>
 
-      {/* Minuta Stats - Only visible with minuta access */}
-      {moduleAccess.minuta && (
-        <div className={`grid grid-cols-1 ${!moduleAccess.bomba ? 'md:grid-cols-2' : ''} gap-6`}>
+      {/* Minuta Stats - Only visible with minuta access but without bomba */}
+      {moduleAccess.minuta && !moduleAccess.bomba && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <StatCard
             title="Média Diária de Minutas"
             value={Math.round(avgMinutasPerDay * 10) / 10}
             icon={ClipboardList}
             color="blue"
           />
-          {!moduleAccess.bomba && (
-            <StatCard
-              title="Média por Motorista"
-              value={Math.round(avgMinutasPerDriver * 10) / 10}
-              icon={UserCheck}
-              color="green"
-            />
-          )}
+          <StatCard
+            title="Média por Motorista"
+            value={Math.round(avgMinutasPerDriver * 10) / 10}
+            icon={UserCheck}
+            color="green"
+          />
         </div>
       )}
 
       {/* Bomba Dashboard Section - Only visible with bomba access */}
       {moduleAccess.bomba && (
         <>
-          {/* Bomba Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Bomba Stats Cards - 4 columns with Média Diária de Minutas at the end */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
               title="Litros totais abastecidos"
               value={Math.round(totalLitros * 10) / 10}
@@ -1889,6 +1887,14 @@ const HodometrosDashboard = () => {
               color="purple"
               data-testid="stat-custo-medio-litro"
             />
+            {moduleAccess.minuta && (
+              <StatCard
+                title="Média Diária de Minutas"
+                value={Math.round(avgMinutasPerDay * 10) / 10}
+                icon={ClipboardList}
+                color="blue"
+              />
+            )}
           </div>
 
           {/* Consumo Médio Chart (Bar Chart) */}
