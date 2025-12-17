@@ -157,6 +157,16 @@ const HodometrosDashboard = () => {
   
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days', false);
   
+  // Local state for date inputs (only update dateRange on blur)
+  const [localStartDate, setLocalStartDate] = useState(dateRange.startDate);
+  const [localEndDate, setLocalEndDate] = useState(dateRange.endDate);
+  
+  // Sync local dates when dateRange changes from period selection
+  useEffect(() => {
+    setLocalStartDate(dateRange.startDate);
+    setLocalEndDate(dateRange.endDate);
+  }, [dateRange.startDate, dateRange.endDate]);
+  
   // Validate date is within acceptable range
   const validateDate = (dateString: string): boolean => {
     if (!dateString) return true; // Allow empty
@@ -1772,13 +1782,15 @@ const HodometrosDashboard = () => {
             <input
               type="date"
               data-testid="input-custom-start-date"
-              value={dateRange.startDate}
-              onChange={(e) => {
+              value={localStartDate}
+              onChange={(e) => setLocalStartDate(e.target.value)}
+              onBlur={(e) => {
                 const newDate = e.target.value;
                 if (validateDate(newDate)) {
-                  setDateRange({ ...dateRange, startDate: e.target.value });
+                  setDateRange({ ...dateRange, startDate: newDate });
                 } else {
                   toast.error('Por favor selecione uma data entre 2020 e 2099');
+                  setLocalStartDate(dateRange.startDate);
                 }
               }}
               min="2020-01-01"
@@ -1793,13 +1805,15 @@ const HodometrosDashboard = () => {
             <input
               type="date"
               data-testid="input-custom-end-date"
-              value={dateRange.endDate}
-              onChange={(e) => {
+              value={localEndDate}
+              onChange={(e) => setLocalEndDate(e.target.value)}
+              onBlur={(e) => {
                 const newDate = e.target.value;
                 if (validateDate(newDate)) {
-                  setDateRange({ ...dateRange, endDate: e.target.value });
+                  setDateRange({ ...dateRange, endDate: newDate });
                 } else {
                   toast.error('Por favor selecione uma data entre 2020 e 2099');
+                  setLocalEndDate(dateRange.endDate);
                 }
               }}
               min="2020-01-01"
