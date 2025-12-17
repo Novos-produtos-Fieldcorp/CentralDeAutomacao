@@ -157,6 +157,16 @@ const HodometrosDashboard = () => {
   
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days', false);
   
+  // Local state for date inputs (only update dateRange on blur)
+  const [localStartDate, setLocalStartDate] = useState(dateRange.startDate);
+  const [localEndDate, setLocalEndDate] = useState(dateRange.endDate);
+  
+  // Sync local dates when dateRange changes from period selection
+  useEffect(() => {
+    setLocalStartDate(dateRange.startDate);
+    setLocalEndDate(dateRange.endDate);
+  }, [dateRange.startDate, dateRange.endDate]);
+  
   // Validate date is within acceptable range
   const validateDate = (dateString: string): boolean => {
     if (!dateString) return true; // Allow empty
@@ -181,6 +191,7 @@ const HodometrosDashboard = () => {
     // Only fetch when date range actually changes
     // AND when user has access to the module
     if (moduleAccess.hodometros) {
+      console.log('🔄 Fetching data with date range:', dateRange.startDate, 'to', dateRange.endDate);
       fetchData();
       fetchTodayReadings();
       fetchInconsistencies();
@@ -204,7 +215,7 @@ const HodometrosDashboard = () => {
       // Fetch combined today stats
       fetchTodayBombaMinuta();
     }
-  }, [dateRange, moduleAccess.hodometros, moduleAccess.minuta, moduleAccess.bomba, moduleAccess.calculoUmPorDia]);
+  }, [dateRange.startDate, dateRange.endDate, moduleAccess.hodometros, moduleAccess.minuta, moduleAccess.bomba, moduleAccess.calculoUmPorDia]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -1771,13 +1782,15 @@ const HodometrosDashboard = () => {
             <input
               type="date"
               data-testid="input-custom-start-date"
-              value={dateRange.startDate}
-              onChange={(e) => {
+              value={localStartDate}
+              onChange={(e) => setLocalStartDate(e.target.value)}
+              onBlur={(e) => {
                 const newDate = e.target.value;
                 if (validateDate(newDate)) {
-                  setDateRange({ ...dateRange, startDate: e.target.value });
+                  setDateRange({ ...dateRange, startDate: newDate });
                 } else {
                   toast.error('Por favor selecione uma data entre 2020 e 2099');
+                  setLocalStartDate(dateRange.startDate);
                 }
               }}
               min="2020-01-01"
@@ -1792,13 +1805,15 @@ const HodometrosDashboard = () => {
             <input
               type="date"
               data-testid="input-custom-end-date"
-              value={dateRange.endDate}
-              onChange={(e) => {
+              value={localEndDate}
+              onChange={(e) => setLocalEndDate(e.target.value)}
+              onBlur={(e) => {
                 const newDate = e.target.value;
                 if (validateDate(newDate)) {
-                  setDateRange({ ...dateRange, endDate: e.target.value });
+                  setDateRange({ ...dateRange, endDate: newDate });
                 } else {
                   toast.error('Por favor selecione uma data entre 2020 e 2099');
+                  setLocalEndDate(dateRange.endDate);
                 }
               }}
               min="2020-01-01"
@@ -1842,31 +1857,29 @@ const HodometrosDashboard = () => {
         )}
       </div>
 
-      {/* Minuta Stats - Only visible with minuta access */}
-      {moduleAccess.minuta && (
-        <div className={`grid grid-cols-1 ${!moduleAccess.bomba ? 'md:grid-cols-2' : ''} gap-6`}>
+      {/* Minuta Stats - Only visible with minuta access but without bomba */}
+      {moduleAccess.minuta && !moduleAccess.bomba && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <StatCard
             title="Média Diária de Minutas"
             value={Math.round(avgMinutasPerDay * 10) / 10}
             icon={ClipboardList}
             color="blue"
           />
-          {!moduleAccess.bomba && (
-            <StatCard
-              title="Média por Motorista"
-              value={Math.round(avgMinutasPerDriver * 10) / 10}
-              icon={UserCheck}
-              color="green"
-            />
-          )}
+          <StatCard
+            title="Média por Motorista"
+            value={Math.round(avgMinutasPerDriver * 10) / 10}
+            icon={UserCheck}
+            color="green"
+          />
         </div>
       )}
 
       {/* Bomba Dashboard Section - Only visible with bomba access */}
       {moduleAccess.bomba && (
         <>
-          {/* Bomba Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Bomba Stats Cards - 4 columns with Média Diária de Minutas at the end */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
               title="Litros totais abastecidos"
               value={Math.round(totalLitros * 10) / 10}
@@ -1889,6 +1902,14 @@ const HodometrosDashboard = () => {
               color="purple"
               data-testid="stat-custo-medio-litro"
             />
+            {moduleAccess.minuta && (
+              <StatCard
+                title="Média Diária de Minutas"
+                value={Math.round(avgMinutasPerDay * 10) / 10}
+                icon={ClipboardList}
+                color="blue"
+              />
+            )}
           </div>
 
           {/* Consumo Médio Chart (Bar Chart) */}
@@ -1899,7 +1920,7 @@ const HodometrosDashboard = () => {
             </div>
             
             {vehicleFuelStats.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-visible pt-12">
                 <div className="min-w-[600px]">
                   {(() => {
                     const maxValue = Math.max(...vehicleFuelStats.map(s => s.mediaKmPorLitro), 1);
@@ -1930,8 +1951,8 @@ const HodometrosDashboard = () => {
                                     minHeight: stats.mediaKmPorLitro > 0 ? '10px' : '2px'
                                   }}
                                 >
-                                  {/* Tooltip on hover */}
-                                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white px-3 py-2 rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg z-20">
+                                  {/* Tooltip on hover - positioned to stay within viewport */}
+                                  <div className="absolute -top-12 left-0 bg-gray-900 dark:bg-gray-700 text-white px-3 py-2 rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg z-50">
                                     {stats.placa}: {stats.mediaKmPorLitro.toFixed(2)} km/L
                                   </div>
                                 </div>
