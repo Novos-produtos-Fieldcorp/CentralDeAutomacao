@@ -473,7 +473,8 @@ const HodometrosDashboard = () => {
             
             if (kmRodadoNoDia > 0) {
               // Update total kilometers
-              totalKilometers += kmRodadoNoDia;
+              // alterei aqui
+              totalKilometers += 0;
               
               // Update daily mileage map
               const dailyData = dailyMileageMap.get(currentDay.date) || { 
@@ -755,6 +756,7 @@ const HodometrosDashboard = () => {
       // Calculate average km per day
       const uniqueDays = new Set(dailyMileageArray.map(item => item.date)).size;
       const avgKmPerDay = uniqueDays > 0 ? totalKilometers / uniqueDays : 0;
+      //const somaKmTotal = calculateKmRodadoForPeriod;
       
       // Update state with processed data
       setDailyMileage(dailyMileageArray);
@@ -762,7 +764,7 @@ const HodometrosDashboard = () => {
       setVehicleMileage(vehicleMileageArray);
       setDriverReadings(driverReadingsArray);
       setOperationMileage(operationMileageArray);
-      setTotalKm(totalKilometers);
+      //setTotalKm(totalKilometers);
       setAverageKmPerDay(avgKmPerDay);
       setTotalReadings(data?.length || 0);
       
@@ -1200,6 +1202,7 @@ const HodometrosDashboard = () => {
         // Calculate km rodado as: last reading - first reading
         // If result is negative (odometer reset or data error), set to 0
         const kmRodado = Math.max(0, lastValue - firstValue);
+        // teste
         
         // Debug log for specific vehicles
         if (placaNormalizada === 'HBZ6F14' || placaNormalizada === 'HLJ0G42') {
@@ -1334,7 +1337,11 @@ const HodometrosDashboard = () => {
           mediaKmPorLitro: litrosConsumidos > 0 ? stats.totalKm / litrosConsumidos : 0
         };
       });
-      
+            // alterei aqui tbm Calculate total kilometers from all vehicles in vehicleStats
+      const totalKmFromAllVehicles = vehicleStats.reduce((sum, stats) => sum + stats.totalKm, 0);
+
+      // Update totalKm state with the sum from all vehicles
+      setTotalKm(totalKmFromAllVehicles);
       // Convert km vs price map to array
       const kmVsPrice = Array.from(kmVsPriceMap.entries()).map(([placa, data]) => ({
         placa,
@@ -1355,7 +1362,7 @@ const HodometrosDashboard = () => {
       handleSupabaseError(error, 'carregar estatísticas detalhadas de bomba');
     }
   };
-
+  
   const fetchTodayBombaMinuta = async () => {
     try {
       setConnectionError(false);
