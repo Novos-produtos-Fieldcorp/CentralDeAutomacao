@@ -1899,7 +1899,7 @@ const HodometrosDashboard = () => {
             </div>
             
             {vehicleFuelStats.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-visible pt-12">
                 <div className="min-w-[600px]">
                   {(() => {
                     const maxValue = Math.max(...vehicleFuelStats.map(s => s.mediaKmPorLitro), 1);
