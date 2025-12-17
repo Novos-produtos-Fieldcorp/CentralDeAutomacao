@@ -1930,8 +1930,8 @@ const HodometrosDashboard = () => {
                                     minHeight: stats.mediaKmPorLitro > 0 ? '10px' : '2px'
                                   }}
                                 >
-                                  {/* Tooltip on hover */}
-                                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-700 text-white px-3 py-2 rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg z-20">
+                                  {/* Tooltip on hover - positioned to stay within viewport */}
+                                  <div className="absolute -top-12 left-0 bg-gray-900 dark:bg-gray-700 text-white px-3 py-2 rounded-lg text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg z-50">
                                     {stats.placa}: {stats.mediaKmPorLitro.toFixed(2)} km/L
                                   </div>
                                 </div>
