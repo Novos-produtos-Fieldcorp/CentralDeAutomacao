@@ -317,13 +317,13 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
         </h3>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Numbers */}
+            {/* Numbers - Padronizado */}
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-orange-100 dark:bg-orange-900/30 rounded flex items-center justify-center">
-                <Truck className="w-3 h-3 text-orange-600 dark:text-orange-400" />
+              <div className="w-6 h-6 bg-orange-100 dark:bg-orange-900/30 rounded flex items-center justify-center">
+                <Truck className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
               </div>
-              <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white">
+              <div className="text-center min-w-[50px]">
+                <div className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
                   {stats.agregados}
                 </div>
                 <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
@@ -333,11 +333,11 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-green-100 dark:bg-green-900/30 rounded flex items-center justify-center">
-                <Users className="w-3 h-3 text-green-600 dark:text-green-400" />
+              <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded flex items-center justify-center">
+                <Users className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
               </div>
-              <div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="text-center min-w-[50px]">
+                <div className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
                   {stats.outros}
                 </div>
                 <p className="text-xs text-green-600 dark:text-green-400 font-medium">
@@ -347,11 +347,11 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-blue-100 dark:bg-blue-900/30 rounded flex items-center justify-center">
-                <UserCheck className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+              <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded flex items-center justify-center">
+                <UserCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               </div>
-              <div>
-                <div className="text-sm font-bold text-gray-900 dark:text-white">
+              <div className="text-center min-w-[50px]">
+                <div className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
                   {stats.contratados}
                 </div>
                 <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
@@ -391,13 +391,13 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
         </h3>
         <div className="grid grid-cols-4 gap-2">
           <div className="text-center">
-            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
               {stats.vagasAbertas}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Abertas</p>
           </div>
           <div className="text-center">
-            <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+            <div className="text-lg font-bold text-blue-600 dark:text-blue-400 leading-tight">
               {stats.vagasPreenchidas}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -405,13 +405,13 @@ const ContratacaoVagasHeroCard = ({ stats, hasAccess = true }: HeroCardProps) =>
             </p>
           </div>
           <div className="text-center">
-            <div className="text-sm font-bold text-red-600 dark:text-red-400">
+            <div className="text-lg font-bold text-red-600 dark:text-red-400 leading-tight">
               {stats.vagasVencidas}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Vencidas</p>
           </div>
           <div className="text-center">
-            <div className="text-sm font-bold text-purple-600 dark:text-purple-400">
+            <div className="text-lg font-bold text-purple-600 dark:text-purple-400 leading-tight">
               {stats.taxaPreenchimento}%
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Taxa</p>
@@ -556,14 +556,14 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
 
       {/* KPIs with Pie Chart */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {/* Total */}
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-teal-100 dark:bg-teal-900/30 rounded flex items-center justify-center">
-              <Users className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+              <Users className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
             </div>
-            <div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">
+            <div className="text-center min-w-[40px]">
+              <div className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
                 {stats.clientes.total}
               </div>
               <p className="text-xs text-teal-600 dark:text-teal-400 font-medium">
@@ -575,10 +575,10 @@ const ClientesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
           {/* Ativos */}
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded flex items-center justify-center">
-              <UserCheck className="w-3 h-3 text-green-600 dark:text-green-400" />
+              <UserCheck className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
             </div>
-            <div>
-              <div className="text-lg font-bold text-gray-900 dark:text-white">
+            <div className="text-center min-w-[40px]">
+              <div className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
                 {stats.clientes.ativos}
               </div>
               <p className="text-xs text-green-600 dark:text-green-400 font-medium">
@@ -744,8 +744,8 @@ const VeiculosHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
 
       {/* Total */}
       <div className="flex items-center gap-2 mb-3">
-        <div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
             {stats.veiculos.total}
           </div>
           <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
@@ -846,8 +846,8 @@ const ComprovantesHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
 
       {/* KPI Principal */}
       <div className="flex items-center gap-2 mb-3">
-        <div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
             {stats.comprovantes.totalMensal}
           </div>
           <p className="text-xs text-green-600 dark:text-green-400 font-medium">
@@ -1012,8 +1012,8 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
       <div className="flex gap-3 mb-3">
         {/* KPI Principal */}
         <div className="flex items-center gap-2">
-          <div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
               {stats.checklists.totalMensal}
             </div>
             <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
