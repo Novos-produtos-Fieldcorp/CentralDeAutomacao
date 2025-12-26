@@ -474,7 +474,7 @@ const HodometrosDashboard = () => {
             if (kmRodadoNoDia > 0) {
               // Update total kilometers
               // alterei aqui
-              totalKilometers += 0;
+              totalKilometers += kmRodadoNoDia;
               
               // Update daily mileage map
               const dailyData = dailyMileageMap.get(currentDay.date) || { 
