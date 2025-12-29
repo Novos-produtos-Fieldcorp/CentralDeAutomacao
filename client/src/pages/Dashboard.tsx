@@ -1213,11 +1213,11 @@ const Dashboard: React.FC = () => {
       ] = await Promise.all([
         // Optimized count queries for motoristas - 3 categorias específicas
         supabase
-          .from("motorista")
+          .from("vw_agregados_completo")
           .select("motorista_id", { count: "exact", head: true })
           .eq("company_id", companyId)
-          .eq("ativo", true)
-          .ilike("funcao", "%agregado%"),
+          .eq("ativo", true),
+          //.ilike("funcao", "%agregado%"),
 
         supabase
           .from("motorista")
@@ -1328,7 +1328,7 @@ const Dashboard: React.FC = () => {
 
         supabase
           .from("veiculo")
-          .select("veiculo_id, marca_veiculo, placa")
+          .select("veiculo_id, marca, placa")
           .eq("company_id", companyId)
           .order("veiculo_id", { ascending: false })
           .limit(3),
@@ -1397,7 +1397,22 @@ const Dashboard: React.FC = () => {
           .order("created_at", { ascending: true }),
       ]);
 
+          
+      if (veiculosResult.error)
+        console.warn("Erro veículos:", veiculosResult.error.message);
+
+      // Depois (para todos os resultados):
+      if (veiculosResult?.error)
+        console.warn("Erro veículos:", veiculosResult.error.message);
+
+      // Aplique o mesmo padrão para todos os outros resultados, ex.:
+      if (agregadosResult?.error)
+        console.warn("Erro agregados:", agregadosResult.error.message);
+      if (motoristasResult?.error)
+        console.warn("Erro motoristas:", motoristasResult.error.message);
+      // ... e assim por diante para todos os resultados
       // Check for critical errors
+
       if (agregadosResult.error)
         console.warn("Erro agregados:", agregadosResult.error.message);
       if (motoristasResult.error)
@@ -1777,7 +1792,7 @@ const Dashboard: React.FC = () => {
         recentActivity.push({
           id: `veiculo-${index}`,
           type: "veiculo",
-          description: `Novo veículo: ${veiculo.marca_veiculo || "Veículo"} - ${veiculo.placa || "N/A"}`,
+          description: `Novo veículo: ${veiculo.marca || "Veículo"} - ${veiculo.placa || "N/A"}`,
           timestamp: new Date().toISOString(),
           icon: "truck",
         });
