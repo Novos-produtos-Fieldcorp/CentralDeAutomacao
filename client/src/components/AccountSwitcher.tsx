@@ -4,8 +4,6 @@ import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
-
 interface WiseAppAccount {
   account_id: string;
   name: string;
@@ -38,7 +36,7 @@ export function AccountSwitcher() {
       let response: Response;
       
       if (isNetlifyProduction()) {
-        response = await fetch(`${SUPABASE_URL}/functions/v1/available-accounts`, {
+        response = await fetch('/.netlify/functions/available-accounts', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
