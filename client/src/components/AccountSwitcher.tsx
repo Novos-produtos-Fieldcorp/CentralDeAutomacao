@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Check, Building2, RefreshCw } from 'lucide-react';
 import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
+
+const WISEAPP_API_URL = import.meta.env.VITE_CHAT_API_URL || 'https://chat.wiseapp360.com';
 
 interface WiseAppAccount {
   account_id: string;
@@ -27,18 +30,84 @@ export function AccountSwitcher() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/wiseapp/available-accounts', {
-        method: 'POST',
+      const profileResponse = await fetch(`${WISEAPP_API_URL}/api/v1/profile`, {
+        method: 'GET',
         headers: {
+          'api_access_token': token,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setAccounts(data.accounts || []);
+      if (!profileResponse.ok) {
+        console.error('Token inválido');
+        setAccounts([]);
+        return;
       }
+
+      const userData = await profileResponse.json();
+      const email = userData.email;
+
+      const { data: userAccounts } = await supabase
+        .from('wiseapp_acesso')
+        .select('id_conta_wiseapp, nome, email')
+        .eq('email', email);
+
+      const { data: companies } = await supabase
+        .from('company')
+        .select('company_id, nome_company, id_conta_wiseapp')
+        .not('id_conta_wiseapp', 'is', null);
+
+      const accountToCompany = new Map<string, { company_id: number; nome: string }>();
+      companies?.forEach((c) => {
+        if (c.id_conta_wiseapp) {
+          accountToCompany.set(c.id_conta_wiseapp.toString(), {
+            company_id: c.company_id,
+            nome: c.nome_company,
+          });
+        }
+      });
+
+      const knownAccountIds = new Set<string>();
+      userAccounts?.forEach((ua) => {
+        if (ua.id_conta_wiseapp) {
+          knownAccountIds.add(ua.id_conta_wiseapp.toString());
+        }
+      });
+      companies?.forEach((c) => {
+        if (c.id_conta_wiseapp) {
+          knownAccountIds.add(c.id_conta_wiseapp.toString());
+        }
+      });
+
+      const validatedAccounts: WiseAppAccount[] = [];
+
+      for (const accId of knownAccountIds) {
+        try {
+          const accountResponse = await fetch(`${WISEAPP_API_URL}/api/v1/accounts/${accId}`, {
+            method: 'GET',
+            headers: {
+              'api_access_token': token,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (accountResponse.ok) {
+            const accountData = await accountResponse.json();
+            const companyInfo = accountToCompany.get(accId);
+
+            validatedAccounts.push({
+              account_id: accId,
+              name: accountData.name || companyInfo?.nome || `Conta ${accId}`,
+              company_id: companyInfo?.company_id || null,
+              role: accountData.role || 'agent',
+            });
+          }
+        } catch (err) {
+          console.log(`Conta ${accId} não acessível para este usuário`);
+        }
+      }
+
+      setAccounts(validatedAccounts);
     } catch (error) {
       console.error('Erro ao buscar contas:', error);
     } finally {
