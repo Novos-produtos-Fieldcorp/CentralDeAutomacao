@@ -4,11 +4,19 @@ import { useWiseAppAccess } from '@/context/WiseAppAccessContext';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+
 interface WiseAppAccount {
   account_id: string;
   name: string;
   company_id: number | null;
   role?: string;
+}
+
+function isNetlifyProduction(): boolean {
+  const hostname = window.location.hostname;
+  return hostname.includes('netlify.app') || hostname.includes('fieldcorp') || 
+         (!hostname.includes('replit') && !hostname.includes('localhost'));
 }
 
 export function AccountSwitcher() {
@@ -27,13 +35,25 @@ export function AccountSwitcher() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/wiseapp/available-accounts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
+      let response: Response;
+      
+      if (isNetlifyProduction()) {
+        response = await fetch(`${SUPABASE_URL}/functions/v1/available-accounts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        });
+      } else {
+        response = await fetch('/api/wiseapp/available-accounts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        });
+      }
 
       if (response.ok) {
         const data = await response.json();
