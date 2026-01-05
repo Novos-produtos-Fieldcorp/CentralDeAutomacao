@@ -1,7 +1,13 @@
-import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.48.1';
 
 const WISEAPP_API_URL = 'https://chat.wiseapp360.com';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, api_access_token, wiseapp-token, wiseapp-account-id',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Content-Type': 'application/json'
+};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
