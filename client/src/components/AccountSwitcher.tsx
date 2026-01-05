@@ -11,6 +11,12 @@ interface WiseAppAccount {
   role?: string;
 }
 
+function isNetlifyProduction(): boolean {
+  const hostname = window.location.hostname;
+  return hostname.includes('netlify.app') || hostname.includes('fieldcorp') || 
+         (!hostname.includes('replit') && !hostname.includes('localhost'));
+}
+
 export function AccountSwitcher() {
   const { token, accountId, switchAccount } = useWiseAppAccess();
   const queryClient = useQueryClient();
@@ -27,20 +33,36 @@ export function AccountSwitcher() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/wiseapp/available-accounts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
+      let response: Response;
+      
+      if (isNetlifyProduction()) {
+        response = await fetch('/.netlify/functions/available-accounts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        });
+      } else {
+        response = await fetch('/api/wiseapp/available-accounts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        });
+      }
 
       if (response.ok) {
         const data = await response.json();
         setAccounts(data.accounts || []);
+      } else {
+        console.error('Erro ao buscar contas:', response.status);
+        setAccounts([]);
       }
     } catch (error) {
       console.error('Erro ao buscar contas:', error);
+      setAccounts([]);
     } finally {
       setIsLoading(false);
     }
