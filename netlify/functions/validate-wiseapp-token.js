@@ -1,7 +1,4 @@
-import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
-
-const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
-  // CORS headers
+exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
@@ -9,7 +6,6 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     'Content-Type': 'application/json',
   };
 
-  // Handle OPTIONS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -18,7 +14,6 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     };
   }
 
-  // Only allow POST
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -28,7 +23,6 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
   }
 
   try {
-    // Parse request body
     const body = JSON.parse(event.body || '{}');
     let { token } = body;
 
@@ -42,9 +36,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
     token = token.trim();
     console.log('🔐 Validando token WiseApp - Length:', token.length);
-    console.log('🔍 Token start:', token.substring(0, 10) + '...');
 
-    // Validate token against WiseApp API
     const wiseappResponse = await fetch('https://chat.wiseapp360.com/api/v1/profile', {
       method: 'GET',
       headers: {
@@ -83,7 +75,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         },
       }),
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Erro ao validar token:', error);
     return {
       statusCode: 500,
@@ -96,5 +88,3 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     };
   }
 };
-
-export { handler };
