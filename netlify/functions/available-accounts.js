@@ -1,5 +1,4 @@
-import { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
-import { createClient } from "@supabase/supabase-js";
+const { createClient } = require("@supabase/supabase-js");
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -7,7 +6,7 @@ const wiseappApiUrl = process.env.VITE_CHAT_API_URL || "https://chat.wiseapp360.
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
+exports.handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, wiseapp-token, wiseapp-account-id",
@@ -80,34 +79,35 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       console.error("Erro ao buscar empresas:", companiesError);
     }
 
-    const accountToCompany = new Map<string, { company_id: number; nome: string }>();
-    companies?.forEach((c) => {
-      if (c.id_conta_wiseapp) {
-        accountToCompany.set(c.id_conta_wiseapp.toString(), {
-          company_id: c.company_id,
-          nome: c.nome_company,
-        });
-      }
-    });
+    const accountToCompany = new Map();
+    if (companies) {
+      companies.forEach((c) => {
+        if (c.id_conta_wiseapp) {
+          accountToCompany.set(c.id_conta_wiseapp.toString(), {
+            company_id: c.company_id,
+            nome: c.nome_company,
+          });
+        }
+      });
+    }
 
-    const validatedAccounts: Array<{
-      account_id: string;
-      name: string;
-      company_id: number | null;
-      role?: string;
-    }> = [];
+    const validatedAccounts = [];
 
-    const knownAccountIds = new Set<string>();
-    userAccounts?.forEach((ua) => {
-      if (ua.id_conta_wiseapp) {
-        knownAccountIds.add(ua.id_conta_wiseapp.toString());
-      }
-    });
-    companies?.forEach((c) => {
-      if (c.id_conta_wiseapp) {
-        knownAccountIds.add(c.id_conta_wiseapp.toString());
-      }
-    });
+    const knownAccountIds = new Set();
+    if (userAccounts) {
+      userAccounts.forEach((ua) => {
+        if (ua.id_conta_wiseapp) {
+          knownAccountIds.add(ua.id_conta_wiseapp.toString());
+        }
+      });
+    }
+    if (companies) {
+      companies.forEach((c) => {
+        if (c.id_conta_wiseapp) {
+          knownAccountIds.add(c.id_conta_wiseapp.toString());
+        }
+      });
+    }
 
     for (const accountId of knownAccountIds) {
       try {
@@ -128,8 +128,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
           validatedAccounts.push({
             account_id: accountId,
-            name: accountData.name || companyInfo?.nome || `Conta ${accountId}`,
-            company_id: companyInfo?.company_id || null,
+            name: accountData.name || (companyInfo ? companyInfo.nome : null) || `Conta ${accountId}`,
+            company_id: companyInfo ? companyInfo.company_id : null,
             role: accountData.role || "agent",
           });
 
@@ -163,5 +163,3 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     };
   }
 };
-
-export { handler };
