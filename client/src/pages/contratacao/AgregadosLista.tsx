@@ -1479,8 +1479,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         .from('veiculo')
         .select('bau')
         .eq('status_veiculo', true)
-        .eq('company_id', companyId)
-        .not('bau', 'is', null);
+        .eq('company_id', companyId);
 
       if (error) {
         console.error('Erro ao buscar tipos de baú:', error);
@@ -1488,13 +1487,29 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
 
       const uniqueBauTypes = new Set<string>();
+      let hasSemBau = false;
+      
       data?.forEach(veiculo => {
         if (veiculo.bau && typeof veiculo.bau === 'string' && veiculo.bau.trim()) {
-          uniqueBauTypes.add(veiculo.bau.trim().toUpperCase());
+          const bauNormalized = veiculo.bau.trim().toUpperCase();
+          // Trata "SEM BAÚ" ou similar como flag para mostrar opção "Sem baú"
+          if (bauNormalized === 'SEM BAÚ' || bauNormalized === 'SEM BAU') {
+            hasSemBau = true;
+          } else {
+            uniqueBauTypes.add(bauNormalized);
+          }
+        } else {
+          // Veículo sem baú definido
+          hasSemBau = true;
         }
       });
 
+      // Sempre inclui a opção "sem_bau" se houver veículos sem baú
       const bauTypesSorted = Array.from(uniqueBauTypes).sort();
+      if (hasSemBau) {
+        bauTypesSorted.unshift('sem_bau');
+      }
+      
       setBauTypes(bauTypesSorted);
     } catch (error) {
       console.error('Erro ao buscar tipos de baú:', error);
@@ -1935,22 +1950,22 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     // Lógica para filtro de baú (multiseleção)
     let bauMatch = true;
     if (bauFilter.length > 0) {
+      const motoristaBau = motorista.bau?.trim().toUpperCase() || '';
+      // Considera "SEM BAÚ" ou vazio como veículo sem baú
+      const isSemBau = !motoristaBau || motoristaBau === 'SEM BAÚ' || motoristaBau === 'SEM BAU';
+      
       // Check for 'sem_bau' filter
       if (bauFilter.includes('sem_bau')) {
-        // Verifica se não tem veículo ou se o veículo não tem baú
-        const hasNoBau = !motorista.bau || motorista.bau.trim() === '';
-        bauMatch = hasNoBau;
+        bauMatch = isSemBau;
 
         // Se outros filtros estão selecionados, combina os resultados
         if (bauFilter.length > 1) {
           const otherBauFilters = bauFilter.filter(b => b !== 'sem_bau');
-          const motoristaBau = motorista.bau?.trim().toUpperCase() || '';
           const hasMatchingBau = otherBauFilters.includes(motoristaBau);
           bauMatch = bauMatch || hasMatchingBau;
         }
       } else {
         // Verifica se o baú do motorista está nos filtros selecionados
-        const motoristaBau = motorista.bau?.trim().toUpperCase() || '';
         bauMatch = bauFilter.includes(motoristaBau);
       }
     }
