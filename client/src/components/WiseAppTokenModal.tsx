@@ -101,20 +101,51 @@ export default function WiseAppTokenModal({
     try {
       console.log('🔐 Validando token com Chatwoot...');
       
-      // Tentar validar via endpoint local primeiro (Express em Replit)
-      let validationResponse = await fetch('/api/validate-wiseapp-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: token.trim() }),
-      }).catch(err => {
-        console.warn('⚠️ Endpoint local não disponível:', err.message);
-        return null;
-      });
+      let validationResponse: Response | null = null;
+      
+      // Tentar validar via endpoint Express primeiro (Replit)
+      try {
+        console.log('🔄 Tentando endpoint Express /api/validate-wiseapp-token...');
+        const expressResponse = await fetch('/api/validate-wiseapp-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token: token.trim() }),
+        });
+        
+        // Se retornou 404, é porque não existe (estamos no Netlify)
+        if (expressResponse.status !== 404) {
+          validationResponse = expressResponse;
+          console.log('✅ Usando endpoint Express');
+        }
+      } catch (err: any) {
+        console.warn('⚠️ Endpoint Express não disponível:', err.message);
+      }
 
-      // Se falhar no endpoint local (Netlify), validar diretamente
-      if (!validationResponse) {
+      // Se falhar, tentar Netlify Functions
+      if (!validationResponse || validationResponse.status === 404) {
+        try {
+          console.log('🔄 Tentando endpoint Netlify /.netlify/functions/validate-wiseapp-token...');
+          const netlifyResponse = await fetch('/.netlify/functions/validate-wiseapp-token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: token.trim() }),
+          });
+          
+          if (netlifyResponse.status !== 404) {
+            validationResponse = netlifyResponse;
+            console.log('✅ Usando endpoint Netlify Functions');
+          }
+        } catch (err: any) {
+          console.warn('⚠️ Endpoint Netlify não disponível:', err.message);
+        }
+      }
+
+      // Se ainda falhar, tentar diretamente com Chatwoot (pode ter CORS issues)
+      if (!validationResponse || validationResponse.status === 404) {
         console.log('🔄 Tentando validar diretamente com Chatwoot...');
         validationResponse = await fetch('https://chat.wiseapp360.com/api/v1/profile', {
           method: 'GET',
@@ -125,8 +156,8 @@ export default function WiseAppTokenModal({
         });
       }
 
-      if (!validationResponse.ok) {
-        console.error('❌ Token inválido. Status:', validationResponse.status);
+      if (!validationResponse || !validationResponse.ok) {
+        console.error('❌ Token inválido. Status:', validationResponse?.status);
         throw new Error('Token inválido. Por favor, verifique se o token está correto.');
       }
 
