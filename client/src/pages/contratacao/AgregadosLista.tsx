@@ -2522,7 +2522,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </div>
 
                   {/* Baú Filter - Only show when company has bau_access enabled */}
-                  {moduleAccess.bau && bauTypes.length > 0 && (
+                  {moduleAccess.bau && (
                     <div className="relative" style={{ position: 'relative' }}>
                       <div className="relative group" ref={bauDropdownRef}>
                         <button
