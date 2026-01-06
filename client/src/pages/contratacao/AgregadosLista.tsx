@@ -83,6 +83,7 @@ export interface ViewContratado {
   cor?: string | null;
   tipo_veiculo?: string | null;
   tipo?: string | null;
+  bau?: string | null;
   ajudantes?: string[];
   // Campos de endereço do join com as tabelas de endereço
   end_motorista?: Array<{
@@ -2855,11 +2856,18 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             {motorista.placa ? (
                               <div>
                                 <div className="font-medium">{motorista.placa}</div>
-                                {motorista.tipologia && (
-                                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                                    {motorista.tipologia}
-                                  </div>
-                                )}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {motorista.tipologia && (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                      {motorista.tipologia}
+                                    </span>
+                                  )}
+                                  {motorista.bau && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                      {motorista.bau}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             ) : (
                               '-'
