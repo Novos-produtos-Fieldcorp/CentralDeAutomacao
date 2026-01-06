@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag, CheckCircle, Calendar } from 'lucide-react';
+import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag, CheckCircle, Calendar, Package } from 'lucide-react';
 import WhatsAppAvatar from '../../components/WhatsAppAvatar';
 import AddAgregadoModal from '../../components/AddAgregadoModal';
 import { useCompanyData } from '../../hooks/useCompanyData';
@@ -198,6 +198,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
   const clienteDropdownRef = useRef<HTMLDivElement>(null);
   const tipoVeiculoDropdownRef = useRef<HTMLDivElement>(null);
+  const bauDropdownRef = useRef<HTMLDivElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const ativoDropdownRef = useRef<HTMLDivElement>(null);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
@@ -241,6 +242,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     setShowClienteDropdown(false);
     setShowCidadeDropdown(false);
     setShowTipoVeiculoDropdown(false);
+    setShowBauDropdown(false);
     setShowTagDropdown(false);
     setCidadeSearchTerm(''); // Limpa o termo de busca das cidades
   };
@@ -260,6 +262,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         break;
       case 'tipoVeiculo':
         setShowTipoVeiculoDropdown(true);
+        break;
+      case 'bau':
+        setShowBauDropdown(true);
         break;
       case 'tag':
         setShowTagDropdown(true);
@@ -671,6 +676,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [cidades, setCidades] = useState<string[]>([]);
   const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
   const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
+  const [bauFilter, setBauFilter] = useState<string[]>([]);
+  const [bauTypes, setBauTypes] = useState<string[]>([]);
+  const [showBauDropdown, setShowBauDropdown] = useState(false);
   const [cidadeSearchTerm, setCidadeSearchTerm] = useState<string>('');
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -695,6 +703,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (showTipoVeiculoDropdown && tipoVeiculoDropdownRef.current && !tipoVeiculoDropdownRef.current.contains(target)) {
         setShowTipoVeiculoDropdown(false);
       }
+      if (showBauDropdown && bauDropdownRef.current && !bauDropdownRef.current.contains(target)) {
+        setShowBauDropdown(false);
+      }
       // Verifica se o clique foi fora do dropdown de ativo/inativo
       if (showAtivoDropdown && ativoDropdownRef.current && !ativoDropdownRef.current.contains(target)) {
         setShowAtivoDropdown(false);
@@ -706,7 +717,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown]);
+  }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown, showBauDropdown]);
 
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -1022,6 +1033,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     fetchContratados();
     fetchClientes();
     fetchTiposVeiculoFromTable();
+    fetchBauTypesFromTable();
   }, [dateFilter, customDateRange]);
 
   // Carregar tags dos agregados automaticamente quando a lista de contratados mudar
@@ -1084,12 +1096,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   // Funções auxiliares para filtros
   const hasActiveFilters = () => {
     return statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 ||
-      ativoFilter !== '' || tipoVeiculoFilter.length > 0 || dateFilter !== 'all' || tagFilter.length > 0;
+      ativoFilter !== '' || tipoVeiculoFilter.length > 0 || bauFilter.length > 0 || dateFilter !== 'all' || tagFilter.length > 0;
   };
 
   const getActiveFiltersCount = () => {
     return [statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0,
-    ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0,
+    ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, bauFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0,
     tagFilter.length > 0 ? 1 : 0].reduce((a, b) => a + b, 0);
   };
 
@@ -1456,7 +1468,38 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
   };
 
+  // Função para buscar tipos únicos de baú diretamente da tabela veiculo
+  const fetchBauTypesFromTable = async () => {
+    try {
+      if (!companyId) {
+        return;
+      }
 
+      const { data, error } = await supabase
+        .from('veiculo')
+        .select('bau')
+        .eq('status_veiculo', true)
+        .eq('company_id', companyId)
+        .not('bau', 'is', null);
+
+      if (error) {
+        console.error('Erro ao buscar tipos de baú:', error);
+        return;
+      }
+
+      const uniqueBauTypes = new Set<string>();
+      data?.forEach(veiculo => {
+        if (veiculo.bau && typeof veiculo.bau === 'string' && veiculo.bau.trim()) {
+          uniqueBauTypes.add(veiculo.bau.trim().toUpperCase());
+        }
+      });
+
+      const bauTypesSorted = Array.from(uniqueBauTypes).sort();
+      setBauTypes(bauTypesSorted);
+    } catch (error) {
+      console.error('Erro ao buscar tipos de baú:', error);
+    }
+  };
 
   // Cores padrão para os clientes (apenas fundo, sem borda)
   const defaultClientColors = [
@@ -1889,6 +1932,29 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     }
 
+    // Lógica para filtro de baú (multiseleção)
+    let bauMatch = true;
+    if (bauFilter.length > 0) {
+      // Check for 'sem_bau' filter
+      if (bauFilter.includes('sem_bau')) {
+        // Verifica se não tem veículo ou se o veículo não tem baú
+        const hasNoBau = !motorista.bau || motorista.bau.trim() === '';
+        bauMatch = hasNoBau;
+
+        // Se outros filtros estão selecionados, combina os resultados
+        if (bauFilter.length > 1) {
+          const otherBauFilters = bauFilter.filter(b => b !== 'sem_bau');
+          const motoristaBau = motorista.bau?.trim().toUpperCase() || '';
+          const hasMatchingBau = otherBauFilters.includes(motoristaBau);
+          bauMatch = bauMatch || hasMatchingBau;
+        }
+      } else {
+        // Verifica se o baú do motorista está nos filtros selecionados
+        const motoristaBau = motorista.bau?.trim().toUpperCase() || '';
+        bauMatch = bauFilter.includes(motoristaBau);
+      }
+    }
+
     // Lógica para filtro de tags (multiseleção)
     let tagMatch = true;
     if (tagFilter.length > 0) {
@@ -1927,6 +1993,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       clienteMatch &&
       cidadeMatch &&
       tipoVeiculoMatch &&
+      bauMatch &&
       tagMatch &&
       ativoMatch &&
       searchMatch
@@ -2059,6 +2126,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 cidadeFilter={cidadeFilter}
                 tagFilter={tagFilter}
                 tipoVeiculoFilter={tipoVeiculoFilter}
+                bauFilter={bauFilter}
                 dateFilter={dateFilter}
                 customDateRange={customDateRange}
                 onRemoveStatus={(status) => {
@@ -2079,6 +2147,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 onRemoveTipoVeiculo={(tipo) => {
                   setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== tipo));
                 }}
+                onRemoveBau={(bau) => {
+                  setBauFilter(bauFilter.filter(b => b !== bau));
+                }}
                 onRemoveDate={() => {
                   setDateFilter('all');
                 }}
@@ -2089,6 +2160,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   setAtivoFilter('');
                   setTagFilter([]);
                   setTipoVeiculoFilter([]);
+                  setBauFilter([]);
                   setDateFilter('all');
                 }}
                 clientes={clientes}
@@ -2431,6 +2503,92 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                       )}
                     </div>
                   </div>
+
+                  {/* Baú Filter */}
+                  {bauTypes.length > 0 && (
+                    <div className="relative" style={{ position: 'relative' }}>
+                      <div className="relative group" ref={bauDropdownRef}>
+                        <button
+                          type="button"
+                          className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                          onClick={() => showBauDropdown ? closeAllDropdowns() : toggleDropdown('bau')}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4" />
+                            <span>
+                              {bauFilter.length === 0 ? 'Baú' : `Baú (${bauFilter.length})`}
+                            </span>
+                          </div>
+                        </button>
+
+                        {showBauDropdown && (
+                          <div
+                            className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-48 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                            style={{
+                              position: 'absolute',
+                              bottom: '100%',
+                              left: 0,
+                              marginBottom: '4px',
+                              zIndex: 999999
+                            }}>
+                            <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar baú</span>
+                                <button
+                                  type="button"
+                                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setBauFilter([]);
+                                  }}
+                                >
+                                  Limpar
+                                </button>
+                              </div>
+                            </div>
+                            <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                              <label className="flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                                  checked={bauFilter.includes('sem_bau')}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setBauFilter([...bauFilter, 'sem_bau']);
+                                    } else {
+                                      setBauFilter(bauFilter.filter(b => b !== 'sem_bau'));
+                                    }
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <span className="text-sm text-gray-700 dark:text-gray-200">Sem baú</span>
+                              </label>
+                            </div>
+                            {bauTypes.map((bau) => (
+                              <div key={bau} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                <label className="flex items-center cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                                    checked={bauFilter.includes(bau)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setBauFilter([...bauFilter, bau]);
+                                      } else {
+                                        setBauFilter(bauFilter.filter(b => b !== bau));
+                                      }
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <span className="text-sm text-gray-700 dark:text-gray-200">{bau}</span>
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Tag Filter */}
                   <div className="relative" style={{ position: 'relative' }}>

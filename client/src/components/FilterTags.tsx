@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Calendar, MapPin, User, Tag as TagIcon, Truck, CheckCircle, AlertTriangle } from 'lucide-react';
+import { X, Calendar, MapPin, User, Tag as TagIcon, Truck, CheckCircle, AlertTriangle, Package } from 'lucide-react';
 
 export interface FilterTagsProps {
   statusFilter?: string[];
@@ -8,6 +8,7 @@ export interface FilterTagsProps {
   cidadeFilter?: string[];
   tagFilter?: string[];
   tipoVeiculoFilter?: string[];
+  bauFilter?: string[];
   dateFilter?: string;
   customDateRange?: {
     startDate: string | null;
@@ -19,6 +20,7 @@ export interface FilterTagsProps {
   onRemoveCidade?: (cidade: string) => void;
   onRemoveTag?: (tag: string) => void;
   onRemoveTipoVeiculo?: (tipo: string) => void;
+  onRemoveBau?: (bau: string) => void;
   onRemoveDate?: () => void;
   onClearAll?: () => void;
   
@@ -55,6 +57,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
   cidadeFilter = [],
   tagFilter = [],
   tipoVeiculoFilter = [],
+  bauFilter = [],
   dateFilter = 'all',
   customDateRange,
   onRemoveStatus,
@@ -63,6 +66,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
   onRemoveCidade,
   onRemoveTag,
   onRemoveTipoVeiculo,
+  onRemoveBau,
   onRemoveDate,
   onClearAll,
   clientes = [],
@@ -77,6 +81,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
     cidadeFilter.length > 0 ||
     tagFilter.length > 0 ||
     tipoVeiculoFilter.length > 0 ||
+    bauFilter.length > 0 ||
     (dateFilter !== 'all' && dateFilter !== '');
 
   if (!hasFilters) {
@@ -246,6 +251,27 @@ const FilterTags: React.FC<FilterTagsProps> = ({
                 onClick={() => onRemoveTipoVeiculo(tipo)}
                 className="hover:bg-black/10 dark:hover:bg-white/10 rounded-sm p-0.5 transition-colors"
                 data-testid={`remove-tipo-veiculo-${tipo}`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        ))}
+
+        {/* Baú Filters */}
+        {bauFilter.map((bau) => (
+          <div
+            key={`bau-${bau}`}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
+            data-testid={`filter-tag-bau-${bau}`}
+          >
+            <Package className="h-3 w-3" />
+            <span>Baú: {bau === 'sem_bau' ? 'Sem baú' : bau}</span>
+            {onRemoveBau && (
+              <button
+                onClick={() => onRemoveBau(bau)}
+                className="hover:bg-black/10 dark:hover:bg-white/10 rounded-sm p-0.5 transition-colors"
+                data-testid={`remove-bau-${bau}`}
               >
                 <X className="h-3 w-3" />
               </button>
