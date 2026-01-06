@@ -2579,7 +2579,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                 <span className="text-sm text-gray-700 dark:text-gray-200">Sem baú</span>
                               </label>
                             </div>
-                            {bauTypes.map((bau) => (
+                            {bauTypes.filter(bau => bau !== 'sem_bau').map((bau) => (
                               <div key={bau} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                                 <label className="flex items-center cursor-pointer">
                                   <input
