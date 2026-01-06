@@ -27,6 +27,7 @@ import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
 import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
 import FilterTags from '../../components/FilterTags';
+import { useModuleAccess } from '../../hooks/useModuleAccess';
 
 interface AgregadosListaProps {
   onSuccess?: () => void;
@@ -181,6 +182,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { startChat } = useFloatingChat();
   // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
   const { token: wiseAppToken, accountId } = useWiseAppAccess();
+  const { moduleAccess } = useModuleAccess();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1468,18 +1470,19 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
   };
 
-  // Função para buscar tipos únicos de baú diretamente da tabela veiculo
+  // Função para buscar tipos únicos de baú da view vw_agregados_completo (onde os veículos dos agregados estão)
   const fetchBauTypesFromTable = async () => {
     try {
       if (!companyId) {
         return;
       }
 
+      // Buscar da view vw_agregados_completo que contém os dados de veículos dos agregados
       const { data, error } = await supabase
-        .from('veiculo')
+        .from('vw_agregados_completo')
         .select('bau')
-        .eq('status_veiculo', true)
-        .eq('company_id', companyId);
+        .eq('company_id', companyId)
+        .eq('funcao', 'Agregado');
 
       if (error) {
         console.error('Erro ao buscar tipos de baú:', error);
@@ -1489,9 +1492,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const uniqueBauTypes = new Set<string>();
       let hasSemBau = false;
       
-      data?.forEach(veiculo => {
-        if (veiculo.bau && typeof veiculo.bau === 'string' && veiculo.bau.trim()) {
-          const bauNormalized = veiculo.bau.trim().toUpperCase();
+      data?.forEach(agregado => {
+        if (agregado.bau && typeof agregado.bau === 'string' && agregado.bau.trim()) {
+          const bauNormalized = agregado.bau.trim().toUpperCase();
           // Trata "SEM BAÚ" ou similar como flag para mostrar opção "Sem baú"
           if (bauNormalized === 'SEM BAÚ' || bauNormalized === 'SEM BAU') {
             hasSemBau = true;
@@ -1499,12 +1502,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             uniqueBauTypes.add(bauNormalized);
           }
         } else {
-          // Veículo sem baú definido
+          // Agregado sem baú definido
           hasSemBau = true;
         }
       });
 
-      // Sempre inclui a opção "sem_bau" se houver veículos sem baú
+      // Sempre inclui a opção "sem_bau" se houver agregados sem baú
       const bauTypesSorted = Array.from(uniqueBauTypes).sort();
       if (hasSemBau) {
         bauTypesSorted.unshift('sem_bau');
@@ -2519,8 +2522,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     </div>
                   </div>
 
-                  {/* Baú Filter */}
-                  {bauTypes.length > 0 && (
+                  {/* Baú Filter - Only show when company has bau_access enabled */}
+                  {moduleAccess.bau && (
                     <div className="relative" style={{ position: 'relative' }}>
                       <div className="relative group" ref={bauDropdownRef}>
                         <button
@@ -3035,7 +3038,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                       {motorista.tipologia}
                                     </span>
                                   )}
-                                  {motorista.bau && (
+                                  {moduleAccess.bau && motorista.bau && (
                                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                                       {motorista.bau}
                                     </span>
