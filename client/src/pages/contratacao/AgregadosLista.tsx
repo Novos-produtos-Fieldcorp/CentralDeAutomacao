@@ -27,6 +27,7 @@ import { TableDropdown } from '../../components/TableDropdown';
 import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
 import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
 import FilterTags from '../../components/FilterTags';
+import { useModuleAccess } from '../../hooks/useModuleAccess';
 
 interface AgregadosListaProps {
   onSuccess?: () => void;
@@ -181,6 +182,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { startChat } = useFloatingChat();
   // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
   const { token: wiseAppToken, accountId } = useWiseAppAccess();
+  const { moduleAccess } = useModuleAccess();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -2519,8 +2521,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     </div>
                   </div>
 
-                  {/* Baú Filter */}
-                  {bauTypes.length > 0 && (
+                  {/* Baú Filter - Only show when company has bau_access enabled */}
+                  {moduleAccess.bau && bauTypes.length > 0 && (
                     <div className="relative" style={{ position: 'relative' }}>
                       <div className="relative group" ref={bauDropdownRef}>
                         <button
@@ -3035,7 +3037,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                       {motorista.tipologia}
                                     </span>
                                   )}
-                                  {motorista.bau && (
+                                  {moduleAccess.bau && motorista.bau && (
                                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                                       {motorista.bau}
                                     </span>
