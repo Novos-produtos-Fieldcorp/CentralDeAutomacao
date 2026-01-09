@@ -343,7 +343,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/inboxes/:companyId", async (req, res) => {
     try {
       const { companyId } = req.params;
-      const { accountId } = req.query;
+      // Aceita tanto account_id quanto accountId para compatibilidade
+      const accountId = req.query.account_id || req.query.accountId;
       
       console.log(`Fetching inboxes for company_id: ${companyId}, accountId: ${accountId}`);
 
