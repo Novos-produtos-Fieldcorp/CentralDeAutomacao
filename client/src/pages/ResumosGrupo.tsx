@@ -221,9 +221,10 @@ const ResumosGrupo = () => {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
-      // Prepare insert data without url_grupo
+      // Prepare insert data
       const insertData = {
         nome_grupo: formData.nome_grupo,
+        nome_inbox: formData.nome_grupo,
         horario: utcHorario,
         ativo: formData.ativo,
         icon_name: formData.icon_name,
