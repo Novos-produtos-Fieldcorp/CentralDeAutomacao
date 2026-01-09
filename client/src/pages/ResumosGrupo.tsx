@@ -14,7 +14,6 @@ import Pagination from '../components/Pagination';
 interface GrupoResumo {
   id: number;
   nome_grupo: string;
-  url_grupo: string;
   horario: string;
   ativo: boolean;
   company_id: number;
@@ -50,7 +49,6 @@ const ResumosGrupo = () => {
   const [selectedGrupo, setSelectedGrupo] = useState<GrupoResumo | null>(null);
   const [formData, setFormData] = useState({
     nome_grupo: '',
-    url_grupo: '',
     horario: '08:00',
     ativo: true,
     icon_name: 'MessagesSquare',
@@ -214,11 +212,6 @@ const ResumosGrupo = () => {
       return;
     }
     
-    if (!formData.url_grupo?.trim()) {
-      toast.error('URL do grupo é obrigatória');
-      return;
-    }
-    
     if (!formData.horario) {
       toast.error('Horário é obrigatório');
       return;
@@ -228,13 +221,19 @@ const ResumosGrupo = () => {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
+      // Prepare insert data without url_grupo
+      const insertData = {
+        nome_grupo: formData.nome_grupo,
+        horario: utcHorario,
+        ativo: formData.ativo,
+        icon_name: formData.icon_name,
+        color_name: formData.color_name,
+        company_id: companyId
+      };
+      
       const { data, error } = await supabase
         .from('grupo_resumo')
-        .insert({
-          ...formData,
-          horario: utcHorario, // Store UTC time in the database
-          company_id: companyId
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -265,11 +264,6 @@ const ResumosGrupo = () => {
       return;
     }
     
-    if (!formData.url_grupo?.trim()) {
-      toast.error('URL do grupo é obrigatória');
-      return;
-    }
-    
     if (!formData.horario) {
       toast.error('Horário é obrigatório');
       return;
@@ -283,8 +277,7 @@ const ResumosGrupo = () => {
         .from('grupo_resumo')
         .update({
           nome_grupo: formData.nome_grupo,
-          url_grupo: formData.url_grupo,
-          horario: utcHorario, // Store UTC time in the database
+          horario: utcHorario,
           icon_name: formData.icon_name,
           color_name: formData.color_name
         })
@@ -297,8 +290,7 @@ const ResumosGrupo = () => {
           ? { 
               ...grupo, 
               nome_grupo: formData.nome_grupo,
-              url_grupo: formData.url_grupo,
-              horario: formData.horario, // Keep Brasilia time for display
+              horario: formData.horario,
               icon_name: formData.icon_name,
               color_name: formData.color_name
             } 
@@ -423,7 +415,6 @@ const ResumosGrupo = () => {
   const resetForm = () => {
     setFormData({
       nome_grupo: '',
-      url_grupo: '',
       horario: '08:00',
       ativo: true,
       icon_name: 'MessagesSquare',
@@ -837,15 +828,6 @@ const ResumosGrupo = () => {
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-2 mb-4">
-                          <Link2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                          <span 
-                            className="text-sm text-gray-600 dark:text-gray-400 truncate"
-                          >
-                            {grupo.url_grupo}
-                          </span>
-                        </div>
-                        
                         <div className="flex justify-between items-center mt-6">
                           <div className="flex gap-2">
                             <button
@@ -853,7 +835,6 @@ const ResumosGrupo = () => {
                                 setSelectedGrupo(grupo);
                                 setFormData({
                                   nome_grupo: grupo.nome_grupo,
-                                  url_grupo: grupo.url_grupo,
                                   horario: grupo.horario,
                                   ativo: grupo.ativo,
                                   icon_name: grupo.icon_name || 'MessagesSquare',
