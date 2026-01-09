@@ -352,53 +352,85 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(prev => ({ ...prev, [grupo.id]: true }));
       
-      // Use the hardcoded token for authorization
-      const authToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
+      // Get current user session from WiseApp cache
+      const cachedSession = localStorage.getItem('wiseapp_session');
+      let userEmail = '';
+      let userAccountId = '';
       
-      // Use the correct Supabase URL for edge functions
-      const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
-      const requestUrl = `${supabaseUrl}/functions/v1/manual-summary-trigger`;
+      if (cachedSession) {
+        try {
+          const session = JSON.parse(cachedSession);
+          userEmail = session.email || '';
+          userAccountId = session.accountId || '';
+        } catch (e) {
+          console.error('Error parsing cached session:', e);
+        }
+      }
       
+      // Fetch company's id_conta_wiseapp
+      const { data: companyData } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
+        .eq('company_id', companyId)
+        .single();
       
-      // Call the manual-summary-trigger edge function
-      const response = await fetch(requestUrl, {
+      const wiseappAccountId = companyData?.id_conta_wiseapp || userAccountId || null;
+      
+      // Fetch user's API key from wiseapp_acesso
+      let apiKey = null;
+      if (userEmail && wiseappAccountId) {
+        const { data: accessData } = await supabase
+          .from('wiseapp_acesso')
+          .select('access_token_wiseapp')
+          .eq('email', userEmail)
+          .eq('id_conta_wiseapp', wiseappAccountId)
+          .single();
+        
+        apiKey = accessData?.access_token_wiseapp || null;
+      }
+      
+      // If no API key found for the user, try to get any valid key for the account
+      if (!apiKey && wiseappAccountId) {
+        const { data: fallbackAccessData } = await supabase
+          .from('wiseapp_acesso')
+          .select('access_token_wiseapp')
+          .eq('id_conta_wiseapp', wiseappAccountId)
+          .not('access_token_wiseapp', 'is', null)
+          .limit(1)
+          .single();
+        
+        apiKey = fallbackAccessData?.access_token_wiseapp || null;
+      }
+      
+      console.log('Manual summary trigger data:', {
+        group_id: grupo.id,
+        company_id: companyId,
+        account_id: wiseappAccountId,
+        has_api_key: !!apiKey
+      });
+      
+      // Send directly to n8n webhook
+      const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-          'Accept': 'application/json'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          nome_do_grupo: grupo.nome_grupo,
+          company_id: companyId,
           group_id: grupo.id,
-          company_id: companyId
+          account_id: wiseappAccountId,
+          api_key: apiKey
         })
       });
       
-      
-      // Always read the response as text first to debug
-      const responseText = await response.text();
-      
       if (!response.ok) {
-        console.error('Error response:', responseText);
-        throw new Error(`Failed to trigger manual summary: ${response.status} - ${responseText}`);
+        const errorText = await response.text();
+        console.error('Webhook error response:', errorText);
+        throw new Error(`Falha ao enviar webhook: ${response.status}`);
       }
       
-      // Try to parse as JSON
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('Failed to parse JSON:', parseError);
-        console.error('Response text:', responseText);
-        throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`);
-      }
-      
-      
-      if (result.success) {
-        toast.success('Automação iniciada com sucesso');
-      } else {
-        throw new Error(result.error || 'Unknown error occurred');
-      }
+      toast.success('Automação iniciada com sucesso');
       
       // Refresh the delivery history
       fetchEnvios(grupo.id);
