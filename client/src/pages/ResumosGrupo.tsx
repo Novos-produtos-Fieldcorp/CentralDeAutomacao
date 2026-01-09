@@ -14,7 +14,6 @@ import Pagination from '../components/Pagination';
 interface GrupoResumo {
   id: number;
   nome_grupo: string;
-  url_grupo: string;
   horario: string;
   ativo: boolean;
   company_id: number;
@@ -46,12 +45,10 @@ const ResumosGrupo = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [isTimeDebugModalOpen, setIsTimeDebugModalOpen] = useState(false);
   const [selectedGrupo, setSelectedGrupo] = useState<GrupoResumo | null>(null);
   const [formData, setFormData] = useState({
     nome_grupo: '',
-    url_grupo: '',
     horario: '08:00',
     ativo: true,
     icon_name: 'MessagesSquare',
@@ -215,11 +212,6 @@ const ResumosGrupo = () => {
       return;
     }
     
-    if (!formData.url_grupo?.trim()) {
-      toast.error('URL do grupo é obrigatória');
-      return;
-    }
-    
     if (!formData.horario) {
       toast.error('Horário é obrigatório');
       return;
@@ -229,13 +221,20 @@ const ResumosGrupo = () => {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
+      // Prepare insert data
+      const insertData = {
+        nome_grupo: formData.nome_grupo,
+        nome_inbox: formData.nome_grupo,
+        horario: utcHorario,
+        ativo: formData.ativo,
+        icon_name: formData.icon_name,
+        color_name: formData.color_name,
+        company_id: companyId
+      };
+      
       const { data, error } = await supabase
         .from('grupo_resumo')
-        .insert({
-          ...formData,
-          horario: utcHorario, // Store UTC time in the database
-          company_id: companyId
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -266,11 +265,6 @@ const ResumosGrupo = () => {
       return;
     }
     
-    if (!formData.url_grupo?.trim()) {
-      toast.error('URL do grupo é obrigatória');
-      return;
-    }
-    
     if (!formData.horario) {
       toast.error('Horário é obrigatório');
       return;
@@ -284,8 +278,7 @@ const ResumosGrupo = () => {
         .from('grupo_resumo')
         .update({
           nome_grupo: formData.nome_grupo,
-          url_grupo: formData.url_grupo,
-          horario: utcHorario, // Store UTC time in the database
+          horario: utcHorario,
           icon_name: formData.icon_name,
           color_name: formData.color_name
         })
@@ -298,8 +291,7 @@ const ResumosGrupo = () => {
           ? { 
               ...grupo, 
               nome_grupo: formData.nome_grupo,
-              url_grupo: formData.url_grupo,
-              horario: formData.horario, // Keep Brasilia time for display
+              horario: formData.horario,
               icon_name: formData.icon_name,
               color_name: formData.color_name
             } 
@@ -360,53 +352,85 @@ const ResumosGrupo = () => {
     try {
       setSendingManualSummary(prev => ({ ...prev, [grupo.id]: true }));
       
-      // Use the hardcoded token for authorization
-      const authToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ';
+      // Get current user session from WiseApp cache
+      const cachedSession = localStorage.getItem('wiseapp_session');
+      let userEmail = '';
+      let userAccountId = '';
       
-      // Use the correct Supabase URL for edge functions
-      const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
-      const requestUrl = `${supabaseUrl}/functions/v1/manual-summary-trigger`;
+      if (cachedSession) {
+        try {
+          const session = JSON.parse(cachedSession);
+          userEmail = session.email || '';
+          userAccountId = session.accountId || '';
+        } catch (e) {
+          console.error('Error parsing cached session:', e);
+        }
+      }
       
+      // Fetch company's id_conta_wiseapp
+      const { data: companyData } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
+        .eq('company_id', companyId)
+        .single();
       
-      // Call the manual-summary-trigger edge function
-      const response = await fetch(requestUrl, {
+      const wiseappAccountId = companyData?.id_conta_wiseapp || userAccountId || null;
+      
+      // Fetch user's API key from wiseapp_acesso
+      let apiKey = null;
+      if (userEmail && wiseappAccountId) {
+        const { data: accessData } = await supabase
+          .from('wiseapp_acesso')
+          .select('access_token_wiseapp')
+          .eq('email', userEmail)
+          .eq('id_conta_wiseapp', wiseappAccountId)
+          .single();
+        
+        apiKey = accessData?.access_token_wiseapp || null;
+      }
+      
+      // If no API key found for the user, try to get any valid key for the account
+      if (!apiKey && wiseappAccountId) {
+        const { data: fallbackAccessData } = await supabase
+          .from('wiseapp_acesso')
+          .select('access_token_wiseapp')
+          .eq('id_conta_wiseapp', wiseappAccountId)
+          .not('access_token_wiseapp', 'is', null)
+          .limit(1)
+          .single();
+        
+        apiKey = fallbackAccessData?.access_token_wiseapp || null;
+      }
+      
+      console.log('Manual summary trigger data:', {
+        group_id: grupo.id,
+        company_id: companyId,
+        account_id: wiseappAccountId,
+        has_api_key: !!apiKey
+      });
+      
+      // Send directly to n8n webhook
+      const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-          'Accept': 'application/json'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          nome_do_grupo: grupo.nome_grupo,
+          company_id: companyId,
           group_id: grupo.id,
-          company_id: companyId
+          account_id: wiseappAccountId,
+          api_key: apiKey
         })
       });
       
-      
-      // Always read the response as text first to debug
-      const responseText = await response.text();
-      
       if (!response.ok) {
-        console.error('Error response:', responseText);
-        throw new Error(`Failed to trigger manual summary: ${response.status} - ${responseText}`);
+        const errorText = await response.text();
+        console.error('Webhook error response:', errorText);
+        throw new Error(`Falha ao enviar webhook: ${response.status}`);
       }
       
-      // Try to parse as JSON
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('Failed to parse JSON:', parseError);
-        console.error('Response text:', responseText);
-        throw new Error(`Server returned invalid JSON: ${responseText.substring(0, 100)}...`);
-      }
-      
-      
-      if (result.success) {
-        toast.success('Automação iniciada com sucesso');
-      } else {
-        throw new Error(result.error || 'Unknown error occurred');
-      }
+      toast.success('Automação iniciada com sucesso');
       
       // Refresh the delivery history
       fetchEnvios(grupo.id);
@@ -424,7 +448,6 @@ const ResumosGrupo = () => {
   const resetForm = () => {
     setFormData({
       nome_grupo: '',
-      url_grupo: '',
       horario: '08:00',
       ativo: true,
       icon_name: 'MessagesSquare',
@@ -838,15 +861,6 @@ const ResumosGrupo = () => {
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-2 mb-4">
-                          <Link2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                          <span 
-                            className="text-sm text-gray-600 dark:text-gray-400 truncate"
-                          >
-                            {grupo.url_grupo}
-                          </span>
-                        </div>
-                        
                         <div className="flex justify-between items-center mt-6">
                           <div className="flex gap-2">
                             <button
@@ -854,7 +868,6 @@ const ResumosGrupo = () => {
                                 setSelectedGrupo(grupo);
                                 setFormData({
                                   nome_grupo: grupo.nome_grupo,
-                                  url_grupo: grupo.url_grupo,
                                   horario: grupo.horario,
                                   ativo: grupo.ativo,
                                   icon_name: grupo.icon_name || 'MessagesSquare',
@@ -1154,29 +1167,6 @@ const ResumosGrupo = () => {
               </div>
               
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    URL da Caixa de Entrada *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsHelpModalOpen(true)}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
-                  >
-                    Onde encontro a URL?
-                  </button>
-                </div>
-                <input
-                  type="url"
-                  value={formData.url_grupo}
-                  onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="https://chat.whatsapp.com/..."
-                  required
-                />
-              </div>
-              
-              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Horário de Envio (Brasília) *
                 </label>
@@ -1280,29 +1270,6 @@ const ResumosGrupo = () => {
                   value={formData.nome_grupo}
                   onChange={(e) => setFormData({ ...formData, nome_grupo: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  required
-                />
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    URL da Caixa de Entrada *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsHelpModalOpen(true)}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
-                  >
-                    Onde encontro a URL?
-                  </button>
-                </div>
-                <input
-                  type="url"
-                  value={formData.url_grupo}
-                  onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="https://chat.whatsapp.com/..."
                   required
                 />
               </div>
@@ -1518,54 +1485,6 @@ const ResumosGrupo = () => {
         </div>
       )}
 
-      {/* Help Modal */}
-      {isHelpModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Como consigo a URL da caixa de entrada?
-              </h2>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                <p>
-                  Certifique-se de que o número de telefone conectado ao WiseApp está no grupo que será resumido.
-                </p>
-                <div>
-                  <p className="mb-2">Acesse as configurações da caixa de entrada:</p>
-                  <ol className="list-decimal list-inside ml-4 space-y-1">
-                    <li>Vá para Configurações</li>
-                    <li>Caixa de entrada</li>
-                    <li>Configurações da caixa de entrada</li>
-                  </ol>
-                </div>
-                <div>
-                  <p className="mb-3">
-                    Localize o campo <strong>URL do webhook</strong> nas configurações da caixa de entrada.
-                  </p>
-                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-3 border border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center min-h-[60px]">
-                    <p className="text-sm text-muted-foreground text-center">
-                      O campo URL do webhook fica na aba Configurações da caixa de entrada
-                    </p>
-                  </div>
-                </div>
-                <p>
-                  Copie o link do webhook e cole no campo <strong>URL da caixa de entrada</strong>.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={() => setIsHelpModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500"
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Time Debug Modal */}
       <TimeDebugModal 

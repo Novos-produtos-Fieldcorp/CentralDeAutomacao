@@ -104,13 +104,49 @@ async function recordDelivery(grupo, status, message, utcExecutionTime) {
   }
 }
 // Function to send webhook with the specified group data
-async function sendWebhook(grupo) {
-  // Prepare the webhook payload with ONLY the fields you need
+async function sendWebhook(grupo: any) {
+  // Get id_conta_wiseapp from company table
+  const { data: companyData, error: companyError } = await supabase
+    .from("company")
+    .select("id_conta_wiseapp")
+    .eq("company_id", grupo.company_id)
+    .single();
+  
+  if (companyError) {
+    console.error("Error fetching company data:", companyError);
+  }
+  
+  const accountId = companyData?.id_conta_wiseapp || null;
+  console.log(`Found account_id: ${accountId} for company_id: ${grupo.company_id}`);
+  
+  // Get an active user API key from wiseapp_acesso table for this account
+  let userApiKey = null;
+  if (accountId) {
+    const { data: accessData, error: accessError } = await supabase
+      .from("wiseapp_acesso")
+      .select("access_token_wiseapp")
+      .eq("id_conta_wiseapp", accountId)
+      .not("access_token_wiseapp", "is", null)
+      .limit(1)
+      .single();
+    
+    if (accessError) {
+      console.warn("Could not fetch user API key:", accessError.message);
+    } else {
+      userApiKey = accessData?.access_token_wiseapp || null;
+      console.log(`Found API key for account ${accountId}: ${userApiKey ? 'Yes' : 'No'}`);
+    }
+  }
+  
+  // Prepare the webhook payload with required fields including account_id and api_key
   const webhookData = {
     "nome_do_grupo": grupo.nome_grupo,
-    "url_do_grupo": grupo.url_grupo
+    "company_id": grupo.company_id,
+    "group_id": grupo.id,
+    "account_id": accountId,
+    "api_key": userApiKey
   };
-  console.log('Sending webhook data (nome_grupo and url_grupo only):', JSON.stringify(webhookData, null, 2));
+  console.log('Sending webhook data:', JSON.stringify({ ...webhookData, api_key: userApiKey ? '[REDACTED]' : null }, null, 2));
   const response = await fetch(WEBHOOK_URL, {
     method: 'POST',
     headers: {
