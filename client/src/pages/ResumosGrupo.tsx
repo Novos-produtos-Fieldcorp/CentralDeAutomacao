@@ -46,7 +46,6 @@ const ResumosGrupo = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [isTimeDebugModalOpen, setIsTimeDebugModalOpen] = useState(false);
   const [selectedGrupo, setSelectedGrupo] = useState<GrupoResumo | null>(null);
   const [formData, setFormData] = useState({
@@ -1154,29 +1153,6 @@ const ResumosGrupo = () => {
               </div>
               
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    URL da Caixa de Entrada *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsHelpModalOpen(true)}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
-                  >
-                    Onde encontro a URL?
-                  </button>
-                </div>
-                <input
-                  type="url"
-                  value={formData.url_grupo}
-                  onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="https://chat.whatsapp.com/..."
-                  required
-                />
-              </div>
-              
-              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Horário de Envio (Brasília) *
                 </label>
@@ -1280,29 +1256,6 @@ const ResumosGrupo = () => {
                   value={formData.nome_grupo}
                   onChange={(e) => setFormData({ ...formData, nome_grupo: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  required
-                />
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    URL da Caixa de Entrada *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsHelpModalOpen(true)}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
-                  >
-                    Onde encontro a URL?
-                  </button>
-                </div>
-                <input
-                  type="url"
-                  value={formData.url_grupo}
-                  onChange={(e) => setFormData({ ...formData, url_grupo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  placeholder="https://chat.whatsapp.com/..."
                   required
                 />
               </div>
@@ -1518,54 +1471,6 @@ const ResumosGrupo = () => {
         </div>
       )}
 
-      {/* Help Modal */}
-      {isHelpModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Como consigo a URL da caixa de entrada?
-              </h2>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                <p>
-                  Certifique-se de que o número de telefone conectado ao WiseApp está no grupo que será resumido.
-                </p>
-                <div>
-                  <p className="mb-2">Acesse as configurações da caixa de entrada:</p>
-                  <ol className="list-decimal list-inside ml-4 space-y-1">
-                    <li>Vá para Configurações</li>
-                    <li>Caixa de entrada</li>
-                    <li>Configurações da caixa de entrada</li>
-                  </ol>
-                </div>
-                <div>
-                  <p className="mb-3">
-                    Localize o campo <strong>URL do webhook</strong> nas configurações da caixa de entrada.
-                  </p>
-                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-3 border border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center min-h-[60px]">
-                    <p className="text-sm text-muted-foreground text-center">
-                      O campo URL do webhook fica na aba Configurações da caixa de entrada
-                    </p>
-                  </div>
-                </div>
-                <p>
-                  Copie o link do webhook e cole no campo <strong>URL da caixa de entrada</strong>.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={() => setIsHelpModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500"
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Time Debug Modal */}
       <TimeDebugModal 
