@@ -19,6 +19,8 @@ interface GrupoResumo {
   company_id: number;
   icon_name?: string;
   color_name?: string;
+  inbox_id?: number;
+  nome_inbox?: string;
 }
 
 interface EnvioResumo {
@@ -32,6 +34,13 @@ interface EnvioResumo {
   grupo?: {
     nome_grupo: string;
   };
+}
+
+interface Inbox {
+  id: number;
+  name: string;
+  channel_type: string;
+  phone_number?: string;
 }
 
 const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
@@ -52,8 +61,12 @@ const ResumosGrupo = () => {
     horario: '08:00',
     ativo: true,
     icon_name: 'MessagesSquare',
-    color_name: 'blue'
+    color_name: 'blue',
+    inbox_id: null as number | null,
+    nome_inbox: ''
   });
+  const [availableInboxes, setAvailableInboxes] = useState<Inbox[]>([]);
+  const [loadingInboxes, setLoadingInboxes] = useState(false);
   const [envios, setEnvios] = useState<Record<number, EnvioResumo[]>>({});
   const [allEnvios, setAllEnvios] = useState<EnvioResumo[]>([]);
   const [loadingEnvios, setLoadingEnvios] = useState<Record<number, boolean>>({});
@@ -116,6 +129,40 @@ const ResumosGrupo = () => {
     const endIndex = startIndex + pageSize;
     setPaginatedEnvios(filteredEnvios.slice(startIndex, endIndex));
   }, [filteredEnvios, currentPage, pageSize]);
+
+  // Load inboxes when modal opens
+  useEffect(() => {
+    if ((isAddModalOpen || isEditModalOpen) && companyId && accountId) {
+      loadInboxes();
+    }
+  }, [isAddModalOpen, isEditModalOpen, companyId, accountId]);
+
+  const loadInboxes = async () => {
+    if (!companyId || !accountId) return;
+    
+    setLoadingInboxes(true);
+    try {
+      const response = await fetch(`/api/inboxes/${companyId}?account_id=${accountId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.payload && Array.isArray(data.payload)) {
+          setAvailableInboxes(data.payload);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading inboxes:', error);
+    } finally {
+      setLoadingInboxes(false);
+    }
+  };
 
   const fetchGrupos = async () => {
     try {
@@ -216,21 +263,31 @@ const ResumosGrupo = () => {
       toast.error('Horário é obrigatório');
       return;
     }
+    
+    if (!formData.inbox_id) {
+      toast.error('Caixa de entrada é obrigatória');
+      return;
+    }
 
     try {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
       // Prepare insert data
-      const insertData = {
+      const insertData: any = {
         nome_grupo: formData.nome_grupo,
-        nome_inbox: formData.nome_grupo,
+        nome_inbox: formData.nome_inbox || formData.nome_grupo,
         horario: utcHorario,
         ativo: formData.ativo,
         icon_name: formData.icon_name,
         color_name: formData.color_name,
         company_id: companyId
       };
+      
+      // Add inbox_id if selected
+      if (formData.inbox_id) {
+        insertData.inbox_id = formData.inbox_id;
+      }
       
       const { data, error } = await supabase
         .from('grupo_resumo')
@@ -269,19 +326,32 @@ const ResumosGrupo = () => {
       toast.error('Horário é obrigatório');
       return;
     }
+    
+    if (!formData.inbox_id) {
+      toast.error('Caixa de entrada é obrigatória');
+      return;
+    }
 
     try {
       // Convert Brasilia time to UTC for storage in the database
       const utcHorario = convertBrasiliaToUTC(formData.horario);
       
+      const updateData: any = {
+        nome_grupo: formData.nome_grupo,
+        nome_inbox: formData.nome_inbox || formData.nome_grupo,
+        horario: utcHorario,
+        icon_name: formData.icon_name,
+        color_name: formData.color_name
+      };
+      
+      // Add inbox_id if selected
+      if (formData.inbox_id) {
+        updateData.inbox_id = formData.inbox_id;
+      }
+      
       const { error } = await supabase
         .from('grupo_resumo')
-        .update({
-          nome_grupo: formData.nome_grupo,
-          horario: utcHorario,
-          icon_name: formData.icon_name,
-          color_name: formData.color_name
-        })
+        .update(updateData)
         .eq('id', selectedGrupo.id);
 
       if (error) throw error;
@@ -451,7 +521,9 @@ const ResumosGrupo = () => {
       horario: '08:00',
       ativo: true,
       icon_name: 'MessagesSquare',
-      color_name: 'blue'
+      color_name: 'blue',
+      inbox_id: null,
+      nome_inbox: ''
     });
     setSelectedGrupo(null);
   };
@@ -871,7 +943,9 @@ const ResumosGrupo = () => {
                                   horario: grupo.horario,
                                   ativo: grupo.ativo,
                                   icon_name: grupo.icon_name || 'MessagesSquare',
-                                  color_name: grupo.color_name || 'blue'
+                                  color_name: grupo.color_name || 'blue',
+                                  inbox_id: grupo.inbox_id || null,
+                                  nome_inbox: grupo.nome_inbox || ''
                                 });
                                 setIsEditModalOpen(true);
                               }}
@@ -1184,6 +1258,45 @@ const ResumosGrupo = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Caixa de Entrada *
+                </label>
+                {loadingInboxes ? (
+                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 py-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Carregando caixas de entrada...</span>
+                  </div>
+                ) : availableInboxes.length > 0 ? (
+                  <select
+                    value={formData.inbox_id || ''}
+                    onChange={(e) => {
+                      const selectedId = e.target.value ? Number(e.target.value) : null;
+                      const selectedInbox = availableInboxes.find(i => i.id === selectedId);
+                      setFormData({
+                        ...formData,
+                        inbox_id: selectedId,
+                        nome_inbox: selectedInbox?.name || ''
+                      });
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    required
+                    data-testid="select-inbox"
+                  >
+                    <option value="">Selecione uma caixa de entrada</option>
+                    {availableInboxes.map(inbox => (
+                      <option key={inbox.id} value={inbox.id}>
+                        {inbox.name} {inbox.phone_number ? `(${inbox.phone_number})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Nenhuma caixa de entrada disponível
+                  </p>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Ícone
                 </label>
                 <div className="flex flex-wrap gap-1 mt-2 max-h-40 overflow-y-auto p-2 border border-gray-200 dark:border-gray-700 rounded-lg">
@@ -1288,6 +1401,45 @@ const ResumosGrupo = () => {
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   Horário no fuso de Brasília (UTC-3)
                 </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Caixa de Entrada *
+                </label>
+                {loadingInboxes ? (
+                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 py-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Carregando caixas de entrada...</span>
+                  </div>
+                ) : availableInboxes.length > 0 ? (
+                  <select
+                    value={formData.inbox_id || ''}
+                    onChange={(e) => {
+                      const selectedId = e.target.value ? Number(e.target.value) : null;
+                      const selectedInbox = availableInboxes.find(i => i.id === selectedId);
+                      setFormData({
+                        ...formData,
+                        inbox_id: selectedId,
+                        nome_inbox: selectedInbox?.name || ''
+                      });
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    required
+                    data-testid="select-inbox-edit"
+                  >
+                    <option value="">Selecione uma caixa de entrada</option>
+                    {availableInboxes.map(inbox => (
+                      <option key={inbox.id} value={inbox.id}>
+                        {inbox.name} {inbox.phone_number ? `(${inbox.phone_number})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Nenhuma caixa de entrada disponível
+                  </p>
+                )}
               </div>
               
               <div>
