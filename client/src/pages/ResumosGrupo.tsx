@@ -142,7 +142,7 @@ const ResumosGrupo = () => {
     
     setLoadingInboxes(true);
     try {
-      const response = await fetch(`/api/inboxes/${companyId}?account_id=${accountId}`, {
+      const response = await fetch(`/api/inboxes/${companyId}?accountId=${accountId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
