@@ -50,18 +50,53 @@ Deno.serve(async (req) => {
       console.error(errorMessage);
       throw new Error(errorMessage);
     }
+    
+    // Get id_conta_wiseapp from company table
+    const { data: companyData, error: companyError } = await supabase
+      .from("company")
+      .select("id_conta_wiseapp")
+      .eq("company_id", company_id)
+      .single();
+    
+    if (companyError) {
+      console.error("Error fetching company data:", companyError);
+    }
+    
+    const accountId = companyData?.id_conta_wiseapp || null;
+    console.log(`Found account_id: ${accountId} for company_id: ${company_id}`);
+    
+    // Get an active API key from wiseapp_acesso table for this account (secure - based on company, not user input)
+    let userApiKey = null;
+    if (accountId) {
+      const { data: accessData, error: accessError } = await supabase
+        .from("wiseapp_acesso")
+        .select("access_token_wiseapp")
+        .eq("id_conta_wiseapp", accountId)
+        .not("access_token_wiseapp", "is", null)
+        .limit(1)
+        .single();
+      
+      if (accessError) {
+        console.warn("Could not fetch API key for account:", accessError.message);
+      } else {
+        userApiKey = accessData?.access_token_wiseapp || null;
+        console.log(`Found API key for account ${accountId}: ${userApiKey ? 'Yes' : 'No'}`);
+      }
+    }
+    
     // Send webhook with just the required fields
     try {
-      // Prepare the webhook payload with required fields including company_id and group_id
+      // Prepare the webhook payload with required fields including company_id, group_id, account_id and api_key
       const webhookData = {
         nome_do_grupo: grupo.nome_grupo,
-        url_do_grupo: grupo.url_grupo,
         company_id: grupo.company_id,
         group_id: grupo.id,
+        account_id: accountId,
+        api_key: userApiKey,
       };
       console.log(
-        "Sending webhook data (nome_grupo, url_grupo, company_id, and group_id):",
-        JSON.stringify(webhookData, null, 2),
+        "Sending webhook data:",
+        JSON.stringify({ ...webhookData, api_key: userApiKey ? '[REDACTED]' : null }, null, 2),
       );
       // Send the webhook
       const response = await fetch(WEBHOOK_URL, {
@@ -96,12 +131,12 @@ Deno.serve(async (req) => {
           status: 200,
         },
       );
-    } catch (webhookError) {
+    } catch (webhookError: any) {
       const errorMessage = `Error sending webhook: ${webhookError.message}`;
       console.error(errorMessage);
       throw new Error(errorMessage);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in group summary trigger:", error);
     return new Response(
       JSON.stringify({
