@@ -294,58 +294,33 @@ export const getWiseAppLabels = async (accountId: string, token: string, company
     throw new Error('AccountId e token são obrigatórios para buscar labels do WiseApp.');
   }
 
-  // Determinar companyId dinamicamente se não fornecido
-  let finalCompanyId = companyId;
-  if (!finalCompanyId) {
-    try {
-      const { data: companyData } = await supabase
-        .from('company')
-        .select('company_id')
-        .eq('id_conta_wiseapp', accountId)
-        .single();
-      
-      finalCompanyId = companyData?.company_id || 2; // fallback para 2 se não encontrar
-    } catch (error) {
-      console.warn('Não foi possível determinar companyId, usando fallback 2:', error);
-      finalCompanyId = 2;
-    }
-  }
-
-  const primaryUrl = createApiUrl(`wiseapp/${finalCompanyId}/labels`);
-  const fallbackUrls = [
-    createApiUrl(`wiseapp/2/labels`), // Fallback para companyId 2
-    createApiUrl(`wiseapp/1/labels`)  // Fallback para companyId 1
-  ].filter(url => url !== primaryUrl); // Remove duplicatas
+  // IMPORTANTE: A URL usa accountId (id_conta_wiseapp), não company_id do sistema
+  // A Edge Function busca token por id_conta_wiseapp na tabela wiseapp_acesso
+  const primaryUrl = createApiUrl(`wiseapp/${accountId}/labels`);
   
-  // Synchronizing tags with WiseApp
-  // Making request via backend
+  console.log(`[SyncFromWiseApp] Usando accountId ${accountId} para buscar labels`);
   
   try {
     const data = await robustWiseAppFetch(primaryUrl, {
       method: 'GET',
-      cacheKey: `wiseapp-labels-${accountId}-${finalCompanyId}`,
+      cacheKey: `wiseapp-labels-${accountId}`,
       cacheTtl: 5 * 60 * 1000, // 5 minutos de cache
-      fallbackUrls,
       onRetry: (attempt, error) => {
-        // WiseApp request retry attempt failed
-      },
-      onFallback: (url, error) => {
-        // Using alternative URL for WiseApp request
+        console.log(`[WiseApp] Tentativa ${attempt} falhou: ${error.message}`);
       }
     }, accountId, token);
 
-    // Response received successfully
-    // Response data processed
+    console.log(`[SyncFromWiseApp] Labels do WiseApp:`, data);
     return data;
   } catch (error) {
     console.error('Erro na requisição via backend (todas as tentativas falharam):', error);
     
-    // Tentar retornar dados em cache como último recurso
+    // Tentar retornar dados em cache como último recurso - busca pela accountId
     try {
       const { data: cachedTags } = await supabase
         .from('tag')
         .select('*')
-        .eq('company_id', finalCompanyId)
+        .eq('account_id', accountId)
         .order('nome');
       
       if (cachedTags && cachedTags.length > 0) {
