@@ -225,28 +225,12 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       .not('access_token_wiseapp', 'is', null)
       .single()
 
-    // Se não encontrou token específico da empresa, buscar qualquer token disponível
+    // IMPORTANTE: Não usar fallback - exigir correspondência exata do accountId para isolamento de dados
     if (tokenError || !tokenData) {
-      console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const fallbackResult = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-        .not('access_token_wiseapp', 'is', null)
-        .limit(1)
-        .single()
-      
-      if (fallbackResult.data) {
-        tokenData = fallbackResult.data
-        tokenError = fallbackResult.error
-        console.log('Debug: Usando token fallback para empresa:', companyId);
-      }
-    }
-
-    if (tokenError || !tokenData) {
-      console.log('Debug: Nenhum token encontrado. Erro:', tokenError);
+      console.log('Debug: Token não encontrado para accountId:', companyId, 'Erro:', tokenError);
       return new Response(JSON.stringify({
-        error: 'Token WiseApp não configurado para esta empresa',
-        details: tokenError?.message || 'Nenhum token encontrado'
+        error: 'Token WiseApp não configurado para esta conta',
+        details: `Nenhum token encontrado para accountId ${companyId}. Verifique se a conta WiseApp está configurada corretamente.`
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -311,28 +295,12 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       .not('access_token_wiseapp', 'is', null)
       .single()
 
-    // Se não encontrou token específico da empresa, buscar qualquer token disponível
+    // IMPORTANTE: Não usar fallback - exigir correspondência exata do accountId para isolamento de dados
     if (tokenError || !tokenData) {
-      console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const fallbackResult = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-        .not('access_token_wiseapp', 'is', null)
-        .limit(1)
-        .single()
-      
-      if (fallbackResult.data) {
-        tokenData = fallbackResult.data
-        tokenError = fallbackResult.error
-        console.log('Debug: Usando token fallback para empresa:', companyId);
-      }
-    }
-
-    if (tokenError || !tokenData) {
-      console.log('Debug: Nenhum token encontrado. Erro:', tokenError);
+      console.log('Debug: Token não encontrado para accountId:', companyId, 'Erro:', tokenError);
       return new Response(JSON.stringify({
-        error: 'Token WiseApp não configurado para esta empresa',
-        details: tokenError?.message || 'Nenhum token encontrado'
+        error: 'Token WiseApp não configurado para esta conta',
+        details: `Nenhum token encontrado para accountId ${companyId}. Verifique se a conta WiseApp está configurada corretamente.`
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
