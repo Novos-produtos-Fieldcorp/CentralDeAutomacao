@@ -1,4 +1,6 @@
 // Utilitário para requisições HTTP robustas com retry, fallback e cache
+import { supabaseAnonKey } from './api-config-supabase';
+
 interface RobustFetchOptions extends RequestInit {
   timeout?: number;
   retries?: number;
@@ -268,9 +270,10 @@ export async function robustWiseAppFetch(
   accountId?: string,
   token?: string
 ): Promise<any> {
-  // Headers padrão para WiseApp
+  // Headers padrão para WiseApp - inclui apikey do Supabase para autenticação na Edge Function
   const defaultHeaders = {
     'Content-Type': 'application/json',
+    'apikey': supabaseAnonKey,
     ...(token && { 'wiseapp-token': token }),
     ...(accountId && { 'wiseapp-account-id': accountId })
   };
