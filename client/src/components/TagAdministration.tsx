@@ -420,7 +420,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const labelsResponse = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels`), {
+      const labelsResponse = await fetch(createApiUrl(`wiseapp/${accountId}/labels`), {
         method: 'GET',
         headers: getSupabaseEdgeFunctionHeaders({
           'wiseapp-token': wiseAppToken,
@@ -440,7 +440,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           const deleteController = new AbortController();
           const deleteTimeoutId = setTimeout(() => deleteController.abort(), 10000);
 
-          const deleteResponse = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels/${wiseAppLabel.id}`), {
+          const deleteResponse = await fetch(createApiUrl(`wiseapp/${accountId}/labels/${wiseAppLabel.id}`), {
             method: 'DELETE',
             headers: getSupabaseEdgeFunctionHeaders({
               'wiseapp-token': wiseAppToken,
