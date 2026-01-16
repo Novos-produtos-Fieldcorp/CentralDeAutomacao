@@ -253,15 +253,17 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       }
     }
     
-    // Se não tiver token válido do header, buscar do banco de dados
+    // Se não tiver token válido do header, buscar do banco de dados (usando limit(1) para lidar com múltiplos registros)
     if (!token) {
-      const { data: tokenData, error: tokenError } = await supabase
+      const { data: tokenRows, error: tokenError } = await supabase
         .from('wiseapp_acesso')
         .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
         .eq('id_conta_wiseapp', accountId)
         .not('access_token_wiseapp', 'is', null)
-        .single()
+        .order('wiseapp_acesso_id', { ascending: false })
+        .limit(1)
 
+      const tokenData = tokenRows?.[0]
       if (tokenError || !tokenData) {
         console.log('Debug: Token não encontrado para accountId:', accountId, 'Erro:', tokenError);
         return new Response(JSON.stringify({
@@ -372,15 +374,17 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       }
     }
     
-    // Se não tiver token válido do header, buscar do banco de dados
+    // Se não tiver token válido do header, buscar do banco de dados (usando limit(1) para lidar com múltiplos registros)
     if (!token) {
-      const { data: tokenData, error: tokenError } = await supabase
+      const { data: tokenRows, error: tokenError } = await supabase
         .from('wiseapp_acesso')
         .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
         .eq('id_conta_wiseapp', accountId)
         .not('access_token_wiseapp', 'is', null)
-        .single()
+        .order('wiseapp_acesso_id', { ascending: false })
+        .limit(1)
 
+      const tokenData = tokenRows?.[0]
       if (tokenError || !tokenData) {
         console.log('Debug: Token não encontrado para accountId:', accountId, 'Erro:', tokenError);
         return new Response(JSON.stringify({
@@ -486,15 +490,17 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       }
     }
     
-    // Se não tiver token válido do header, buscar do banco de dados
+    // Se não tiver token válido do header, buscar do banco de dados (usando limit(1) para lidar com múltiplos registros)
     if (!token) {
-      const { data: tokenData, error: tokenError } = await supabase
+      const { data: tokenRows, error: tokenError } = await supabase
         .from('wiseapp_acesso')
         .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
         .eq('id_conta_wiseapp', accountId)
         .not('access_token_wiseapp', 'is', null)
-        .single()
+        .order('wiseapp_acesso_id', { ascending: false })
+        .limit(1)
 
+      const tokenData = tokenRows?.[0]
       if (tokenError || !tokenData) {
         console.log('Debug: Token não encontrado para accountId:', accountId, 'Erro:', tokenError);
         return new Response(JSON.stringify({
