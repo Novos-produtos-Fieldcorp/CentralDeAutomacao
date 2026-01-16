@@ -1,0 +1,32 @@
+rum:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+index-DFHF9iIm.js:266 Hybrid API Configuration: Object
+index-DFHF9iIm.js:265 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+f1 @ index-DFHF9iIm.js:265
+index-DFHF9iIm.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-DFHF9iIm.js:1116 🔍 [WiseAppAccess] Account ID da URL: 1
+index-DFHF9iIm.js:1116 ✅ [WiseAppAccess] Sessão válida encontrada para: gabriel.mauro@fieldcorp.com.br accountId: 1
+index-DFHF9iIm.js:1116 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 2 accountId: 1
+index-DFHF9iIm.js:266 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 2
+index-DFHF9iIm.js:1465 Dashboard data loaded: Object
+index-DFHF9iIm.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-DFHF9iIm.js:1116 🔍 [WiseAppAccess] Já verificado nesta sessão...
+index-DFHF9iIm.js:1116 ✅ [WiseAppAccess] Sessão válida com email: gabriel.mauro@fieldcorp.com.br
+index-DFHF9iIm.js:2108 [TagManager] Buscando tags locais para companyId: 2 accountId: 1
+index-DFHF9iIm.js:2108 [TagManager] Tags encontradas: 85
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/2/labels:1  Failed to load resource: the server responded with a status of 401 ()
+index-DFHF9iIm.js:266 [RobustFetch] Erro na tentativa 1 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/2/labels: HTTP 401: 
+rye @ index-DFHF9iIm.js:266
+index-DFHF9iIm.js:266 [RobustFetch] Tentativa 2 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/2/labels
+index-DFHF9iIm.js:266 [WiseApp] Tentativa 1 falhou: HTTP 401: . Tentando novamente...
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/2/labels:1  Failed to load resource: the server responded with a status of 401 ()
+index-DFHF9iIm.js:266 [RobustFetch] Erro na tentativa 2 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/2/labels: HTTP 401: 
+rye @ index-DFHF9iIm.js:266
+index-DFHF9iIm.js:266 [RobustFetch] Tentativa 3 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/2/labels
+index-DFHF9iIm.js:266 [WiseApp] Tentativa 2 falhou: HTTP 401: . Tentando novamente...
+index-DFHF9iIm.js:266  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/2/labels 401 (Unauthorized)
+eye @ index-DFHF9iIm.js:266
+rye @ index-DFHF9iIm.js:266
+index-DFHF9iIm.js:266 [RobustFetch] Erro na tentativa 3 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/2/labels: HTTP 401: 
+rye @ index-DFHF9iIm.js:266
+index-DFHF9iIm.js:266 [RobustFetch] Tentativa 4 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/2/labels
+index-DFHF9iIm.js:266 [WiseApp] Tentativa 3 falhou: HTTP 401: . Tentando novamente...

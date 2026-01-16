@@ -213,47 +213,82 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
   // Get WiseApp labels
   if (path.match(/^\/wiseapp\/(\d+)\/labels$/) && method === 'GET') {
     const match = path.match(/^\/wiseapp\/(\d+)\/labels$/)
-    const companyId = match![1]
+    const urlAccountId = match![1]
     
-    console.log('Debug: Buscando labels para company_id:', companyId);
+    // Headers do frontend
+    const headerToken = req.headers.get('wiseapp-token') || req.headers.get('api_access_token')
+    const headerAccountId = req.headers.get('wiseapp-account-id')
     
-    // Primeiro tentar buscar token específico da empresa
-    let { data: tokenData, error: tokenError } = await supabase
-      .from('wiseapp_acesso')
-      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-      .eq('id_conta_wiseapp', companyId)
-      .not('access_token_wiseapp', 'is', null)
-      .single()
-
-    // Se não encontrou token específico da empresa, buscar qualquer token disponível
-    if (tokenError || !tokenData) {
-      console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const fallbackResult = await supabase
+    console.log('Debug: GET labels - urlAccountId:', urlAccountId, 'headerAccountId:', headerAccountId, 'hasHeaderToken:', !!headerToken);
+    
+    // SEGURANÇA: Se header accountId for fornecido, deve corresponder ao da URL
+    if (headerAccountId && headerAccountId !== urlAccountId) {
+      console.log('Debug: SEGURANÇA - Header accountId não corresponde à URL:', headerAccountId, 'vs', urlAccountId);
+      return new Response(JSON.stringify({
+        error: 'Acesso negado',
+        details: 'O accountId do header não corresponde ao recurso solicitado'
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    
+    const accountId = urlAccountId
+    let token: string | null = null
+    
+    // Se tiver token no header, validar que pertence à conta correta via banco
+    if (headerToken) {
+      const { data: tokenValidation } = await supabase
         .from('wiseapp_acesso')
-        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-        .not('access_token_wiseapp', 'is', null)
-        .limit(1)
+        .select('access_token_wiseapp, id_conta_wiseapp')
+        .eq('id_conta_wiseapp', accountId)
+        .eq('access_token_wiseapp', headerToken)
         .single()
       
-      if (fallbackResult.data) {
-        tokenData = fallbackResult.data
-        tokenError = fallbackResult.error
-        console.log('Debug: Usando token fallback para empresa:', companyId);
+      if (tokenValidation) {
+        token = headerToken
+        console.log('Debug: Token do header validado para accountId:', accountId);
+      } else {
+        console.log('Debug: Token do header não pertence a esta conta, buscando do banco');
       }
     }
+    
+    // Se não tiver token válido do header, buscar do banco de dados (usando limit(1) para lidar com múltiplos registros)
+    if (!token) {
+      const { data: tokenRows, error: tokenError } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+        .eq('id_conta_wiseapp', accountId)
+        .not('access_token_wiseapp', 'is', null)
+        .order('wiseapp_acesso_id', { ascending: false })
+        .limit(1)
 
-    if (tokenError || !tokenData) {
-      console.log('Debug: Nenhum token encontrado. Erro:', tokenError);
+      const tokenData = tokenRows?.[0]
+      if (tokenError || !tokenData) {
+        console.log('Debug: Token não encontrado para accountId:', accountId, 'Erro:', tokenError);
+        return new Response(JSON.stringify({
+          error: 'Token WiseApp não configurado para esta conta',
+          details: `Nenhum token encontrado para accountId ${accountId}. Verifique se a conta WiseApp está configurada corretamente.`
+        }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      
+      token = tokenData.access_token_wiseapp
+    }
+    
+    console.log('Debug: Usando token para accountId:', accountId);
+    
+    if (!token) {
       return new Response(JSON.stringify({
-        error: 'Token WiseApp não configurado para esta empresa',
-        details: tokenError?.message || 'Nenhum token encontrado'
+        error: 'Token não disponível',
+        details: 'Não foi possível obter token válido para esta conta'
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
-
-    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
 
     // Fetch labels from WiseApp API
     const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`
@@ -299,48 +334,83 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
   // Create WiseApp label
   if (path.match(/^\/wiseapp\/(\d+)\/labels$/) && method === 'POST') {
     const match = path.match(/^\/wiseapp\/(\d+)\/labels$/)
-    const companyId = match![1]
+    const urlAccountId = match![1]
     
-    console.log('Debug: Criando label para company_id:', companyId);
+    // Headers do frontend
+    const headerToken = req.headers.get('wiseapp-token') || req.headers.get('api_access_token')
+    const headerAccountId = req.headers.get('wiseapp-account-id')
     
-    // Primeiro tentar buscar token específico da empresa
-    let { data: tokenData, error: tokenError } = await supabase
-      .from('wiseapp_acesso')
-      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-      .eq('id_conta_wiseapp', companyId)
-      .not('access_token_wiseapp', 'is', null)
-      .single()
-
-    // Se não encontrou token específico da empresa, buscar qualquer token disponível
-    if (tokenError || !tokenData) {
-      console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const fallbackResult = await supabase
+    console.log('Debug: POST labels - urlAccountId:', urlAccountId, 'headerAccountId:', headerAccountId, 'hasHeaderToken:', !!headerToken);
+    
+    // SEGURANÇA: Se header accountId for fornecido, deve corresponder ao da URL
+    if (headerAccountId && headerAccountId !== urlAccountId) {
+      console.log('Debug: SEGURANÇA - Header accountId não corresponde à URL:', headerAccountId, 'vs', urlAccountId);
+      return new Response(JSON.stringify({
+        error: 'Acesso negado',
+        details: 'O accountId do header não corresponde ao recurso solicitado'
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    
+    const accountId = urlAccountId
+    let token: string | null = null
+    
+    // Se tiver token no header, validar que pertence à conta correta via banco
+    if (headerToken) {
+      const { data: tokenValidation } = await supabase
         .from('wiseapp_acesso')
-        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-        .not('access_token_wiseapp', 'is', null)
-        .limit(1)
+        .select('access_token_wiseapp, id_conta_wiseapp')
+        .eq('id_conta_wiseapp', accountId)
+        .eq('access_token_wiseapp', headerToken)
         .single()
       
-      if (fallbackResult.data) {
-        tokenData = fallbackResult.data
-        tokenError = fallbackResult.error
-        console.log('Debug: Usando token fallback para empresa:', companyId);
+      if (tokenValidation) {
+        token = headerToken
+        console.log('Debug: Token do header validado para accountId:', accountId);
+      } else {
+        console.log('Debug: Token do header não pertence a esta conta, buscando do banco');
       }
     }
+    
+    // Se não tiver token válido do header, buscar do banco de dados (usando limit(1) para lidar com múltiplos registros)
+    if (!token) {
+      const { data: tokenRows, error: tokenError } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+        .eq('id_conta_wiseapp', accountId)
+        .not('access_token_wiseapp', 'is', null)
+        .order('wiseapp_acesso_id', { ascending: false })
+        .limit(1)
 
-    if (tokenError || !tokenData) {
-      console.log('Debug: Nenhum token encontrado. Erro:', tokenError);
+      const tokenData = tokenRows?.[0]
+      if (tokenError || !tokenData) {
+        console.log('Debug: Token não encontrado para accountId:', accountId, 'Erro:', tokenError);
+        return new Response(JSON.stringify({
+          error: 'Token WiseApp não configurado para esta conta',
+          details: `Nenhum token encontrado para accountId ${accountId}. Verifique se a conta WiseApp está configurada corretamente.`
+        }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      
+      token = tokenData.access_token_wiseapp
+    }
+    
+    const requestBody = await req.text()
+    console.log('Debug: Criando label para accountId:', accountId);
+
+    if (!token) {
       return new Response(JSON.stringify({
-        error: 'Token WiseApp não configurado para esta empresa',
-        details: tokenError?.message || 'Nenhum token encontrado'
+        error: 'Token não disponível',
+        details: 'Não foi possível obter token válido para esta conta'
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
-
-    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
-    const requestBody = await req.text()
 
     // Create label in WiseApp
     const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`
@@ -376,6 +446,119 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     }
   }
 
+  // Delete WiseApp label
+  if (path.match(/^\/wiseapp\/(\d+)\/labels\/(\d+)$/) && method === 'DELETE') {
+    const match = path.match(/^\/wiseapp\/(\d+)\/labels\/(\d+)$/)
+    const urlAccountId = match![1]
+    const labelId = match![2]
+    
+    // Headers do frontend
+    const headerToken = req.headers.get('wiseapp-token') || req.headers.get('api_access_token')
+    const headerAccountId = req.headers.get('wiseapp-account-id')
+    
+    console.log('Debug: DELETE labels - urlAccountId:', urlAccountId, 'headerAccountId:', headerAccountId, 'labelId:', labelId);
+    
+    // SEGURANÇA: Se header accountId for fornecido, deve corresponder ao da URL
+    if (headerAccountId && headerAccountId !== urlAccountId) {
+      console.log('Debug: SEGURANÇA - Header accountId não corresponde à URL:', headerAccountId, 'vs', urlAccountId);
+      return new Response(JSON.stringify({
+        error: 'Acesso negado',
+        details: 'O accountId do header não corresponde ao recurso solicitado'
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    
+    const accountId = urlAccountId
+    let token: string | null = null
+    
+    // Se tiver token no header, validar que pertence à conta correta via banco
+    if (headerToken) {
+      const { data: tokenValidation } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp, id_conta_wiseapp')
+        .eq('id_conta_wiseapp', accountId)
+        .eq('access_token_wiseapp', headerToken)
+        .single()
+      
+      if (tokenValidation) {
+        token = headerToken
+        console.log('Debug: Token do header validado para accountId:', accountId);
+      } else {
+        console.log('Debug: Token do header não pertence a esta conta, buscando do banco');
+      }
+    }
+    
+    // Se não tiver token válido do header, buscar do banco de dados (usando limit(1) para lidar com múltiplos registros)
+    if (!token) {
+      const { data: tokenRows, error: tokenError } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+        .eq('id_conta_wiseapp', accountId)
+        .not('access_token_wiseapp', 'is', null)
+        .order('wiseapp_acesso_id', { ascending: false })
+        .limit(1)
+
+      const tokenData = tokenRows?.[0]
+      if (tokenError || !tokenData) {
+        console.log('Debug: Token não encontrado para accountId:', accountId, 'Erro:', tokenError);
+        return new Response(JSON.stringify({
+          error: 'Token WiseApp não configurado para esta conta',
+          details: `Nenhum token encontrado para accountId ${accountId}. Verifique se a conta WiseApp está configurada corretamente.`
+        }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      token = tokenData.access_token_wiseapp
+    }
+
+    // Verify we have valid token
+    if (!token) {
+      return new Response(JSON.stringify({
+        error: 'Token inválido',
+        details: 'Não foi possível obter credenciais válidas'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Delete label in WiseApp
+    const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels/${labelId}`
+    
+    try {
+      const response = await fetch(wiseAppUrl, {
+        method: 'DELETE',
+        headers: {
+          'api_access_token': token!,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const responseData = await response.text()
+
+      return new Response(responseData || JSON.stringify({ success: true }), {
+        status: response.status,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': response.headers.get('Content-Type') || 'application/json'
+        }
+      })
+
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'Erro ao deletar label no WiseApp',
+        details: error.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
   // Search contacts
   if (path.match(/^\/wiseapp\/(\d+)\/contacts\/search$/) && method === 'GET') {
     const match = path.match(/^\/wiseapp\/(\d+)\/contacts\/search$/)
@@ -393,28 +576,22 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       .not('access_token_wiseapp', 'is', null)
       .single()
 
-    // Se não encontrou token específico da empresa, buscar qualquer token disponível
+    // IMPORTANTE: Não usar fallback - exigir correspondência exata do accountId para isolamento de dados
     if (tokenError || !tokenData) {
-      console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const fallbackResult = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-        .not('access_token_wiseapp', 'is', null)
-        .limit(1)
-        .single()
-      
-      if (fallbackResult.data) {
-        tokenData = fallbackResult.data
-        tokenError = fallbackResult.error
-        console.log('Debug: Usando token fallback para empresa:', companyId);
-      }
+      console.log('Debug: Token não encontrado para accountId:', companyId, 'Erro:', tokenError);
+      return new Response(JSON.stringify({
+        error: 'Token WiseApp não configurado para esta conta',
+        details: `Nenhum token encontrado para accountId ${companyId}. Verifique se a conta WiseApp está configurada corretamente.`
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
-    if (tokenError || !tokenData || !phone) {
-      console.log('Debug: Erro na busca de token ou phone não fornecido. Erro:', tokenError);
+    if (!phone) {
       return new Response(JSON.stringify({
-        error: 'Token, Account ID e phone são obrigatórios',
-        details: tokenError?.message || 'Token não encontrado'
+        error: 'Phone é obrigatório',
+        details: 'O parâmetro phone não foi fornecido'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -470,28 +647,12 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       .not('access_token_wiseapp', 'is', null)
       .single()
 
-    // Se não encontrou token específico da empresa, buscar qualquer token disponível
+    // IMPORTANTE: Não usar fallback - exigir correspondência exata do accountId para isolamento de dados
     if (tokenError || !tokenData) {
-      console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const fallbackResult = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-        .not('access_token_wiseapp', 'is', null)
-        .limit(1)
-        .single()
-      
-      if (fallbackResult.data) {
-        tokenData = fallbackResult.data
-        tokenError = fallbackResult.error
-        console.log('Debug: Usando token fallback para empresa:', companyId);
-      }
-    }
-
-    if (tokenError || !tokenData) {
-      console.log('Debug: Nenhum token encontrado. Erro:', tokenError);
+      console.log('Debug: Token não encontrado para accountId:', companyId, 'Erro:', tokenError);
       return new Response(JSON.stringify({
-        error: 'Token e Account ID obrigatórios',
-        details: tokenError?.message || 'Nenhum token encontrado'
+        error: 'Token WiseApp não configurado para esta conta',
+        details: `Nenhum token encontrado para accountId ${companyId}. Verifique se a conta WiseApp está configurada corretamente.`
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

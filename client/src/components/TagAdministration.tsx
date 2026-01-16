@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { supabase } from '@/lib/supabase';
 import { getWiseAppLabels } from "@/lib/directApiService";
 import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
-import { createApiUrl } from '@/lib/api-config-supabase';
+import { createApiUrl, getSupabaseEdgeFunctionHeaders } from '@/lib/api-config-supabase';
 import { AccountSwitcher } from './AccountSwitcher';
 
 interface Tag {
@@ -390,11 +390,10 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
     const response = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels`), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+      headers: getSupabaseEdgeFunctionHeaders({
         'wiseapp-token': wiseAppToken,
         'wiseapp-account-id': accountId
-      },
+      }),
       body: JSON.stringify(labelData),
       signal: controller.signal
     });
@@ -421,13 +420,12 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const labelsResponse = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels`), {
+      const labelsResponse = await fetch(createApiUrl(`wiseapp/${accountId}/labels`), {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
+        headers: getSupabaseEdgeFunctionHeaders({
           'wiseapp-token': wiseAppToken,
           'wiseapp-account-id': accountId
-        },
+        }),
         signal: controller.signal
       });
 
@@ -442,13 +440,12 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           const deleteController = new AbortController();
           const deleteTimeoutId = setTimeout(() => deleteController.abort(), 10000);
 
-          const deleteResponse = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels/${wiseAppLabel.id}`), {
+          const deleteResponse = await fetch(createApiUrl(`wiseapp/${accountId}/labels/${wiseAppLabel.id}`), {
             method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
+            headers: getSupabaseEdgeFunctionHeaders({
               'wiseapp-token': wiseAppToken,
               'wiseapp-account-id': accountId
-            },
+            }),
             signal: deleteController.signal
           });
 
