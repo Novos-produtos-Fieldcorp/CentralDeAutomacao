@@ -376,6 +376,105 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     }
   }
 
+  // Delete WiseApp label
+  if (path.match(/^\/wiseapp\/(\d+)\/labels\/(\d+)$/) && method === 'DELETE') {
+    const match = path.match(/^\/wiseapp\/(\d+)\/labels\/(\d+)$/)
+    const companyId = match![1]
+    const labelId = match![2]
+    
+    console.log('Debug: Deletando label', labelId, 'para company_id:', companyId);
+    
+    // Get token from headers or database
+    const headerToken = req.headers.get('wiseapp-token') || req.headers.get('api_access_token')
+    const headerAccountId = req.headers.get('wiseapp-account-id')
+    
+    let token = headerToken
+    let accountId = headerAccountId
+    
+    // If no token in headers, try to get from database
+    if (!token || !accountId) {
+      let { data: tokenData, error: tokenError } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+        .eq('id_conta_wiseapp', companyId)
+        .not('access_token_wiseapp', 'is', null)
+        .single()
+
+      if (tokenError || !tokenData) {
+        console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
+        const fallbackResult = await supabase
+          .from('wiseapp_acesso')
+          .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+          .not('access_token_wiseapp', 'is', null)
+          .limit(1)
+          .single()
+        
+        if (fallbackResult.data) {
+          tokenData = fallbackResult.data
+          tokenError = fallbackResult.error
+          console.log('Debug: Usando token fallback para empresa:', companyId);
+        }
+      }
+
+      if (tokenError || !tokenData) {
+        console.log('Debug: Nenhum token encontrado. Erro:', tokenError);
+        return new Response(JSON.stringify({
+          error: 'Token WiseApp não configurado para esta empresa',
+          details: tokenError?.message || 'Nenhum token encontrado'
+        }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      token = tokenData.access_token_wiseapp
+      accountId = tokenData.id_conta_wiseapp
+    }
+
+    // Verify we have valid token and accountId
+    if (!token || !accountId) {
+      return new Response(JSON.stringify({
+        error: 'Token ou Account ID inválido',
+        details: 'Não foi possível obter credenciais válidas'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Delete label in WiseApp
+    const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels/${labelId}`
+    
+    try {
+      const response = await fetch(wiseAppUrl, {
+        method: 'DELETE',
+        headers: {
+          'api_access_token': token!,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const responseData = await response.text()
+
+      return new Response(responseData || JSON.stringify({ success: true }), {
+        status: response.status,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': response.headers.get('Content-Type') || 'application/json'
+        }
+      })
+
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'Erro ao deletar label no WiseApp',
+        details: error.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
   // Search contacts
   if (path.match(/^\/wiseapp\/(\d+)\/contacts\/search$/) && method === 'GET') {
     const match = path.match(/^\/wiseapp\/(\d+)\/contacts\/search$/)
