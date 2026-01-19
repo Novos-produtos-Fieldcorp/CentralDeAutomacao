@@ -176,8 +176,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
               if (contacts.length > 0) {
                 const contact = contacts[0];
                 
+                // CRITICAL: Use accountId in URL for WiseApp API, NOT companyId
                 // Buscar labels existentes primeiro
-                const existingTagsResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                const existingTagsResponse = await fetch(`/api/wiseapp/${accountId}/contacts/${contact.id}/labels`, {
                   method: 'GET',
                   headers: {
                     'Content-Type': 'application/json',
@@ -198,8 +199,8 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                   allTags.push(tag.nome);
                 }
 
-                // Enviar array completo
-                const tagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels`, {
+                // Enviar array completo - Use accountId in URL
+                const tagResponse = await fetch(`/api/wiseapp/${accountId}/contacts/${contact.id}/labels`, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -293,8 +294,9 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
               if (contacts.length > 0) {
                 const contact = contacts[0];
                 
+                // CRITICAL: Use accountId in URL for WiseApp API, NOT companyId
                 // Remover tag do contato usando rota que preserva outras tags
-                const tagResponse = await fetch(`/api/wiseapp/${companyId}/contacts/${contact.id}/labels/${tagId}`, {
+                const tagResponse = await fetch(`/api/wiseapp/${accountId}/contacts/${contact.id}/labels/${tagId}`, {
                   method: 'DELETE',
                   headers: {
                     'Content-Type': 'application/json',

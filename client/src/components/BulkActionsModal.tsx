@@ -318,11 +318,14 @@ const BulkActionsModal = ({
               if (contacts.length > 0) {
                 const contact = contacts[0];
                 
+                // CRITICAL: Use accountId in URL for WiseApp API, NOT companyId
                 // Buscar labels existentes primeiro
-                const existingTagsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contact.id}/labels`), {
+                const existingTagsResponse = await fetch(createApiUrl(`wiseapp/${accountId}/contacts/${contact.id}/labels`), {
                   method: 'GET',
                   headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
                     'wiseapp-token': wiseAppToken,
                     'wiseapp-account-id': accountId
                   }
@@ -340,11 +343,13 @@ const BulkActionsModal = ({
                   allTags.push(tagData.nome);
                 }
 
-                // Enviar array completo
-                const tagResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contact.id}/labels`), {
+                // Enviar array completo - Use accountId in URL
+                const tagResponse = await fetch(createApiUrl(`wiseapp/${accountId}/contacts/${contact.id}/labels`), {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
                     'wiseapp-token': wiseAppToken,
                     'wiseapp-account-id': accountId
                   },

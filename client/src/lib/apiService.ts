@@ -93,10 +93,11 @@ export const dashboardApi = {
   }
 };
 
-// WiseApp API
+// WiseApp API - CRITICAL: All WiseApp URLs must use accountId, NOT companyId
 export const wiseAppApi = {
   getLabels: async (companyId: number, token: string, accountId: string) => {
-    return apiRequest(`/wiseapp/${companyId}/labels`, {
+    // Use accountId in URL for WiseApp API
+    return apiRequest(`/wiseapp/${accountId}/labels`, {
       headers: {
         'wiseapp-token': token,
         'wiseapp-account-id': accountId
@@ -105,7 +106,8 @@ export const wiseAppApi = {
   },
   
   searchContacts: async (companyId: number, phone: string, token: string, accountId: string) => {
-    return apiRequest(`/wiseapp/${companyId}/contacts/search?phone=${phone}`, {
+    // Use accountId in URL for WiseApp API
+    return apiRequest(`/wiseapp/${accountId}/contacts/search?phone=${phone}`, {
       headers: {
         'wiseapp-token': token,
         'wiseapp-account-id': accountId
@@ -114,7 +116,8 @@ export const wiseAppApi = {
   },
   
   applyLabels: async (companyId: number, contactId: number, labels: string[], token: string, accountId: string) => {
-    return apiRequest(`/wiseapp/${companyId}/contacts/${contactId}/labels`, {
+    // Use accountId in URL for WiseApp API
+    return apiRequest(`/wiseapp/${accountId}/contacts/${contactId}/labels`, {
       method: 'POST',
       headers: {
         'wiseapp-token': token,

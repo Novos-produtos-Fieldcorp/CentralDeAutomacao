@@ -437,7 +437,8 @@ export const applyWiseAppContactLabels = async (accountId: string, token: string
     throw new Error('AccountId, token e contactId são obrigatórios para aplicar labels.');
   }
 
-  const url = createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`);
+  // CRITICAL: Use accountId in URL, NOT companyId - WiseApp API requires accountId
+  const url = createApiUrl(`wiseapp/${accountId}/contacts/${contactId}/labels`);
   
   console.log(`Aplicando labels [${labelNames.join(', ')}] ao contato ${contactId}`);
   
