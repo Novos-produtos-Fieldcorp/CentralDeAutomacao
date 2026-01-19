@@ -177,12 +177,15 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     
     console.log('Debug: Tentando acessar wiseapp_acesso para company_id:', companyId);
     
-    const { data, error } = await supabase
+    const { data: tokenRows, error } = await supabase
       .from('wiseapp_acesso')
       .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
       .eq('id_conta_wiseapp', companyId)
       .not('access_token_wiseapp', 'is', null)
-      .single();
+      .order('wiseapp_acesso_id', { ascending: false })
+      .limit(1);
+    
+    const data = tokenRows?.[0] || null;
     
     if (error || !data) {
       return new Response(JSON.stringify({
@@ -217,32 +220,34 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     
     console.log('Debug: Buscando labels para company_id:', companyId);
     
-    // Primeiro tentar buscar token específico da empresa
-    let { data: tokenData, error: tokenError } = await supabase
+    // Buscar token específico da empresa
+    const { data: tokenRows, error: tokenError } = await supabase
       .from('wiseapp_acesso')
       .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
       .eq('id_conta_wiseapp', companyId)
       .not('access_token_wiseapp', 'is', null)
-      .single()
+      .order('wiseapp_acesso_id', { ascending: false })
+      .limit(1)
+
+    let tokenData = tokenRows?.[0] || null
 
     // Se não encontrou token específico da empresa, buscar qualquer token disponível
-    if (tokenError || !tokenData) {
+    if (!tokenData) {
       console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const fallbackResult = await supabase
+      const { data: fallbackRows } = await supabase
         .from('wiseapp_acesso')
         .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
         .not('access_token_wiseapp', 'is', null)
+        .order('wiseapp_acesso_id', { ascending: false })
         .limit(1)
-        .single()
       
-      if (fallbackResult.data) {
-        tokenData = fallbackResult.data
-        tokenError = fallbackResult.error
+      if (fallbackRows?.[0]) {
+        tokenData = fallbackRows[0]
         console.log('Debug: Usando token fallback para empresa:', companyId);
       }
     }
 
-    if (tokenError || !tokenData) {
+    if (!tokenData) {
       console.log('Debug: Nenhum token encontrado. Erro:', tokenError);
       return new Response(JSON.stringify({
         error: 'Token WiseApp não configurado para esta empresa',
@@ -303,43 +308,45 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     
     console.log('Debug: Criando label para company_id:', companyId);
     
-    // Primeiro tentar buscar token específico da empresa
-    let { data: tokenData, error: tokenError } = await supabase
+    // Buscar token específico da empresa
+    const { data: tokenRows2, error: tokenError2 } = await supabase
       .from('wiseapp_acesso')
       .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
       .eq('id_conta_wiseapp', companyId)
       .not('access_token_wiseapp', 'is', null)
-      .single()
+      .order('wiseapp_acesso_id', { ascending: false })
+      .limit(1)
+
+    let tokenData2 = tokenRows2?.[0] || null
 
     // Se não encontrou token específico da empresa, buscar qualquer token disponível
-    if (tokenError || !tokenData) {
+    if (!tokenData2) {
       console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const fallbackResult = await supabase
+      const { data: fallbackRows2 } = await supabase
         .from('wiseapp_acesso')
         .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
         .not('access_token_wiseapp', 'is', null)
+        .order('wiseapp_acesso_id', { ascending: false })
         .limit(1)
-        .single()
       
-      if (fallbackResult.data) {
-        tokenData = fallbackResult.data
-        tokenError = fallbackResult.error
+      if (fallbackRows2?.[0]) {
+        tokenData2 = fallbackRows2[0]
         console.log('Debug: Usando token fallback para empresa:', companyId);
       }
     }
 
-    if (tokenError || !tokenData) {
-      console.log('Debug: Nenhum token encontrado. Erro:', tokenError);
+    if (!tokenData2) {
+      console.log('Debug: Nenhum token encontrado. Erro:', tokenError2);
       return new Response(JSON.stringify({
         error: 'Token WiseApp não configurado para esta empresa',
-        details: tokenError?.message || 'Nenhum token encontrado'
+        details: tokenError2?.message || 'Nenhum token encontrado'
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
+    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData2
     const requestBody = await req.text()
 
     // Create label in WiseApp
@@ -385,43 +392,45 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     
     console.log('Debug: Buscando contatos para company_id:', companyId, 'phone:', phone);
     
-    // Primeiro tentar buscar token específico da empresa
-    let { data: tokenData, error: tokenError } = await supabase
+    // Buscar token específico da empresa
+    const { data: tokenRows3, error: tokenError3 } = await supabase
       .from('wiseapp_acesso')
       .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
       .eq('id_conta_wiseapp', companyId)
       .not('access_token_wiseapp', 'is', null)
-      .single()
+      .order('wiseapp_acesso_id', { ascending: false })
+      .limit(1)
+
+    let tokenData3 = tokenRows3?.[0] || null
 
     // Se não encontrou token específico da empresa, buscar qualquer token disponível
-    if (tokenError || !tokenData) {
+    if (!tokenData3) {
       console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const fallbackResult = await supabase
+      const { data: fallbackRows3 } = await supabase
         .from('wiseapp_acesso')
         .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
         .not('access_token_wiseapp', 'is', null)
+        .order('wiseapp_acesso_id', { ascending: false })
         .limit(1)
-        .single()
       
-      if (fallbackResult.data) {
-        tokenData = fallbackResult.data
-        tokenError = fallbackResult.error
+      if (fallbackRows3?.[0]) {
+        tokenData3 = fallbackRows3[0]
         console.log('Debug: Usando token fallback para empresa:', companyId);
       }
     }
 
-    if (tokenError || !tokenData || !phone) {
-      console.log('Debug: Erro na busca de token ou phone não fornecido. Erro:', tokenError);
+    if (!tokenData3 || !phone) {
+      console.log('Debug: Erro na busca de token ou phone não fornecido. Erro:', tokenError3);
       return new Response(JSON.stringify({
         error: 'Token, Account ID e phone são obrigatórios',
-        details: tokenError?.message || 'Token não encontrado'
+        details: tokenError3?.message || 'Token não encontrado'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
+    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData3
     const formattedPhone = `55${phone}`
     const wiseappUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${formattedPhone}`
 
@@ -462,43 +471,45 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     
     console.log('Debug: Aplicando labels para company_id:', companyId, 'contact_id:', contactId);
     
-    // Primeiro tentar buscar token específico da empresa
-    let { data: tokenData, error: tokenError } = await supabase
+    // Buscar token específico da empresa
+    const { data: tokenRows4, error: tokenError4 } = await supabase
       .from('wiseapp_acesso')
       .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
       .eq('id_conta_wiseapp', companyId)
       .not('access_token_wiseapp', 'is', null)
-      .single()
+      .order('wiseapp_acesso_id', { ascending: false })
+      .limit(1)
+
+    let tokenData4 = tokenRows4?.[0] || null
 
     // Se não encontrou token específico da empresa, buscar qualquer token disponível
-    if (tokenError || !tokenData) {
+    if (!tokenData4) {
       console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const fallbackResult = await supabase
+      const { data: fallbackRows4 } = await supabase
         .from('wiseapp_acesso')
         .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
         .not('access_token_wiseapp', 'is', null)
+        .order('wiseapp_acesso_id', { ascending: false })
         .limit(1)
-        .single()
       
-      if (fallbackResult.data) {
-        tokenData = fallbackResult.data
-        tokenError = fallbackResult.error
+      if (fallbackRows4?.[0]) {
+        tokenData4 = fallbackRows4[0]
         console.log('Debug: Usando token fallback para empresa:', companyId);
       }
     }
 
-    if (tokenError || !tokenData) {
-      console.log('Debug: Nenhum token encontrado. Erro:', tokenError);
+    if (!tokenData4) {
+      console.log('Debug: Nenhum token encontrado. Erro:', tokenError4);
       return new Response(JSON.stringify({
         error: 'Token e Account ID obrigatórios',
-        details: tokenError?.message || 'Nenhum token encontrado'
+        details: tokenError4?.message || 'Nenhum token encontrado'
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
+    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData4
     const requestBody = await req.json()
     
     const url = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`
