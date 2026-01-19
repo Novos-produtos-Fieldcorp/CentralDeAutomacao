@@ -1,0 +1,173 @@
+6:17:31 PM: build-image version: 7bd0ad5c83642bb27af50242fd2d7705988a09af (noble)
+6:17:31 PM: buildbot version: 5cf14390f8f63a78d5f64c9599fcd37e3187b926
+6:17:31 PM: Fetching cached dependencies
+6:17:31 PM: Starting to download cache of 794.4MB (Last modified: 2026-01-19 15:34:27 +0000 UTC)
+6:17:32 PM: Finished downloading cache in 1.142s
+6:17:32 PM: Starting to extract cache
+6:17:40 PM: Finished extracting cache in 7.486s
+6:17:40 PM: Finished fetching cache in 8.705s
+6:17:40 PM: Starting to prepare the repo for build
+6:17:40 PM: Preparing Git Reference refs/heads/main
+6:17:41 PM: Starting to install dependencies
+6:17:41 PM: Started restoring cached python cache
+6:17:41 PM: Finished restoring cached python cache
+6:17:41 PM: Started restoring cached ruby cache
+6:17:42 PM: Finished restoring cached ruby cache
+6:17:42 PM: Started restoring cached go cache
+6:17:42 PM: Finished restoring cached go cache
+6:17:43 PM: Started restoring cached Node.js version
+6:17:43 PM: Finished restoring cached Node.js version
+6:17:43 PM: Attempting Node.js version '20' from .nvmrc
+6:17:43 PM: v20.20.0 is already installed.
+6:17:44 PM: Now using node v20.20.0 (npm v10.8.2)
+6:17:44 PM: Enabling Node.js Corepack
+6:17:44 PM: Started restoring cached build plugins
+6:17:44 PM: Finished restoring cached build plugins
+6:17:44 PM: Started restoring cached corepack dependencies
+6:17:44 PM: Finished restoring cached corepack dependencies
+6:17:44 PM: No npm workspaces detected
+6:17:44 PM: Started restoring cached node modules
+6:17:44 PM: Finished restoring cached node modules
+6:17:44 PM: Installing npm packages using npm version 10.8.2
+6:17:45 PM: up to date in 1s
+6:17:45 PM: npm packages installed
+6:17:46 PM: Successfully installed dependencies
+6:17:46 PM: Detected 1 framework(s)
+6:17:46 PM: "vite" at version "5.4.20"
+6:17:46 PM: Starting build script
+6:17:47 PM: Section completed: initializing
+6:17:48 PM: ​
+6:17:48 PM: Netlify Build                                                 
+6:17:48 PM: ────────────────────────────────────────────────────────────────
+6:17:48 PM: ​
+6:17:48 PM: ❯ Version
+6:17:48 PM:   @netlify/build 35.5.9
+6:17:48 PM: ​
+6:17:48 PM: ❯ Flags
+6:17:48 PM:   accountId: 67802d2dc2a8423944e83429
+6:17:48 PM:   baseRelDir: true
+6:17:48 PM:   buildId: 696e9f6a3075240008284ad4
+6:17:48 PM:   deployId: 696e9f6a3075240008284ad6
+6:17:48 PM: ​
+6:17:48 PM: ❯ Current directory
+6:17:48 PM:   /opt/build/repo
+6:17:48 PM: ​
+6:17:48 PM: ❯ Config file
+6:17:48 PM:   /opt/build/repo/netlify.toml
+6:17:48 PM: ​
+6:17:48 PM: ❯ Context
+6:17:48 PM:   production
+6:17:48 PM: ​
+6:17:48 PM: ❯ Installing extensions
+6:17:48 PM:    - neon
+6:17:49 PM: ​
+6:17:49 PM: ❯ Using Next.js Runtime - v4.41.5
+6:17:49 PM: ​
+6:17:49 PM: ❯ Loading plugins
+6:17:49 PM:    - @netlify/plugin-lighthouse@6.0.1 from Netlify app
+6:17:49 PM: ​
+6:17:49 PM: ❯ Loading extensions
+6:17:49 PM:    - neon
+6:17:49 PM: ​
+6:17:49 PM: ❯ Outdated plugins
+6:17:49 PM:    - @netlify/plugin-nextjs@4.41.5: latest version is 5.15.5
+6:17:49 PM:      To upgrade this plugin, please uninstall and re-install it from the Netlify plugins directory (https://app.netlify.com/plugins)
+6:17:51 PM: Not running Next Runtime
+6:17:51 PM: ​
+6:17:51 PM: build.command from netlify.toml                               
+6:17:51 PM: ────────────────────────────────────────────────────────────────
+6:17:51 PM: ​
+6:17:51 PM: $ npm run build
+6:17:51 PM: > rest-express@1.0.0 build
+6:17:51 PM: > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+6:17:51 PM: vite v5.4.20 building for production...
+6:17:51 PM: [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+6:17:51 PM: transforming...
+6:17:53 PM: ✓ 66 modules transformed.
+6:17:53 PM: x Build failed in 1.59s
+6:17:53 PM: error during build:
+6:17:53 PM: [vite:esbuild] Transform failed with 1 error:
+6:17:53 PM: /opt/build/repo/client/src/lib/api-config-supabase.ts:117:9: ERROR: Multiple exports with the same name "supabaseAnonKey"
+6:17:53 PM: file: /opt/build/repo/client/src/lib/api-config-supabase.ts:117:9
+6:17:53 PM: 
+6:17:53 PM: Multiple exports with the same name "supabaseAnonKey"
+6:17:53 PM: 115|
+6:17:53 PM: 116|  // Export anon key for Edge Function authentication (this is public and safe to expose)
+6:17:53 PM: 117|  export { supabaseAnonKey };
+6:17:53 PM:    |           ^
+6:17:53 PM: 118|
+6:17:53 PM: 
+6:17:53 PM:     at failureErrorWithLog (/opt/build/repo/node_modules/vite/node_modules/esbuild/lib/main.js:1472:15)
+6:17:53 PM:     at /opt/build/repo/node_modules/vite/node_modules/esbuild/lib/main.js:755:50
+6:17:53 PM:     at responseCallbacks.<computed> (/opt/build/repo/node_modules/vite/node_modules/esbuild/lib/main.js:622:9)
+6:17:53 PM:     at handleIncomingPacket (/opt/build/repo/node_modules/vite/node_modules/esbuild/lib/main.js:677:12)
+6:17:53 PM:     at Socket.readFromStdout (/opt/build/repo/node_modules/vite/node_modules/esbuild/lib/main.js:600:7)
+6:17:53 PM:     at Socket.emit (node:events:524:28)
+6:17:53 PM:     at addChunk (node:internal/streams/readable:561:12)
+6:17:53 PM:     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+6:17:53 PM:     at Readable.push (node:internal/streams/readable:392:5)
+6:17:53 PM:     at Pipe.onStreamRead (node:internal/stream_base_commons:191:23)
+6:17:53 PM: ​
+6:17:53 PM: "build.command" failed                                        
+6:17:53 PM: ────────────────────────────────────────────────────────────────
+6:17:53 PM: ​
+6:17:53 PM:   Error message
+6:17:53 PM:   Command failed with exit code 1: npm run build (https://ntl.fyi/exit-code-1)
+6:17:53 PM: ​
+6:17:53 PM:   Error location
+6:17:53 PM:   In build.command from netlify.toml:
+6:17:53 PM:   npm run build
+6:17:53 PM: ​
+6:17:53 PM:   Resolved config
+6:17:53 PM:   build:
+6:17:53 PM:     command: npm run build
+6:17:53 PM:     commandOrigin: config
+6:17:53 PM:     environment:
+6:17:53 PM:       - SUPABASE_SERVICE_ROLE_KEY
+6:17:53 PM:       - VITE_CHAT_ACCOUNT_ID
+6:17:53 PM:       - VITE_CHAT_API_KEY
+6:17:53 PM:       - VITE_CHAT_API_URL
+6:17:53 PM:       - VITE_SUPABASE_ANON_KEY
+6:17:53 PM:       - VITE_SUPABASE_URL
+6:17:53 PM:       - NODE_VERSION
+6:17:53 PM:       - NETLIFY_NEXT_PLUGIN_SKIP
+6:17:53 PM:     publish: /opt/build/repo/dist/public
+6:17:53 PM:     publishOrigin: config
+6:17:53 PM:   functions:
+6:17:53 PM:     "*":
+6:17:53 PM:       node_bundler: esbuild
+6:17:53 PM:   functionsDirectory: /opt/build/repo/netlify/functions
+6:17:53 PM:   headers:
+6:17:54 PM:     - for: /*
+      values:
+        Access-Control-Allow-Credentials: "true"
+        Access-Control-Allow-Headers: Content-Type, Authorization, wiseapp-token,
+          wiseapp-account-id, X-Requested-With, Accept, Origin, Cache-Control,
+          Pragma, Expires, apikey, x-client-info, api_access_token
+        Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD
+        Access-Control-Allow-Origin: "*"
+        Content-Security-Policy: frame-ancestors *;
+  headersOrigin: config
+  plugins:
+    - inputs: {}
+      origin: ui
+      package: "@netlify/plugin-lighthouse"
+    - inputs: {}
+      origin: ui
+      package: "@netlify/plugin-nextjs"
+  redirects:
+    - force: true
+      from: /api/validate-wiseapp-token
+      status: 200
+      to: /.netlify/functions/validate-wiseapp-token
+    - force: true
+      from: /api/wiseapp/available-accounts
+      status: 200
+      to: /.netlify/functions/available-accounts
+    - from: /*
+      status: 200
+      to: /index.html
+  redirectsOrigin: config
+6:17:54 PM: Build failed due to a user error: Build script returned non-zero exit code: 2
+6:17:54 PM: Failing build: Failed to build site
+6:17:54 PM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
