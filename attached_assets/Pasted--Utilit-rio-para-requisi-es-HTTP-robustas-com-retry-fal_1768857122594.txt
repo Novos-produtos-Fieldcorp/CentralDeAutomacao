@@ -1,5 +1,11 @@
 // Utilitário para requisições HTTP robustas com retry, fallback e cache
+<<<<<<< fix-resumo-grupo
+
+// Supabase anon key para autenticação com Edge Functions
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+=======
 import { supabaseAnonKey } from './api-config-supabase';
+>>>>>>> main
 
 interface RobustFetchOptions extends RequestInit {
   timeout?: number;
@@ -270,17 +276,23 @@ export async function robustWiseAppFetch(
   accountId?: string,
   token?: string
 ): Promise<any> {
+<<<<<<< fix-resumo-grupo
   // Detectar se a URL é para Supabase Edge Functions
   const isSupabaseFunction = url.includes('supabase.co/functions/');
   
-  // Headers padrão para WiseApp - inclui apikey do Supabase para autenticação na Edge Function
+  // Headers padrão para WiseApp
   const defaultHeaders: Record<string, string> = {
+=======
+  // Headers padrão para WiseApp - inclui apikey do Supabase para autenticação na Edge Function
+  const defaultHeaders = {
+>>>>>>> main
     'Content-Type': 'application/json',
     'apikey': supabaseAnonKey,
     ...(token && { 'wiseapp-token': token }),
     ...(accountId && { 'wiseapp-account-id': accountId }),
     // Adicionar Authorization header para Supabase Edge Functions
-    ...(isSupabaseFunction && supabaseAnonKey && { 'Authorization': `Bearer ${supabaseAnonKey}` })
+    ...(isSupabaseFunction && SUPABASE_ANON_KEY && { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }),
+    ...(isSupabaseFunction && SUPABASE_ANON_KEY && { 'apikey': SUPABASE_ANON_KEY })
   };
   
   return robustFetch(url, {
