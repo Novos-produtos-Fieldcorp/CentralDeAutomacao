@@ -1,0 +1,171 @@
+6:25:03 PM: build-image version: 7bd0ad5c83642bb27af50242fd2d7705988a09af (noble)
+6:25:03 PM: buildbot version: 5cf14390f8f63a78d5f64c9599fcd37e3187b926
+6:25:03 PM: Building without cache
+6:25:03 PM: Starting to prepare the repo for build
+6:25:03 PM: No cached dependencies found. Cloning fresh repo
+6:25:03 PM: git clone --filter=blob:none https://github.com/Field-devs/CentralDeAutomacao
+6:25:04 PM: Preparing Git Reference refs/heads/main
+6:25:06 PM: Starting to install dependencies
+6:25:06 PM: Attempting Node.js version '20' from .nvmrc
+6:25:07 PM: Downloading and installing node v20.20.0...
+6:25:07 PM: Downloading https://nodejs.org/dist/v20.20.0/node-v20.20.0-linux-x64.tar.xz...
+6:25:07 PM: Computing checksum with sha256sum
+6:25:07 PM: Checksums matched!
+6:25:09 PM: Now using node v20.20.0 (npm v10.8.2)
+6:25:09 PM: Enabling Node.js Corepack
+6:25:09 PM: Started restoring cached build plugins
+6:25:09 PM: Finished restoring cached build plugins
+6:25:09 PM: Started restoring cached corepack dependencies
+6:25:09 PM: Finished restoring cached corepack dependencies
+6:25:09 PM: No npm workspaces detected
+6:25:09 PM: Started restoring cached node modules
+6:25:09 PM: Finished restoring cached node modules
+6:25:09 PM: Installing npm packages using npm version 10.8.2
+6:25:12 PM: npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+6:25:12 PM: npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+6:25:15 PM: added 620 packages in 6s
+6:25:15 PM: npm packages installed
+6:25:16 PM: Successfully installed dependencies
+6:25:16 PM: Detected 1 framework(s)
+6:25:16 PM: "vite" at version "5.4.20"
+6:25:16 PM: Starting build script
+6:25:17 PM: Section completed: initializing
+6:25:18 PM: ​
+6:25:18 PM: Netlify Build                                                 
+6:25:18 PM: ────────────────────────────────────────────────────────────────
+6:25:18 PM: ​
+6:25:18 PM: ❯ Version
+6:25:18 PM:   @netlify/build 35.5.9
+6:25:18 PM: ​
+6:25:18 PM: ❯ Flags
+6:25:18 PM:   accountId: 67802d2dc2a8423944e83429
+6:25:18 PM:   baseRelDir: true
+6:25:18 PM:   buildId: 696ea12e1051f8979bb9b190
+6:25:18 PM:   deployId: 696ea12e1051f8979bb9b192
+6:25:18 PM: ​
+6:25:18 PM: ❯ Current directory
+6:25:18 PM:   /opt/build/repo
+6:25:18 PM: ​
+6:25:18 PM: ❯ Config file
+6:25:18 PM:   /opt/build/repo/netlify.toml
+6:25:18 PM: ​
+6:25:18 PM: ❯ Context
+6:25:18 PM:   production
+6:25:18 PM: ​
+6:25:18 PM: ❯ Installing plugins
+6:25:18 PM:    - @netlify/plugin-lighthouse@6.0.1
+6:25:18 PM:    - @netlify/plugin-nextjs@4.41.5
+6:25:50 PM: ​
+6:25:50 PM: ❯ Installing extensions
+6:25:50 PM:    - neon
+6:26:06 PM: ​
+6:26:06 PM: ❯ Using Next.js Runtime - v4.41.5
+6:26:06 PM: ​
+6:26:06 PM: ❯ Loading plugins
+6:26:06 PM:    - @netlify/plugin-lighthouse@6.0.1 from Netlify app
+6:26:06 PM: ​
+6:26:06 PM: ❯ Loading extensions
+6:26:06 PM:    - neon
+6:26:06 PM: ​
+6:26:06 PM: ❯ Outdated plugins
+6:26:06 PM:    - @netlify/plugin-nextjs@4.41.5: latest version is 5.15.5
+6:26:06 PM:      To upgrade this plugin, please uninstall and re-install it from the Netlify plugins directory (https://app.netlify.com/plugins)
+6:26:07 PM: Not running Next Runtime
+6:26:07 PM: ​
+6:26:07 PM: build.command from netlify.toml                               
+6:26:07 PM: ────────────────────────────────────────────────────────────────
+6:26:07 PM: ​
+6:26:07 PM: $ npm run build
+6:26:07 PM: > rest-express@1.0.0 build
+6:26:07 PM: > vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+6:26:08 PM: vite v5.4.20 building for production...
+6:26:08 PM: transforming...
+6:26:08 PM: [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+6:26:13 PM: ✓ 4011 modules transformed.
+6:26:13 PM: x Build failed in 5.11s
+6:26:13 PM: error during build:
+6:26:13 PM: client/src/components/TagAdministration.tsx (8:23): "getSupabaseEdgeFunctionHeaders" is not exported by "client/src/lib/api-config-supabase.ts", imported by "client/src/components/TagAdministration.tsx".
+6:26:13 PM: file: /opt/build/repo/client/src/components/TagAdministration.tsx:8:23
+6:26:13 PM: 
+6:26:13 PM: 6: import { getWiseAppLabels } from "@/lib/directApiService";
+6:26:13 PM: 7: import { useWiseAppAccess } from "@/context/WiseAppAccessContext";
+6:26:13 PM: 8: import { createApiUrl, getSupabaseEdgeFunctionHeaders } from '@/lib/api-config-supabase';
+6:26:13 PM:                           ^
+6:26:13 PM: 9: import { AccountSwitcher } from './AccountSwitcher';
+6:26:13 PM: 
+6:26:13 PM:     at getRollupError (file:///opt/build/repo/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
+6:26:13 PM:     at error (file:///opt/build/repo/node_modules/rollup/dist/es/shared/parseAst.js:397:42)
+6:26:13 PM:     at Module.error (file:///opt/build/repo/node_modules/rollup/dist/es/shared/node-entry.js:16939:16)
+6:26:13 PM:     at Module.traceVariable (file:///opt/build/repo/node_modules/rollup/dist/es/shared/node-entry.js:17391:29)
+6:26:13 PM:     at ModuleScope.findVariable (file:///opt/build/repo/node_modules/rollup/dist/es/shared/node-entry.js:15061:39)
+6:26:13 PM:     at FunctionScope.findVariable (file:///opt/build/repo/node_modules/rollup/dist/es/shared/node-entry.js:5642:38)
+6:26:13 PM:     at FunctionBodyScope.findVariable (file:///opt/build/repo/node_modules/rollup/dist/es/shared/node-entry.js:5642:38)
+6:26:13 PM:     at ReturnValueScope.findVariable (file:///opt/build/repo/node_modules/rollup/dist/es/shared/node-entry.js:5642:38)
+6:26:13 PM:     at FunctionBodyScope.findVariable (file:///opt/build/repo/node_modules/rollup/dist/es/shared/node-entry.js:5642:38)
+6:26:13 PM:     at Identifier.bind (file:///opt/build/repo/node_modules/rollup/dist/es/shared/node-entry.js:5413:40)
+6:26:13 PM: ​
+6:26:13 PM: "build.command" failed                                        
+6:26:13 PM: ────────────────────────────────────────────────────────────────
+6:26:13 PM: ​
+6:26:13 PM:   Error message
+6:26:13 PM:   Command failed with exit code 1: npm run build (https://ntl.fyi/exit-code-1)
+6:26:13 PM: ​
+6:26:13 PM:   Error location
+6:26:13 PM:   In build.command from netlify.toml:
+6:26:13 PM:   npm run build
+6:26:13 PM: ​
+6:26:13 PM:   Resolved config
+6:26:13 PM:   build:
+6:26:13 PM:     command: npm run build
+6:26:13 PM:     commandOrigin: config
+6:26:13 PM:     environment:
+6:26:13 PM:       - SUPABASE_SERVICE_ROLE_KEY
+6:26:13 PM:       - VITE_CHAT_ACCOUNT_ID
+6:26:13 PM:       - VITE_CHAT_API_KEY
+6:26:13 PM:       - VITE_CHAT_API_URL
+6:26:13 PM:       - VITE_SUPABASE_ANON_KEY
+6:26:13 PM:       - VITE_SUPABASE_URL
+6:26:13 PM:       - NODE_VERSION
+6:26:13 PM:       - NETLIFY_NEXT_PLUGIN_SKIP
+6:26:13 PM:     publish: /opt/build/repo/dist/public
+6:26:13 PM:     publishOrigin: config
+6:26:13 PM:   functions:
+6:26:13 PM:     "*":
+6:26:13 PM:       node_bundler: esbuild
+6:26:13 PM:   functionsDirectory: /opt/build/repo/netlify/functions
+6:26:13 PM:   headers:
+6:26:13 PM:     - for: /*
+      values:
+        Access-Control-Allow-Credentials: "true"
+        Access-Control-Allow-Headers: Content-Type, Authorization, wiseapp-token,
+          wiseapp-account-id, X-Requested-With, Accept, Origin, Cache-Control,
+          Pragma, Expires, apikey, x-client-info, api_access_token
+        Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD
+        Access-Control-Allow-Origin: "*"
+        Content-Security-Policy: frame-ancestors *;
+  headersOrigin: config
+  plugins:
+    - inputs: {}
+      origin: ui
+      package: "@netlify/plugin-lighthouse"
+    - inputs: {}
+      origin: ui
+      package: "@netlify/plugin-nextjs"
+  redirects:
+    - force: true
+      from: /api/validate-wiseapp-token
+      status: 200
+      to: /.netlify/functions/validate-wiseapp-token
+    - force: true
+      from: /api/wiseapp/available-accounts
+      status: 200
+      to: /.netlify/functions/available-accounts
+    - from: /*
+      status: 200
+      to: /index.html
+  redirectsOrigin: config
+6:26:13 PM: Build failed due to a user error: Build script returned non-zero exit code: 2
+6:26:13 PM: Failing build: Failed to build site
+6:26:14 PM: Failed during stage 'building site': Build script returned non-zero exit code: 2 (https://ntl.fyi/exit-code-2)
+6:26:14 PM: Finished processing build request in 1m10.623s

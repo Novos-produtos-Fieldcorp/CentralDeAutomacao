@@ -310,7 +310,7 @@ const BulkActionsModal = ({
 
             try {
               // Buscar contato no WiseApp usando o serviço existente
-              const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId);
+              const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId ?? 2);
 
               // Corrigir estrutura de dados (descoberta: searchData é array direto)
               const contacts = Array.isArray(searchData) ? searchData : (searchData?.payload || []);
