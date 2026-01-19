@@ -463,6 +463,81 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     }
   }
 
+  // GET labels from contact
+  if (path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/) && method === 'GET') {
+    const match = path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/)
+    const companyId = match![1]
+    const contactId = match![2]
+    
+    console.log('Debug: Buscando labels para company_id:', companyId, 'contact_id:', contactId);
+    
+    // Buscar token específico da empresa
+    const { data: tokenRowsGet, error: tokenErrorGet } = await supabase
+      .from('wiseapp_acesso')
+      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+      .eq('id_conta_wiseapp', companyId)
+      .not('access_token_wiseapp', 'is', null)
+      .order('wiseapp_acesso_id', { ascending: false })
+      .limit(1)
+
+    let tokenDataGet = tokenRowsGet?.[0] || null
+
+    if (!tokenDataGet) {
+      console.log('Debug: Token específico não encontrado para GET labels, buscando fallback');
+      const { data: fallbackRowsGet } = await supabase
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
+        .not('access_token_wiseapp', 'is', null)
+        .order('wiseapp_acesso_id', { ascending: false })
+        .limit(1)
+      
+      if (fallbackRowsGet?.[0]) {
+        tokenDataGet = fallbackRowsGet[0]
+      }
+    }
+
+    if (!tokenDataGet) {
+      return new Response(JSON.stringify({
+        error: 'Token não encontrado para buscar labels',
+        details: tokenErrorGet?.message || 'Nenhum token disponível'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const { access_token_wiseapp: tokenGet, id_conta_wiseapp: accountIdGet } = tokenDataGet
+    const urlGet = `https://chat.wiseapp360.com/api/v1/accounts/${accountIdGet}/contacts/${contactId}/labels`
+    
+    try {
+      console.log('Debug: GET labels URL:', urlGet);
+      const response = await fetch(urlGet, {
+        method: 'GET',
+        headers: {
+          'api_access_token': tokenGet,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+      console.log('Debug: GET labels response status:', response.status);
+      
+      return new Response(JSON.stringify(data), {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error) {
+      console.error('Debug: Erro ao buscar labels:', error);
+      return new Response(JSON.stringify({
+        error: 'Erro ao buscar labels',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
   // Apply labels to contact
   if (path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/) && method === 'POST') {
     const match = path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/)
