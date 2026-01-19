@@ -380,9 +380,10 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     }
 
     const labelData = {
-      name: tag.nome,
+      title: tag.nome,
       color: tag.cor,
-      description: tag.nome
+      description: tag.nome,
+      show_on_sidebar: true
     };
 
     const controller = new AbortController();
