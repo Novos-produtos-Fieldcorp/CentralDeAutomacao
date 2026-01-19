@@ -186,7 +186,7 @@ const MotoristasLista = () => {
 
     try {
       // 1. Buscar todas as tags existentes
-      const labelsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/labels`), {
+      const labelsResponse = await fetch(createApiUrl(`wiseapp/${accountId}/labels`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -227,7 +227,7 @@ const MotoristasLista = () => {
       const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
 
       // Buscando contato por telefone
-      const searchContactResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/search?phone=${formattedPhone}`), {
+      const searchContactResponse = await fetch(createApiUrl(`wiseapp/${accountId}/contacts/search?phone=${formattedPhone}`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -256,7 +256,7 @@ const MotoristasLista = () => {
 
       // 4. Aplicar a tag existente ao contato específico
       // Applying tag to contact
-      const applyTagResponse = await fetch(createApiUrl(`wiseapp/${companyId}/contacts/${contactId}/labels`), {
+      const applyTagResponse = await fetch(createApiUrl(`wiseapp/${accountId}/contacts/${contactId}/labels`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -296,7 +296,7 @@ const MotoristasLista = () => {
       if (!tagData) return;
 
       // Buscar labels no WiseApp via proxy
-      const labelsResponse = await fetch(createApiUrl(`wiseapp/${companyId}/labels`), {
+      const labelsResponse = await fetch(createApiUrl(`wiseapp/${accountId}/labels`), {
         headers: {
           'wiseapp-account-id': accountId || '',
           'wiseapp-token': wiseAppToken || ''
@@ -309,7 +309,7 @@ const MotoristasLista = () => {
 
         if (wiseAppLabel) {
           // Remover label do WiseApp via proxy
-          const deleteResponse = await fetch(createApiUrl(`wiseapp/${companyId}/labels/${wiseAppLabel.id}`), {
+          const deleteResponse = await fetch(createApiUrl(`wiseapp/${accountId}/labels/${wiseAppLabel.id}`), {
             method: 'DELETE',
             headers: {
               'wiseapp-account-id': accountId || '',

@@ -1,0 +1,98 @@
+Request URL
+https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/5/contacts/search?phone=11995162891
+Request Method
+GET
+Status Code
+401 Unauthorized
+Remote Address
+172.64.149.246:443
+Referrer Policy
+strict-origin-when-cross-origin
+access-control-allow-credentials
+true
+access-control-allow-headers
+authorization, x-client-info, apikey, content-type, company-id, wiseapp-token, wiseapp-account-id, api_access_token, X-Requested-With, Accept, Origin, Cache-Control, Pragma, Expires
+access-control-allow-methods
+GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD
+access-control-allow-origin
+*
+alt-svc
+h3=":443"; ma=86400
+cf-cache-status
+DYNAMIC
+cf-ray
+9c08d152ef559f3d-GRU
+content-encoding
+gzip
+content-length
+160
+content-type
+application/json
+date
+Mon, 19 Jan 2026 19:42:52 GMT
+priority
+u=1,i
+sb-project-ref
+ohmoxsvwjvohmqqgxjhb
+sb-request-id
+019bd7c8-0fda-7a96-991c-65fcee591001
+server
+cloudflare
+server-timing
+cfExtPri
+set-cookie
+__cf_bm=WVW1clh0_7U6w2XPkm5UxjdII597IV9jEUtJhDYHQ0c-1768851772-1.0.1.1-fNgvIL4GDNzZWgaVbkxrSt9TUwShpA2Ko2YzxtyRwPEfxWrJGY1MmYvEjm7m9NXHICWnWIEHtUdV6AbzNguzcu.RC0IsQqRYgSy0htiveNk; path=/; expires=Mon, 19-Jan-26 20:12:52 GMT; domain=.supabase.co; HttpOnly; Secure; SameSite=None
+strict-transport-security
+max-age=31536000; includeSubDomains; preload
+vary
+Accept-Encoding
+x-content-type-options
+nosniff
+x-deno-execution-id
+6133af40-c4b1-413a-bf4b-a9a19584c4f2
+x-sb-edge-region
+sa-east-1
+x-served-by
+supabase-edge-runtime
+:authority
+ohmoxsvwjvohmqqgxjhb.supabase.co
+:method
+GET
+:path
+/functions/v1/api/wiseapp/5/contacts/search?phone=11995162891
+:scheme
+https
+accept
+*/*
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+en-US,en;q=0.9
+apikey
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ
+content-type
+application/json
+origin
+https://centralautomacoes.netlify.app
+priority
+u=1, i
+referer
+https://centralautomacoes.netlify.app/
+sec-ch-ua
+"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"macOS"
+sec-fetch-dest
+empty
+sec-fetch-mode
+cors
+sec-fetch-site
+cross-site
+user-agent
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+wiseapp-account-id
+20
+wiseapp-token
+ApoVmcXcGWGwKwJgud6n7D5J

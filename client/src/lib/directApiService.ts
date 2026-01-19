@@ -389,11 +389,8 @@ export const searchWiseAppContact = async (accountId: string, token: string, pho
     throw new Error('AccountId e token são obrigatórios para buscar contatos do WiseApp.');
   }
 
-  const primaryUrl = createApiUrl(`wiseapp/${companyId}/contacts/search?phone=${phone}`);
-  const fallbackUrls = [
-    createApiUrl(`wiseapp/2/contacts/search?phone=${phone}`),
-    createApiUrl(`wiseapp/1/contacts/search?phone=${phone}`)
-  ].filter(url => url !== primaryUrl);
+  const primaryUrl = createApiUrl(`wiseapp/${accountId}/contacts/search?phone=${phone}`);
+  const fallbackUrls: string[] = [];
   
   console.log(`Buscando contato por telefone ${phone} via backend para:`, primaryUrl);
   
