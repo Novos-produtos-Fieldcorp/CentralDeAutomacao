@@ -102,3 +102,16 @@ export const supabaseApiRequest = async (url: string, options: RequestInit = {})
 
   return response;
 };
+
+// Helper para criar headers de autenticação para Edge Functions do Supabase
+export const getSupabaseEdgeFunctionHeaders = (additionalHeaders: Record<string, string> = {}) => {
+  // A anon key do Supabase é pública e deve ser enviada nas requisições às Edge Functions
+  return {
+    'Content-Type': 'application/json',
+    'apikey': supabaseAnonKey,
+    ...additionalHeaders
+  };
+};
+
+// Export anon key for Edge Function authentication (this is public and safe to expose)
+export { supabaseAnonKey };

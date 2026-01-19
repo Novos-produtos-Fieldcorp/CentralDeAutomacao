@@ -1,0 +1,38 @@
+user.userguiding.com/sdk/identify:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+/api/v1/accounts/20/chat_rooms:1  Failed to load resource: the server responded with a status of 403 ()
+DashboardIcon-CDKs4N-F.js:47 Uncaught (in promise) Error: AxiosError: Request failed with status code 403
+    at ne.get (DashboardIcon-CDKs4N-F.js:47:160883)
+dashboard:1 The resource https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'.
+Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'join-ad-interest-group'.
+rum:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+index-CV1Fx4aD.js:266 Hybrid API Configuration: Object
+index-CV1Fx4aD.js:265 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+f1 @ index-CV1Fx4aD.js:265
+index-CV1Fx4aD.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-CV1Fx4aD.js:1116 🔍 [WiseAppAccess] Account ID da URL: 20
+index-CV1Fx4aD.js:1116 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 20
+index-CV1Fx4aD.js:1116 📊 [WiseAppAccess] Resultado da busca da empresa: Object
+index-CV1Fx4aD.js:1116 ✅ [WiseAppAccess] Empresa encontrada: Object
+index-CV1Fx4aD.js:1116 📧 [WiseAppAccess] Mostrando modal de autenticação (e-mail obrigatório)
+index-CV1Fx4aD.js:1465 Dashboard data loaded: Object
+index-CV1Fx4aD.js:1116 ✅ Token encontrado para email, usando id_conta_wiseapp: 20
+index-CV1Fx4aD.js:1116 📧 [WiseAppAccess] Token salvo para email, usando accountId: 20 (do email: 20 , fallback: 20 )
+index-CV1Fx4aD.js:1116 🔄 [WiseAppAccess] Atualizando sessão: Object
+index-CV1Fx4aD.js:1116 🔄 [WiseAppAccess] Sincronizando companyId com AuthContext: 5 accountId: 20
+index-CV1Fx4aD.js:266 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 5
+index-CV1Fx4aD.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-CV1Fx4aD.js:1116 🔍 [WiseAppAccess] Já verificado nesta sessão...
+index-CV1Fx4aD.js:1116 ✅ [WiseAppAccess] Sessão válida com email: andrea.peres@trackerloglogistica.com.br
+index-CV1Fx4aD.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-CV1Fx4aD.js:1116 🔍 [WiseAppAccess] Já verificado nesta sessão...
+index-CV1Fx4aD.js:1116 ✅ [WiseAppAccess] Sessão válida com email: andrea.peres@trackerloglogistica.com.br
+centralautomacoes.netlify.app/.netlify/functions/available-accounts:1  Failed to load resource: the server responded with a status of 401 ()
+index-CV1Fx4aD.js:2108 Erro ao buscar contas: 401
+p @ index-CV1Fx4aD.js:2108
+centralautomacoes.netlify.app/.netlify/functions/available-accounts:1  Failed to load resource: the server responded with a status of 401 ()
+index-CV1Fx4aD.js:2108 Erro ao buscar contas: 401
+p @ index-CV1Fx4aD.js:2108
+index-CV1Fx4aD.js:2108 Criando tag com dados: Object
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/5/labels:1  Failed to load resource: the server responded with a status of 403 ()

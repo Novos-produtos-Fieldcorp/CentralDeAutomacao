@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube, Info } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { supabase } from '../lib/supabase';
@@ -46,9 +47,14 @@ interface Inbox {
 const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
 
 const ResumosGrupo = () => {
+  const [searchParams] = useSearchParams();
   const { query, companyId: legacyCompanyId } = useCompanyData();
-  const { accountId, companyId } = useCurrentAccount();
+  const { accountId: hookAccountId, companyId } = useCurrentAccount();
   const effectiveCompanyId = companyId || legacyCompanyId;
+  
+  // Use exact same logic as FloatingChat - URL param + localStorage only (no context dependency)
+  const accountId = searchParams.get("account_id") 
+    || (typeof localStorage !== 'undefined' ? localStorage.getItem("account_id") : null);
   const [loading, setLoading] = useState(true);
   const [grupos, setGrupos] = useState<GrupoResumo[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -83,8 +89,10 @@ const ResumosGrupo = () => {
   const [paginatedEnvios, setPaginatedEnvios] = useState<EnvioResumo[]>([]);
 
   useEffect(() => {
-    fetchGrupos();
-  }, [companyId]);
+    if (effectiveCompanyId) {
+      fetchGrupos();
+    }
+  }, [effectiveCompanyId]);
 
   useEffect(() => {
     if (activeTab === 'history') {
@@ -132,17 +140,19 @@ const ResumosGrupo = () => {
 
   // Load inboxes when modal opens
   useEffect(() => {
-    if ((isAddModalOpen || isEditModalOpen) && companyId && accountId) {
+    if ((isAddModalOpen || isEditModalOpen) && effectiveCompanyId && accountId) {
       loadInboxes();
     }
-  }, [isAddModalOpen, isEditModalOpen, companyId, accountId]);
+  }, [isAddModalOpen, isEditModalOpen, effectiveCompanyId, accountId]);
 
   const loadInboxes = async () => {
-    if (!companyId || !accountId) return;
+    if (!effectiveCompanyId || !accountId) return;
+    
+    console.log('Loading inboxes for company:', effectiveCompanyId, 'account:', accountId);
     
     setLoadingInboxes(true);
     try {
-      const response = await fetch(`/api/inboxes/${companyId}?account_id=${accountId}`, {
+      const response = await fetch(`/api/inboxes/${effectiveCompanyId}?account_id=${accountId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -170,7 +180,7 @@ const ResumosGrupo = () => {
       const { data, error } = await supabase
         .from('grupo_resumo')
         .select('*')
-        .eq('company_id', companyId)
+        .eq('company_id', effectiveCompanyId)
         .order('nome_grupo');
 
       if (error) throw error;
@@ -216,7 +226,7 @@ const ResumosGrupo = () => {
       
       // Try different approach: use raw SQL query to bypass RLS
       const { data, error } = await supabase.rpc('get_envio_resumo_all', {
-        p_company_id: companyId
+        p_company_id: effectiveCompanyId
       });
 
       if (error) {
@@ -230,7 +240,7 @@ const ResumosGrupo = () => {
               nome_grupo
             )
           `)
-          .eq('company_id', companyId)
+          .eq('company_id', effectiveCompanyId)
           .order('created_at', { ascending: false })
           .limit(100);
         
@@ -281,7 +291,7 @@ const ResumosGrupo = () => {
         ativo: formData.ativo,
         icon_name: formData.icon_name,
         color_name: formData.color_name,
-        company_id: companyId
+        company_id: effectiveCompanyId
       };
       
       // Add inbox_id if selected
@@ -441,7 +451,7 @@ const ResumosGrupo = () => {
       const { data: companyData } = await supabase
         .from('company')
         .select('id_conta_wiseapp')
-        .eq('company_id', companyId)
+        .eq('company_id', effectiveCompanyId)
         .single();
       
       const wiseappAccountId = companyData?.id_conta_wiseapp || userAccountId || null;
@@ -474,7 +484,7 @@ const ResumosGrupo = () => {
       
       console.log('Manual summary trigger data:', {
         group_id: grupo.id,
-        company_id: companyId,
+        company_id: effectiveCompanyId,
         account_id: wiseappAccountId,
         has_api_key: !!apiKey
       });
@@ -487,7 +497,7 @@ const ResumosGrupo = () => {
         },
         body: JSON.stringify({
           nome_do_grupo: grupo.nome_grupo,
-          company_id: companyId,
+          company_id: effectiveCompanyId,
           group_id: grupo.id,
           account_id: wiseappAccountId,
           api_key: apiKey

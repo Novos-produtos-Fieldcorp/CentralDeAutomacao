@@ -395,10 +395,32 @@ export default function ComprovRotaLista() {
 
     try {
       toast.loading('Baixando foto...', { id: 'download-photo' });
-      
-      const response = await fetch(selectedPhoto);
-      const blob = await response.blob();
-      
+      let blob: Blob | null = null;
+
+      // Se for data URI, converte diretamente
+      if (selectedPhoto.startsWith('data:')) {
+        blob = dataURItoBlob(selectedPhoto);
+        if (!blob) {
+          throw new Error('Falha ao processar a imagem base64');
+        }
+      } else {
+        // Usa a edge function do Supabase para evitar CORS
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const proxyUrl = `${supabaseUrl}/functions/v1/proxy-download`;
+
+        const response = await fetch(proxyUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: selectedPhoto })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Falha no download: ${response.status} ${response.statusText}`);
+        }
+
+        blob = await response.blob();
+      }
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
