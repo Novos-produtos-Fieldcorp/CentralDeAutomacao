@@ -388,7 +388,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch(createApiUrl(`wiseapp/${tag.company_id}/labels`), {
+    const response = await fetch(createApiUrl(`wiseapp/${accountId}/labels`), {
       method: 'POST',
       headers: getSupabaseEdgeFunctionHeaders({
         'wiseapp-token': wiseAppToken,

@@ -1,0 +1,98 @@
+Request URL
+https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/5/labels
+Request Method
+POST
+Status Code
+403 Forbidden
+Remote Address
+104.18.38.10:443
+Referrer Policy
+strict-origin-when-cross-origin
+access-control-allow-credentials
+true
+access-control-allow-headers
+authorization, x-client-info, apikey, content-type, company-id, wiseapp-token, wiseapp-account-id, api_access_token, X-Requested-With, Accept, Origin, Cache-Control, Pragma, Expires
+access-control-allow-methods
+GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD
+access-control-allow-origin
+*
+alt-svc
+h3=":443"; ma=86400
+cf-cache-status
+DYNAMIC
+cf-ray
+9c0748cf9ccbcf1d-GRU
+content-encoding
+gzip
+content-length
+116
+content-type
+application/json
+date
+Mon, 19 Jan 2026 15:14:54 GMT
+priority
+u=1,i
+sb-project-ref
+ohmoxsvwjvohmqqgxjhb
+sb-request-id
+019bd6d2-bdc3-7013-9e13-3407ffa925be
+server
+cloudflare
+server-timing
+cfExtPri
+set-cookie
+__cf_bm=j175jEaIM_B_M1j5wSn9I86UdExhrCW9.TYob_8ffa4-1768835694-1.0.1.1-AfsZthG1rcxnM.mbUBP_FsvE6.XNFK6CYyr55tQU8VvWSPvlDCq1td0i.DGwXme0nayI7BB1GYairfyHRVo.tJ0NyS7Hyw43rDETxqO.8E8; path=/; expires=Mon, 19-Jan-26 15:44:54 GMT; domain=.supabase.co; HttpOnly; Secure; SameSite=None
+strict-transport-security
+max-age=31536000; includeSubDomains; preload
+vary
+Accept-Encoding
+x-deno-execution-id
+6e7deecd-3d0f-478b-878d-69d02aa0c0dc
+x-sb-edge-region
+sa-east-1
+x-served-by
+supabase-edge-runtime
+:authority
+ohmoxsvwjvohmqqgxjhb.supabase.co
+:method
+POST
+:path
+/functions/v1/api/wiseapp/5/labels
+:scheme
+https
+accept
+*/*
+accept-encoding
+gzip, deflate, br, zstd
+accept-language
+en-US,en;q=0.9
+apikey
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ
+content-length
+56
+content-type
+application/json
+origin
+https://centralautomacoes.netlify.app
+priority
+u=1, i
+referer
+https://centralautomacoes.netlify.app/
+sec-ch-ua
+"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"
+sec-ch-ua-mobile
+?0
+sec-ch-ua-platform
+"macOS"
+sec-fetch-dest
+empty
+sec-fetch-mode
+cors
+sec-fetch-site
+cross-site
+user-agent
+Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36
+wiseapp-account-id
+20
+wiseapp-token
+ApoVmcXcGWGwKwJgud6n7D5J
