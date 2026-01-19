@@ -177,29 +177,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                 const contact = contacts[0];
                 
                 // CRITICAL: Use accountId in URL for WiseApp API, NOT companyId
-                // Buscar labels existentes primeiro
-                const existingTagsResponse = await fetch(`/api/wiseapp/${accountId}/contacts/${contact.id}/labels`, {
-                  method: 'GET',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': accountId
-                  }
-                });
-
-                let existingTags: string[] = [];
-                if (existingTagsResponse.ok) {
-                  const existingTagsData = await existingTagsResponse.json();
-                  existingTags = existingTagsData.payload || [];
-                }
-
-                // Criar array com todas as tags (existentes + nova)
-                const allTags = [...existingTags];
-                if (!allTags.some(existingTag => existingTag.toLowerCase() === tag.nome.toLowerCase())) {
-                  allTags.push(tag.nome);
-                }
-
-                // Enviar array completo - Use accountId in URL
+                // Use tagName - Edge Function will fetch existing labels internally
                 const tagResponse = await fetch(`/api/wiseapp/${accountId}/contacts/${contact.id}/labels`, {
                   method: 'POST',
                   headers: {
@@ -207,7 +185,7 @@ export function MotoristaTagsManager({ motoristaId, companyId }: MotoristaTagsMa
                     'wiseapp-token': wiseAppToken,
                     'wiseapp-account-id': accountId
                   },
-                  body: JSON.stringify({ labels: allTags })
+                  body: JSON.stringify({ tagName: tag.nome })
                 });
 
                 if (tagResponse.ok) {

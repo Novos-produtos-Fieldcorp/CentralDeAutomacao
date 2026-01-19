@@ -1,0 +1,68 @@
+rum:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+index-DpQMLZ6F.js:266 Hybrid API Configuration: Object
+index-DpQMLZ6F.js:265 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+f1 @ index-DpQMLZ6F.js:265
+index-DpQMLZ6F.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-DpQMLZ6F.js:1116 🔍 [WiseAppAccess] Account ID da URL: undefined
+index-DpQMLZ6F.js:1116 🔍 [WiseAppAccess] Account ID do localStorage: 20
+index-DpQMLZ6F.js:1116 ✅ [WiseAppAccess] Sessão válida encontrada para: andrea.peres@trackerloglogistica.com.br accountId: 20
+index-DpQMLZ6F.js:1116 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 5 accountId: 20
+index-DpQMLZ6F.js:266 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 5
+index-DpQMLZ6F.js:1465 Dashboard data loaded: Object
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/vagas/dashboard/5:1  Failed to load resource: the server responded with a status of 404 ()
+index-DpQMLZ6F.js:249  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.6927&tag_id=eq.1660 406 (Not Acceptable)
+(anonymous) @ index-DpQMLZ6F.js:249
+(anonymous) @ index-DpQMLZ6F.js:249
+l @ index-DpQMLZ6F.js:249
+Promise.then
+d @ index-DpQMLZ6F.js:249
+(anonymous) @ index-DpQMLZ6F.js:249
+Dpe @ index-DpQMLZ6F.js:249
+(anonymous) @ index-DpQMLZ6F.js:249
+then @ index-DpQMLZ6F.js:227
+index-DpQMLZ6F.js:1495 Aplicando tag "wise" aos contatos no WiseApp para 1 motoristas...
+index-DpQMLZ6F.js:1495 DEBUG: Processando 1 motoristas: [6927]
+index-DpQMLZ6F.js:1495 [BULK] Processando 1 lotes de até 25 motoristas cada
+index-DpQMLZ6F.js:1495 [BULK] Processando lote 1/1 com 1 motoristas
+index-DpQMLZ6F.js:1495 [BULK] Processando motorista 6927 (1/1)
+index-DpQMLZ6F.js:1495 [BULK] Encontrado na tabela motorista: {telefone: 11995162891, nome_motorista: 'ADILSON MOREIRA DA SILVA'}
+index-DpQMLZ6F.js:266 Buscando contato por telefone 11995162891 via backend para: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/contacts/search?phone=11995162891
+index-DpQMLZ6F.js:266 URL sem /api detectada, limpando cache: wiseapp-contact-20-11995162891
+Zxe @ index-DpQMLZ6F.js:266
+rye @ index-DpQMLZ6F.js:266
+await in rye
+FZ @ index-DpQMLZ6F.js:266
+PZ @ index-DpQMLZ6F.js:266
+ee @ index-DpQMLZ6F.js:1495
+await in ee
+ce @ index-DpQMLZ6F.js:1495
+await in ce
+R0e @ index-DpQMLZ6F.js:37
+$0e @ index-DpQMLZ6F.js:37
+H0e @ index-DpQMLZ6F.js:37
+s7 @ index-DpQMLZ6F.js:37
+mY @ index-DpQMLZ6F.js:37
+(anonymous) @ index-DpQMLZ6F.js:37
+RP @ index-DpQMLZ6F.js:40
+RX @ index-DpQMLZ6F.js:37
+xS @ index-DpQMLZ6F.js:37
+AP @ index-DpQMLZ6F.js:37
+sfe @ index-DpQMLZ6F.js:37
+index-DpQMLZ6F.js:266 [RobustFetch] Sucesso na URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/contacts/search?phone=11995162891 após 1 tentativa(s)
+index-DpQMLZ6F.js:1495  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/contacts/44971/labels 404 (Not Found)
+ee @ index-DpQMLZ6F.js:1495
+await in ee
+ce @ index-DpQMLZ6F.js:1495
+await in ce
+R0e @ index-DpQMLZ6F.js:37
+$0e @ index-DpQMLZ6F.js:37
+H0e @ index-DpQMLZ6F.js:37
+s7 @ index-DpQMLZ6F.js:37
+mY @ index-DpQMLZ6F.js:37
+(anonymous) @ index-DpQMLZ6F.js:37
+RP @ index-DpQMLZ6F.js:40
+RX @ index-DpQMLZ6F.js:37
+xS @ index-DpQMLZ6F.js:37
+AP @ index-DpQMLZ6F.js:37
+sfe @ index-DpQMLZ6F.js:37
+index-DpQMLZ6F.js:1495 [BULK] ✅ Tag "wise" aplicada ao contato ADILSON MOREIRA DA SILVA no WiseApp

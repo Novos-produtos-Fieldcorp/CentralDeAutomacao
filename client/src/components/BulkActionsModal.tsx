@@ -319,31 +319,7 @@ const BulkActionsModal = ({
                 const contact = contacts[0];
                 
                 // CRITICAL: Use accountId in URL for WiseApp API, NOT companyId
-                // Buscar labels existentes primeiro
-                const existingTagsResponse = await fetch(createApiUrl(`wiseapp/${accountId}/contacts/${contact.id}/labels`), {
-                  method: 'GET',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                    'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': accountId
-                  }
-                });
-
-                let existingTags: string[] = [];
-                if (existingTagsResponse.ok) {
-                  const existingTagsData = await existingTagsResponse.json();
-                  existingTags = existingTagsData.payload || [];
-                }
-
-                // Criar array com todas as tags (existentes + nova)
-                const allTags = [...existingTags];
-                if (!allTags.some(tag => tag.toLowerCase() === tagData.nome.toLowerCase())) {
-                  allTags.push(tagData.nome);
-                }
-
-                // Enviar array completo - Use accountId in URL
+                // Use tagName instead of labels - Edge Function will fetch existing labels internally
                 const tagResponse = await fetch(createApiUrl(`wiseapp/${accountId}/contacts/${contact.id}/labels`), {
                   method: 'POST',
                   headers: {
@@ -353,7 +329,7 @@ const BulkActionsModal = ({
                     'wiseapp-token': wiseAppToken,
                     'wiseapp-account-id': accountId
                   },
-                  body: JSON.stringify({ labels: allTags })
+                  body: JSON.stringify({ tagName: tagData.nome })
                 });
                 
                 if (!tagResponse.ok) {
