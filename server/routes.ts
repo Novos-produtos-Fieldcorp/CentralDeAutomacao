@@ -76,11 +76,21 @@ function cleanupOldJobs() {
 setInterval(cleanupOldJobs, 30 * 60 * 1000);
 
 // Initialize Supabase client with bypass RLS for backend operations
+// Use service role key for full access to wiseapp_acesso table
 const supabaseBackendUrl =
   process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co";
-const supabaseBackendKey =
+
+// Prefer service role key for backend operations (bypasses RLS)
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey =
   process.env.VITE_SUPABASE_ANON_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9obW94c3Z3anZvaG1xcWd4amhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY4NzI5MDUsImV4cCI6MjA1MjQ0ODkwNX0.AfDIRYUm98kZaYfi70ut0bzyvX995-Xz609Yp_seijQ";
+
+// Use service role key if available, otherwise fall back to anon key
+const supabaseBackendKey = supabaseServiceRoleKey || supabaseAnonKey;
+
+console.log(`Supabase backend using ${supabaseServiceRoleKey ? 'service_role' : 'anon'} key`);
+
 const supabaseBackend = createClient(supabaseBackendUrl, supabaseBackendKey, {
   db: { schema: "public" },
   auth: {
@@ -3418,16 +3428,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Se 401 e estamos usando token do header, tentar buscar do banco
           if (response.status === 401 && tokenSource === 'header' && !usedFallbackToken) {
             console.log(`Got 401 with header token, trying to fetch fresh token from database...`);
+            console.log(`Looking for company with id_conta_wiseapp = "${accountId}" (type: ${typeof accountId})`);
             
-            // Buscar company_id pelo id_conta_wiseapp
+            // Buscar company_id pelo id_conta_wiseapp - tentar tanto string quanto número
             const { data: companies, error: companyError } = await supabaseBackend
               .from("company")
-              .select("company_id")
-              .eq("id_conta_wiseapp", accountId)
+              .select("company_id, id_conta_wiseapp")
+              .or(`id_conta_wiseapp.eq.${accountId},id_conta_wiseapp.eq."${accountId}"`)
               .limit(1);
+            
+            console.log(`Company lookup result:`, { companies, error: companyError });
               
             if (!companyError && companies && companies.length > 0) {
               const companyId = companies[0].company_id;
+              console.log(`Found company_id: ${companyId} for id_conta_wiseapp: ${companies[0].id_conta_wiseapp}`);
               
               // Buscar token do wiseapp_acesso
               const { data: accessData, error: accessError } = await supabaseBackend
@@ -3436,6 +3450,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 .eq("company_id", companyId)
                 .limit(1)
                 .single();
+              
+              console.log(`Token lookup result:`, { 
+                found: !!accessData?.access_token_wiseapp,
+                error: accessError,
+                tokenLength: accessData?.access_token_wiseapp?.length,
+                isSameAsHeader: accessData?.access_token_wiseapp === token
+              });
                 
               if (!accessError && accessData?.access_token_wiseapp && accessData.access_token_wiseapp !== token) {
                 token = accessData.access_token_wiseapp;
@@ -3443,7 +3464,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 usedFallbackToken = true;
                 console.log(`Using fresh token from database for company ${companyId}`);
                 continue; // Retry with new token
+              } else if (accessData?.access_token_wiseapp === token) {
+                console.log(`Token from database is the same as header token - both may be expired`);
               }
+            } else {
+              console.log(`No company found with id_conta_wiseapp = ${accountId}`);
             }
           }
           
