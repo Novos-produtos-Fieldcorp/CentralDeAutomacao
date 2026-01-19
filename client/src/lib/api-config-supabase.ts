@@ -112,6 +112,3 @@ export const getSupabaseEdgeFunctionHeaders = (additionalHeaders: Record<string,
     ...additionalHeaders
   };
 };
-
-// Export anon key for Edge Function authentication (this is public and safe to expose)
-export { supabaseAnonKey };
