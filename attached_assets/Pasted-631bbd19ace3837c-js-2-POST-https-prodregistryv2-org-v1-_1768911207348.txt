@@ -1,0 +1,575 @@
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768911018114&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768911018629&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768911020635&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+injected.js:37 [SyncFromWiseApp] Usando accountId 20 para buscar labels
+injected.js:37 URL sem /api detectada, limpando cache: wiseapp-labels-20
+(anonymous) @ injected.js:37
+setCachedData @ robustFetch.ts:114
+robustFetch @ robustFetch.ts:212
+await in robustFetch
+robustWiseAppFetch @ robustFetch.ts:286
+getWiseAppLabels @ directApiService.ts:304
+mutationFn @ TagAdministration.tsx:234
+fn @ @tanstack_react-query.js?v=abfa6e67:1998
+run @ @tanstack_react-query.js?v=abfa6e67:795
+start @ @tanstack_react-query.js?v=abfa6e67:838
+execute @ @tanstack_react-query.js?v=abfa6e67:2039
+await in execute
+mutate @ @tanstack_react-query.js?v=abfa6e67:2378
+(anonymous) @ @tanstack_react-query.js?v=abfa6e67:3566
+onConfirm @ TagAdministration.tsx:607
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+injected.js:37 [RobustFetch] Sucesso na URL: /api/wiseapp/20/labels após 1 tentativa(s)
+injected.js:37 [SyncFromWiseApp] Labels do WiseApp: (43) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+injected.js:37 [SyncFromWiseApp] Labels do WiseApp: (43) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768911025142&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768911025142&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Unable to save failed logs to storage
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=033156ce-7ad2-44d5-8d18-da252bb3d9d7 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=0d8628d0-feca-48ae-a921-7fe5cfab096a net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+m @ f0664b4534f73c02.js:2
+y @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.catch
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+m @ f0664b4534f73c02.js:2
+y @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+injected.js:37 [SyncFromWiseApp] Usando accountId 20 para buscar labels
+injected.js:37 URL sem /api detectada, limpando cache: wiseapp-labels-20
+(anonymous) @ injected.js:37
+setCachedData @ robustFetch.ts:114
+robustFetch @ robustFetch.ts:212
+await in robustFetch
+robustWiseAppFetch @ robustFetch.ts:286
+getWiseAppLabels @ directApiService.ts:304
+mutationFn @ TagAdministration.tsx:234
+fn @ @tanstack_react-query.js?v=abfa6e67:1998
+run @ @tanstack_react-query.js?v=abfa6e67:795
+start @ @tanstack_react-query.js?v=abfa6e67:838
+execute @ @tanstack_react-query.js?v=abfa6e67:2039
+await in execute
+mutate @ @tanstack_react-query.js?v=abfa6e67:2378
+(anonymous) @ @tanstack_react-query.js?v=abfa6e67:3566
+onConfirm @ TagAdministration.tsx:607
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+injected.js:37 [RobustFetch] Sucesso na URL: /api/wiseapp/20/labels após 1 tentativa(s)
+injected.js:37 [SyncFromWiseApp] Labels do WiseApp: (44) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+injected.js:37 [SyncFromWiseApp] Labels do WiseApp: (44) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+injected.js:214  DELETE https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/api/wiseapp/20/labels/362 500 (Internal Server Error)
+apply @ injected.js:214
+deleteWiseAppTag @ TagAdministration.tsx:444
+await in deleteWiseAppTag
+onSuccess @ TagAdministration.tsx:209
+execute @ @tanstack_react-query.js?v=abfa6e67:2048
+await in execute
+mutate @ @tanstack_react-query.js?v=abfa6e67:2378
+(anonymous) @ @tanstack_react-query.js?v=abfa6e67:3566
+confirmDeleteTag @ TagAdministration.tsx:365
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+injected.js:37 Erro ao deletar tag do WiseApp: 500 - {"error":"Erro ao deletar label no WiseApp","details":"WiseApp API responded with 401"}
+(anonymous) @ injected.js:37
+deleteWiseAppTag @ TagAdministration.tsx:459
+await in deleteWiseAppTag
+onSuccess @ TagAdministration.tsx:209
+execute @ @tanstack_react-query.js?v=abfa6e67:2048
+await in execute
+mutate @ @tanstack_react-query.js?v=abfa6e67:2378
+(anonymous) @ @tanstack_react-query.js?v=abfa6e67:3566
+confirmDeleteTag @ TagAdministration.tsx:365
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=cc137c8e-fe11-4728-b10b-d9f855e317a5 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=4ef1cddb-1706-4790-a7b4-f5813fe89576 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+c.flush @ f0664b4534f73c02.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.catch
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+c.flush @ f0664b4534f73c02.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
