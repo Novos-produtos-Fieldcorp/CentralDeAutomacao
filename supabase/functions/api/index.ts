@@ -422,6 +422,67 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     }
   }
 
+  // Delete WiseApp label
+  if (path.match(/^\/wiseapp\/(\d+)\/labels\/(\d+)$/) && method === 'DELETE') {
+    const match = path.match(/^\/wiseapp\/(\d+)\/labels\/(\d+)$/)
+    const accountId = match![1]
+    const labelId = match![2]
+    
+    console.log('Debug: Deletando label', labelId, 'para account_id:', accountId);
+    
+    // Buscar token do banco de dados
+    const freshToken = await fetchFreshToken(supabase, accountId);
+
+    if (!freshToken) {
+      return new Response(JSON.stringify({
+        error: 'Token WiseApp não configurado para esta empresa',
+        details: 'Nenhum token encontrado'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Delete label from WiseApp
+    const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels/${labelId}`
+    
+    try {
+      const response = await wiseAppFetchWithRetry(
+        supabase,
+        accountId,
+        wiseAppUrl,
+        { method: 'DELETE', headers: { 'Content-Type': 'application/json' } },
+        freshToken.token
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.log(`Debug: Delete label failed with status ${response.status}: ${errorText}`);
+        return new Response(JSON.stringify({
+          error: `WiseApp API error: ${response.status}`,
+          details: errorText
+        }), {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      console.log('Debug: Label deleted successfully');
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'Erro ao deletar label no WiseApp',
+        details: error.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
   // Search contacts
   if (path.match(/^\/wiseapp\/(\d+)\/contacts\/search$/) && method === 'GET') {
     const match = path.match(/^\/wiseapp\/(\d+)\/contacts\/search$/)

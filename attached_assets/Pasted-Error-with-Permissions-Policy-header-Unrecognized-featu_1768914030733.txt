@@ -1,0 +1,168 @@
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'.
+Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'join-ad-interest-group'.
+lista:41  GET https://centralautomacoes.netlify.app/.netlify/scripts/rum net::ERR_BLOCKED_BY_CLIENT
+index-CmZNYP7e.js:266 Hybrid API Configuration: {hostname: 'centralautomacoes.netlify.app', environment: 'Netlify (Supabase Functions)', apiBaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1', supabaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co', hasAnonKey: true, …}
+index-CmZNYP7e.js:265 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+h1 @ index-CmZNYP7e.js:265
+Rxe @ index-CmZNYP7e.js:266
+_initSupabaseAuthClient @ index-CmZNYP7e.js:266
+$xe @ index-CmZNYP7e.js:266
+CZ @ index-CmZNYP7e.js:266
+(anonymous) @ index-CmZNYP7e.js:266
+index-CmZNYP7e.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-CmZNYP7e.js:1116 🔍 [WiseAppAccess] Account ID da URL: undefined
+index-CmZNYP7e.js:1116 🔍 [WiseAppAccess] Account ID do localStorage: 20
+index-CmZNYP7e.js:1116 ✅ [WiseAppAccess] Sessão válida encontrada para: andrea.peres@trackerloglogistica.com.br accountId: 20
+index-CmZNYP7e.js:1116 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 5 accountId: 20
+index-CmZNYP7e.js:266 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 5
+index-CmZNYP7e.js:1693  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/vagas/dashboard/5 404 (Not Found)
+g @ index-CmZNYP7e.js:1693
+(anonymous) @ index-CmZNYP7e.js:1693
+G5 @ index-CmZNYP7e.js:40
+Kp @ index-CmZNYP7e.js:40
+(anonymous) @ index-CmZNYP7e.js:40
+v @ index-CmZNYP7e.js:25
+B @ index-CmZNYP7e.js:25
+index-CmZNYP7e.js:249  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.6927&tag_id=eq.3814 406 (Not Acceptable)
+(anonymous) @ index-CmZNYP7e.js:249
+(anonymous) @ index-CmZNYP7e.js:249
+l @ index-CmZNYP7e.js:249
+Promise.then
+d @ index-CmZNYP7e.js:249
+(anonymous) @ index-CmZNYP7e.js:249
+Lpe @ index-CmZNYP7e.js:249
+(anonymous) @ index-CmZNYP7e.js:249
+then @ index-CmZNYP7e.js:227
+index-CmZNYP7e.js:1495 Aplicando tag "carreta" aos contatos no WiseApp para 1 motoristas...
+index-CmZNYP7e.js:1495 DEBUG: Processando 1 motoristas: [6927]
+index-CmZNYP7e.js:1495 [BULK] Processando 1 lotes de até 25 motoristas cada
+index-CmZNYP7e.js:1495 [BULK] Processando lote 1/1 com 1 motoristas
+index-CmZNYP7e.js:1495 [BULK] Processando motorista 6927 (1/1)
+index-CmZNYP7e.js:1495 [BULK] Encontrado na tabela motorista: {telefone: 11995162891, nome_motorista: 'ADILSON MOREIRA DA SILVA'}
+index-CmZNYP7e.js:266 Buscando contato por telefone 11995162891 via backend para: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/contacts/search?phone=11995162891
+index-CmZNYP7e.js:266 URL sem /api detectada, limpando cache: wiseapp-contact-20-11995162891
+Zxe @ index-CmZNYP7e.js:266
+rye @ index-CmZNYP7e.js:266
+await in rye
+FZ @ index-CmZNYP7e.js:266
+OZ @ index-CmZNYP7e.js:266
+Z @ index-CmZNYP7e.js:1495
+await in Z
+ce @ index-CmZNYP7e.js:1495
+await in ce
+Q0e @ index-CmZNYP7e.js:37
+H0e @ index-CmZNYP7e.js:37
+z0e @ index-CmZNYP7e.js:37
+s7 @ index-CmZNYP7e.js:37
+mY @ index-CmZNYP7e.js:37
+(anonymous) @ index-CmZNYP7e.js:37
+RP @ index-CmZNYP7e.js:40
+RX @ index-CmZNYP7e.js:37
+yS @ index-CmZNYP7e.js:37
+AP @ index-CmZNYP7e.js:37
+ife @ index-CmZNYP7e.js:37
+index-CmZNYP7e.js:266 [RobustFetch] Sucesso na URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/contacts/search?phone=11995162891 após 1 tentativa(s)
+index-CmZNYP7e.js:1495 [BULK] ✅ Tag "carreta" aplicada ao contato ADILSON MOREIRA DA SILVA no WiseApp
+index-CmZNYP7e.js:1639  DELETE https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels/76 404 (Not Found)
+I @ index-CmZNYP7e.js:1639
+await in I
+R @ index-CmZNYP7e.js:1639
+await in R
+onMouseDown @ index-CmZNYP7e.js:1659
+Q0e @ index-CmZNYP7e.js:37
+H0e @ index-CmZNYP7e.js:37
+z0e @ index-CmZNYP7e.js:37
+s7 @ index-CmZNYP7e.js:37
+mY @ index-CmZNYP7e.js:37
+(anonymous) @ index-CmZNYP7e.js:37
+RP @ index-CmZNYP7e.js:40
+RX @ index-CmZNYP7e.js:37
+yS @ index-CmZNYP7e.js:37
+AP @ index-CmZNYP7e.js:37
+ife @ index-CmZNYP7e.js:37
+index-CmZNYP7e.js:1639 Erro ao remover tag do WiseApp: 404
+I @ index-CmZNYP7e.js:1639
+await in I
+R @ index-CmZNYP7e.js:1639
+await in R
+onMouseDown @ index-CmZNYP7e.js:1659
+Q0e @ index-CmZNYP7e.js:37
+H0e @ index-CmZNYP7e.js:37
+z0e @ index-CmZNYP7e.js:37
+s7 @ index-CmZNYP7e.js:37
+mY @ index-CmZNYP7e.js:37
+(anonymous) @ index-CmZNYP7e.js:37
+RP @ index-CmZNYP7e.js:40
+RX @ index-CmZNYP7e.js:37
+yS @ index-CmZNYP7e.js:37
+AP @ index-CmZNYP7e.js:37
+ife @ index-CmZNYP7e.js:37
+index-CmZNYP7e.js:1639  DELETE https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels/98 404 (Not Found)
+I @ index-CmZNYP7e.js:1639
+await in I
+R @ index-CmZNYP7e.js:1639
+await in R
+onMouseDown @ index-CmZNYP7e.js:1659
+Q0e @ index-CmZNYP7e.js:37
+H0e @ index-CmZNYP7e.js:37
+z0e @ index-CmZNYP7e.js:37
+s7 @ index-CmZNYP7e.js:37
+mY @ index-CmZNYP7e.js:37
+(anonymous) @ index-CmZNYP7e.js:37
+RP @ index-CmZNYP7e.js:40
+RX @ index-CmZNYP7e.js:37
+yS @ index-CmZNYP7e.js:37
+AP @ index-CmZNYP7e.js:37
+ife @ index-CmZNYP7e.js:37
+index-CmZNYP7e.js:1639 Erro ao remover tag do WiseApp: 404
+I @ index-CmZNYP7e.js:1639
+await in I
+R @ index-CmZNYP7e.js:1639
+await in R
+onMouseDown @ index-CmZNYP7e.js:1659
+Q0e @ index-CmZNYP7e.js:37
+H0e @ index-CmZNYP7e.js:37
+z0e @ index-CmZNYP7e.js:37
+s7 @ index-CmZNYP7e.js:37
+mY @ index-CmZNYP7e.js:37
+(anonymous) @ index-CmZNYP7e.js:37
+RP @ index-CmZNYP7e.js:40
+RX @ index-CmZNYP7e.js:37
+yS @ index-CmZNYP7e.js:37
+AP @ index-CmZNYP7e.js:37
+ife @ index-CmZNYP7e.js:37
+index-CmZNYP7e.js:1639  DELETE https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels/102 404 (Not Found)
+I @ index-CmZNYP7e.js:1639
+await in I
+R @ index-CmZNYP7e.js:1639
+await in R
+onMouseDown @ index-CmZNYP7e.js:1659
+Q0e @ index-CmZNYP7e.js:37
+H0e @ index-CmZNYP7e.js:37
+z0e @ index-CmZNYP7e.js:37
+s7 @ index-CmZNYP7e.js:37
+mY @ index-CmZNYP7e.js:37
+(anonymous) @ index-CmZNYP7e.js:37
+RP @ index-CmZNYP7e.js:40
+RX @ index-CmZNYP7e.js:37
+yS @ index-CmZNYP7e.js:37
+AP @ index-CmZNYP7e.js:37
+ife @ index-CmZNYP7e.js:37
+index-CmZNYP7e.js:1639 Erro ao remover tag do WiseApp: 404
+I @ index-CmZNYP7e.js:1639
+await in I
+R @ index-CmZNYP7e.js:1639
+await in R
+onMouseDown @ index-CmZNYP7e.js:1659
+Q0e @ index-CmZNYP7e.js:37
+H0e @ index-CmZNYP7e.js:37
+z0e @ index-CmZNYP7e.js:37
+s7 @ index-CmZNYP7e.js:37
+mY @ index-CmZNYP7e.js:37
+(anonymous) @ index-CmZNYP7e.js:37
+RP @ index-CmZNYP7e.js:40
+RX @ index-CmZNYP7e.js:37
+yS @ index-CmZNYP7e.js:37
+AP @ index-CmZNYP7e.js:37
+ife @ index-CmZNYP7e.js:37
