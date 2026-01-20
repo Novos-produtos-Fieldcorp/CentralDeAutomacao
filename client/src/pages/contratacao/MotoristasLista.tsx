@@ -483,6 +483,7 @@ const MotoristasLista = () => {
   const ativoDropdownRef = useRef<HTMLDivElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const motoristaTagDropdownRefs = useRef<{[key: number]: HTMLDivElement | null}>({});
+  const motoristaTagPortalRefs = useRef<{[key: number]: HTMLDivElement | null}>({});
 
   // Funções para alternar os dropdowns
   const handleToggleStatusDropdown = (e: React.MouseEvent) => {
@@ -732,8 +733,11 @@ const MotoristasLista = () => {
     Object.keys(tagDropdownOpen).forEach(motoristaIdStr => {
       const motoristaId = parseInt(motoristaIdStr);
       if (tagDropdownOpen[motoristaId]) {
-        const ref = motoristaTagDropdownRefs.current[motoristaId];
-        if (ref && !ref.contains(target)) {
+        const buttonRef = motoristaTagDropdownRefs.current[motoristaId];
+        const portalRef = motoristaTagPortalRefs.current[motoristaId];
+        const isInsideButton = buttonRef && buttonRef.contains(target);
+        const isInsidePortal = portalRef && portalRef.contains(target);
+        if (!isInsideButton && !isInsidePortal) {
           setTagDropdownOpen(prev => ({ ...prev, [motoristaId]: false }));
         }
       }
@@ -2338,6 +2342,9 @@ const MotoristasLista = () => {
                           {tagDropdownOpen[motorista.motorista_id] && tagDropdownPosition[motorista.motorista_id] && 
                             createPortal(
                               <div 
+                                ref={(el) => {
+                                  motoristaTagPortalRefs.current[motorista.motorista_id] = el;
+                                }}
                                 className="bg-white dark:bg-gray-800 shadow-xl rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
                                 style={{
                                   position: 'fixed',
@@ -2367,7 +2374,8 @@ const MotoristasLista = () => {
                                           <button
                                             type="button"
                                             className="p-0.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onClick={(e) => {
+                                            onMouseDown={(e) => {
+                                              e.preventDefault();
                                               e.stopPropagation();
                                               handleRemoveTag(motorista.motorista_id, tag.id);
                                             }}
