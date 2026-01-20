@@ -2988,16 +2988,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const accountId = (req.headers['wiseapp-account-id'] as string) || accountIdParam;
       
       // Função auxiliar para buscar token do banco usando id_conta_wiseapp diretamente
+      // IMPORTANTE: Filtrar apenas registros que TENHAM token preenchido
       const fetchTokenFromDb = async (): Promise<string | null> => {
         const numericAccountId = parseInt(accountId, 10);
-        const { data: accessData } = await supabaseBackend
+        const { data: accessDataArray } = await supabaseBackend
           .from("wiseapp_acesso")
-          .select("access_token_wiseapp")
+          .select("access_token_wiseapp, email")
           .eq("id_conta_wiseapp", numericAccountId)
-          .limit(1)
-          .single();
+          .not("access_token_wiseapp", "is", null)
+          .neq("access_token_wiseapp", "")
+          .limit(1);
           
-        return accessData?.access_token_wiseapp || null;
+        if (accessDataArray?.[0]?.access_token_wiseapp) {
+          console.log(`Token fetched from database for account ${accountId} (email: ${accessDataArray[0].email})`);
+          return accessDataArray[0].access_token_wiseapp;
+        }
+        return null;
       };
       
       // Tentar obter token com fallback
@@ -3010,7 +3016,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (dbToken) {
           token = dbToken;
           tokenSource = 'database';
-          console.log(`Token fetched from database`);
         }
       }
       
