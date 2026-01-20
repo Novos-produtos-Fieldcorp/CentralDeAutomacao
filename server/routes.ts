@@ -2980,11 +2980,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/wiseapp/:accountIdParam/labels", async (req, res) => {
     try {
       const { accountIdParam } = req.params;
-      // Aceitar tanto nome/cor (português) quanto name/color (inglês)
-      const { name, color, description, nome, cor } = req.body;
+      // Aceitar title/name/nome e color/cor do frontend
+      const { title, name, color, description, nome, cor } = req.body;
       
-      // Usar nome/cor se name/color não estiverem disponíveis
-      const labelName = name || nome;
+      // Usar title, name ou nome (prioridade: title > name > nome)
+      const labelName = title || name || nome;
       const labelColor = color || cor || '#3B82F6';
       
       console.log(`Creating WiseApp label for account ${accountIdParam}`, { labelName, labelColor });
