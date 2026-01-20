@@ -2189,16 +2189,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let tokenSource = 'header';
       
       // Função auxiliar para buscar token do banco usando id_conta_wiseapp (accountId) diretamente
+      // IMPORTANTE: Filtrar apenas registros que TENHAM token preenchido
       const fetchTokenFromDb = async (): Promise<string | null> => {
         const numericAccountId = parseInt(accountId, 10);
-        const { data: accessData } = await supabaseBackend
+        const { data: accessDataArray } = await supabaseBackend
           .from("wiseapp_acesso")
           .select("access_token_wiseapp")
           .eq("id_conta_wiseapp", numericAccountId)
-          .limit(1)
-          .single();
+          .not("access_token_wiseapp", "is", null)
+          .neq("access_token_wiseapp", "")
+          .limit(1);
           
-        return accessData?.access_token_wiseapp || null;
+        return accessDataArray?.[0]?.access_token_wiseapp || null;
       };
       
       // Se não tem token no header, buscar do banco
@@ -2348,16 +2350,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let tokenSource = 'header';
       
       // Função auxiliar para buscar token do banco usando id_conta_wiseapp (accountId) diretamente
+      // IMPORTANTE: Filtrar apenas registros que TENHAM token preenchido
       const fetchTokenFromDb = async (): Promise<string | null> => {
         const numericAccountId = parseInt(accountId, 10);
-        const { data: accessData } = await supabaseBackend
+        const { data: accessDataArray } = await supabaseBackend
           .from("wiseapp_acesso")
           .select("access_token_wiseapp")
           .eq("id_conta_wiseapp", numericAccountId)
-          .limit(1)
-          .single();
+          .not("access_token_wiseapp", "is", null)
+          .neq("access_token_wiseapp", "")
+          .limit(1);
           
-        return accessData?.access_token_wiseapp || null;
+        return accessDataArray?.[0]?.access_token_wiseapp || null;
       };
       
       if (!token) {
@@ -3338,16 +3342,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Token not in headers, fetching from database for account ${accountId}...`);
         
         // Buscar token diretamente usando id_conta_wiseapp (accountId)
+        // IMPORTANTE: Filtrar apenas registros que TENHAM token preenchido
         const numericAccountId = parseInt(accountId, 10);
-        const { data: accessData, error: accessError } = await supabaseBackend
+        const { data: accessDataArray, error: accessError } = await supabaseBackend
           .from("wiseapp_acesso")
           .select("access_token_wiseapp")
           .eq("id_conta_wiseapp", numericAccountId)
-          .limit(1)
-          .single();
+          .not("access_token_wiseapp", "is", null)
+          .neq("access_token_wiseapp", "")
+          .limit(1);
             
-        if (!accessError && accessData?.access_token_wiseapp) {
-          token = accessData.access_token_wiseapp;
+        if (!accessError && accessDataArray?.[0]?.access_token_wiseapp) {
+          token = accessDataArray[0].access_token_wiseapp;
           tokenSource = 'database';
           console.log(`Token fetched from database for account ${accountId}`);
         }
@@ -3397,18 +3403,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Looking for token in wiseapp_acesso with id_conta_wiseapp = "${accountId}"`);
             
             // Buscar token diretamente da tabela wiseapp_acesso usando id_conta_wiseapp
-            // A tabela wiseapp_acesso tem id_conta_wiseapp diretamente (não company_id)
+            // IMPORTANTE: Filtrar apenas registros que TENHAM token preenchido
             const numericAccountId = parseInt(accountId, 10);
-            const { data: accessData, error: accessError } = await supabaseBackend
+            const { data: accessDataArray, error: accessError } = await supabaseBackend
               .from("wiseapp_acesso")
               .select("access_token_wiseapp, id_conta_wiseapp, email")
               .eq("id_conta_wiseapp", numericAccountId)
-              .limit(1)
-              .single();
+              .not("access_token_wiseapp", "is", null)
+              .neq("access_token_wiseapp", "")
+              .limit(1);
+            
+            const accessData = accessDataArray?.[0];
             
             console.log(`Token lookup result:`, { 
               found: !!accessData?.access_token_wiseapp,
               error: accessError,
+              recordsFound: accessDataArray?.length || 0,
               id_conta_wiseapp: accessData?.id_conta_wiseapp,
               email: accessData?.email,
               tokenLength: accessData?.access_token_wiseapp?.length,
@@ -3423,8 +3433,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue; // Retry with new token
             } else if (accessData?.access_token_wiseapp === token) {
               console.log(`Token from database is the same as header token - both may be expired`);
+            } else if (!accessData) {
+              console.log(`No record with valid token found in wiseapp_acesso for id_conta_wiseapp = ${accountId}`);
             } else if (accessError) {
-              console.log(`No token found in wiseapp_acesso for id_conta_wiseapp = ${accountId}:`, accessError.message);
+              console.log(`Error looking up token:`, accessError.message);
             }
           }
           
