@@ -2313,10 +2313,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      const responseText = await response.text();
       console.log(`WiseApp response status: ${response.status}`);
+      console.log(`WiseApp response body: ${responseText}`);
+      console.log(`Request payload sent: ${JSON.stringify({ labels: finalLabels })}`);
 
       if (!response.ok) {
-        const responseText = await response.text();
         if (response.status === 401) {
           return res.status(401).json({ 
             error: "Token WiseApp expirado ou inválido",
@@ -2326,7 +2328,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error(`WiseApp API responded with ${response.status}: ${responseText}`);
       }
 
-      res.json({ success: true });
+      // Parse response to verify what was actually applied
+      try {
+        const responseData = JSON.parse(responseText);
+        console.log(`WiseApp confirmed labels:`, responseData);
+      } catch (e) {
+        console.log(`Could not parse WiseApp response as JSON`);
+      }
+
+      res.json({ success: true, appliedLabels: finalLabels });
 
     } catch (error) {
       console.error("Erro ao aplicar tag ao contato:", error);

@@ -1,0 +1,2625 @@
+websdk.appsflyer.com/?st=pba&:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+CentralDeAutomacao-2:1 The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+CentralDeAutomacao-2:1 The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+CentralDeAutomacao-2:1 The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+VM138:8 [Coframe] Replit Enterprise watcher loaded
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ingest.app.coframe.com/ingest/v2/batched_monitoring/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ingest.app.coframe.com/ingest/v2/session_result/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.120.4:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+631bbd19ace3837c.js:2 Download the Apollo DevTools for a better development experience: https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909330468&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909330468&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909330468&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3640&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909330592&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2 [LaunchDarkly] LaunchDarkly client initialized
+631bbd19ace3837c.js:2 [ai-chat] Creating connection with chat proxy enabled
+(anonymous) @ 631bbd19ace3837c.js:2
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=135c934e-75f2-42de-a876-ad191d70e5b6:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909331070&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909331070&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3640&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=bd0fb344-57af-40d9-b35c-f551c9e834ef:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909331131&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=e1af38f2-1c84-4ea6-a305-97b5bddb5678:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=8c11c90f-516a-4f49-a754-d0d85d2e884a:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909331304&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'.
+Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'.
+Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'.
+Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'.
+Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'.
+Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'.
+Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'.
+Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'.
+Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'.
+Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'.
+Error with Permissions-Policy header: Unrecognized feature: 'run-ad-auction'.
+Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'join-ad-interest-group'.
+Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'join-ad-interest-group'.
+Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'join-ad-interest-group'.
+Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'join-ad-interest-group'.
+Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'join-ad-interest-group'.
+Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'join-ad-interest-group'.
+Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'join-ad-interest-group'.
+Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'join-ad-interest-group'.
+Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'join-ad-interest-group'.
+Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'join-ad-interest-group'.
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+shared-c4942301eb10ece437f4db5c4ea98f1f.js:1 Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/b: Failed to fetch
+    at shared-c4942301eb10ece437f4db5c4ea98f1f.js:1:229441
+631bbd19ace3837c.js:2 Cache data may be lost when replacing the dealContext field of a Org object.
+
+This could cause additional (usually avoidable) network requests to fetch data that were otherwise cached.
+
+To address this problem (which is not a bug in Apollo Client), either ensure all objects of type OrgDealContext have an ID or a custom merge function, or define a custom merge function for the Org.dealContext field, so InMemoryCache can safely merge these objects:
+
+  existing: {"__typename":"OrgDealContext","dealType":"default","salesContactEmail":null}
+  incoming: {"__typename":"OrgDealContext","dealType":"default"}
+
+For more information about these options, please refer to the documentation:
+
+  * Ensuring entity objects have IDs: https://go.apollo.dev/c/generating-unique-identifiers
+  * Defining custom merge functions: https://go.apollo.dev/c/merging-non-normalized-objects
+
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2 Extension Error: An error occurred while loading the extension manifest: Manifest does not exist for extension 9d8280fb-1a5f-495b-9624-aba982c42205 Object
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2 Extension Error: An error occurred while loading the extension manifest: Manifest does not exist for extension e2df0c28-20a7-468f-96bb-aec04c9c8ed7 Object
+(anonymous) @ 631bbd19ace3837c.js:2
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=0007de2f-f889-4872-81cd-8c52c8b8dd50:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=c8f725f4-97b5-4ea6-943c-f63592451910:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+shared-c4942301eb10ece437f4db5c4ea98f1f.js:1 Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/b: Failed to fetch
+    at shared-c4942301eb10ece437f4db5c4ea98f1f.js:1:229441
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909333094&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909333095&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3640&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909333140&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=504d75aa-f5de-4bc2-8bfc-9f8fc320ef5d:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=d0e393c0-b5d5-4dc0-b2dc-017ec96d4af2:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909333308&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=fdf79429-fe01-4e81-8139-b8f6f5c661da:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=194f6bca-7c88-4dfd-9b6d-b81d913faaec:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+shared-c4942301eb10ece437f4db5c4ea98f1f.js:1 Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/b: Failed to fetch
+    at shared-c4942301eb10ece437f4db5c4ea98f1f.js:1:229441
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909337598&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909337598&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909337598&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3640&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909337598&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3640&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909337644&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909337644&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909337862&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909337862&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909340424&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909340930&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909342937&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ed1e693c96a75807.js:2 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'ambient-light-sensor'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'battery'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'execution-while-not-rendered'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'execution-while-out-of-viewport'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'layout-animations'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'legacy-image-formats'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'navigation-override'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'oversized-images'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'publickey-credentials'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'speaker-selection'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'unoptimized-images'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'unsized-media'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'pointer-lock'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Allow attribute will take precedence over 'allowfullscreen'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Allow attribute will take precedence over 'allowpaymentrequest'.
+z @ ed1e693c96a75807.js:2
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=8272d85c-c020-4a6f-bb61-87d1a3ca12a7:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=1c15f68d-e2bc-4762-bec0-37d8fbeb6ceb:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909347444&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909347444&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=49091877-48f9-4237-9f53-b3433acd9327:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=51285b80-b79b-4968-aa87-2b4ba9d97a84:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909404390&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=506&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909404894&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=506&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909406900&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=506&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909411404&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=506&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909411404&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=506&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=c60a3492-c13f-4248-b710-1c0886b7d54f:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=0502ce6a-b2be-47fd-984b-ecd829b58938:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909422597&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1006&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909423103&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1006&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909423487&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909423994&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909425108&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1006&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909426000&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909429614&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1006&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909429614&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1006&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909430506&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909430506&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=df63f8b1-5e00-4aed-aade-2c6a02b9d71c:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=bb5d6a20-d51f-44e5-ab6c-6da8519ee243:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=3c8a74fb-6a1a-4b4b-9354-3033a292832e:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=3757cc35-7671-4a54-ac8c-bcabc612f297:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909523957&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1507&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909524464&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1507&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=3b4ba9f8-11e5-484e-bca8-be5692f94ce0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=8ea802b8-a302-4f56-84b6-887d4237ae4f:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909526475&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1507&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909530985&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1507&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909530985&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1507&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909558514&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909559283&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909561054&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2007&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909561287&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909561814&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2007&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909563817&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2007&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909565817&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909565817&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909568323&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2007&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909568323&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2007&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=8d41b021-72a8-417b-89f0-79899275c776:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=23de1816-d171-4d01-abd0-0728f2bc6bd3:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=e715e2e1-f746-48ad-94fd-db270d7d1d30:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=49d895c2-4b3e-459e-909a-ce368d14200b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=c436eb2e-2d08-44e7-8ee5-05d5fbb212ba:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=5e839fb4-9d51-49a7-b27c-6024817da884:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=519659bf-4337-4fb1-9afc-29db967a35fd:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=f014ce83-2ce1-4f24-8398-59f20c59a8fd:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909709228&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2509&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909709748&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2509&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909711753&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2509&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909716260&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2509&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909716260&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=2509&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909861800&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909862303&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909864309&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909868814&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909868814&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Unable to save failed logs to storage
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909873713&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909874241&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909876252&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909880760&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909880760&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Unable to save failed logs to storage
+(anonymous) @ 631bbd19ace3837c.js:2
+ed1e693c96a75807.js:2 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+z @ ed1e693c96a75807.js:2
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Unrecognized feature: 'battery'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:32 Allow attribute will take precedence over 'allowpaymentrequest'.
+VM234 injected.js:37 Hybrid API Configuration: Object
+VM234 injected.js:37 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+(anonymous) @ VM234 injected.js:37
+VM234 injected.js:37 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+VM234 injected.js:37 🔍 [WiseAppAccess] Account ID da URL: undefined
+VM234 injected.js:37 🔍 [WiseAppAccess] Account ID do localStorage: 20
+VM234 injected.js:37 ✅ [WiseAppAccess] Sessão válida encontrada para: andrea.peres@trackerloglogistica.com.br accountId: 20
+VM234 injected.js:37 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 5 accountId: 20
+VM234 injected.js:37 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 5
+VM234 injected.js:37 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+VM234 injected.js:37 🔍 [WiseAppAccess] Account ID da URL: undefined
+VM234 injected.js:37 🔍 [WiseAppAccess] Account ID do localStorage: 20
+VM234 injected.js:37 ✅ [WiseAppAccess] Sessão válida encontrada para: andrea.peres@trackerloglogistica.com.br accountId: 20
+VM234 injected.js:37 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 5 accountId: 20
+VM234 injected.js:37 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 5
+/public/js/beacon.js:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+VM234 injected.js:37 Dashboard data loaded: Object
+VM234 injected.js:37 Dashboard data loaded: Object
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=99389a0c-b656-49de-9896-f31387645ef5:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=9fe4c091-fd2a-404c-8f72-dfd92441cbd4:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+o1151714.ingest.sentry.io/api/6318792/envelope/?sentry_key=8aa91189a4274b5a8c9b7b01d46ea360&sentry_version=7&sentry_client=sentry.javascript.browser%2F7.120.4:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ingest.app.coframe.com/ingest/v2/batched_monitoring/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909932130&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909932648&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+r.stripe.com/b:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+shared-c4942301eb10ece437f4db5c4ea98f1f.js:1 Uncaught (in promise) FetchError: Error fetching https://r.stripe.com/b: Failed to fetch
+    at shared-c4942301eb10ece437f4db5c4ea98f1f.js:1:229441
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909934658&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909939164&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909939164&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Unable to save failed logs to storage
+(anonymous) @ 631bbd19ace3837c.js:2
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=a5b6f224-990a-4fef-abb5-2c495befc050:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=a3f602ab-8bd8-497c-a263-1bf6a9d516b0:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.6927&tag_id=eq.1654:1  Failed to load resource: the server responded with a status of 406 ()
+VM234 injected.js:37 Aplicando tag "toco" aos contatos no WiseApp para 1 motoristas...
+VM234 injected.js:37 DEBUG: Processando 1 motoristas: Array(1)
+VM234 injected.js:37 [BULK] Processando 1 lotes de até 25 motoristas cada
+VM234 injected.js:37 [BULK] Processando lote 1/1 com 1 motoristas
+VM234 injected.js:37 [BULK] Processando motorista 6927 (1/1)
+VM234 injected.js:37 [BULK] Encontrado na tabela motorista: Object
+VM234 injected.js:37 Buscando contato por telefone 11995162891 via backend para: /api/wiseapp/20/contacts/search?phone=11995162891
+search:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+VM234 injected.js:37 [RobustFetch] Erro na tentativa 1 para URL /api/wiseapp/20/contacts/search?phone=11995162891: HTTP 401: Unauthorized
+(anonymous) @ VM234 injected.js:37
+VM234 injected.js:37 [RobustFetch] Tentativa 2 de 6 para URL: /api/wiseapp/20/contacts/search?phone=11995162891
+VM234 injected.js:37 [WiseApp] Tentativa 1 falhou: HTTP 401: Unauthorized. Tentando novamente...
+VM234 injected.js:37 [WiseApp Contact] Tentativa 1 falhou para telefone 11995162891: HTTP 401: Unauthorized
+search:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+VM234 injected.js:37 [RobustFetch] Erro na tentativa 2 para URL /api/wiseapp/20/contacts/search?phone=11995162891: HTTP 401: Unauthorized
+(anonymous) @ VM234 injected.js:37
+VM234 injected.js:37 [RobustFetch] Tentativa 3 de 6 para URL: /api/wiseapp/20/contacts/search?phone=11995162891
+VM234 injected.js:37 [WiseApp] Tentativa 2 falhou: HTTP 401: Unauthorized. Tentando novamente...
+VM234 injected.js:37 [WiseApp Contact] Tentativa 2 falhou para telefone 11995162891: HTTP 401: Unauthorized
+search:1  Failed to load resource: the server responded with a status of 401 (Unauthorized)
+VM234 injected.js:37 [RobustFetch] Erro na tentativa 3 para URL /api/wiseapp/20/contacts/search?phone=11995162891: HTTP 401: Unauthorized
+(anonymous) @ VM234 injected.js:37
+robustFetch @ VM338 robustFetch.ts:144
+VM234 injected.js:37 [RobustFetch] Tentativa 4 de 6 para URL: /api/wiseapp/20/contacts/search?phone=11995162891
+VM234 injected.js:37 [WiseApp] Tentativa 3 falhou: HTTP 401: Unauthorized. Tentando novamente...
+VM234 injected.js:37 [WiseApp Contact] Tentativa 3 falhou para telefone 11995162891: HTTP 401: Unauthorized
+VM234 injected.js:214  GET https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/api/wiseapp/20/contacts/search?phone=11995162891 401 (Unauthorized)
+apply @ VM234 injected.js:214
+fetchWithTimeout @ VM338 robustFetch.ts:78
+robustFetch @ VM338 robustFetch.ts:131
+VM234 injected.js:37 [RobustFetch] Erro na tentativa 4 para URL /api/wiseapp/20/contacts/search?phone=11995162891: HTTP 401: Unauthorized
+(anonymous) @ VM234 injected.js:37
+robustFetch @ VM338 robustFetch.ts:144
+VM234 injected.js:37 [RobustFetch] Tentativa 5 de 6 para URL: /api/wiseapp/20/contacts/search?phone=11995162891
+VM234 injected.js:37 [WiseApp] Tentativa 4 falhou: HTTP 401: Unauthorized. Tentando novamente...
+VM234 injected.js:37 [WiseApp Contact] Tentativa 4 falhou para telefone 11995162891: HTTP 401: Unauthorized
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=32a0c867-6ea3-4d6c-aab2-c8a1167e9cea net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=03412f5b-08ee-49da-8c95-c5cd714493ed net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909998179&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+S.r.HTMLElement.focus @ f0664b4534f73c02.js:2
+H @ 06535f235c6c4406.js:2
+(anonymous) @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+push.eG.mousedown @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+a @ 631bbd19ace3837c.js:2
+VM234 injected.js:214  GET https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/api/wiseapp/20/contacts/search?phone=11995162891 401 (Unauthorized)
+apply @ VM234 injected.js:214
+fetchWithTimeout @ VM338 robustFetch.ts:78
+robustFetch @ VM338 robustFetch.ts:131
+VM234 injected.js:37 [RobustFetch] Erro na tentativa 5 para URL /api/wiseapp/20/contacts/search?phone=11995162891: HTTP 401: Unauthorized
+(anonymous) @ VM234 injected.js:37
+robustFetch @ VM338 robustFetch.ts:144
+VM234 injected.js:37 [RobustFetch] Tentativa 6 de 6 para URL: /api/wiseapp/20/contacts/search?phone=11995162891
+VM234 injected.js:37 [WiseApp] Tentativa 5 falhou: HTTP 401: Unauthorized. Tentando novamente...
+VM234 injected.js:37 [WiseApp Contact] Tentativa 5 falhou para telefone 11995162891: HTTP 401: Unauthorized
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768909998694&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+S.r.HTMLElement.focus @ f0664b4534f73c02.js:2
+H @ 06535f235c6c4406.js:2
+(anonymous) @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+push.eG.mousedown @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+a @ 631bbd19ace3837c.js:2
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ net::ERR_BLOCKED_BY_CLIENT
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910000701&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+S.r.HTMLElement.focus @ f0664b4534f73c02.js:2
+H @ 06535f235c6c4406.js:2
+(anonymous) @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+push.eG.mousedown @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910005209&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910005209&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3009&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Unable to save failed logs to storage
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+c.flush @ f0664b4534f73c02.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.catch
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+c.flush @ f0664b4534f73c02.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=5656ffc1-2ad6-4548-8c57-e46626eca860 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=064af75f-4d63-4da0-81d6-cf73543ca6d0 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ net::ERR_BLOCKED_BY_CLIENT
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910030418&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+t @ df6212602bad8342.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910030921&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+t @ df6212602bad8342.js:2
+a @ 631bbd19ace3837c.js:2
+VM234 injected.js:214  GET https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/api/wiseapp/20/contacts/search?phone=11995162891 401 (Unauthorized)
+apply @ VM234 injected.js:214
+fetchWithTimeout @ VM338 robustFetch.ts:78
+robustFetch @ VM338 robustFetch.ts:131
+VM234 injected.js:37 [RobustFetch] Erro na tentativa 6 para URL /api/wiseapp/20/contacts/search?phone=11995162891: HTTP 401: Unauthorized
+(anonymous) @ VM234 injected.js:37
+robustFetch @ VM338 robustFetch.ts:144
+VM234 injected.js:37 [RobustFetch] Todas as tentativas falharam para as URLs: /api/wiseapp/20/contacts/search?phone=11995162891
+(anonymous) @ VM234 injected.js:37
+robustFetch @ VM338 robustFetch.ts:154
+VM234 injected.js:37 Erro na requisição de contato por telefone 11995162891 (todas as tentativas falharam): Error: Failed to fetch after 6 retries across 1 URLs. Last errors: HTTP 401: Unauthorized, HTTP 401: Unauthorized, HTTP 401: Unauthorized
+    at robustFetch (robustFetch.ts:259:27)
+    at async searchWiseAppContact (directApiService.ts:373:12)
+    at async applyTagToWiseAppContacts (BulkActionsModal.tsx:313:34)
+    at async handleSubmit (BulkActionsModal.tsx:559:11)
+(anonymous) @ VM234 injected.js:37
+searchWiseAppContact @ VM282 directApiService.ts:253
+VM234 injected.js:37 BULK DEBUG: Erro na busca do contato: Error: Failed to fetch after 6 retries across 1 URLs. Last errors: HTTP 401: Unauthorized, HTTP 401: Unauthorized, HTTP 401: Unauthorized
+    at robustFetch (robustFetch.ts:259:27)
+    at async searchWiseAppContact (directApiService.ts:373:12)
+    at async applyTagToWiseAppContacts (BulkActionsModal.tsx:313:34)
+    at async handleSubmit (BulkActionsModal.tsx:559:11)
+(anonymous) @ VM234 injected.js:37
+applyTagToWiseAppContacts @ VM348 BulkActionsModal.tsx:249
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910032925&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+t @ df6212602bad8342.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910037430&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910037430&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=1&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=f3d8420d-4053-4884-914e-c3221a82d1ba net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=a673636e-b61e-4ec4-8ce6-f918cda39d93 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=ac902c69-9815-4cec-a378-556751b8e229 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=392f85ae-40e3-4668-9d5d-44eaa9ad72cb net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+VM234 injected.js:37 [vite] server connection lost. Polling for restart...
+VM234 injected.js:214  GET https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/ 502 (Bad Gateway)
+apply @ VM234 injected.js:214
+ping @ VM247 client:736
+waitForSuccessfulPing @ VM247 client:749
+(anonymous) @ VM247 client:561
+VM247 client:562  GET https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/motoristas/lista 502 (Bad Gateway)
+(anonymous) @ VM247 client:562
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:142  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:142
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=a2e4c414-f42b-462d-b57a-6edd0a6e79d9 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=7ba38b89-3279-4075-994f-dc3018c0bd3c net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+injected.js:37 Hybrid API Configuration: {hostname: 'd36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev', environment: 'Unknown', apiBaseUrl: '/api', supabaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co', hasAnonKey: true, …}
+injected.js:37 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+(anonymous) @ injected.js:37
+_GoTrueClient @ @supabase_supabase-js.js?v=abfa6e67:5715
+SupabaseAuthClient @ @supabase_supabase-js.js?v=abfa6e67:7893
+_initSupabaseAuthClient @ @supabase_supabase-js.js?v=abfa6e67:8084
+SupabaseClient @ @supabase_supabase-js.js?v=abfa6e67:7962
+createClient @ @supabase_supabase-js.js?v=abfa6e67:8126
+(anonymous) @ supabase.ts:11
+workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:142  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.html?initialPath=%2F&id=%3Arh0%3A:142
+injected.js:37 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+injected.js:37 🔍 [WiseAppAccess] Account ID da URL: undefined
+injected.js:37 🔍 [WiseAppAccess] Account ID do localStorage: 20
+injected.js:37 ✅ [WiseAppAccess] Sessão válida encontrada para: andrea.peres@trackerloglogistica.com.br accountId: 20
+injected.js:37 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 5 accountId: 20
+injected.js:37 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 5
+injected.js:37 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+injected.js:37 🔍 [WiseAppAccess] Account ID da URL: undefined
+injected.js:37 🔍 [WiseAppAccess] Account ID do localStorage: 20
+injected.js:37 ✅ [WiseAppAccess] Sessão válida encontrada para: andrea.peres@trackerloglogistica.com.br accountId: 20
+injected.js:37 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 5 accountId: 20
+injected.js:37 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 5
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+c.flush @ f0664b4534f73c02.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.catch
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+c.flush @ f0664b4534f73c02.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=4d3254f0-7183-47ae-a095-41c525af277f net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=37a31695-984e-47d6-b009-5a773e2754f4 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+m @ f0664b4534f73c02.js:2
+y @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/diagnostic/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.catch
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+m @ f0664b4534f73c02.js:2
+y @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=9c7d1b94-e659-4f23-8c9d-bfcb70f55e13 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+notifyBeforeAddMessage @ f0664b4534f73c02.js:2
+e.push @ f0664b4534f73c02.js:2
+e.addOrUpdate @ f0664b4534f73c02.js:2
+e.add @ f0664b4534f73c02.js:2
+add @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+handleLog @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.log @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+L.o.value @ f0664b4534f73c02.js:2
+e.info @ f0664b4534f73c02.js:2
+info @ f0664b4534f73c02.js:2
+logger @ 07223b0f51219b99.js:2
+value @ 07223b0f51219b99.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+eJ @ 2dc3a2c1b386ca86.js:2
+(anonymous) @ 2dc3a2c1b386ca86.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+t @ e3c8814c599ded25.js:2
+s @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ 2dc3a2c1b386ca86.js:2
+apply @ 2dc3a2c1b386ca86.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+t @ e3c8814c599ded25.js:2
+s @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+next @ c55d52fce612c0b3.js:2
+(anonymous) @ c55d52fce612c0b3.js:2
+r.observers.next @ c55d52fce612c0b3.js:2
+m @ c55d52fce612c0b3.js:2
+_ @ c55d52fce612c0b3.js:2
+t.next @ c55d52fce612c0b3.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+m @ c55d52fce612c0b3.js:2
+_ @ c55d52fce612c0b3.js:2
+t.next @ c55d52fce612c0b3.js:2
+(anonymous) @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+m @ c55d52fce612c0b3.js:2
+_ @ c55d52fce612c0b3.js:2
+t.next @ c55d52fce612c0b3.js:2
+(anonymous) @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+value @ a7b6f29bc3f39540.js:2
+value @ a7b6f29bc3f39540.js:2
+value @ a7b6f29bc3f39540.js:2
+onHandshake @ a7b6f29bc3f39540.js:2
+(anonymous) @ a7b6f29bc3f39540.js:2
+value @ a7b6f29bc3f39540.js:2
+i.ws.onmessage @ a7b6f29bc3f39540.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=84619674-93ce-44c8-8fca-6c965620f481 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+notifyBeforeAddMessage @ f0664b4534f73c02.js:2
+e.push @ f0664b4534f73c02.js:2
+e.addOrUpdate @ f0664b4534f73c02.js:2
+e.add @ f0664b4534f73c02.js:2
+add @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+handleLog @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.log @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+L.o.value @ f0664b4534f73c02.js:2
+e.info @ f0664b4534f73c02.js:2
+info @ f0664b4534f73c02.js:2
+logger @ 07223b0f51219b99.js:2
+value @ 07223b0f51219b99.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+eJ @ 2dc3a2c1b386ca86.js:2
+(anonymous) @ 2dc3a2c1b386ca86.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+t @ e3c8814c599ded25.js:2
+s @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ 2dc3a2c1b386ca86.js:2
+apply @ 2dc3a2c1b386ca86.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+t @ e3c8814c599ded25.js:2
+s @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+next @ c55d52fce612c0b3.js:2
+(anonymous) @ c55d52fce612c0b3.js:2
+r.observers.next @ c55d52fce612c0b3.js:2
+m @ c55d52fce612c0b3.js:2
+_ @ c55d52fce612c0b3.js:2
+t.next @ c55d52fce612c0b3.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+m @ c55d52fce612c0b3.js:2
+_ @ c55d52fce612c0b3.js:2
+t.next @ c55d52fce612c0b3.js:2
+(anonymous) @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+m @ c55d52fce612c0b3.js:2
+_ @ c55d52fce612c0b3.js:2
+t.next @ c55d52fce612c0b3.js:2
+(anonymous) @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+value @ a7b6f29bc3f39540.js:2
+value @ a7b6f29bc3f39540.js:2
+value @ a7b6f29bc3f39540.js:2
+onHandshake @ a7b6f29bc3f39540.js:2
+(anonymous) @ a7b6f29bc3f39540.js:2
+value @ a7b6f29bc3f39540.js:2
+i.ws.onmessage @ a7b6f29bc3f39540.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=05189d4e-a293-490e-9f88-416b9586272a net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=e97b4e66-a81e-4e75-9d17-38e77ab38806 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+c.flush @ f0664b4534f73c02.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.catch
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+c.flush @ f0664b4534f73c02.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910441665&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910442176&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910444185&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910448694&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910448694&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1. TypeError: Failed to fetch 
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+   WARN  [Statsig] Unable to save failed logs to storage
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.6927&tag_id=eq.1653 406 (Not Acceptable)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=abfa6e67:4404
+(anonymous) @ @supabase_supabase-js.js?v=abfa6e67:4425
+fulfilled @ @supabase_supabase-js.js?v=abfa6e67:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=abfa6e67:4390
+(anonymous) @ @supabase_supabase-js.js?v=abfa6e67:4392
+__awaiter8 @ @supabase_supabase-js.js?v=abfa6e67:4374
+(anonymous) @ @supabase_supabase-js.js?v=abfa6e67:4415
+then @ @supabase_supabase-js.js?v=abfa6e67:90
+ Aplicando tag "testeluann" aos contatos no WiseApp para 1 motoristas...
+ DEBUG: Processando 1 motoristas: [6927]
+ [BULK] Processando 1 lotes de até 25 motoristas cada
+ [BULK] Processando lote 1/1 com 1 motoristas
+ [BULK] Processando motorista 6927 (1/1)
+ [BULK] Encontrado na tabela motorista: {telefone: 11995162891, nome_motorista: 'ADILSON MOREIRA DA SILVA'}
+ Buscando contato por telefone 11995162891 via backend para: /api/wiseapp/20/contacts/search?phone=11995162891
+ URL sem /api detectada, limpando cache: wiseapp-contact-20-11995162891
+(anonymous) @ injected.js:37
+setCachedData @ robustFetch.ts:65
+robustFetch @ robustFetch.ts:137
+await in robustFetch
+robustWiseAppFetch @ robustFetch.ts:183
+searchWiseAppContact @ directApiService.ts:240
+applyTagToWiseAppContacts @ BulkActionsModal.tsx:221
+await in applyTagToWiseAppContacts
+handleSubmit @ BulkActionsModal.tsx:396
+await in handleSubmit
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+ [RobustFetch] Sucesso na URL: /api/wiseapp/20/contacts/search?phone=11995162891 após 1 tentativa(s)
+ [BULK] ✅ Tag "testeluann" aplicada ao contato ADILSON MOREIRA DA SILVA no WiseApp
+  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=940fd0c3-f19d-4be7-a163-78cfff648004 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=b242d3ed-abf8-473e-9f77-0050ae5de130 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+c.flush @ f0664b4534f73c02.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.catch
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+c.flush @ f0664b4534f73c02.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=1d2b1dd2-be10-497a-8e63-17c640e60da1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+notifyBeforeAddMessage @ f0664b4534f73c02.js:2
+e.push @ f0664b4534f73c02.js:2
+e.addOrUpdate @ f0664b4534f73c02.js:2
+e.add @ f0664b4534f73c02.js:2
+add @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+handleLog @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.log @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+L.o.value @ f0664b4534f73c02.js:2
+e.info @ f0664b4534f73c02.js:2
+info @ f0664b4534f73c02.js:2
+logger @ 07223b0f51219b99.js:2
+value @ 07223b0f51219b99.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+eJ @ 2dc3a2c1b386ca86.js:2
+(anonymous) @ 2dc3a2c1b386ca86.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+t @ e3c8814c599ded25.js:2
+s @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ 2dc3a2c1b386ca86.js:2
+apply @ 2dc3a2c1b386ca86.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+t @ e3c8814c599ded25.js:2
+s @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+next @ c55d52fce612c0b3.js:2
+(anonymous) @ c55d52fce612c0b3.js:2
+r.observers.next @ c55d52fce612c0b3.js:2
+m @ c55d52fce612c0b3.js:2
+_ @ c55d52fce612c0b3.js:2
+t.next @ c55d52fce612c0b3.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+m @ c55d52fce612c0b3.js:2
+_ @ c55d52fce612c0b3.js:2
+t.next @ c55d52fce612c0b3.js:2
+(anonymous) @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+m @ c55d52fce612c0b3.js:2
+_ @ c55d52fce612c0b3.js:2
+t.next @ c55d52fce612c0b3.js:2
+(anonymous) @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+value @ a7b6f29bc3f39540.js:2
+value @ a7b6f29bc3f39540.js:2
+value @ a7b6f29bc3f39540.js:2
+onHandshake @ a7b6f29bc3f39540.js:2
+(anonymous) @ a7b6f29bc3f39540.js:2
+value @ a7b6f29bc3f39540.js:2
+i.ws.onmessage @ a7b6f29bc3f39540.js:2
+  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=401c8efe-32c4-427b-a0f7-0c6c9a64dff0 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+notifyBeforeAddMessage @ f0664b4534f73c02.js:2
+e.push @ f0664b4534f73c02.js:2
+e.addOrUpdate @ f0664b4534f73c02.js:2
+e.add @ f0664b4534f73c02.js:2
+add @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+handleLog @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.log @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+L.o.value @ f0664b4534f73c02.js:2
+e.info @ f0664b4534f73c02.js:2
+info @ f0664b4534f73c02.js:2
+logger @ 07223b0f51219b99.js:2
+value @ 07223b0f51219b99.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+eJ @ 2dc3a2c1b386ca86.js:2
+(anonymous) @ 2dc3a2c1b386ca86.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+t @ e3c8814c599ded25.js:2
+s @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ 2dc3a2c1b386ca86.js:2
+apply @ 2dc3a2c1b386ca86.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+t @ e3c8814c599ded25.js:2
+s @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+next @ c55d52fce612c0b3.js:2
+(anonymous) @ c55d52fce612c0b3.js:2
+r.observers.next @ c55d52fce612c0b3.js:2
+m @ c55d52fce612c0b3.js:2
+_ @ c55d52fce612c0b3.js:2
+t.next @ c55d52fce612c0b3.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+m @ c55d52fce612c0b3.js:2
+_ @ c55d52fce612c0b3.js:2
+t.next @ c55d52fce612c0b3.js:2
+(anonymous) @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+m @ c55d52fce612c0b3.js:2
+_ @ c55d52fce612c0b3.js:2
+t.next @ c55d52fce612c0b3.js:2
+(anonymous) @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+value @ c55d52fce612c0b3.js:2
+(anonymous) @ 07223b0f51219b99.js:2
+value @ a7b6f29bc3f39540.js:2
+value @ a7b6f29bc3f39540.js:2
+value @ a7b6f29bc3f39540.js:2
+onHandshake @ a7b6f29bc3f39540.js:2
+(anonymous) @ a7b6f29bc3f39540.js:2
+value @ a7b6f29bc3f39540.js:2
+i.ws.onmessage @ a7b6f29bc3f39540.js:2
+  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.6927&tag_id=eq.1651 406 (Not Acceptable)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=abfa6e67:4404
+(anonymous) @ @supabase_supabase-js.js?v=abfa6e67:4425
+fulfilled @ @supabase_supabase-js.js?v=abfa6e67:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=abfa6e67:4390
+(anonymous) @ @supabase_supabase-js.js?v=abfa6e67:4392
+__awaiter8 @ @supabase_supabase-js.js?v=abfa6e67:4374
+(anonymous) @ @supabase_supabase-js.js?v=abfa6e67:4415
+then @ @supabase_supabase-js.js?v=abfa6e67:90
+ Aplicando tag "testehojeprogresso" aos contatos no WiseApp para 1 motoristas...
+ DEBUG: Processando 1 motoristas: [6927]
+ [BULK] Processando 1 lotes de até 25 motoristas cada
+ [BULK] Processando lote 1/1 com 1 motoristas
+ [BULK] Processando motorista 6927 (1/1)
+ [BULK] Encontrado na tabela motorista: {telefone: 11995162891, nome_motorista: 'ADILSON MOREIRA DA SILVA'}
+ Buscando contato por telefone 11995162891 via backend para: /api/wiseapp/20/contacts/search?phone=11995162891
+ URL sem /api detectada, limpando cache: wiseapp-contact-20-11995162891
+(anonymous) @ injected.js:37
+setCachedData @ robustFetch.ts:65
+robustFetch @ robustFetch.ts:137
+await in robustFetch
+robustWiseAppFetch @ robustFetch.ts:183
+searchWiseAppContact @ directApiService.ts:240
+applyTagToWiseAppContacts @ BulkActionsModal.tsx:221
+await in applyTagToWiseAppContacts
+handleSubmit @ BulkActionsModal.tsx:396
+await in handleSubmit
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+ [RobustFetch] Sucesso na URL: /api/wiseapp/20/contacts/search?phone=11995162891 após 1 tentativa(s)
+ [BULK] ✅ Tag "testehojeprogresso" aplicada ao contato ADILSON MOREIRA DA SILVA no WiseApp
+  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=5661b1a3-7c36-4ead-bcbe-73dba91209d6 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=bbb070e9-1e3b-4e6b-a6e0-7dd7d30e9b54 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
