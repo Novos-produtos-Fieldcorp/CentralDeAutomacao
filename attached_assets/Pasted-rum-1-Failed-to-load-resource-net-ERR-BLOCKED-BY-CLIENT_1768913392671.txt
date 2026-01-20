@@ -1,0 +1,178 @@
+rum:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+index-CmZNYP7e.js:266 Hybrid API Configuration: Object
+index-CmZNYP7e.js:265 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+h1 @ index-CmZNYP7e.js:265
+index-CmZNYP7e.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-CmZNYP7e.js:1116 🔍 [WiseAppAccess] Account ID da URL: 20
+index-CmZNYP7e.js:1116 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 20
+index-CmZNYP7e.js:1116 📊 [WiseAppAccess] Resultado da busca da empresa: Object
+index-CmZNYP7e.js:1116 ✅ [WiseAppAccess] Empresa encontrada: Object
+index-CmZNYP7e.js:1116 📧 [WiseAppAccess] Mostrando modal de autenticação (e-mail obrigatório)
+index-CmZNYP7e.js:1465 Dashboard data loaded: Object
+index-CmZNYP7e.js:1116 ✅ Token encontrado para email, usando id_conta_wiseapp: 20
+index-CmZNYP7e.js:1116 📧 [WiseAppAccess] Token salvo para email, usando accountId: 20 (do email: 20 , fallback: 20 )
+index-CmZNYP7e.js:1116 🔄 [WiseAppAccess] Atualizando sessão: Object
+index-CmZNYP7e.js:1116 🔄 [WiseAppAccess] Sincronizando companyId com AuthContext: 5 accountId: 20
+index-CmZNYP7e.js:266 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 5
+index-CmZNYP7e.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-CmZNYP7e.js:1116 🔍 [WiseAppAccess] Já verificado nesta sessão...
+index-CmZNYP7e.js:1116 ✅ [WiseAppAccess] Sessão válida com email: andrea.peres@trackerloglogistica.com.br
+index-CmZNYP7e.js:1116 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-CmZNYP7e.js:1116 🔍 [WiseAppAccess] Já verificado nesta sessão...
+index-CmZNYP7e.js:1116 ✅ [WiseAppAccess] Sessão válida com email: andrea.peres@trackerloglogistica.com.br
+index-CmZNYP7e.js:2108 Criando tag com dados: Object
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels:1  Failed to load resource: the server responded with a status of 401 ()
+index-CmZNYP7e.js:2108 Criando tag com dados: {nome: 'testeapagae5000', cor: '#3B82F6', limite_max: null, company_id: 5}
+index-CmZNYP7e.js:2108  POST https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels 401 (Unauthorized)
+B @ index-CmZNYP7e.js:2108
+mutationFn @ index-CmZNYP7e.js:2108
+fn @ index-CmZNYP7e.js:51
+p @ index-CmZNYP7e.js:51
+start @ index-CmZNYP7e.js:51
+execute @ index-CmZNYP7e.js:51
+await in execute
+mutate @ index-CmZNYP7e.js:51
+(anonymous) @ index-CmZNYP7e.js:51
+_ @ index-CmZNYP7e.js:2108
+u @ index-CmZNYP7e.js:2108
+Q0e @ index-CmZNYP7e.js:37
+H0e @ index-CmZNYP7e.js:37
+z0e @ index-CmZNYP7e.js:37
+s7 @ index-CmZNYP7e.js:37
+mY @ index-CmZNYP7e.js:37
+(anonymous) @ index-CmZNYP7e.js:37
+RP @ index-CmZNYP7e.js:40
+RX @ index-CmZNYP7e.js:37
+yS @ index-CmZNYP7e.js:37
+AP @ index-CmZNYP7e.js:37
+ife @ index-CmZNYP7e.js:37
+index-CmZNYP7e.js:266 [SyncFromWiseApp] Usando accountId 20 para buscar labels
+index-CmZNYP7e.js:266 URL sem /api detectada, limpando cache: wiseapp-labels-20
+Zxe @ index-CmZNYP7e.js:266
+rye @ index-CmZNYP7e.js:266
+await in rye
+FZ @ index-CmZNYP7e.js:266
+PZ @ index-CmZNYP7e.js:266
+mutationFn @ index-CmZNYP7e.js:2108
+fn @ index-CmZNYP7e.js:51
+p @ index-CmZNYP7e.js:51
+start @ index-CmZNYP7e.js:51
+execute @ index-CmZNYP7e.js:51
+await in execute
+mutate @ index-CmZNYP7e.js:51
+(anonymous) @ index-CmZNYP7e.js:51
+onConfirm @ index-CmZNYP7e.js:2108
+Q0e @ index-CmZNYP7e.js:37
+H0e @ index-CmZNYP7e.js:37
+z0e @ index-CmZNYP7e.js:37
+s7 @ index-CmZNYP7e.js:37
+mY @ index-CmZNYP7e.js:37
+(anonymous) @ index-CmZNYP7e.js:37
+RP @ index-CmZNYP7e.js:40
+RX @ index-CmZNYP7e.js:37
+yS @ index-CmZNYP7e.js:37
+AP @ index-CmZNYP7e.js:37
+ife @ index-CmZNYP7e.js:37
+index-CmZNYP7e.js:266 [RobustFetch] Sucesso na URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels após 1 tentativa(s)
+index-CmZNYP7e.js:266 [SyncFromWiseApp] Labels do WiseApp: (34) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+index-CmZNYP7e.js:2108 [SyncFromWiseApp] Labels do WiseApp: (34) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+index-CmZNYP7e.js:1693  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/vagas/dashboard/5 404 (Not Found)
+g @ index-CmZNYP7e.js:1693
+(anonymous) @ index-CmZNYP7e.js:1693
+G5 @ index-CmZNYP7e.js:40
+Kp @ index-CmZNYP7e.js:40
+(anonymous) @ index-CmZNYP7e.js:40
+v @ index-CmZNYP7e.js:25
+B @ index-CmZNYP7e.js:25
+index-CmZNYP7e.js:249  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.6927&tag_id=eq.3813 406 (Not Acceptable)
+(anonymous) @ index-CmZNYP7e.js:249
+(anonymous) @ index-CmZNYP7e.js:249
+l @ index-CmZNYP7e.js:249
+Promise.then
+d @ index-CmZNYP7e.js:249
+(anonymous) @ index-CmZNYP7e.js:249
+Lpe @ index-CmZNYP7e.js:249
+(anonymous) @ index-CmZNYP7e.js:249
+then @ index-CmZNYP7e.js:227
+index-CmZNYP7e.js:1639  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels 401 (Unauthorized)
+B @ index-CmZNYP7e.js:1639
+F @ index-CmZNYP7e.js:1639
+await in F
+onMouseDown @ index-CmZNYP7e.js:1659
+Q0e @ index-CmZNYP7e.js:37
+H0e @ index-CmZNYP7e.js:37
+z0e @ index-CmZNYP7e.js:37
+s7 @ index-CmZNYP7e.js:37
+mY @ index-CmZNYP7e.js:37
+(anonymous) @ index-CmZNYP7e.js:37
+RP @ index-CmZNYP7e.js:40
+RX @ index-CmZNYP7e.js:37
+yS @ index-CmZNYP7e.js:37
+AP @ index-CmZNYP7e.js:37
+ife @ index-CmZNYP7e.js:37
+index-CmZNYP7e.js:249  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.6927&tag_id=eq.3812 406 (Not Acceptable)
+(anonymous) @ index-CmZNYP7e.js:249
+(anonymous) @ index-CmZNYP7e.js:249
+l @ index-CmZNYP7e.js:249
+Promise.then
+d @ index-CmZNYP7e.js:249
+(anonymous) @ index-CmZNYP7e.js:249
+Lpe @ index-CmZNYP7e.js:249
+(anonymous) @ index-CmZNYP7e.js:249
+then @ index-CmZNYP7e.js:227
+index-CmZNYP7e.js:1639  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels 401 (Unauthorized)
+B @ index-CmZNYP7e.js:1639
+F @ index-CmZNYP7e.js:1639
+await in F
+onMouseDown @ index-CmZNYP7e.js:1659
+Q0e @ index-CmZNYP7e.js:37
+H0e @ index-CmZNYP7e.js:37
+z0e @ index-CmZNYP7e.js:37
+s7 @ index-CmZNYP7e.js:37
+mY @ index-CmZNYP7e.js:37
+(anonymous) @ index-CmZNYP7e.js:37
+RP @ index-CmZNYP7e.js:40
+RX @ index-CmZNYP7e.js:37
+yS @ index-CmZNYP7e.js:37
+AP @ index-CmZNYP7e.js:37
+ife @ index-CmZNYP7e.js:37
+index-CmZNYP7e.js:249  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.6927&tag_id=eq.1651 406 (Not Acceptable)
+(anonymous) @ index-CmZNYP7e.js:249
+(anonymous) @ index-CmZNYP7e.js:249
+l @ index-CmZNYP7e.js:249
+Promise.then
+d @ index-CmZNYP7e.js:249
+(anonymous) @ index-CmZNYP7e.js:249
+Lpe @ index-CmZNYP7e.js:249
+(anonymous) @ index-CmZNYP7e.js:249
+then @ index-CmZNYP7e.js:227
+index-CmZNYP7e.js:1495 Aplicando tag "testehojeprogresso" aos contatos no WiseApp para 1 motoristas...
+index-CmZNYP7e.js:1495 DEBUG: Processando 1 motoristas: [6927]
+index-CmZNYP7e.js:1495 [BULK] Processando 1 lotes de até 25 motoristas cada
+index-CmZNYP7e.js:1495 [BULK] Processando lote 1/1 com 1 motoristas
+index-CmZNYP7e.js:1495 [BULK] Processando motorista 6927 (1/1)
+index-CmZNYP7e.js:1495 [BULK] Encontrado na tabela motorista: {telefone: 11995162891, nome_motorista: 'ADILSON MOREIRA DA SILVA'}
+index-CmZNYP7e.js:266 Buscando contato por telefone 11995162891 via backend para: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/contacts/search?phone=11995162891
+index-CmZNYP7e.js:266 URL sem /api detectada, limpando cache: wiseapp-contact-20-11995162891
+Zxe @ index-CmZNYP7e.js:266
+rye @ index-CmZNYP7e.js:266
+await in rye
+FZ @ index-CmZNYP7e.js:266
+OZ @ index-CmZNYP7e.js:266
+Z @ index-CmZNYP7e.js:1495
+await in Z
+ce @ index-CmZNYP7e.js:1495
+await in ce
+Q0e @ index-CmZNYP7e.js:37
+H0e @ index-CmZNYP7e.js:37
+z0e @ index-CmZNYP7e.js:37
+s7 @ index-CmZNYP7e.js:37
+mY @ index-CmZNYP7e.js:37
+(anonymous) @ index-CmZNYP7e.js:37
+RP @ index-CmZNYP7e.js:40
+RX @ index-CmZNYP7e.js:37
+yS @ index-CmZNYP7e.js:37
+AP @ index-CmZNYP7e.js:37
+ife @ index-CmZNYP7e.js:37
+index-CmZNYP7e.js:266 [RobustFetch] Sucesso na URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/contacts/search?phone=11995162891 após 1 tentativa(s)
+index-CmZNYP7e.js:1495 [BULK] ✅ Tag "testehojeprogresso" aplicada ao contato ADILSON MOREIRA DA SILVA no WiseApp

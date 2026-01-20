@@ -8,6 +8,81 @@ const corsHeaders = {
   'Access-Control-Allow-Credentials': 'true',
 }
 
+// Helper function to fetch fresh token from database
+async function fetchFreshToken(supabase: any, accountId: string): Promise<{ token: string; email: string } | null> {
+  console.log(`[TokenFallback] Fetching fresh token from database for account ${accountId}`);
+  
+  const { data: tokenRows, error } = await supabase
+    .from('wiseapp_acesso')
+    .select('access_token_wiseapp, email')
+    .eq('id_conta_wiseapp', accountId)
+    .not('access_token_wiseapp', 'is', null)
+    .neq('access_token_wiseapp', '')
+    .order('wiseapp_acesso_id', { ascending: false })
+    .limit(1);
+
+  if (error || !tokenRows || tokenRows.length === 0) {
+    console.log(`[TokenFallback] No token found for account ${accountId}:`, error?.message);
+    return null;
+  }
+
+  const tokenData = tokenRows[0];
+  console.log(`[TokenFallback] Token fetched for account ${accountId} (email: ${tokenData.email})`);
+  return { token: tokenData.access_token_wiseapp, email: tokenData.email };
+}
+
+// Helper function to make WiseApp API call with retry on 401
+async function wiseAppFetchWithRetry(
+  supabase: any,
+  accountId: string,
+  url: string,
+  options: RequestInit,
+  initialToken: string
+): Promise<Response> {
+  console.log(`[WiseApp] Making request to ${url} with initial token`);
+  
+  // First attempt with initial token
+  let response = await fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers as Record<string, string>,
+      'api_access_token': initialToken,
+    }
+  });
+
+  // If 401, try to fetch fresh token from database and retry
+  if (response.status === 401) {
+    console.log(`[WiseApp] Got 401, attempting to fetch fresh token from database...`);
+    
+    const freshToken = await fetchFreshToken(supabase, accountId);
+    
+    if (freshToken && freshToken.token !== initialToken) {
+      console.log(`[WiseApp] Retrying with fresh token from database`);
+      
+      // Wait a bit before retry
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      response = await fetch(url, {
+        ...options,
+        headers: {
+          ...options.headers as Record<string, string>,
+          'api_access_token': freshToken.token,
+        }
+      });
+      
+      if (response.ok) {
+        console.log(`[WiseApp] Success with fresh token from database`);
+      } else {
+        console.log(`[WiseApp] Still failed with fresh token, status: ${response.status}`);
+      }
+    } else {
+      console.log(`[WiseApp] No different fresh token available`);
+    }
+  }
+
+  return response;
+}
+
 serve(async (req) => {
   const url = new URL(req.url)
   const path = url.pathname.replace('/api', '')
@@ -216,61 +291,34 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
   // Get WiseApp labels
   if (path.match(/^\/wiseapp\/(\d+)\/labels$/) && method === 'GET') {
     const match = path.match(/^\/wiseapp\/(\d+)\/labels$/)
-    const companyId = match![1]
+    const accountId = match![1]
     
-    console.log('Debug: Buscando labels para company_id:', companyId);
+    console.log('Debug: Buscando labels para account_id:', accountId);
     
-    // Buscar token específico da empresa
-    const { data: tokenRows, error: tokenError } = await supabase
-      .from('wiseapp_acesso')
-      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-      .eq('id_conta_wiseapp', companyId)
-      .not('access_token_wiseapp', 'is', null)
-      .order('wiseapp_acesso_id', { ascending: false })
-      .limit(1)
+    // Buscar token do banco de dados
+    const freshToken = await fetchFreshToken(supabase, accountId);
 
-    let tokenData = tokenRows?.[0] || null
-
-    // Se não encontrou token específico da empresa, buscar qualquer token disponível
-    if (!tokenData) {
-      console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const { data: fallbackRows } = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-        .not('access_token_wiseapp', 'is', null)
-        .order('wiseapp_acesso_id', { ascending: false })
-        .limit(1)
-      
-      if (fallbackRows?.[0]) {
-        tokenData = fallbackRows[0]
-        console.log('Debug: Usando token fallback para empresa:', companyId);
-      }
-    }
-
-    if (!tokenData) {
-      console.log('Debug: Nenhum token encontrado. Erro:', tokenError);
+    if (!freshToken) {
       return new Response(JSON.stringify({
         error: 'Token WiseApp não configurado para esta empresa',
-        details: tokenError?.message || 'Nenhum token encontrado'
+        details: 'Nenhum token encontrado'
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData
-
-    // Fetch labels from WiseApp API
+    // Fetch labels from WiseApp API with retry
     const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`
     
     try {
-      const response = await fetch(wiseAppUrl, {
-        method: 'GET',
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json'
-        }
-      })
+      const response = await wiseAppFetchWithRetry(
+        supabase,
+        accountId,
+        wiseAppUrl,
+        { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+        freshToken.token
+      );
 
       if (!response.ok) {
         throw new Error(`WiseApp API responded with ${response.status}`)
@@ -304,63 +352,54 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
   // Create WiseApp label
   if (path.match(/^\/wiseapp\/(\d+)\/labels$/) && method === 'POST') {
     const match = path.match(/^\/wiseapp\/(\d+)\/labels$/)
-    const companyId = match![1]
+    const accountId = match![1]
     
-    console.log('Debug: Criando label para company_id:', companyId);
+    console.log('Debug: Criando label para account_id:', accountId);
     
-    // Buscar token específico da empresa
-    const { data: tokenRows2, error: tokenError2 } = await supabase
-      .from('wiseapp_acesso')
-      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-      .eq('id_conta_wiseapp', companyId)
-      .not('access_token_wiseapp', 'is', null)
-      .order('wiseapp_acesso_id', { ascending: false })
-      .limit(1)
+    // Buscar token do banco de dados
+    const freshToken = await fetchFreshToken(supabase, accountId);
 
-    let tokenData2 = tokenRows2?.[0] || null
-
-    // Se não encontrou token específico da empresa, buscar qualquer token disponível
-    if (!tokenData2) {
-      console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const { data: fallbackRows2 } = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-        .not('access_token_wiseapp', 'is', null)
-        .order('wiseapp_acesso_id', { ascending: false })
-        .limit(1)
-      
-      if (fallbackRows2?.[0]) {
-        tokenData2 = fallbackRows2[0]
-        console.log('Debug: Usando token fallback para empresa:', companyId);
-      }
-    }
-
-    if (!tokenData2) {
-      console.log('Debug: Nenhum token encontrado. Erro:', tokenError2);
+    if (!freshToken) {
       return new Response(JSON.stringify({
         error: 'Token WiseApp não configurado para esta empresa',
-        details: tokenError2?.message || 'Nenhum token encontrado'
+        details: 'Nenhum token encontrado'
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData2
     const requestBody = await req.text()
+    
+    // Parse and transform request body to handle different field names
+    let parsedBody: any = {};
+    try {
+      parsedBody = JSON.parse(requestBody);
+    } catch (e) {
+      parsedBody = {};
+    }
+    
+    // Accept title, name, or nome as the label name
+    const labelName = parsedBody.title || parsedBody.name || parsedBody.nome;
+    const labelColor = parsedBody.color || parsedBody.cor || '#3B82F6';
+    
+    const wiseAppBody = JSON.stringify({
+      title: labelName,
+      color: labelColor,
+      show_on_sidebar: parsedBody.show_on_sidebar ?? true
+    });
 
     // Create label in WiseApp
     const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`
     
     try {
-      const response = await fetch(wiseAppUrl, {
-        method: 'POST',
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json'
-        },
-        body: requestBody
-      })
+      const response = await wiseAppFetchWithRetry(
+        supabase,
+        accountId,
+        wiseAppUrl,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: wiseAppBody },
+        freshToken.token
+      );
 
       const responseData = await response.text()
 
@@ -386,62 +425,45 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
   // Search contacts
   if (path.match(/^\/wiseapp\/(\d+)\/contacts\/search$/) && method === 'GET') {
     const match = path.match(/^\/wiseapp\/(\d+)\/contacts\/search$/)
-    const companyId = match![1]
+    const accountId = match![1]
     const url = new URL(req.url)
     const phone = url.searchParams.get('phone')
     
-    console.log('Debug: Buscando contatos para company_id:', companyId, 'phone:', phone);
+    console.log('Debug: Buscando contatos para account_id:', accountId, 'phone:', phone);
     
-    // Buscar token específico da empresa
-    const { data: tokenRows3, error: tokenError3 } = await supabase
-      .from('wiseapp_acesso')
-      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-      .eq('id_conta_wiseapp', companyId)
-      .not('access_token_wiseapp', 'is', null)
-      .order('wiseapp_acesso_id', { ascending: false })
-      .limit(1)
-
-    let tokenData3 = tokenRows3?.[0] || null
-
-    // Se não encontrou token específico da empresa, buscar qualquer token disponível
-    if (!tokenData3) {
-      console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const { data: fallbackRows3 } = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-        .not('access_token_wiseapp', 'is', null)
-        .order('wiseapp_acesso_id', { ascending: false })
-        .limit(1)
-      
-      if (fallbackRows3?.[0]) {
-        tokenData3 = fallbackRows3[0]
-        console.log('Debug: Usando token fallback para empresa:', companyId);
-      }
-    }
-
-    if (!tokenData3 || !phone) {
-      console.log('Debug: Erro na busca de token ou phone não fornecido. Erro:', tokenError3);
+    if (!phone) {
       return new Response(JSON.stringify({
-        error: 'Token, Account ID e phone são obrigatórios',
-        details: tokenError3?.message || 'Token não encontrado'
+        error: 'Phone é obrigatório'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData3
+    // Buscar token do banco de dados
+    const freshToken = await fetchFreshToken(supabase, accountId);
+
+    if (!freshToken) {
+      return new Response(JSON.stringify({
+        error: 'Token não encontrado',
+        details: 'Nenhum token disponível'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     const formattedPhone = `55${phone}`
     const wiseappUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${formattedPhone}`
 
     try {
-      const response = await fetch(wiseappUrl, {
-        method: 'GET',
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json'
-        }
-      })
+      const response = await wiseAppFetchWithRetry(
+        supabase,
+        accountId,
+        wiseappUrl,
+        { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+        freshToken.token
+      );
 
       if (!response.ok) {
         throw new Error(`WiseApp API responded with ${response.status}`)
@@ -466,58 +488,35 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
   // GET labels from contact
   if (path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/) && method === 'GET') {
     const match = path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/)
-    const companyId = match![1]
+    const accountId = match![1]
     const contactId = match![2]
     
-    console.log('Debug: Buscando labels para company_id:', companyId, 'contact_id:', contactId);
+    console.log('Debug: Buscando labels para account_id:', accountId, 'contact_id:', contactId);
     
-    // Buscar token específico da empresa
-    const { data: tokenRowsGet, error: tokenErrorGet } = await supabase
-      .from('wiseapp_acesso')
-      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-      .eq('id_conta_wiseapp', companyId)
-      .not('access_token_wiseapp', 'is', null)
-      .order('wiseapp_acesso_id', { ascending: false })
-      .limit(1)
+    // Buscar token do banco de dados
+    const freshToken = await fetchFreshToken(supabase, accountId);
 
-    let tokenDataGet = tokenRowsGet?.[0] || null
-
-    if (!tokenDataGet) {
-      console.log('Debug: Token específico não encontrado para GET labels, buscando fallback');
-      const { data: fallbackRowsGet } = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-        .not('access_token_wiseapp', 'is', null)
-        .order('wiseapp_acesso_id', { ascending: false })
-        .limit(1)
-      
-      if (fallbackRowsGet?.[0]) {
-        tokenDataGet = fallbackRowsGet[0]
-      }
-    }
-
-    if (!tokenDataGet) {
+    if (!freshToken) {
       return new Response(JSON.stringify({
         error: 'Token não encontrado para buscar labels',
-        details: tokenErrorGet?.message || 'Nenhum token disponível'
+        details: 'Nenhum token disponível'
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const { access_token_wiseapp: tokenGet, id_conta_wiseapp: accountIdGet } = tokenDataGet
-    const urlGet = `https://chat.wiseapp360.com/api/v1/accounts/${accountIdGet}/contacts/${contactId}/labels`
+    const urlGet = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`
     
     try {
       console.log('Debug: GET labels URL:', urlGet);
-      const response = await fetch(urlGet, {
-        method: 'GET',
-        headers: {
-          'api_access_token': tokenGet,
-          'Content-Type': 'application/json'
-        }
-      })
+      const response = await wiseAppFetchWithRetry(
+        supabase,
+        accountId,
+        urlGet,
+        { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+        freshToken.token
+      );
 
       const data = await response.json()
       console.log('Debug: GET labels response status:', response.status);
@@ -541,77 +540,54 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
   // Apply labels to contact
   if (path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/) && method === 'POST') {
     const match = path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/labels$/)
-    const companyId = match![1]
+    const accountId = match![1]
     const contactId = match![2]
     
-    console.log('Debug: Aplicando labels para company_id:', companyId, 'contact_id:', contactId);
+    console.log('Debug: Aplicando labels para account_id:', accountId, 'contact_id:', contactId);
     
-    // Buscar token específico da empresa
-    const { data: tokenRows4, error: tokenError4 } = await supabase
-      .from('wiseapp_acesso')
-      .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-      .eq('id_conta_wiseapp', companyId)
-      .not('access_token_wiseapp', 'is', null)
-      .order('wiseapp_acesso_id', { ascending: false })
-      .limit(1)
+    // Buscar token do banco de dados
+    const freshToken = await fetchFreshToken(supabase, accountId);
 
-    let tokenData4 = tokenRows4?.[0] || null
-
-    // Se não encontrou token específico da empresa, buscar qualquer token disponível
-    if (!tokenData4) {
-      console.log('Debug: Token específico não encontrado, buscando qualquer token disponível');
-      const { data: fallbackRows4 } = await supabase
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp, id_conta_wiseapp, email, nome, wiseapp_acesso_id')
-        .not('access_token_wiseapp', 'is', null)
-        .order('wiseapp_acesso_id', { ascending: false })
-        .limit(1)
-      
-      if (fallbackRows4?.[0]) {
-        tokenData4 = fallbackRows4[0]
-        console.log('Debug: Usando token fallback para empresa:', companyId);
-      }
-    }
-
-    if (!tokenData4) {
-      console.log('Debug: Nenhum token encontrado. Erro:', tokenError4);
+    if (!freshToken) {
       return new Response(JSON.stringify({
-        error: 'Token e Account ID obrigatórios',
-        details: tokenError4?.message || 'Nenhum token encontrado'
+        error: 'Token não encontrado',
+        details: 'Nenhum token disponível'
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    const { access_token_wiseapp: token, id_conta_wiseapp: accountId } = tokenData4
     const requestBody = await req.json()
     
-    const url = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`
+    const labelUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/labels`
     
     let labelsToApply: string[] = []
     
     if (requestBody.labels && Array.isArray(requestBody.labels)) {
       labelsToApply = requestBody.labels
     } else if (requestBody.tagName) {
-      // Buscar labels existentes primeiro
+      // Buscar labels existentes primeiro com retry
       try {
-        const getResponse = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'api_access_token': token,
-            'Content-Type': 'application/json'
-          }
-        });
+        const getResponse = await wiseAppFetchWithRetry(
+          supabase,
+          accountId,
+          labelUrl,
+          { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+          freshToken.token
+        );
         
         if (getResponse.ok) {
           const currentData = await getResponse.json();
           const existingLabels = currentData.payload || [];
           labelsToApply = [...existingLabels, requestBody.tagName];
+          console.log(`Debug: Found ${existingLabels.length} existing labels, adding ${requestBody.tagName}`);
         } else {
+          console.log(`Debug: GET labels returned ${getResponse.status}, using only new tag`);
           labelsToApply = [requestBody.tagName];
         }
       } catch (getError) {
+        console.log('Debug: Error getting existing labels:', getError);
         labelsToApply = [requestBody.tagName];
       }
     } else {
@@ -624,17 +600,23 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     }
 
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'api_access_token': token,
-          'Content-Type': 'application/json'
+      console.log(`Debug: Applying labels ${JSON.stringify(labelsToApply)} to contact ${contactId}`);
+      
+      const response = await wiseAppFetchWithRetry(
+        supabase,
+        accountId,
+        labelUrl,
+        { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ labels: labelsToApply })
         },
-        body: JSON.stringify({ labels: labelsToApply })
-      })
+        freshToken.token
+      );
 
       if (!response.ok) {
         const errorText = await response.text()
+        console.log(`Debug: Apply labels failed with status ${response.status}: ${errorText}`);
         return new Response(JSON.stringify({
           error: `WiseApp API error: ${response.status}`,
           details: errorText
@@ -645,11 +627,13 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       }
 
       const data = await response.json()
+      console.log('Debug: Labels applied successfully:', data);
       return new Response(JSON.stringify({ success: true, data }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
 
     } catch (error) {
+      console.error('Debug: Error applying labels:', error);
       return new Response(JSON.stringify({
         error: 'Erro interno',
         details: error.message
