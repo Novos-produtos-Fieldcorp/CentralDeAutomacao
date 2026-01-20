@@ -2980,9 +2980,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/wiseapp/:accountIdParam/labels", async (req, res) => {
     try {
       const { accountIdParam } = req.params;
-      const { name, color, description } = req.body;
+      // Aceitar tanto nome/cor (português) quanto name/color (inglês)
+      const { name, color, description, nome, cor } = req.body;
       
-      console.log(`Creating WiseApp label for account ${accountIdParam}`);
+      // Usar nome/cor se name/color não estiverem disponíveis
+      const labelName = name || nome;
+      const labelColor = color || cor || '#3B82F6';
+      
+      console.log(`Creating WiseApp label for account ${accountIdParam}`, { labelName, labelColor });
       
       // Buscar accountId do header ou usar o do path
       const accountId = (req.headers['wiseapp-account-id'] as string) || accountIdParam;
@@ -3027,10 +3032,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
       
+      if (!labelName) {
+        return res.status(400).json({ 
+          error: "Nome da tag é obrigatório" 
+        });
+      }
+      
       const payload = {
-        title: name,
+        title: labelName,
         description: description || '',
-        color: color || '#3B82F6'
+        color: labelColor
       };
 
       let response = await fetch(wiseAppUrl, {
