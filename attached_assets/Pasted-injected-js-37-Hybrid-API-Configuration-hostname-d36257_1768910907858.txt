@@ -1,0 +1,2028 @@
+injected.js:37 Hybrid API Configuration: {hostname: 'd36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev', environment: 'Unknown', apiBaseUrl: '/api', supabaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co', hasAnonKey: true, …}
+injected.js:37 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+(anonymous) @ injected.js:37
+_GoTrueClient @ @supabase_supabase-js.js?v=abfa6e67:5715
+SupabaseAuthClient @ @supabase_supabase-js.js?v=abfa6e67:7893
+_initSupabaseAuthClient @ @supabase_supabase-js.js?v=abfa6e67:8084
+SupabaseClient @ @supabase_supabase-js.js?v=abfa6e67:7962
+createClient @ @supabase_supabase-js.js?v=abfa6e67:8126
+(anonymous) @ supabase.ts:11
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Unrecognized feature: 'battery'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'ambient-light-sensor'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'battery'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'execution-while-not-rendered'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'execution-while-out-of-viewport'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'layout-animations'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'legacy-image-formats'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'navigation-override'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'oversized-images'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'publickey-credentials'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'speaker-selection'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'unoptimized-images'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'unsized-media'.
+CentralDeAutomacao-2:1 Unrecognized feature: 'pointer-lock'.
+CentralDeAutomacao-2:1 Allow attribute will take precedence over 'allowfullscreen'.
+CentralDeAutomacao-2:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:142  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.html?initialPath=%2F&id=%3Ar17l%3A:142
+injected.js:37 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+injected.js:37 🔍 [WiseAppAccess] Account ID da URL: undefined
+injected.js:37 🔍 [WiseAppAccess] Account ID do localStorage: 20
+injected.js:37 ✅ [WiseAppAccess] Sessão válida encontrada para: andrea.peres@trackerloglogistica.com.br accountId: 20
+injected.js:37 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 5 accountId: 20
+injected.js:37 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 5
+injected.js:37 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+injected.js:37 🔍 [WiseAppAccess] Account ID da URL: undefined
+injected.js:37 🔍 [WiseAppAccess] Account ID do localStorage: 20
+injected.js:37 ✅ [WiseAppAccess] Sessão válida encontrada para: andrea.peres@trackerloglogistica.com.br accountId: 20
+injected.js:37 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 5 accountId: 20
+injected.js:37 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 5
+injected.js:37 Dashboard data loaded: {agregados: 6056, motoristas: 42, contratados: 7, totalVagas: 0, vagasAbertas: 0, …}
+injected.js:37 Dashboard data loaded: {agregados: 6056, motoristas: 42, contratados: 7, totalVagas: 0, vagasAbertas: 0, …}
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910733244&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910733760&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=3c903353-2601-4a16-86bd-c444e9f4073e net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+notifyBeforeAddMessage @ f0664b4534f73c02.js:2
+e.push @ f0664b4534f73c02.js:2
+e.addOrUpdate @ f0664b4534f73c02.js:2
+e.add @ f0664b4534f73c02.js:2
+add @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+handleLog @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.log @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+L.o.value @ f0664b4534f73c02.js:2
+e.info @ f0664b4534f73c02.js:2
+info @ f0664b4534f73c02.js:2
+D @ d964c93210f61320.js:2
+value @ a7b6f29bc3f39540.js:2
+(anonymous) @ a7b6f29bc3f39540.js:2
+(anonymous) @ a7b6f29bc3f39540.js:2
+(anonymous) @ a7b6f29bc3f39540.js:2
+apply @ a7b6f29bc3f39540.js:2
+(anonymous) @ 77d15c10647571bc.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+t @ e3c8814c599ded25.js:2
+s @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ 77d15c10647571bc.js:2
+(anonymous) @ 77d15c10647571bc.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+t @ e3c8814c599ded25.js:2
+s @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+wait @ 77d15c10647571bc.js:2
+u @ 31430c5cd2a9b86d.js:2
+(anonymous) @ 31430c5cd2a9b86d.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+Object.assign.isScheduled @ 31430c5cd2a9b86d.js:2
+(anonymous) @ 77d15c10647571bc.js:2
+r @ 77d15c10647571bc.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=46c73d57-01e2-4080-b70a-1a7e32fe77b5 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+notifyBeforeAddMessage @ f0664b4534f73c02.js:2
+e.push @ f0664b4534f73c02.js:2
+e.addOrUpdate @ f0664b4534f73c02.js:2
+e.add @ f0664b4534f73c02.js:2
+add @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+handleLog @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.log @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+L.o.value @ f0664b4534f73c02.js:2
+e.info @ f0664b4534f73c02.js:2
+info @ f0664b4534f73c02.js:2
+D @ d964c93210f61320.js:2
+value @ a7b6f29bc3f39540.js:2
+(anonymous) @ a7b6f29bc3f39540.js:2
+(anonymous) @ a7b6f29bc3f39540.js:2
+(anonymous) @ a7b6f29bc3f39540.js:2
+apply @ a7b6f29bc3f39540.js:2
+(anonymous) @ 77d15c10647571bc.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+t @ e3c8814c599ded25.js:2
+s @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ 77d15c10647571bc.js:2
+(anonymous) @ 77d15c10647571bc.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+t @ e3c8814c599ded25.js:2
+s @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+wait @ 77d15c10647571bc.js:2
+u @ 31430c5cd2a9b86d.js:2
+(anonymous) @ 31430c5cd2a9b86d.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+Object.assign.isScheduled @ 31430c5cd2a9b86d.js:2
+(anonymous) @ 77d15c10647571bc.js:2
+r @ 77d15c10647571bc.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910735766&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910740272&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910740272&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Unable to save failed logs to storage
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=5653247c-9807-49c3-9d94-09315998bbcf net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=da912909-b50c-4c89-a226-84008d2b74ba net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/associacao_tags?select=id&motorista_id=eq.6927&tag_id=eq.3606 406 (Not Acceptable)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=abfa6e67:4404
+(anonymous) @ @supabase_supabase-js.js?v=abfa6e67:4425
+fulfilled @ @supabase_supabase-js.js?v=abfa6e67:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=abfa6e67:4390
+(anonymous) @ @supabase_supabase-js.js?v=abfa6e67:4392
+__awaiter8 @ @supabase_supabase-js.js?v=abfa6e67:4374
+(anonymous) @ @supabase_supabase-js.js?v=abfa6e67:4415
+then @ @supabase_supabase-js.js?v=abfa6e67:90
+injected.js:37 Aplicando tag "gimbahrvan" aos contatos no WiseApp para 1 motoristas...
+injected.js:37 DEBUG: Processando 1 motoristas: [6927]
+injected.js:37 [BULK] Processando 1 lotes de até 25 motoristas cada
+injected.js:37 [BULK] Processando lote 1/1 com 1 motoristas
+injected.js:37 [BULK] Processando motorista 6927 (1/1)
+injected.js:37 [BULK] Encontrado na tabela motorista: {telefone: 11995162891, nome_motorista: 'ADILSON MOREIRA DA SILVA'}
+injected.js:37 Buscando contato por telefone 11995162891 via backend para: /api/wiseapp/20/contacts/search?phone=11995162891
+injected.js:37 URL sem /api detectada, limpando cache: wiseapp-contact-20-11995162891
+(anonymous) @ injected.js:37
+setCachedData @ robustFetch.ts:114
+robustFetch @ robustFetch.ts:212
+await in robustFetch
+robustWiseAppFetch @ robustFetch.ts:286
+searchWiseAppContact @ directApiService.ts:373
+applyTagToWiseAppContacts @ BulkActionsModal.tsx:313
+await in applyTagToWiseAppContacts
+handleSubmit @ BulkActionsModal.tsx:559
+await in handleSubmit
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+injected.js:37 [RobustFetch] Sucesso na URL: /api/wiseapp/20/contacts/search?phone=11995162891 após 1 tentativa(s)
+injected.js:37 [BULK] ✅ Tag "gimbahrvan" aplicada ao contato ADILSON MOREIRA DA SILVA no WiseApp
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=e77a63df-2528-4823-8a27-d6efa086be70 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=1800e0db-4f73-4ffe-a8b3-adc571facd32 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910812075&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ net::ERR_BLOCKED_BY_CLIENT
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910812580&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910814589&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910819094&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910819094&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Unable to save failed logs to storage
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ net::ERR_BLOCKED_BY_CLIENT
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=93ed2750-842a-4eac-a734-2f3d70b8e1f2 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=8db5cade-80af-4a9d-a48e-7fcb4c611603 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+injected.js:37 [SyncFromWiseApp] Usando accountId 20 para buscar labels
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+c.flush @ f0664b4534f73c02.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://events.launchdarkly.com/events/bulk/62b35a865152ab14c5942820 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+promise @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+t.httpRequest @ f0664b4534f73c02.js:2
+r @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.catch
+r @ f0664b4534f73c02.js:2
+i.sendChunk @ f0664b4534f73c02.js:2
+i.sendEvents @ f0664b4534f73c02.js:2
+c.flush @ f0664b4534f73c02.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+setTimeout
+(anonymous) @ 631bbd19ace3837c.js:2
+e @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+injected.js:214  GET https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/api/wiseapp/20/labels 500 (Internal Server Error)
+apply @ injected.js:214
+fetchWithTimeout @ robustFetch.ts:131
+robustFetch @ robustFetch.ts:202
+robustWiseAppFetch @ robustFetch.ts:286
+getWiseAppLabels @ directApiService.ts:304
+mutationFn @ TagAdministration.tsx:234
+fn @ @tanstack_react-query.js?v=abfa6e67:1998
+run @ @tanstack_react-query.js?v=abfa6e67:795
+start @ @tanstack_react-query.js?v=abfa6e67:838
+execute @ @tanstack_react-query.js?v=abfa6e67:2039
+await in execute
+mutate @ @tanstack_react-query.js?v=abfa6e67:2378
+(anonymous) @ @tanstack_react-query.js?v=abfa6e67:3566
+onConfirm @ TagAdministration.tsx:607
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+injected.js:37 [RobustFetch] Erro na tentativa 1 para URL /api/wiseapp/20/labels: HTTP 500: Internal Server Error
+(anonymous) @ injected.js:37
+robustFetch @ robustFetch.ts:222
+await in robustFetch
+robustWiseAppFetch @ robustFetch.ts:286
+getWiseAppLabels @ directApiService.ts:304
+mutationFn @ TagAdministration.tsx:234
+fn @ @tanstack_react-query.js?v=abfa6e67:1998
+run @ @tanstack_react-query.js?v=abfa6e67:795
+start @ @tanstack_react-query.js?v=abfa6e67:838
+execute @ @tanstack_react-query.js?v=abfa6e67:2039
+await in execute
+mutate @ @tanstack_react-query.js?v=abfa6e67:2378
+(anonymous) @ @tanstack_react-query.js?v=abfa6e67:3566
+onConfirm @ TagAdministration.tsx:607
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+injected.js:37 [RobustFetch] Tentativa 2 de 6 para URL: /api/wiseapp/20/labels
+injected.js:37 [WiseApp] Tentativa 1 falhou: HTTP 500: Internal Server Error. Tentando novamente...
+injected.js:37 [WiseApp] Tentativa 1 falhou: HTTP 500: Internal Server Error
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910861050&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+S.r.HTMLElement.focus @ f0664b4534f73c02.js:2
+H @ 06535f235c6c4406.js:2
+(anonymous) @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+push.eG.mousedown @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910861565&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+S.r.HTMLElement.focus @ f0664b4534f73c02.js:2
+H @ 06535f235c6c4406.js:2
+(anonymous) @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+push.eG.mousedown @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+a @ 631bbd19ace3837c.js:2
+injected.js:214  GET https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/api/wiseapp/20/labels 500 (Internal Server Error)
+apply @ injected.js:214
+fetchWithTimeout @ robustFetch.ts:131
+robustFetch @ robustFetch.ts:202
+await in robustFetch
+robustWiseAppFetch @ robustFetch.ts:286
+getWiseAppLabels @ directApiService.ts:304
+mutationFn @ TagAdministration.tsx:234
+fn @ @tanstack_react-query.js?v=abfa6e67:1998
+run @ @tanstack_react-query.js?v=abfa6e67:795
+start @ @tanstack_react-query.js?v=abfa6e67:838
+execute @ @tanstack_react-query.js?v=abfa6e67:2039
+await in execute
+mutate @ @tanstack_react-query.js?v=abfa6e67:2378
+(anonymous) @ @tanstack_react-query.js?v=abfa6e67:3566
+onConfirm @ TagAdministration.tsx:607
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+injected.js:37 [RobustFetch] Erro na tentativa 2 para URL /api/wiseapp/20/labels: HTTP 500: Internal Server Error
+(anonymous) @ injected.js:37
+robustFetch @ robustFetch.ts:222
+await in robustFetch
+robustWiseAppFetch @ robustFetch.ts:286
+getWiseAppLabels @ directApiService.ts:304
+mutationFn @ TagAdministration.tsx:234
+fn @ @tanstack_react-query.js?v=abfa6e67:1998
+run @ @tanstack_react-query.js?v=abfa6e67:795
+start @ @tanstack_react-query.js?v=abfa6e67:838
+execute @ @tanstack_react-query.js?v=abfa6e67:2039
+await in execute
+mutate @ @tanstack_react-query.js?v=abfa6e67:2378
+(anonymous) @ @tanstack_react-query.js?v=abfa6e67:3566
+onConfirm @ TagAdministration.tsx:607
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+injected.js:37 [RobustFetch] Tentativa 3 de 6 para URL: /api/wiseapp/20/labels
+injected.js:37 [WiseApp] Tentativa 2 falhou: HTTP 500: Internal Server Error. Tentando novamente...
+injected.js:37 [WiseApp] Tentativa 2 falhou: HTTP 500: Internal Server Error
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ net::ERR_BLOCKED_BY_CLIENT
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1768909325036%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-2%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910863572&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+S.r.HTMLElement.focus @ f0664b4534f73c02.js:2
+H @ 06535f235c6c4406.js:2
+(anonymous) @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+push.eG.mousedown @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910868078&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+S.r.HTMLElement.focus @ f0664b4534f73c02.js:2
+H @ 06535f235c6c4406.js:2
+(anonymous) @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+push.eG.mousedown @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1768910868078&sid=09e00846-64fe-4a5b-97d4-ddef9ce6f4b3&ec=3010&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 631bbd19ace3837c.js:2:107286
+    at t.<anonymous> (df6212602bad8342.js:2:49018)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at df6212602bad8342.js:2:46120
+    at new Promise (<anonymous>)
+    at df6212602bad8342.js:2:45874
+    at t.value (df6212602bad8342.js:2:48108)
+    at df6212602bad8342.js:2:34936
+    at e.value (df6212602bad8342.js:2:35343)
+    at e.<computed> [as _sendRequest] (df6212602bad8342.js:2:34876)
+    at t.<anonymous> (df6212602bad8342.js:2:50494)
+    at Object.next (e3c8814c599ded25.js:2:10809)
+    at s (df6212602bad8342.js:2:45930)
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+u @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+S.r.HTMLElement.focus @ f0664b4534f73c02.js:2
+H @ 06535f235c6c4406.js:2
+(anonymous) @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+push.eG.mousedown @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+S.r.HTMLElement.focus @ f0664b4534f73c02.js:2
+H @ 06535f235c6c4406.js:2
+(anonymous) @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+push.eG.mousedown @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2   WARN  [Statsig] Unable to save failed logs to storage
+(anonymous) @ 631bbd19ace3837c.js:2
+value @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+s @ df6212602bad8342.js:2
+Promise.then
+l @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ e3c8814c599ded25.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+e.<computed> @ df6212602bad8342.js:2
+value @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+(anonymous) @ df6212602bad8342.js:2
+S.r.HTMLElement.focus @ f0664b4534f73c02.js:2
+H @ 06535f235c6c4406.js:2
+(anonymous) @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+push.eG.mousedown @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+value @ 06535f235c6c4406.js:2
+a @ 631bbd19ace3837c.js:2
+injected.js:214  GET https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/api/wiseapp/20/labels 500 (Internal Server Error)
+apply @ injected.js:214
+fetchWithTimeout @ robustFetch.ts:131
+robustFetch @ robustFetch.ts:202
+await in robustFetch
+robustWiseAppFetch @ robustFetch.ts:286
+getWiseAppLabels @ directApiService.ts:304
+mutationFn @ TagAdministration.tsx:234
+fn @ @tanstack_react-query.js?v=abfa6e67:1998
+run @ @tanstack_react-query.js?v=abfa6e67:795
+start @ @tanstack_react-query.js?v=abfa6e67:838
+execute @ @tanstack_react-query.js?v=abfa6e67:2039
+await in execute
+mutate @ @tanstack_react-query.js?v=abfa6e67:2378
+(anonymous) @ @tanstack_react-query.js?v=abfa6e67:3566
+onConfirm @ TagAdministration.tsx:607
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+injected.js:37 [RobustFetch] Erro na tentativa 3 para URL /api/wiseapp/20/labels: HTTP 500: Internal Server Error
+(anonymous) @ injected.js:37
+robustFetch @ robustFetch.ts:222
+await in robustFetch
+robustWiseAppFetch @ robustFetch.ts:286
+getWiseAppLabels @ directApiService.ts:304
+mutationFn @ TagAdministration.tsx:234
+fn @ @tanstack_react-query.js?v=abfa6e67:1998
+run @ @tanstack_react-query.js?v=abfa6e67:795
+start @ @tanstack_react-query.js?v=abfa6e67:838
+execute @ @tanstack_react-query.js?v=abfa6e67:2039
+await in execute
+mutate @ @tanstack_react-query.js?v=abfa6e67:2378
+(anonymous) @ @tanstack_react-query.js?v=abfa6e67:3566
+onConfirm @ TagAdministration.tsx:607
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+injected.js:37 [RobustFetch] Tentativa 4 de 6 para URL: /api/wiseapp/20/labels
+injected.js:37 [WiseApp] Tentativa 3 falhou: HTTP 500: Internal Server Error. Tentando novamente...
+injected.js:37 [WiseApp] Tentativa 3 falhou: HTTP 500: Internal Server Error
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=0cbd9318-ee0c-461c-a4be-c9cc1cf5c1bc net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+631bbd19ace3837c.js:2  POST https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Axhr%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A77ab6e0e&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=eb341345-1c69-455c-953c-c750cd78a7b2 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 631bbd19ace3837c.js:2
+(anonymous) @ 631bbd19ace3837c.js:2
+tc @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+Promise.then
+n @ f0664b4534f73c02.js:2
+tt @ f0664b4534f73c02.js:2
+tr @ f0664b4534f73c02.js:2
+send @ f0664b4534f73c02.js:2
+e.flush @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+e.notify @ f0664b4534f73c02.js:2
+u @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+U @ f0664b4534f73c02.js:2
+(anonymous) @ f0664b4534f73c02.js:2
+a @ 631bbd19ace3837c.js:2
+injected.js:214  GET https://d36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev/api/wiseapp/20/labels 500 (Internal Server Error)
+apply @ injected.js:214
+fetchWithTimeout @ robustFetch.ts:131
+robustFetch @ robustFetch.ts:202
+await in robustFetch
+robustWiseAppFetch @ robustFetch.ts:286
+getWiseAppLabels @ directApiService.ts:304
+mutationFn @ TagAdministration.tsx:234
+fn @ @tanstack_react-query.js?v=abfa6e67:1998
+run @ @tanstack_react-query.js?v=abfa6e67:795
+start @ @tanstack_react-query.js?v=abfa6e67:838
+execute @ @tanstack_react-query.js?v=abfa6e67:2039
+await in execute
+mutate @ @tanstack_react-query.js?v=abfa6e67:2378
+(anonymous) @ @tanstack_react-query.js?v=abfa6e67:3566
+onConfirm @ TagAdministration.tsx:607
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+injected.js:37 [RobustFetch] Erro na tentativa 4 para URL /api/wiseapp/20/labels: HTTP 500: Internal Server Error
+(anonymous) @ injected.js:37
+robustFetch @ robustFetch.ts:222
+await in robustFetch
+robustWiseAppFetch @ robustFetch.ts:286
+getWiseAppLabels @ directApiService.ts:304
+mutationFn @ TagAdministration.tsx:234
+fn @ @tanstack_react-query.js?v=abfa6e67:1998
+run @ @tanstack_react-query.js?v=abfa6e67:795
+start @ @tanstack_react-query.js?v=abfa6e67:838
+execute @ @tanstack_react-query.js?v=abfa6e67:2039
+await in execute
+mutate @ @tanstack_react-query.js?v=abfa6e67:2378
+(anonymous) @ @tanstack_react-query.js?v=abfa6e67:3566
+onConfirm @ TagAdministration.tsx:607
+callCallback2 @ chunk-NFC5BX5N.js?v=abfa6e67:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=abfa6e67:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=abfa6e67:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=abfa6e67:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=abfa6e67:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=abfa6e67:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=abfa6e67:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=abfa6e67:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=abfa6e67:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=abfa6e67:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=abfa6e67:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=abfa6e67:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=abfa6e67:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=abfa6e67:5449
+injected.js:37 [RobustFetch] Tentativa 5 de 6 para URL: /api/wiseapp/20/labels
+injected.js:37 [WiseApp] Tentativa 4 falhou: HTTP 500: Internal Server Error. Tentando novamente...
+injected.js:37 [WiseApp] Tentativa 4 falhou: HTTP 500: Internal Server Error

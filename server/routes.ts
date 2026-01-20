@@ -2771,68 +2771,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { companyId } = req.params;
       console.log(`Fetching WiseApp labels for company ${companyId}`);
-      console.log('Request headers:', req.headers);
       
       // Buscar token do header (enviado pelo frontend)
-      const token = req.headers['wiseapp-token'] as string;
-      console.log('Token from header:', token ? 'Found' : 'Not found');
-      
-      if (!token) {
-        console.log('No token found in header');
-        return res.status(401).json({ 
-          error: "Token WiseApp não configurado para esta empresa" 
-        });
-      }
+      let token = req.headers['wiseapp-token'] as string;
+      let tokenSource = 'header';
       
       // Buscar accountId do header (enviado pelo frontend) 
       const accountId = req.headers['wiseapp-account-id'] as string;
-      
-      // Log específico para account ID 20
-      if (accountId === '20') {
-        console.log(`Special handling for Account ID 20 - Token length: ${token?.length || 0}`);
-      }
-      console.log('Account ID from header:', accountId ? 'Found' : 'Not found');
       
       if (!accountId) {
         return res.status(400).json({ 
           error: "Account ID não configurado para esta empresa" 
         });
       }
-      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
+
+      // Função para buscar token do banco de dados
+      const fetchTokenFromDb = async (): Promise<string | null> => {
+        const numericAccountId = parseInt(accountId, 10);
+        const { data: accessDataArray } = await supabaseBackend
+          .from("wiseapp_acesso")
+          .select("access_token_wiseapp, email")
+          .eq("id_conta_wiseapp", numericAccountId)
+          .not("access_token_wiseapp", "is", null)
+          .neq("access_token_wiseapp", "")
+          .limit(1);
+          
+        if (accessDataArray?.[0]?.access_token_wiseapp) {
+          console.log(`Token fetched from database for account ${accountId} (email: ${accessDataArray[0].email})`);
+          return accessDataArray[0].access_token_wiseapp;
+        }
+        return null;
+      };
+
+      // Se não tem token no header, buscar do banco
+      if (!token) {
+        console.log(`No token in header, fetching from database for account ${accountId}...`);
+        const dbToken = await fetchTokenFromDb();
+        if (dbToken) {
+          token = dbToken;
+          tokenSource = 'database';
+        }
+      }
       
+      if (!token) {
+        return res.status(401).json({ 
+          error: "Token WiseApp não configurado para esta empresa" 
+        });
+      }
+      
+      console.log(`Using token from ${tokenSource} for account ${accountId}`);
+      
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels`;
       console.log(`Fetching labels from: ${wiseAppUrl}`);
 
-      // Implementar retry logic para accounts grandes (como accountId 20)
+      // Implementar retry logic com fallback de token
       let response;
       let attempts = 0;
       const maxAttempts = 3;
       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      let usedFallbackToken = false;
 
       while (attempts < maxAttempts) {
         attempts++;
         
         try {
-          // Para accountId 20 ou outros accounts grandes, adicionar delay
-          if (accountId === '20' && attempts > 1) {
-            console.log(`Rate limiting retry ${attempts} for account ${accountId}, waiting 3s...`);
-            await delay(3000); // 3 segundos entre tentativas
+          if (attempts > 1) {
+            console.log(`Retry ${attempts}/${maxAttempts} for account ${accountId}, waiting 1.5s...`);
+            await delay(1500);
           }
 
-          // Try different header configurations for problematic accounts
           const headers: Record<string, string> = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
+            'api_access_token': token,
           };
-          
-          // For account ID 20, try different token header formats
-          if (accountId === '20' && attempts > 1) {
-            console.log(`Attempting alternative headers for account ${accountId}, attempt ${attempts}`);
-            // Try both token formats
-            headers['Authorization'] = `Bearer ${token}`;
-            headers['api_access_token'] = token;
-          } else {
-            headers['api_access_token'] = token;
-          }
           
           response = await fetch(wiseAppUrl, {
             method: 'GET',
@@ -2840,19 +2852,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           if (response.ok) {
+            console.log(`Labels fetch successful on attempt ${attempts} with token from ${tokenSource}`);
             break; // Success!
           }
           
-          // Se 401 em account grande, tentar novamente
-          if (response.status === 401 && (accountId === '20' || parseInt(accountId) > 15)) {
-            console.log(`Got 401 for large account ${accountId}, attempt ${attempts}/${maxAttempts}`);
+          // Se 401 e ainda não tentou fallback, buscar token do banco
+          if (response.status === 401 && tokenSource === 'header' && !usedFallbackToken) {
+            console.log(`Got 401 with header token, trying to fetch fresh token from database...`);
+            const dbToken = await fetchTokenFromDb();
             
-            if (attempts < maxAttempts) {
-              continue; // Try again
+            if (dbToken && dbToken !== token) {
+              token = dbToken;
+              tokenSource = 'database-fallback';
+              usedFallbackToken = true;
+              console.log(`Using fresh token from database for account ${accountId}`);
+              continue; // Retry with new token
+            } else if (dbToken === token) {
+              console.log(`Token from database is the same as header token - both may be expired`);
+            } else {
+              console.log(`No valid token found in database for account ${accountId}`);
             }
           }
           
-          // Para outros erros, falhar imediatamente
+          // Se ainda 401 após fallback, retornar erro de autenticação
+          if (response.status === 401) {
+            return res.status(401).json({ 
+              error: "Token WiseApp expirado ou inválido",
+              details: "Faça login novamente no WiseApp para renovar o token"
+            });
+          }
+          
           throw new Error(`WiseApp API responded with ${response.status}`);
           
         } catch (fetchError) {
@@ -2864,7 +2893,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!response || !response.ok) {
-        throw new Error(`WiseApp API failed after ${maxAttempts} attempts with status ${response?.status || 'unknown'}`);
+        throw new Error(`WiseApp API failed after ${maxAttempts} attempts`);
       }
 
       const data = await response.json();
@@ -2877,6 +2906,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: label.description
       })) || [];
 
+      console.log(`Fetched ${labels.length} labels for account ${accountId}`);
       res.json(labels);
 
     } catch (error) {
