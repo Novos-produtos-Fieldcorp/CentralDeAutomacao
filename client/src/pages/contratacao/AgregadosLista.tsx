@@ -542,7 +542,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   // Remover tag de um motorista
   const handleRemoveTag = async (motoristaId: number | undefined, tagId: number) => {
-    if (!motoristaId) return;
+    console.log('[handleRemoveTag] Chamado:', { motoristaId, tagId });
+    if (!motoristaId) {
+      console.log('[handleRemoveTag] motoristaId undefined, retornando');
+      return;
+    }
 
     try {
       // Buscar dados da tag para remoção
