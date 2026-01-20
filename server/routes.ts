@@ -2188,26 +2188,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let token = req.headers['wiseapp-token'] as string;
       let tokenSource = 'header';
       
-      // Função auxiliar para buscar token do banco
+      // Função auxiliar para buscar token do banco usando id_conta_wiseapp (accountId) diretamente
       const fetchTokenFromDb = async (): Promise<string | null> => {
-        const { data: companies } = await supabaseBackend
-          .from("company")
-          .select("company_id")
-          .eq("id_conta_wiseapp", accountId)
-          .limit(1);
+        const numericAccountId = parseInt(accountId, 10);
+        const { data: accessData } = await supabaseBackend
+          .from("wiseapp_acesso")
+          .select("access_token_wiseapp")
+          .eq("id_conta_wiseapp", numericAccountId)
+          .limit(1)
+          .single();
           
-        if (companies && companies.length > 0) {
-          const companyId = companies[0].company_id;
-          const { data: accessData } = await supabaseBackend
-            .from("wiseapp_acesso")
-            .select("access_token_wiseapp")
-            .eq("company_id", companyId)
-            .limit(1)
-            .single();
-            
-          return accessData?.access_token_wiseapp || null;
-        }
-        return null;
+        return accessData?.access_token_wiseapp || null;
       };
       
       // Se não tem token no header, buscar do banco
@@ -2356,25 +2347,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let token = req.headers['wiseapp-token'] as string;
       let tokenSource = 'header';
       
+      // Função auxiliar para buscar token do banco usando id_conta_wiseapp (accountId) diretamente
       const fetchTokenFromDb = async (): Promise<string | null> => {
-        const { data: companies } = await supabaseBackend
-          .from("company")
-          .select("company_id")
-          .eq("id_conta_wiseapp", accountId)
-          .limit(1);
+        const numericAccountId = parseInt(accountId, 10);
+        const { data: accessData } = await supabaseBackend
+          .from("wiseapp_acesso")
+          .select("access_token_wiseapp")
+          .eq("id_conta_wiseapp", numericAccountId)
+          .limit(1)
+          .single();
           
-        if (companies && companies.length > 0) {
-          const companyId = companies[0].company_id;
-          const { data: accessData } = await supabaseBackend
-            .from("wiseapp_acesso")
-            .select("access_token_wiseapp")
-            .eq("company_id", companyId)
-            .limit(1)
-            .single();
-            
-          return accessData?.access_token_wiseapp || null;
-        }
-        return null;
+        return accessData?.access_token_wiseapp || null;
       };
       
       if (!token) {
@@ -2509,11 +2492,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar token WiseApp para esta empresa de forma segura
+      // Buscar token WiseApp usando id_conta_wiseapp (accountId)
+      const numericAccountId = parseInt(accountId, 10);
       const { data: tokenData, error: tokenError } = await supabaseBackend
         .from('wiseapp_acesso')
         .select('access_token_wiseapp')
-        .eq('company_id', parseInt(companyId))
+        .eq('id_conta_wiseapp', numericAccountId)
         .limit(1);
 
       if (tokenError || !tokenData || tokenData.length === 0) {
@@ -2901,26 +2885,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Buscar accountId do header ou usar o do path
       const accountId = (req.headers['wiseapp-account-id'] as string) || accountIdParam;
       
-      // Função auxiliar para buscar token do banco
+      // Função auxiliar para buscar token do banco usando id_conta_wiseapp diretamente
       const fetchTokenFromDb = async (): Promise<string | null> => {
-        const { data: companies } = await supabaseBackend
-          .from("company")
-          .select("company_id")
-          .eq("id_conta_wiseapp", accountId)
-          .limit(1);
+        const numericAccountId = parseInt(accountId, 10);
+        const { data: accessData } = await supabaseBackend
+          .from("wiseapp_acesso")
+          .select("access_token_wiseapp")
+          .eq("id_conta_wiseapp", numericAccountId)
+          .limit(1)
+          .single();
           
-        if (companies && companies.length > 0) {
-          const companyId = companies[0].company_id;
-          const { data: accessData } = await supabaseBackend
-            .from("wiseapp_acesso")
-            .select("access_token_wiseapp")
-            .eq("company_id", companyId)
-            .limit(1)
-            .single();
-            
-          return accessData?.access_token_wiseapp || null;
-        }
-        return null;
+        return accessData?.access_token_wiseapp || null;
       };
       
       // Tentar obter token com fallback
@@ -3168,11 +3143,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Buscar token WiseApp para esta empresa de forma segura
+      // Buscar token WiseApp usando id_conta_wiseapp (accountId)
+      const numericAccountId = parseInt(accountId, 10);
       const { data: tokenData, error: tokenError } = await supabaseBackend
         .from('wiseapp_acesso')
         .select('access_token_wiseapp')
-        .eq('company_id', parseInt(companyId))
+        .eq('id_conta_wiseapp', numericAccountId)
         .limit(1);
 
       if (tokenError || !tokenData || tokenData.length === 0) {
@@ -3361,29 +3337,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!token) {
         console.log(`Token not in headers, fetching from database for account ${accountId}...`);
         
-        // Buscar company_id pelo id_conta_wiseapp
-        const { data: companies, error: companyError } = await supabaseBackend
-          .from("company")
-          .select("company_id")
-          .eq("id_conta_wiseapp", accountId)
-          .limit(1);
-          
-        if (!companyError && companies && companies.length > 0) {
-          const companyId = companies[0].company_id;
-          
-          // Buscar token do wiseapp_acesso
-          const { data: accessData, error: accessError } = await supabaseBackend
-            .from("wiseapp_acesso")
-            .select("access_token_wiseapp")
-            .eq("company_id", companyId)
-            .limit(1)
-            .single();
+        // Buscar token diretamente usando id_conta_wiseapp (accountId)
+        const numericAccountId = parseInt(accountId, 10);
+        const { data: accessData, error: accessError } = await supabaseBackend
+          .from("wiseapp_acesso")
+          .select("access_token_wiseapp")
+          .eq("id_conta_wiseapp", numericAccountId)
+          .limit(1)
+          .single();
             
-          if (!accessError && accessData?.access_token_wiseapp) {
-            token = accessData.access_token_wiseapp;
-            tokenSource = 'database';
-            console.log(`Token fetched from database for company ${companyId}`);
-          }
+        if (!accessError && accessData?.access_token_wiseapp) {
+          token = accessData.access_token_wiseapp;
+          tokenSource = 'database';
+          console.log(`Token fetched from database for account ${accountId}`);
         }
       }
       
@@ -3428,47 +3394,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Se 401 e estamos usando token do header, tentar buscar do banco
           if (response.status === 401 && tokenSource === 'header' && !usedFallbackToken) {
             console.log(`Got 401 with header token, trying to fetch fresh token from database...`);
-            console.log(`Looking for company with id_conta_wiseapp = "${accountId}" (type: ${typeof accountId})`);
+            console.log(`Looking for token in wiseapp_acesso with id_conta_wiseapp = "${accountId}"`);
             
-            // Buscar company_id pelo id_conta_wiseapp - tentar tanto string quanto número
-            const { data: companies, error: companyError } = await supabaseBackend
-              .from("company")
-              .select("company_id, id_conta_wiseapp")
-              .or(`id_conta_wiseapp.eq.${accountId},id_conta_wiseapp.eq."${accountId}"`)
-              .limit(1);
+            // Buscar token diretamente da tabela wiseapp_acesso usando id_conta_wiseapp
+            // A tabela wiseapp_acesso tem id_conta_wiseapp diretamente (não company_id)
+            const numericAccountId = parseInt(accountId, 10);
+            const { data: accessData, error: accessError } = await supabaseBackend
+              .from("wiseapp_acesso")
+              .select("access_token_wiseapp, id_conta_wiseapp, email")
+              .eq("id_conta_wiseapp", numericAccountId)
+              .limit(1)
+              .single();
             
-            console.log(`Company lookup result:`, { companies, error: companyError });
+            console.log(`Token lookup result:`, { 
+              found: !!accessData?.access_token_wiseapp,
+              error: accessError,
+              id_conta_wiseapp: accessData?.id_conta_wiseapp,
+              email: accessData?.email,
+              tokenLength: accessData?.access_token_wiseapp?.length,
+              isSameAsHeader: accessData?.access_token_wiseapp === token
+            });
               
-            if (!companyError && companies && companies.length > 0) {
-              const companyId = companies[0].company_id;
-              console.log(`Found company_id: ${companyId} for id_conta_wiseapp: ${companies[0].id_conta_wiseapp}`);
-              
-              // Buscar token do wiseapp_acesso
-              const { data: accessData, error: accessError } = await supabaseBackend
-                .from("wiseapp_acesso")
-                .select("access_token_wiseapp")
-                .eq("company_id", companyId)
-                .limit(1)
-                .single();
-              
-              console.log(`Token lookup result:`, { 
-                found: !!accessData?.access_token_wiseapp,
-                error: accessError,
-                tokenLength: accessData?.access_token_wiseapp?.length,
-                isSameAsHeader: accessData?.access_token_wiseapp === token
-              });
-                
-              if (!accessError && accessData?.access_token_wiseapp && accessData.access_token_wiseapp !== token) {
-                token = accessData.access_token_wiseapp;
-                tokenSource = 'database-fallback';
-                usedFallbackToken = true;
-                console.log(`Using fresh token from database for company ${companyId}`);
-                continue; // Retry with new token
-              } else if (accessData?.access_token_wiseapp === token) {
-                console.log(`Token from database is the same as header token - both may be expired`);
-              }
-            } else {
-              console.log(`No company found with id_conta_wiseapp = ${accountId}`);
+            if (!accessError && accessData?.access_token_wiseapp && accessData.access_token_wiseapp !== token) {
+              token = accessData.access_token_wiseapp;
+              tokenSource = 'database-fallback';
+              usedFallbackToken = true;
+              console.log(`Using fresh token from database for account ${accountId} (email: ${accessData.email})`);
+              continue; // Retry with new token
+            } else if (accessData?.access_token_wiseapp === token) {
+              console.log(`Token from database is the same as header token - both may be expired`);
+            } else if (accessError) {
+              console.log(`No token found in wiseapp_acesso for id_conta_wiseapp = ${accountId}:`, accessError.message);
             }
           }
           
@@ -3782,18 +3738,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Iniciando sincronização bulk para company_id: ${company_id}`);
 
-      // 1. Buscar token WiseApp diretamente
-      const { data: tokenDataArray, error: tokenError } = await supabaseBackend
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp')
+      // 1. Buscar id_conta_wiseapp da empresa
+      const { data: companyData } = await supabaseBackend
+        .from('company')
+        .select('id_conta_wiseapp')
         .eq('company_id', company_id)
-        .limit(1);
-
-      const tokenData = tokenDataArray?.[0];
-      const token = tokenData?.access_token_wiseapp;
+        .limit(1)
+        .single();
+      
+      const idContaWiseapp = companyData?.id_conta_wiseapp;
+      
+      // 2. Buscar token WiseApp usando id_conta_wiseapp
+      let token: string | null = null;
+      let tokenError: any = null;
+      
+      if (idContaWiseapp) {
+        const { data: tokenDataArray, error: err } = await supabaseBackend
+          .from('wiseapp_acesso')
+          .select('access_token_wiseapp')
+          .eq('id_conta_wiseapp', idContaWiseapp)
+          .limit(1);
+        
+        token = tokenDataArray?.[0]?.access_token_wiseapp;
+        tokenError = err;
+      }
 
       if (tokenError || !token) {
-        console.log('Token WiseApp não encontrado para company_id:', company_id);
+        console.log('Token WiseApp não encontrado para company_id:', company_id, '(id_conta_wiseapp:', idContaWiseapp, ')');
         return res.json({ 
           data: { 
             totalProcessed: 0, 
@@ -4532,19 +4503,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Iniciando sincronização bulk para company_id: ${company_id}`);
 
-      // 1. Buscar token WiseApp diretamente
-
-      const { data: tokenDataArray, error: tokenError } = await supabaseBackend
-        .from('wiseapp_acesso')
-        .select('access_token_wiseapp')
+      // 1. Buscar id_conta_wiseapp da empresa
+      const { data: companyData } = await supabaseBackend
+        .from('company')
+        .select('id_conta_wiseapp')
         .eq('company_id', company_id)
-        .limit(1);
-
-      const tokenData = tokenDataArray?.[0];
-      const token = tokenData?.access_token_wiseapp;
+        .limit(1)
+        .single();
+      
+      const idContaWiseapp = companyData?.id_conta_wiseapp;
+      
+      // 2. Buscar token WiseApp usando id_conta_wiseapp
+      let token: string | null = null;
+      let tokenError: any = null;
+      
+      if (idContaWiseapp) {
+        const { data: tokenDataArray, error: err } = await supabaseBackend
+          .from('wiseapp_acesso')
+          .select('access_token_wiseapp')
+          .eq('id_conta_wiseapp', idContaWiseapp)
+          .limit(1);
+        
+        token = tokenDataArray?.[0]?.access_token_wiseapp;
+        tokenError = err;
+      }
 
       if (tokenError || !token) {
-        console.log('Token WiseApp não encontrado para company_id:', company_id);
+        console.log('Token WiseApp não encontrado para company_id:', company_id, '(id_conta_wiseapp:', idContaWiseapp, ')');
         return res.json({ 
           data: { 
             totalProcessed: 0, 
