@@ -650,11 +650,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   // Fechar dropdown quando clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const isClickInside = Object.values(motoristaTagDropdownRefs.current).some(ref =>
+      const isClickInsideButton = Object.values(motoristaTagDropdownRefs.current).some(ref =>
+        ref && ref.contains(event.target as Node)
+      );
+      const isClickInsidePortal = Object.values(motoristaTagPortalRefs.current).some(ref =>
         ref && ref.contains(event.target as Node)
       );
 
-      if (!isClickInside) {
+      if (!isClickInsideButton && !isClickInsidePortal) {
         setTagDropdownOpen({});
         setTagDropdownPosition({});
         setTagSearchTerm({});
@@ -1016,6 +1019,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   };
 
   const motoristaTagDropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const motoristaTagPortalRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const [roleChangeModal, setRoleChangeModal] = useState<{
     isOpen: boolean;
     motorista: ViewContratado | null;
@@ -3121,6 +3125,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             {motorista.motorista_id && tagDropdownOpen[motorista.motorista_id] && tagDropdownPosition[motorista.motorista_id] &&
                               createPortal(
                                 <div 
+                                  ref={(el) => {
+                                    if (motorista.motorista_id) {
+                                      motoristaTagPortalRefs.current[motorista.motorista_id] = el;
+                                    }
+                                  }}
                                   className="bg-white dark:bg-gray-800 shadow-xl rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
                                   style={{
                                     position: 'fixed',
