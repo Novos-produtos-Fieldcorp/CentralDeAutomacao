@@ -3150,7 +3150,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                             <button
                                               type="button"
                                               className="p-0.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                              onClick={(e) => {
+                                              onMouseDown={(e) => {
+                                                e.preventDefault();
                                                 e.stopPropagation();
                                                 handleRemoveTag(motorista.motorista_id, tag.id);
                                               }}
