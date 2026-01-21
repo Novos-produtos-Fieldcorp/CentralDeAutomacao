@@ -223,8 +223,16 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     },
   });
 
-  // Mutation para sincronização autoritativa (WiseApp -> Local)
-  const syncFromWiseAppMutation = useMutation({
+  // State for sync preview
+  const [syncPreview, setSyncPreview] = useState<{
+    toAdd: Array<{ nome: string; cor: string }>;
+    toRemove: Array<{ id: number; nome: string }>;
+    toUpdate: Array<{ id: number; nome: string; oldCor: string; newCor: string }>;
+    unchanged: number;
+  } | null>(null);
+
+  // Mutation para buscar preview da sincronização (comparar WiseApp vs local)
+  const fetchSyncPreviewMutation = useMutation({
     mutationFn: async () => {
       if (!accountId || !wiseAppToken) {
         throw new Error('Token/conta WiseApp não configurados. Capture o token primeiro.');
@@ -237,9 +245,9 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         throw new Error('Resposta inválida do WiseApp');
       }
 
-      console.log('[SyncFromWiseApp] Labels do WiseApp:', wiseAppLabels);
+      console.log('[SyncPreview] Labels do WiseApp:', wiseAppLabels);
 
-      // 2. Buscar tags locais existentes SOMENTE desta conta WiseApp (isolamento por accountId)
+      // 2. Buscar tags locais existentes
       let localTags: Tag[] = [];
       try {
         let query = supabase
@@ -247,7 +255,6 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           .select('*')
           .eq('company_id', companyId);
         
-        // Filter by id_conta_wiseapp to ensure proper data isolation
         if (accountId) {
           query = query.or(`id_conta_wiseapp.eq.${accountId},id_conta_wiseapp.is.null`);
         }
@@ -255,9 +262,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         const { data, error: fetchError } = await query;
 
         if (fetchError) {
-          // Check if error is about missing column
           if (fetchError.code === '42703' && fetchError.message?.includes('id_conta_wiseapp')) {
-            console.warn('[SyncFromWiseApp] Coluna id_conta_wiseapp não existe ainda, usando fallback');
             const { data: fallbackData, error: fallbackError } = await supabase
               .from('tag')
               .select('*')
@@ -272,68 +277,174 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
           localTags = data || [];
         }
       } catch (error) {
-        console.error('[SyncFromWiseApp] Erro ao buscar tags locais:', error);
+        console.error('[SyncPreview] Erro ao buscar tags locais:', error);
         throw error;
       }
 
-      // 3. Deletar tags locais SOMENTE desta conta WiseApp (isolamento)
-      if (localTags && localTags.length > 0) {
-        // Primeiro deletar associações das tags que vamos remover
-        const tagIds = localTags.map(t => t.id);
+      // 3. Comparar WiseApp vs Local
+      const wiseAppNamesMap = new Map<string, { nome: string; cor: string }>();
+      wiseAppLabels.forEach((label: any) => {
+        const nome = (label.title || label.name || '').toLowerCase().trim();
+        wiseAppNamesMap.set(nome, {
+          nome: label.title || label.name,
+          cor: label.color || '#3B82F6'
+        });
+      });
+
+      const localNamesMap = new Map<string, Tag>();
+      localTags.forEach(tag => {
+        const nome = (tag.nome || '').toLowerCase().trim();
+        localNamesMap.set(nome, tag);
+      });
+
+      // Tags para adicionar (existem no WiseApp mas não localmente)
+      const toAdd: Array<{ nome: string; cor: string }> = [];
+      wiseAppNamesMap.forEach((wiseAppTag, nomeLower) => {
+        if (!localNamesMap.has(nomeLower)) {
+          toAdd.push(wiseAppTag);
+        }
+      });
+
+      // Tags para remover (existem localmente mas não no WiseApp)
+      const toRemove: Array<{ id: number; nome: string }> = [];
+      localNamesMap.forEach((localTag, nomeLower) => {
+        if (!wiseAppNamesMap.has(nomeLower)) {
+          toRemove.push({ id: localTag.id, nome: localTag.nome });
+        }
+      });
+
+      // Tags para atualizar (existem em ambos mas cor diferente)
+      const toUpdate: Array<{ id: number; nome: string; oldCor: string; newCor: string }> = [];
+      let unchanged = 0;
+      localNamesMap.forEach((localTag, nomeLower) => {
+        const wiseAppTag = wiseAppNamesMap.get(nomeLower);
+        if (wiseAppTag) {
+          if (localTag.cor !== wiseAppTag.cor) {
+            toUpdate.push({
+              id: localTag.id,
+              nome: localTag.nome,
+              oldCor: localTag.cor,
+              newCor: wiseAppTag.cor
+            });
+          } else {
+            unchanged++;
+          }
+        }
+      });
+
+      return { toAdd, toRemove, toUpdate, unchanged };
+    },
+    onSuccess: (preview) => {
+      setSyncPreview(preview);
+      setIsSyncConfirmOpen(true);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erro ao comparar com WiseApp");
+    },
+  });
+
+  // Mutation para sincronização inteligente (comparativa)
+  const syncFromWiseAppMutation = useMutation({
+    mutationFn: async () => {
+      if (!syncPreview) {
+        throw new Error('Preview de sincronização não disponível');
+      }
+
+      const { toAdd, toRemove, toUpdate } = syncPreview;
+      const now = new Date().toISOString();
+
+      // 1. Remover tags que não existem mais no WiseApp
+      if (toRemove.length > 0) {
+        const tagIdsToRemove = toRemove.map(t => t.id);
+        
+        // Primeiro deletar associações dessas tags
         await supabase
           .from('associacao_tags')
           .delete()
-          .in('tag_id', tagIds);
+          .in('tag_id', tagIdsToRemove);
 
-        // Depois deletar as tags por IDs específicos (não por company_id geral)
+        // Depois deletar as tags
         const { error: deleteError } = await supabase
           .from('tag')
           .delete()
-          .in('id', tagIds);
+          .in('id', tagIdsToRemove);
 
         if (deleteError) throw deleteError;
+        console.log(`[SmartSync] Removidas ${toRemove.length} tags que não existem mais no WiseApp`);
       }
 
-      // 4. Inserir as tags do WiseApp como novas tags locais
-      const now = new Date().toISOString();
-      const newTags = wiseAppLabels.map((label: any) => ({
-        nome: label.title || label.name,
-        cor: label.color || '#3B82F6',
-        company_id: companyId,
-        id_conta_wiseapp: accountId,
-        limite_max: null,
-        created_at: now,
-        updated_at: now
-      }));
+      // 2. Adicionar novas tags do WiseApp
+      if (toAdd.length > 0) {
+        const newTags = toAdd.map(tag => ({
+          nome: tag.nome,
+          cor: tag.cor,
+          company_id: companyId,
+          id_conta_wiseapp: accountId,
+          limite_max: null,
+          created_at: now,
+          updated_at: now
+        }));
 
-      if (newTags.length > 0) {
-        // Try to insert with id_conta_wiseapp, fallback if column doesn't exist
-        let result = await supabase
-          .from('tag')
-          .insert(newTags);
+        let result = await supabase.from('tag').insert(newTags);
 
-        // If column doesn't exist, try without id_conta_wiseapp
         if (result.error?.code === '42703' && result.error.message?.includes('id_conta_wiseapp')) {
-          console.warn('[SyncFromWiseApp] Coluna id_conta_wiseapp não existe, inserindo sem ela');
           const tagsWithoutAccountId = newTags.map(({ id_conta_wiseapp, ...rest }) => rest);
-          result = await supabase
-            .from('tag')
-            .insert(tagsWithoutAccountId);
+          result = await supabase.from('tag').insert(tagsWithoutAccountId);
         }
 
         if (result.error) throw result.error;
+        console.log(`[SmartSync] Adicionadas ${toAdd.length} novas tags do WiseApp`);
+      }
+
+      // 3. Atualizar tags com cor diferente
+      let updateErrors: string[] = [];
+      if (toUpdate.length > 0) {
+        for (const tag of toUpdate) {
+          const { error: updateError } = await supabase
+            .from('tag')
+            .update({ cor: tag.newCor, updated_at: now })
+            .eq('id', tag.id);
+
+          if (updateError) {
+            console.warn(`[SmartSync] Erro ao atualizar tag ${tag.nome}:`, updateError);
+            updateErrors.push(tag.nome);
+          }
+        }
+        console.log(`[SmartSync] Atualizadas ${toUpdate.length - updateErrors.length} tags com cores diferentes`);
+      }
+
+      // Se houve erros de atualização, reportar mas não falhar completamente
+      if (updateErrors.length > 0) {
+        console.error(`[SmartSync] Erros ao atualizar ${updateErrors.length} tags:`, updateErrors);
       }
 
       return {
-        imported: newTags.length,
-        deleted: localTags?.length || 0
+        added: toAdd.length,
+        removed: toRemove.length,
+        updated: toUpdate.length - updateErrors.length,
+        updateErrors: updateErrors.length
       };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success(`Sincronização completa! ${result.imported} marcadores importados do WiseApp.`);
+      queryClient.invalidateQueries({ queryKey: ['motorista-tags'] });
+      
+      const messages: string[] = [];
+      if (result.added > 0) messages.push(`${result.added} adicionado(s)`);
+      if (result.removed > 0) messages.push(`${result.removed} removido(s)`);
+      if (result.updated > 0) messages.push(`${result.updated} atualizado(s)`);
+      
+      if (messages.length === 0 && !result.updateErrors) {
+        toast.success('Sincronização completa! Nenhuma alteração necessária.');
+      } else if (result.updateErrors && result.updateErrors > 0) {
+        toast.error(`Sincronização parcial! ${messages.join(', ')}. ${result.updateErrors} atualização(ões) falharam.`);
+      } else {
+        toast.success(`Sincronização completa! ${messages.join(', ')}.`);
+      }
+      
+      setSyncPreview(null);
     },
     onError: (error: any) => {
       toast.error(error.message || "Erro ao sincronizar com WiseApp");
@@ -484,18 +595,18 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         <div className="flex items-center gap-3 flex-wrap">
           <AccountSwitcher />
           <button
-            onClick={() => setIsSyncConfirmOpen(true)}
-            disabled={syncFromWiseAppMutation.isPending || !wiseAppToken || !accountId}
+            onClick={() => fetchSyncPreviewMutation.mutate()}
+            disabled={syncFromWiseAppMutation.isPending || fetchSyncPreviewMutation.isPending || !wiseAppToken || !accountId}
             className="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-700 dark:hover:bg-green-600 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="button-sync-wiseapp"
-            title="Sincroniza todos os marcadores do WiseApp, substituindo os locais"
+            title="Sincroniza marcadores com o WiseApp (adiciona novos, remove deletados, atualiza cores)"
           >
-            {syncFromWiseAppMutation.isPending ? (
+            {(syncFromWiseAppMutation.isPending || fetchSyncPreviewMutation.isPending) ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
             ) : (
               <Download className="w-4 h-4" />
             )}
-            {syncFromWiseAppMutation.isPending ? 'Sincronizando...' : 'Sincronizar do WiseApp'}
+            {fetchSyncPreviewMutation.isPending ? 'Comparando...' : syncFromWiseAppMutation.isPending ? 'Sincronizando...' : 'Sincronizar do WiseApp'}
           </button>
           <button
             onClick={() => setIsCreateModalOpen(true)}
@@ -597,16 +708,19 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
         />
       )}
 
-      {/* Modal para confirmar sincronização autoritativa */}
-      {isSyncConfirmOpen && (
+      {/* Modal para confirmar sincronização inteligente */}
+      {isSyncConfirmOpen && syncPreview && (
         <SyncConfirmationModal
           isOpen={isSyncConfirmOpen}
-          onClose={() => setIsSyncConfirmOpen(false)}
+          onClose={() => {
+            setIsSyncConfirmOpen(false);
+            setSyncPreview(null);
+          }}
           onConfirm={() => {
             setIsSyncConfirmOpen(false);
             syncFromWiseAppMutation.mutate();
           }}
-          localTagsCount={tags.length}
+          syncPreview={syncPreview}
           isLoading={syncFromWiseAppMutation.isPending}
         />
       )}
@@ -996,25 +1110,33 @@ function DeleteConfirmationModal({ isOpen, onClose, onConfirm, tag, isLoading }:
   );
 }
 
-// Modal para confirmar sincronização autoritativa
+// Modal para confirmar sincronização inteligente
 interface SyncConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  localTagsCount: number;
+  syncPreview: {
+    toAdd: Array<{ nome: string; cor: string }>;
+    toRemove: Array<{ id: number; nome: string }>;
+    toUpdate: Array<{ id: number; nome: string; oldCor: string; newCor: string }>;
+    unchanged: number;
+  };
   isLoading: boolean;
 }
 
-function SyncConfirmationModal({ isOpen, onClose, onConfirm, localTagsCount, isLoading }: SyncConfirmationModalProps) {
+function SyncConfirmationModal({ isOpen, onClose, onConfirm, syncPreview, isLoading }: SyncConfirmationModalProps) {
   if (!isOpen) return null;
+
+  const { toAdd, toRemove, toUpdate, unchanged } = syncPreview;
+  const hasChanges = toAdd.length > 0 || toRemove.length > 0 || toUpdate.length > 0;
 
   return (
     <div className="fixed inset-0 bg-black dark:bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4 border dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-[480px] max-w-lg mx-4 border dark:border-gray-700 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 w-10 h-10 mx-auto bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center">
-              <RefreshCw className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+            <div className="flex-shrink-0 w-10 h-10 mx-auto bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+              <RefreshCw className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Sincronizar do WiseApp</h2>
           </div>
@@ -1028,28 +1150,111 @@ function SyncConfirmationModal({ isOpen, onClose, onConfirm, localTagsCount, isL
         </div>
 
         <div className="mb-6">
-          <p className="text-gray-600 dark:text-gray-300 mb-3">
-            Esta ação irá <strong>substituir completamente</strong> todos os marcadores locais pelos marcadores do WiseApp.
-          </p>
-          
-          {localTagsCount > 0 && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 mb-3">
-              <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                <strong>Atenção:</strong> Você tem <strong>{localTagsCount}</strong> marcador(es) local(is) que serão removidos.
+          {!hasChanges ? (
+            <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-md p-4 text-center">
+              <p className="text-green-700 dark:text-green-300 font-medium">
+                Tudo sincronizado!
+              </p>
+              <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                {unchanged} marcador(es) já estão em sincronia com o WiseApp.
               </p>
             </div>
+          ) : (
+            <>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                Comparação realizada. Veja o que será alterado:
+              </p>
+
+              {/* Tags a adicionar */}
+              {toAdd.length > 0 && (
+                <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-md p-3 mb-3">
+                  <p className="text-sm text-green-700 dark:text-green-300 font-medium mb-2">
+                    <Plus className="w-4 h-4 inline mr-1" />
+                    {toAdd.length} marcador(es) novo(s) serão adicionados:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {toAdd.slice(0, 10).map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-white dark:bg-gray-700 border border-green-300 dark:border-green-600"
+                      >
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.cor }} />
+                        {tag.nome}
+                      </span>
+                    ))}
+                    {toAdd.length > 10 && (
+                      <span className="text-xs text-green-600 dark:text-green-400">
+                        +{toAdd.length - 10} mais
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Tags a remover */}
+              {toRemove.length > 0 && (
+                <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-md p-3 mb-3">
+                  <p className="text-sm text-red-700 dark:text-red-300 font-medium mb-2">
+                    <Trash2 className="w-4 h-4 inline mr-1" />
+                    {toRemove.length} marcador(es) serão removidos (não existem mais no WiseApp):
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {toRemove.slice(0, 10).map((tag) => (
+                      <span
+                        key={tag.id}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-white dark:bg-gray-700 border border-red-300 dark:border-red-600"
+                      >
+                        {tag.nome}
+                      </span>
+                    ))}
+                    {toRemove.length > 10 && (
+                      <span className="text-xs text-red-600 dark:text-red-400">
+                        +{toRemove.length - 10} mais
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                    As associações desses marcadores também serão removidas.
+                  </p>
+                </div>
+              )}
+
+              {/* Tags a atualizar */}
+              {toUpdate.length > 0 && (
+                <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-3">
+                  <p className="text-sm text-blue-700 dark:text-blue-300 font-medium mb-2">
+                    <Edit className="w-4 h-4 inline mr-1" />
+                    {toUpdate.length} marcador(es) terão a cor atualizada:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {toUpdate.slice(0, 10).map((tag) => (
+                      <span
+                        key={tag.id}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-white dark:bg-gray-700 border border-blue-300 dark:border-blue-600"
+                      >
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.oldCor }} />
+                        <span>-&gt;</span>
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.newCor }} />
+                        {tag.nome}
+                      </span>
+                    ))}
+                    {toUpdate.length > 10 && (
+                      <span className="text-xs text-blue-600 dark:text-blue-400">
+                        +{toUpdate.length - 10} mais
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Inalterados */}
+              {unchanged > 0 && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  {unchanged} marcador(es) já estão em sincronia e não serão alterados.
+                </p>
+              )}
+            </>
           )}
-          
-          <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-md p-3">
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-              <strong>O que vai acontecer:</strong>
-            </p>
-            <ul className="text-sm text-blue-600 dark:text-blue-400 mt-1 ml-4 list-disc">
-              <li>Todas as associações de marcadores serão removidas</li>
-              <li>Todos os marcadores locais serão deletados</li>
-              <li>Os marcadores do WiseApp serão importados</li>
-            </ul>
-          </div>
         </div>
 
         <div className="flex justify-end gap-3">
@@ -1059,21 +1264,23 @@ function SyncConfirmationModal({ isOpen, onClose, onConfirm, localTagsCount, isL
             disabled={isLoading}
             className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors disabled:opacity-50"
           >
-            Cancelar
+            {hasChanges ? 'Cancelar' : 'Fechar'}
           </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isLoading}
-            className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 transition-colors flex items-center gap-2"
-          >
-            {isLoading ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            {isLoading ? "Sincronizando..." : "Confirmar Sincronização"}
-          </button>
+          {hasChanges && (
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={isLoading}
+              className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 transition-colors flex items-center gap-2"
+            >
+              {isLoading ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {isLoading ? "Sincronizando..." : "Confirmar Sincronização"}
+            </button>
+          )}
         </div>
       </div>
     </div>
