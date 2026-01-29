@@ -19,6 +19,7 @@ import {
   Lock,
   ClipboardList,
   MessageSquare,
+  Map as MapIcon,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useCurrentAccount } from "../hooks/useCurrentAccount";
@@ -1075,6 +1076,166 @@ const ChecklistHeroCard = ({ stats, hasAccess = true }: HeroCardProps) => {
   );
 };
 
+// 8. OperacoesHeroCard
+const OPERACOES_TABELAS = [
+  { nome: 'Autoservice', tabela: 'operacao_autoservice' },
+  { nome: 'Cesari', tabela: 'operacao_cesari' },
+  { nome: 'Mitsubishi', tabela: 'operacao_mitsubishi' },
+  { nome: 'Sada', tabela: 'operacao_sada' },
+  { nome: 'Superterminais', tabela: 'operacao_superterminais' },
+  { nome: 'Tegma', tabela: 'operacao_tegma' },
+];
+
+const OperacoesHeroCard = ({ hasAccess = true }: { hasAccess?: boolean }) => {
+  const [operacoesStats, setOperacoesStats] = useState<{ nome: string; total: number }[]>([]);
+  const [totalViagens, setTotalViagens] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Get total trips
+        const { count: viagensCount } = await supabase
+          .from('acompanhamento_viagem')
+          .select('*', { count: 'exact', head: true });
+        
+        setTotalViagens(viagensCount || 0);
+
+        // Get stats per operation
+        const stats = await Promise.all(
+          OPERACOES_TABELAS.map(async (op) => {
+            const { count } = await supabase
+              .from(op.tabela)
+              .select('*', { count: 'exact', head: true });
+            return { nome: op.nome, total: count || 0 };
+          })
+        );
+        setOperacoesStats(stats);
+      } catch (error) {
+        console.warn('Erro ao buscar estatísticas de operações:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const pieColors = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#f97316'];
+  const pieData = operacoesStats.filter(op => op.total > 0).map((op, index) => ({
+    name: op.nome,
+    value: op.total,
+    color: pieColors[index % pieColors.length]
+  }));
+
+  return (
+    <div className={`bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3 shadow-sm h-[270px] relative ${
+      !hasAccess ? "opacity-60" : ""
+    }`}>
+      {!hasAccess && (
+        <div className="absolute inset-0 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl flex items-center justify-center z-10" data-testid="lock-operacoes">
+          <AccessTooltip module="operacoes">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+          </AccessTooltip>
+        </div>
+      )}
+      
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
+            <MapIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Operações
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Viagens e transporte
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/operacoes"
+          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1"
+          data-testid="link-operacoes"
+        >
+          Ver todos
+          <ExternalLink className="w-2 h-2" />
+        </Link>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center h-44">
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-indigo-600 border-t-transparent" />
+        </div>
+      ) : (
+        <>
+          {/* KPIs */}
+          <div className="flex gap-2 mb-3 flex-wrap">
+            <div className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-medium">
+              {totalViagens} viagens
+            </div>
+            <div className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-medium">
+              {OPERACOES_TABELAS.length} tipos
+            </div>
+          </div>
+
+          {/* Pie Chart or List */}
+          <div className="flex gap-3 h-36">
+            {pieData.length > 0 ? (
+              <>
+                <div className="w-24 h-24">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        dataKey="value"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={18}
+                        outerRadius={36}
+                        stroke="none"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<SimpleTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 space-y-1 overflow-y-auto">
+                  {operacoesStats.map((op, index) => (
+                    <div key={op.nome} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1">
+                        <div 
+                          className="w-2 h-2 rounded-full" 
+                          style={{ backgroundColor: pieColors[index % pieColors.length] }}
+                        />
+                        <span className="text-gray-700 dark:text-gray-300 truncate">{op.nome}</span>
+                      </div>
+                      <span className="font-medium text-gray-900 dark:text-white">{op.total}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center w-full">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Nenhuma operação registrada
+                </p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 // Main Dashboard Component
 const Dashboard: React.FC = () => {
   const { companyId } = useCurrentAccount();
@@ -2038,6 +2199,11 @@ const Dashboard: React.FC = () => {
         <ChecklistHeroCard 
           stats={stats} 
           hasAccess={moduleAccess.checklist} 
+        />
+
+        {/* Operações */}
+        <OperacoesHeroCard 
+          hasAccess={moduleAccess.operacoes} 
         />
 
         {/* Resumo em Grupo */}
