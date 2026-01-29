@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 
@@ -9,6 +9,11 @@ interface Operacao {
   id: number;
   operacao: string;
   company_id: number;
+}
+
+interface Motorista {
+  motorista_id: number;
+  nome: string;
 }
 
 interface Viagem {
@@ -140,8 +145,10 @@ const OperacoesDashboard = () => {
 const OperacoesViagens = () => {
   const { companyId } = useCurrentAccount();
   const [selectedOperacao, setSelectedOperacao] = useState<string>('all');
+  const [selectedMotorista, setSelectedMotorista] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isOperacaoDropdownOpen, setIsOperacaoDropdownOpen] = useState(false);
+  const [isMotoristaDropdownOpen, setIsMotoristaDropdownOpen] = useState(false);
 
   const { data: operacoes = [] } = useQuery<Operacao[]>({
     queryKey: ['operacoes', companyId],
@@ -158,14 +165,38 @@ const OperacoesViagens = () => {
     enabled: !!companyId,
   });
 
+  const { data: motoristas = [] } = useQuery<Motorista[]>({
+    queryKey: ['motoristas-operacoes', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .eq('company_id', companyId)
+        .eq('ativo', true)
+        .order('nome');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!companyId,
+  });
+
   const { data: viagens = [], isLoading, refetch } = useQuery<Viagem[]>({
-    queryKey: ['viagens', companyId, selectedOperacao],
+    queryKey: ['viagens', companyId, selectedOperacao, selectedMotorista],
     queryFn: async () => {
       let query = supabase
         .from('acompanhamento_viagem')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
+
+      if (selectedOperacao !== 'all') {
+        query = query.eq('operacao_id', parseInt(selectedOperacao));
+      }
+
+      if (selectedMotorista !== 'all') {
+        query = query.eq('motorista_id', parseInt(selectedMotorista));
+      }
       
       const { data, error } = await query;
       
@@ -191,21 +222,22 @@ const OperacoesViagens = () => {
     return true;
   });
 
-  const operacoesDisponiveis = [
-    { id: 'all', nome: 'Todas as Operações' },
-    { id: 'autoservice', nome: 'Autoservice' },
-    { id: 'cesari', nome: 'Cesari' },
-    { id: 'mitsubishi', nome: 'Mitsubishi' },
-    { id: 'sada', nome: 'Sada' },
-    { id: 'superterminais', nome: 'Superterminais' },
-    { id: 'tegma', nome: 'Tegma' },
-    ...operacoes.map(op => ({ id: op.id.toString(), nome: op.operacao }))
-  ];
+  const getMotoristaName = (id: string) => {
+    if (id === 'all') return 'Todos os Motoristas';
+    const motorista = motoristas.find(m => m.motorista_id.toString() === id);
+    return motorista?.nome || 'Motorista';
+  };
+
+  const getOperacaoName = (id: string) => {
+    if (id === 'all') return 'Todas as Operações';
+    const operacao = operacoes.find(op => op.id.toString() === id);
+    return operacao?.operacao || 'Operação';
+  };
 
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -220,31 +252,92 @@ const OperacoesViagens = () => {
 
           <div className="relative">
             <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              onClick={() => {
+                setIsOperacaoDropdownOpen(!isOperacaoDropdownOpen);
+                setIsMotoristaDropdownOpen(false);
+              }}
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 min-w-[200px] justify-between"
               data-testid="button-filter-operacao"
             >
               <Filter className="w-4 h-4" />
               <span className="truncate">
-                {operacoesDisponiveis.find(op => op.id === selectedOperacao)?.nome || 'Filtrar por Operação'}
+                {getOperacaoName(selectedOperacao)}
               </span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 transition-transform ${isOperacaoDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {isDropdownOpen && (
+            {isOperacaoDropdownOpen && (
               <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {operacoesDisponiveis.map((op) => (
+                <button
+                  onClick={() => {
+                    setSelectedOperacao('all');
+                    setIsOperacaoDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                    selectedOperacao === 'all' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                  }`}
+                >
+                  Todas as Operações
+                </button>
+                {operacoes.map((op) => (
                   <button
                     key={op.id}
                     onClick={() => {
-                      setSelectedOperacao(op.id);
-                      setIsDropdownOpen(false);
+                      setSelectedOperacao(op.id.toString());
+                      setIsOperacaoDropdownOpen(false);
                     }}
                     className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                      selectedOperacao === op.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                      selectedOperacao === op.id.toString() ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
                     }`}
                   >
-                    {op.nome}
+                    {op.operacao}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="relative">
+            <button
+              onClick={() => {
+                setIsMotoristaDropdownOpen(!isMotoristaDropdownOpen);
+                setIsOperacaoDropdownOpen(false);
+              }}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 min-w-[200px] justify-between"
+              data-testid="button-filter-motorista"
+            >
+              <User className="w-4 h-4" />
+              <span className="truncate">
+                {getMotoristaName(selectedMotorista)}
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${isMotoristaDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isMotoristaDropdownOpen && (
+              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <button
+                  onClick={() => {
+                    setSelectedMotorista('all');
+                    setIsMotoristaDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                    selectedMotorista === 'all' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                  }`}
+                >
+                  Todos os Motoristas
+                </button>
+                {motoristas.map((motorista) => (
+                  <button
+                    key={motorista.motorista_id}
+                    onClick={() => {
+                      setSelectedMotorista(motorista.motorista_id.toString());
+                      setIsMotoristaDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                      selectedMotorista === motorista.motorista_id.toString() ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    {motorista.nome}
                   </button>
                 ))}
               </div>
@@ -278,6 +371,7 @@ const OperacoesViagens = () => {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destino</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
@@ -291,6 +385,7 @@ const OperacoesViagens = () => {
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                       {viagem.created_at ? new Date(viagem.created_at).toLocaleDateString('pt-BR') : '-'}
                     </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.motorista_nome || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.origem || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.destino || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.placa || '-'}</td>
