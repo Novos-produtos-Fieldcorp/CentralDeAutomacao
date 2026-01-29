@@ -18,6 +18,7 @@ interface ModuleAccess {
   bomba: boolean;
   calculoUmPorDia: boolean;
   bau: boolean;
+  operacoes: boolean;
 }
 
 export const useModuleAccess = () => {
