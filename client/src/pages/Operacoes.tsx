@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Calendar, Truck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 
@@ -16,22 +16,40 @@ interface Motorista {
   nome: string;
 }
 
-interface Viagem {
-  id: number;
-  created_at: string;
-  updated_at: string;
-  operacao_id: number | null;
-  operacao_nome?: string;
-  status?: string;
-  motorista_id?: number;
-  motorista_nome?: string;
-  veiculo_id?: number;
-  placa?: string;
-  origem?: string;
-  destino?: string;
-  data_saida?: string;
-  data_chegada?: string;
+interface Veiculo {
+  veiculo_id: number;
+  placa: string;
 }
+
+interface ViagemBase {
+  id: number;
+  data_hora_inicial: string;
+  km_inicial: string | null;
+  motorista_id: number | null;
+  ajudante_id: number | null;
+  veiculo_id: number | null;
+  km_final: string | null;
+  data_hora_final: string | null;
+  janta: boolean | null;
+  cliente_id: number | null;
+  hora_janta: string | null;
+}
+
+interface ViagemEnriquecida extends ViagemBase {
+  motorista_nome?: string;
+  veiculo_placa?: string;
+  operacao_tipo?: string;
+  operacao_dados?: any;
+}
+
+const OPERACOES_TABELAS = [
+  { nome: 'Autoservice', tabela: 'operacao_autoservice', campos: ['origem', 'destino', 'placa_veiculo', 'nome_cliente'] },
+  { nome: 'Cesari', tabela: 'operacao_cesari', campos: ['origem', 'destino', 'nr_manifesto', 'tipo_viagem'] },
+  { nome: 'Mitsubishi', tabela: 'operacao_mitsubishi', campos: ['origem', 'destino', 'frota', 'qtd_carro', 'modelo_carro'] },
+  { nome: 'Sada', tabela: 'operacao_sada', campos: ['origem', 'destino', 'tipo_carga', 'nr_viagem', 'qtd_carros'] },
+  { nome: 'Superterminais', tabela: 'operacao_superterminais', campos: ['nome_container', 'nr_container', 'capacidade'] },
+  { nome: 'Tegma', tabela: 'operacao_tegma', campos: ['origem', 'destino', 'tipo_viagem', 'nr_viagem', 'qtd_carros'] },
+];
 
 const OperacoesDashboard = () => {
   const { companyId } = useCurrentAccount();
@@ -69,6 +87,26 @@ const OperacoesDashboard = () => {
     enabled: !!companyId,
   });
 
+  const { data: operacoesStats = [] } = useQuery({
+    queryKey: ['operacoes-stats'],
+    queryFn: async () => {
+      const stats = await Promise.all(
+        OPERACOES_TABELAS.map(async (op) => {
+          const { count, error } = await supabase
+            .from(op.tabela)
+            .select('*', { count: 'exact', head: true });
+          
+          return {
+            nome: op.nome,
+            total: error ? 0 : (count || 0)
+          };
+        })
+      );
+      return stats;
+    },
+    enabled: !!companyId,
+  });
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -91,7 +129,7 @@ const OperacoesDashboard = () => {
             </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Operações Ativas</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{operacoes.length}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{OPERACOES_TABELAS.length}</p>
             </div>
           </div>
         </div>
@@ -102,7 +140,7 @@ const OperacoesDashboard = () => {
               <RefreshCw className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Em Andamento</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Viagens Hoje</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
             </div>
           </div>
@@ -111,10 +149,10 @@ const OperacoesDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Filter className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              <Truck className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Concluídas Hoje</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Concluídas</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
             </div>
           </div>
@@ -122,12 +160,23 @@ const OperacoesDashboard = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Operações Cadastradas</h3>
-        {operacoes.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-            Nenhuma operação cadastrada para esta empresa.
-          </p>
-        ) : (
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Viagens por Operação</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {operacoesStats.map((op) => (
+            <div
+              key={op.nome}
+              className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 text-center"
+            >
+              <p className="font-medium text-gray-900 dark:text-white">{op.nome}</p>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{op.total}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {operacoes.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Operações Cadastradas (Tabela operacao)</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {operacoes.map((op) => (
               <div
@@ -138,8 +187,8 @@ const OperacoesDashboard = () => {
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -152,23 +201,6 @@ const OperacoesViagens = () => {
   const [isOperacaoDropdownOpen, setIsOperacaoDropdownOpen] = useState(false);
   const [isMotoristaDropdownOpen, setIsMotoristaDropdownOpen] = useState(false);
 
-  const { data: operacoes = [] } = useQuery<Operacao[]>({
-    queryKey: ['operacoes', companyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('operacao')
-        .select('*')
-        .order('operacao');
-      
-      if (error) {
-        console.warn('Erro ao buscar operações:', error);
-        return [];
-      }
-      return data || [];
-    },
-    enabled: !!companyId,
-  });
-
   const { data: motoristas = [] } = useQuery<Motorista[]>({
     queryKey: ['motoristas-operacoes', companyId],
     queryFn: async () => {
@@ -179,23 +211,41 @@ const OperacoesViagens = () => {
         .eq('ativo', true)
         .order('nome');
       
-      if (error) throw error;
+      if (error) {
+        console.warn('Erro ao buscar motoristas:', error);
+        return [];
+      }
       return data || [];
     },
     enabled: !!companyId,
   });
 
-  const { data: viagens = [], isLoading, refetch } = useQuery<Viagem[]>({
-    queryKey: ['viagens', companyId, selectedOperacao, selectedMotorista],
+  const { data: veiculos = [] } = useQuery<Veiculo[]>({
+    queryKey: ['veiculos-operacoes', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .eq('company_id', companyId)
+        .order('placa');
+      
+      if (error) {
+        console.warn('Erro ao buscar veículos:', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!companyId,
+  });
+
+  const { data: viagens = [], isLoading, refetch } = useQuery<ViagemBase[]>({
+    queryKey: ['viagens', companyId, selectedMotorista],
     queryFn: async () => {
       let query = supabase
         .from('acompanhamento_viagem')
         .select('*')
+        .order('data_hora_inicial', { ascending: false })
         .limit(100);
-
-      if (selectedOperacao !== 'all') {
-        query = query.eq('operacao_id', parseInt(selectedOperacao));
-      }
 
       if (selectedMotorista !== 'all') {
         query = query.eq('motorista_id', parseInt(selectedMotorista));
@@ -212,18 +262,73 @@ const OperacoesViagens = () => {
     enabled: !!companyId,
   });
 
-  const filteredViagens = viagens.filter(viagem => {
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      const matchesSearch = 
-        viagem.origem?.toLowerCase().includes(search) ||
-        viagem.destino?.toLowerCase().includes(search) ||
-        viagem.placa?.toLowerCase().includes(search) ||
-        viagem.motorista_nome?.toLowerCase().includes(search);
-      if (!matchesSearch) return false;
-    }
-    return true;
+  const { data: operacoesData = {} } = useQuery({
+    queryKey: ['operacoes-viagens-data', viagens.map(v => v.id).join(',')],
+    queryFn: async () => {
+      if (viagens.length === 0) return {};
+      
+      const viagemIds = viagens.map(v => v.id);
+      const operacoesMap: Record<number, { tipo: string; dados: any }> = {};
+      
+      await Promise.all(
+        OPERACOES_TABELAS.map(async (op) => {
+          const { data, error } = await supabase
+            .from(op.tabela)
+            .select('*')
+            .in('id_viagem', viagemIds);
+          
+          if (!error && data) {
+            data.forEach((item: any) => {
+              operacoesMap[item.id_viagem] = {
+                tipo: op.nome,
+                dados: item
+              };
+            });
+          }
+        })
+      );
+      
+      return operacoesMap;
+    },
+    enabled: viagens.length > 0,
   });
+
+  const viagensEnriquecidas = useMemo<ViagemEnriquecida[]>(() => {
+    return viagens.map(viagem => {
+      const motorista = motoristas.find(m => m.motorista_id === viagem.motorista_id);
+      const veiculo = veiculos.find(v => v.veiculo_id === viagem.veiculo_id);
+      const operacaoInfo = operacoesData[viagem.id];
+      
+      return {
+        ...viagem,
+        motorista_nome: motorista?.nome,
+        veiculo_placa: veiculo?.placa,
+        operacao_tipo: operacaoInfo?.tipo,
+        operacao_dados: operacaoInfo?.dados
+      };
+    });
+  }, [viagens, motoristas, veiculos, operacoesData]);
+
+  const filteredViagens = useMemo(() => {
+    return viagensEnriquecidas.filter(viagem => {
+      if (selectedOperacao !== 'all' && viagem.operacao_tipo !== selectedOperacao) {
+        return false;
+      }
+      
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase();
+        const matchesSearch = 
+          viagem.motorista_nome?.toLowerCase().includes(search) ||
+          viagem.veiculo_placa?.toLowerCase().includes(search) ||
+          viagem.operacao_dados?.origem?.toLowerCase().includes(search) ||
+          viagem.operacao_dados?.destino?.toLowerCase().includes(search) ||
+          viagem.operacao_tipo?.toLowerCase().includes(search);
+        if (!matchesSearch) return false;
+      }
+      
+      return true;
+    });
+  }, [viagensEnriquecidas, selectedOperacao, searchTerm]);
 
   const getMotoristaName = (id: string) => {
     if (id === 'all') return 'Todos os Motoristas';
@@ -231,10 +336,31 @@ const OperacoesViagens = () => {
     return motorista?.nome || 'Motorista';
   };
 
-  const getOperacaoName = (id: string) => {
-    if (id === 'all') return 'Todas as Operações';
-    const operacao = operacoes.find(op => op.id.toString() === id);
-    return operacao?.operacao || 'Operação';
+  const formatDateTime = (dateStr: string | null) => {
+    if (!dateStr) return '-';
+    try {
+      return new Date(dateStr).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const getOperacaoColor = (tipo: string | undefined) => {
+    const colors: Record<string, string> = {
+      'Autoservice': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+      'Cesari': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+      'Mitsubishi': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+      'Sada': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+      'Superterminais': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+      'Tegma': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+    };
+    return colors[tipo || ''] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
   };
 
   return (
@@ -245,7 +371,7 @@ const OperacoesViagens = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Buscar por origem, destino, placa ou motorista..."
+              placeholder="Buscar por motorista, placa, origem ou destino..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -259,12 +385,12 @@ const OperacoesViagens = () => {
                 setIsOperacaoDropdownOpen(!isOperacaoDropdownOpen);
                 setIsMotoristaDropdownOpen(false);
               }}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 min-w-[200px] justify-between"
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 min-w-[180px] justify-between"
               data-testid="button-filter-operacao"
             >
               <Filter className="w-4 h-4" />
               <span className="truncate">
-                {getOperacaoName(selectedOperacao)}
+                {selectedOperacao === 'all' ? 'Todas Operações' : selectedOperacao}
               </span>
               <ChevronDown className={`w-4 h-4 transition-transform ${isOperacaoDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -280,20 +406,20 @@ const OperacoesViagens = () => {
                     selectedOperacao === 'all' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
                   }`}
                 >
-                  Todas as Operações
+                  Todas Operações
                 </button>
-                {operacoes.map((op) => (
+                {OPERACOES_TABELAS.map((op) => (
                   <button
-                    key={op.id}
+                    key={op.nome}
                     onClick={() => {
-                      setSelectedOperacao(op.id.toString());
+                      setSelectedOperacao(op.nome);
                       setIsOperacaoDropdownOpen(false);
                     }}
                     className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                      selectedOperacao === op.id.toString() ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                      selectedOperacao === op.nome ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
                     }`}
                   >
-                    {op.operacao}
+                    {op.nome}
                   </button>
                 ))}
               </div>
@@ -306,7 +432,7 @@ const OperacoesViagens = () => {
                 setIsMotoristaDropdownOpen(!isMotoristaDropdownOpen);
                 setIsOperacaoDropdownOpen(false);
               }}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 min-w-[200px] justify-between"
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 min-w-[180px] justify-between"
               data-testid="button-filter-motorista"
             >
               <User className="w-4 h-4" />
@@ -373,34 +499,48 @@ const OperacoesViagens = () => {
               <thead className="bg-gray-50 dark:bg-gray-700/50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora Inicial</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Operação</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destino</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Inicial</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredViagens.map((viagem) => (
                   <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.id}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">{viagem.id}</td>
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                      {viagem.created_at ? new Date(viagem.created_at).toLocaleDateString('pt-BR') : '-'}
+                      {formatDateTime(viagem.data_hora_inicial)}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {viagem.operacao_tipo ? (
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOperacaoColor(viagem.operacao_tipo)}`}>
+                          {viagem.operacao_tipo}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.motorista_nome || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.origem || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.destino || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.placa || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.veiculo_placa || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      {viagem.operacao_dados?.origem || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      {viagem.operacao_dados?.destino || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.km_inicial || '-'}</td>
                     <td className="px-4 py-3 text-sm">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        viagem.status === 'concluida' 
+                        viagem.data_hora_final 
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                          : viagem.status === 'em_andamento'
-                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
                       }`}>
-                        {viagem.status || 'Pendente'}
+                        {viagem.data_hora_final ? 'Concluída' : 'Em Andamento'}
                       </span>
                     </td>
                   </tr>
