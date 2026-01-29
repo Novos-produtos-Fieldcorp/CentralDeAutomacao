@@ -42,10 +42,12 @@ const OperacoesDashboard = () => {
       const { data, error } = await supabase
         .from('operacao')
         .select('*')
-        .eq('company_id', companyId)
         .order('operacao');
       
-      if (error) throw error;
+      if (error) {
+        console.warn('Erro ao buscar operações:', error);
+        return [];
+      }
       return data || [];
     },
     enabled: !!companyId,
@@ -156,10 +158,12 @@ const OperacoesViagens = () => {
       const { data, error } = await supabase
         .from('operacao')
         .select('*')
-        .eq('company_id', companyId)
         .order('operacao');
       
-      if (error) throw error;
+      if (error) {
+        console.warn('Erro ao buscar operações:', error);
+        return [];
+      }
       return data || [];
     },
     enabled: !!companyId,
@@ -187,7 +191,6 @@ const OperacoesViagens = () => {
       let query = supabase
         .from('acompanhamento_viagem')
         .select('*')
-        .order('created_at', { ascending: false })
         .limit(100);
 
       if (selectedOperacao !== 'all') {
