@@ -276,10 +276,9 @@ const ViagemDetailModal = ({
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {operacaoConfig.campos.map((campo) => {
                     const value = viagem.operacao_dados[campo.key];
-                    if (value === null || value === undefined) return null;
                     
                     return (
-                      <div key={campo.key}>
+                      <div key={campo.key} data-testid={`field-${campo.key}`}>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{campo.label}</p>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
                           {formatValue(campo.key, value)}
@@ -581,12 +580,22 @@ const OperacoesViagens = () => {
       
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
-        const matchesSearch = 
+        
+        // Busca em campos base
+        let matchesSearch = 
           viagem.motorista_nome?.toLowerCase().includes(search) ||
           viagem.veiculo_placa?.toLowerCase().includes(search) ||
-          viagem.operacao_dados?.origem?.toLowerCase().includes(search) ||
-          viagem.operacao_dados?.destino?.toLowerCase().includes(search) ||
-          viagem.operacao_tipo?.toLowerCase().includes(search);
+          viagem.operacao_tipo?.toLowerCase().includes(search) ||
+          String(viagem.id).includes(search);
+        
+        // Busca em todos os campos da operação
+        if (!matchesSearch && viagem.operacao_dados) {
+          matchesSearch = Object.values(viagem.operacao_dados).some(value => {
+            if (value === null || value === undefined) return false;
+            return String(value).toLowerCase().includes(search);
+          });
+        }
+        
         if (!matchesSearch) return false;
       }
       
