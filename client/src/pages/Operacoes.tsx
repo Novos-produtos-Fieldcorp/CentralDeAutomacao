@@ -501,7 +501,7 @@ const OperacoesViagens = () => {
     enabled: !!companyId,
   });
 
-  const { data: viagens = [], isLoading, refetch } = useQuery<ViagemBase[]>({
+  const { data: viagens = [], isLoading } = useQuery<ViagemBase[]>({
     queryKey: ['viagens', companyId, selectedMotorista],
     queryFn: async () => {
       let query = supabase
@@ -523,6 +523,9 @@ const OperacoesViagens = () => {
       return data || [];
     },
     enabled: !!companyId,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
+    staleTime: 10000,
   });
 
   const { data: operacoesData = {} } = useQuery({
@@ -746,14 +749,6 @@ const OperacoesViagens = () => {
             )}
           </div>
 
-          <button
-            onClick={() => refetch()}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            data-testid="button-refresh-viagens"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Atualizar
-          </button>
         </div>
       </div>
 
