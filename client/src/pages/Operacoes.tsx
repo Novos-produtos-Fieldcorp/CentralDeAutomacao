@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Calendar, Truck } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 
@@ -42,14 +42,277 @@ interface ViagemEnriquecida extends ViagemBase {
   operacao_dados?: any;
 }
 
-const OPERACOES_TABELAS = [
-  { nome: 'Autoservice', tabela: 'operacao_autoservice', campos: ['origem', 'destino', 'placa_veiculo', 'nome_cliente'] },
-  { nome: 'Cesari', tabela: 'operacao_cesari', campos: ['origem', 'destino', 'nr_manifesto', 'tipo_viagem'] },
-  { nome: 'Mitsubishi', tabela: 'operacao_mitsubishi', campos: ['origem', 'destino', 'frota', 'qtd_carro', 'modelo_carro'] },
-  { nome: 'Sada', tabela: 'operacao_sada', campos: ['origem', 'destino', 'tipo_carga', 'nr_viagem', 'qtd_carros'] },
-  { nome: 'Superterminais', tabela: 'operacao_superterminais', campos: ['nome_container', 'nr_container', 'capacidade'] },
-  { nome: 'Tegma', tabela: 'operacao_tegma', campos: ['origem', 'destino', 'tipo_viagem', 'nr_viagem', 'qtd_carros'] },
-];
+const OPERACOES_CONFIG: Record<string, { tabela: string; campos: { key: string; label: string }[] }> = {
+  'Autoservice': {
+    tabela: 'operacao_autoservice',
+    campos: [
+      { key: 'origem', label: 'Origem' },
+      { key: 'destino', label: 'Destino' },
+      { key: 'placa_veiculo', label: 'Placa Veículo' },
+      { key: 'embarque', label: 'Embarque' },
+      { key: 'nome_cliente', label: 'Nome Cliente' },
+      { key: 'tel_cliente', label: 'Telefone Cliente' },
+      { key: 'valor_frete', label: 'Valor Frete' },
+      { key: 'destino_final', label: 'Destino Final' },
+    ]
+  },
+  'Cesari': {
+    tabela: 'operacao_cesari',
+    campos: [
+      { key: 'origem', label: 'Origem' },
+      { key: 'destino', label: 'Destino' },
+      { key: 'nr_manifesto', label: 'Nº Manifesto' },
+      { key: 'ft_manifesto', label: 'Foto Manifesto' },
+      { key: 'tipo_viagem', label: 'Tipo Viagem' },
+      { key: 'pernoite', label: 'Pernoite' },
+      { key: 'dia_nao_util', label: 'Dia Não Útil' },
+      { key: 'v2_dt_hora', label: 'V2 Data/Hora' },
+      { key: 'v2_origem', label: 'V2 Origem' },
+      { key: 'v2_desitno', label: 'V2 Destino' },
+      { key: 'v2_capacidade', label: 'V2 Capacidade' },
+      { key: 'v2_nr_manifesto', label: 'V2 Nº Manifesto' },
+      { key: 'v2_ft_manifesto', label: 'V2 Foto Manifesto' },
+    ]
+  },
+  'Mitsubishi': {
+    tabela: 'operacao_mitsubishi',
+    campos: [
+      { key: 'origem', label: 'Origem' },
+      { key: 'destino', label: 'Destino' },
+      { key: 'frota', label: 'Frota' },
+      { key: 'tipo_carreta', label: 'Tipo Carreta' },
+      { key: 'qtd_carro', label: 'Qtd Carros' },
+      { key: 'modelo_carro', label: 'Modelo Carro' },
+      { key: 'km_chegada_porto', label: 'KM Chegada Porto' },
+      { key: 'data_hora_chegada_porto', label: 'Data/Hora Chegada Porto' },
+    ]
+  },
+  'Sada': {
+    tabela: 'operacao_sada',
+    campos: [
+      { key: 'origem', label: 'Origem' },
+      { key: 'destino', label: 'Destino' },
+      { key: 'destino2', label: 'Destino 2' },
+      { key: 'tipo_carreta', label: 'Tipo Carreta' },
+      { key: 'tipo_carga', label: 'Tipo Carga' },
+      { key: 'frota', label: 'Frota' },
+      { key: 'nr_viagem', label: 'Nº Viagem' },
+      { key: 'qtd_carros', label: 'Qtd Carros' },
+      { key: 'modelo', label: 'Modelo' },
+    ]
+  },
+  'Superterminais': {
+    tabela: 'operacao_superterminais',
+    campos: [
+      { key: 'embarque_desembarque', label: 'Embarque/Desembarque' },
+      { key: 'nome_container', label: 'Nome Container' },
+      { key: 'capacidade', label: 'Capacidade' },
+      { key: 'nr_container', label: 'Nº Container' },
+      { key: 'ft_tablet', label: 'Foto Tablet' },
+      { key: 'fim_de_semana', label: 'Fim de Semana' },
+    ]
+  },
+  'Tegma': {
+    tabela: 'operacao_tegma',
+    campos: [
+      { key: 'tipo_viagem', label: 'Tipo Viagem' },
+      { key: 'origem', label: 'Origem' },
+      { key: 'destino', label: 'Destino' },
+      { key: 'placa_carreta', label: 'Placa Carreta' },
+      { key: 'nr_cautela', label: 'Nº Cautela' },
+      { key: 'ft_cautela', label: 'Foto Cautela' },
+      { key: 'nr_viagem', label: 'Nº Viagem' },
+      { key: 'foto_viagem', label: 'Foto Viagem' },
+      { key: 'empresa', label: 'Empresa' },
+      { key: 'qtd_carros', label: 'Qtd Carros' },
+      { key: 'veiculo_transportado', label: 'Veículo Transportado' },
+      { key: 'placa_veiculo_transportado', label: 'Placa Veículo Transportado' },
+      { key: 'retorno', label: 'Retorno' },
+      { key: 'p2_origem', label: 'P2 Origem' },
+      { key: 'p2_destino', label: 'P2 Destino' },
+      { key: 'p2_placa_veiculo', label: 'P2 Placa Veículo' },
+      { key: 'p2_nr_cautela', label: 'P2 Nº Cautela' },
+      { key: 'p2_ft_cautela', label: 'P2 Foto Cautela' },
+      { key: 'p2_data_hora', label: 'P2 Data/Hora' },
+    ]
+  },
+};
+
+const OPERACOES_TABELAS = Object.entries(OPERACOES_CONFIG).map(([nome, config]) => ({
+  nome,
+  tabela: config.tabela,
+  campos: config.campos.map(c => c.key)
+}));
+
+const formatValue = (key: string, value: any): string => {
+  if (value === null || value === undefined) return '-';
+  if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
+  if (key.includes('data_hora') || key.includes('dt_hora')) {
+    try {
+      return new Date(value).toLocaleString('pt-BR');
+    } catch {
+      return String(value);
+    }
+  }
+  if (key.includes('ft_') || key.includes('foto')) {
+    return value ? 'Disponível' : '-';
+  }
+  return String(value);
+};
+
+const ViagemDetailModal = ({ 
+  viagem, 
+  onClose 
+}: { 
+  viagem: ViagemEnriquecida; 
+  onClose: () => void;
+}) => {
+  const operacaoConfig = viagem.operacao_tipo ? OPERACOES_CONFIG[viagem.operacao_tipo] : null;
+
+  const formatDateTime = (dateStr: string | null) => {
+    if (!dateStr) return '-';
+    try {
+      return new Date(dateStr).toLocaleString('pt-BR');
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const getOperacaoColor = (tipo: string | undefined) => {
+    const colors: Record<string, string> = {
+      'Autoservice': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+      'Cesari': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+      'Mitsubishi': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+      'Sada': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+      'Superterminais': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+      'Tegma': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+    };
+    return colors[tipo || ''] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div 
+        className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Detalhes da Viagem #{viagem.id}
+            </h2>
+            {viagem.operacao_tipo && (
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getOperacaoColor(viagem.operacao_tipo)}`}>
+                {viagem.operacao_tipo}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            data-testid="button-close-modal"
+          >
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+          </button>
+        </div>
+
+        <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+          <div className="space-y-6">
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Informações da Viagem
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Data/Hora Inicial</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{formatDateTime(viagem.data_hora_inicial)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Data/Hora Final</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{formatDateTime(viagem.data_hora_final)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                    viagem.data_hora_final 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  }`}>
+                    {viagem.data_hora_final ? 'Concluída' : 'Em Andamento'}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Motorista</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{viagem.motorista_nome || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Veículo</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{viagem.veiculo_placa || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">KM Inicial</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{viagem.km_inicial || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">KM Final</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{viagem.km_final || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Janta</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    {viagem.janta ? `Sim${viagem.hora_janta ? ` (${viagem.hora_janta})` : ''}` : 'Não'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {viagem.operacao_tipo && operacaoConfig && viagem.operacao_dados && (
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Dados da Operação {viagem.operacao_tipo}
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {operacaoConfig.campos.map((campo) => {
+                    const value = viagem.operacao_dados[campo.key];
+                    if (value === null || value === undefined) return null;
+                    
+                    return (
+                      <div key={campo.key}>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{campo.label}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {formatValue(campo.key, value)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {!viagem.operacao_tipo && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 text-center">
+                <p className="text-yellow-700 dark:text-yellow-400">
+                  Esta viagem não possui dados de operação específica vinculados.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const OperacoesDashboard = () => {
   const { companyId } = useCurrentAccount();
@@ -200,6 +463,7 @@ const OperacoesViagens = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isOperacaoDropdownOpen, setIsOperacaoDropdownOpen] = useState(false);
   const [isMotoristaDropdownOpen, setIsMotoristaDropdownOpen] = useState(false);
+  const [selectedViagem, setSelectedViagem] = useState<ViagemEnriquecida | null>(null);
 
   const { data: motoristas = [] } = useQuery<Motorista[]>({
     queryKey: ['motoristas-operacoes', companyId],
@@ -505,13 +769,17 @@ const OperacoesViagens = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destino</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">KM Inicial</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredViagens.map((viagem) => (
-                  <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <tr 
+                    key={viagem.id} 
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                    onClick={() => setSelectedViagem(viagem)}
+                    data-testid={`row-viagem-${viagem.id}`}
+                  >
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">{viagem.id}</td>
                     <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                       {formatDateTime(viagem.data_hora_inicial)}
@@ -533,7 +801,6 @@ const OperacoesViagens = () => {
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
                       {viagem.operacao_dados?.destino || '-'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.km_inicial || '-'}</td>
                     <td className="px-4 py-3 text-sm">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         viagem.data_hora_final 
@@ -550,6 +817,13 @@ const OperacoesViagens = () => {
           </div>
         )}
       </div>
+
+      {selectedViagem && (
+        <ViagemDetailModal 
+          viagem={selectedViagem} 
+          onClose={() => setSelectedViagem(null)} 
+        />
+      )}
     </div>
   );
 };
