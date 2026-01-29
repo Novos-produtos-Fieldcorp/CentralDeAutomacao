@@ -437,17 +437,53 @@ const OperacoesDashboard = () => {
       </div>
 
       {operacoes.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Operações Cadastradas (Tabela operacao)</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {operacoes.map((op) => (
-              <div
-                key={op.id}
-                className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600"
-              >
-                <p className="font-medium text-gray-900 dark:text-white">{op.operacao}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+                <LayoutDashboard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               </div>
-            ))}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Operações Personalizadas</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{operacoes.length} operações cadastradas</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {operacoes.map((op, index) => {
+                const colors = [
+                  'from-blue-500 to-blue-600',
+                  'from-green-500 to-green-600',
+                  'from-purple-500 to-purple-600',
+                  'from-orange-500 to-orange-600',
+                  'from-pink-500 to-pink-600',
+                  'from-teal-500 to-teal-600',
+                  'from-indigo-500 to-indigo-600',
+                  'from-red-500 to-red-600',
+                ];
+                const bgColor = colors[index % colors.length];
+                
+                return (
+                  <div
+                    key={op.id}
+                    className="group relative bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-4 hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+                    data-testid={`operacao-card-${op.id}`}
+                  >
+                    <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-xl bg-gradient-to-r ${bgColor}`} />
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${bgColor} flex items-center justify-center shadow-sm`}>
+                        <span className="text-white text-sm font-bold">{op.operacao.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 dark:text-white truncate">{op.operacao}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">ID: {op.id}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
