@@ -928,63 +928,63 @@ const OperacoesDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <Map className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <Map className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total de Viagens</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{viagensStats?.total || 0}</p>
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Total Viagens</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.total || 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <LayoutDashboard className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <LayoutDashboard className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Operações Ativas</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{OPERACOES_TABELAS.length}</p>
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Operações</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{OPERACOES_TABELAS.length}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Viagens Hoje</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{viagensStats?.hoje || 0}</p>
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Hoje</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.hoje || 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-              <RefreshCw className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+              <RefreshCw className="w-5 h-5 text-orange-600 dark:text-orange-400" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Em Andamento</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{viagensStats?.emAndamento || 0}</p>
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Em Andamento</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.emAndamento || 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Check className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+              <Check className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Concluídas</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{viagensStats?.concluidas || 0}</p>
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Concluídas</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.concluidas || 0}</p>
             </div>
           </div>
         </div>
