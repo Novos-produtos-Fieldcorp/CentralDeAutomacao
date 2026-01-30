@@ -988,6 +988,18 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
     }
   }, [statsModalOpen, companyId, refetchViagensDetalhadas]);
 
+  // Bloquear scroll do body quando modal estiver aberta
+  useEffect(() => {
+    if (statsModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [statsModalOpen]);
+
   const getModalTitle = () => {
     switch (statsModalOpen) {
       case 'total': return 'Todas as Viagens';
@@ -1237,7 +1249,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
               </button>
             </div>
             
-            <div className="overflow-auto max-h-[calc(90vh-60px)]">
+            <div className="overflow-auto max-h-[calc(90vh-60px)] overscroll-contain">
               {isLoadingViagensDetalhadas ? (
                 <div className="p-6">
                   <div className="animate-pulse space-y-3">
