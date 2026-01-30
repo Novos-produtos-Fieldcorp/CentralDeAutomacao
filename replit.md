@@ -30,7 +30,16 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **Hodômetro km_rodado Calculation**: Advanced reset detection utility (`hodometroResetUtils.ts`) for accurate `km_rodado` calculation in charts and lists, handling both automobiles and ciclomotors. Includes a Fuel Consumption Dashboard with `km_rodado` and total liters calculations, grouped by normalized plate.
 - **Vagas Module**: Supports inline entity creation, real-time dashboard statistics, and configurable table/card grid views.
 - **Comprovante de Rota Module**: Tabbed interface with Dashboard and List views. Features include statistics cards, driver rankings, media analytics (photos/videos), GPS location display from database relations, and a bulk ZIP download system (frontend-only using JSZip). Smart media loading system handles various formats and WiseApp authentication.
-- **Operações Module**: New module for trip and operations management. Features Dashboard and Viagens tabs. Dashboard shows statistics for total trips, active operations, in-progress trips, and completed trips. Viagens tab provides a filterable list of trips with operation filtering, search functionality, and status tracking. Access controlled via `operacoes_access` column in company table.
+- **Operações Module**: Comprehensive module for trip and operations management featuring:
+  - **Dashboard Tab**: Statistics cards, 30-day histogram with daily trip counts (weekday/weekend differentiation), and custom operations cards with gradients.
+  - **Viagens Tab**: Filterable list with operation type, driver, and date range filters. Auto-refresh every 30 seconds.
+  - **Enhanced Detail Modal**: Operation-specific layouts for each of the 6 operation types (Autoservice, Cesari, Mitsubishi, Sada, Superterminais, Tegma). Features include:
+    - Automatic translation of numeric codes (tipo_carreta: 0=Prancha/1=Cegonha, capacidade: 0=Vazio/1=Cheio, embarque_desembarque: 0=Embarque/1=Desembarque)
+    - Photo thumbnails with lightbox preview for ft_cautela, ft_manifesto, ft_tablet, foto_viagem fields
+    - Boolean badges with icons for pernoite, fim_de_semana, retorno, janta fields
+    - Organized sections (Rota, Veículos, Cliente, 1ª/2ª Puxada for Tegma, 1ª/2ª Viagem for Cesari)
+    - Gradient header matching operation color theme
+  - Access controlled via `operacoes_access` column in company table.
 - **Database Schema Notes**: The `cliente` table uses `st_cliente` (not `ativo`) for active status. City data (`nome_cidade`) should be fetched from views like `vw_agregados_completo` or `vw_motoristas_completo`, not directly from `end_motorista` table.
 - **Deployment**: Configured for Replit with Vite dev server and Express backend.
 

@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation } from 'lucide-react';
+import { useState as useStateReact } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 
@@ -144,20 +145,107 @@ const OPERACOES_TABELAS = Object.entries(OPERACOES_CONFIG).map(([nome, config]) 
   campos: config.campos.map(c => c.key)
 }));
 
-const formatValue = (key: string, value: any): string => {
-  if (value === null || value === undefined) return '-';
-  if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
-  if (key.includes('data_hora') || key.includes('dt_hora')) {
+const translateValue = (key: string, value: any): { text: string; type: 'text' | 'badge' | 'photo' } => {
+  if (value === null || value === undefined) return { text: '-', type: 'text' };
+  
+  // Tradução de códigos numéricos
+  if (key === 'tipo_carreta') {
+    return { text: value === 0 ? 'Prancha' : value === 1 ? 'Cegonha' : String(value), type: 'badge' };
+  }
+  if (key === 'capacidade' || key === 'v2_capacidade') {
+    return { text: value === 0 ? 'Vazio' : value === 1 ? 'Cheio' : String(value), type: 'badge' };
+  }
+  if (key === 'embarque_desembarque') {
+    return { text: value === 0 ? 'Embarque' : value === 1 ? 'Desembarque' : String(value), type: 'badge' };
+  }
+  
+  // Campos booleanos
+  if (typeof value === 'boolean' || key === 'pernoite' || key === 'dia_nao_util' || key === 'fim_de_semana' || key === 'retorno') {
+    return { text: value ? 'Sim' : 'Não', type: 'badge' };
+  }
+  
+  // Campos de data/hora
+  if (key.includes('data_hora') || key.includes('dt_hora') || key === 'v2_dt_hora') {
     try {
-      return new Date(value).toLocaleString('pt-BR');
+      return { text: new Date(value).toLocaleString('pt-BR'), type: 'text' };
     } catch {
-      return String(value);
+      return { text: String(value), type: 'text' };
     }
   }
+  
+  // Campos de foto
   if (key.includes('ft_') || key.includes('foto')) {
-    return value ? 'Disponível' : '-';
+    return { text: value || '', type: 'photo' };
   }
-  return String(value);
+  
+  return { text: String(value), type: 'text' };
+};
+
+const PhotoThumbnail = ({ url, label }: { url: string; label: string }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  
+  if (!url || hasError) {
+    return (
+      <div className="w-full h-24 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+        <Image className="w-6 h-6 text-gray-400" />
+      </div>
+    );
+  }
+  
+  return (
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="w-full h-24 bg-gray-200 dark:bg-gray-600 rounded-lg overflow-hidden hover:opacity-80 transition-opacity relative group"
+      >
+        <img 
+          src={url} 
+          alt={label}
+          className="w-full h-full object-cover"
+          onError={() => setHasError(true)}
+        />
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <span className="text-white text-xs">Ampliar</span>
+        </div>
+      </button>
+      
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
+          onClick={() => setIsOpen(false)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <img 
+              src={url} 
+              alt={label}
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+            />
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute -top-3 -right-3 p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+const BooleanBadge = ({ value, trueLabel = 'Sim', falseLabel = 'Não' }: { value: boolean; trueLabel?: string; falseLabel?: string }) => {
+  return value ? (
+    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <CheckCircle className="w-3 h-3" />
+      {trueLabel}
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+      <XCircle className="w-3 h-3" />
+      {falseLabel}
+    </span>
+  );
 };
 
 const ViagemDetailModal = ({ 
@@ -167,7 +255,7 @@ const ViagemDetailModal = ({
   viagem: ViagemEnriquecida; 
   onClose: () => void;
 }) => {
-  const operacaoConfig = viagem.operacao_tipo ? OPERACOES_CONFIG[viagem.operacao_tipo] : null;
+  const dados = viagem.operacao_dados || {};
 
   const formatDateTime = (dateStr: string | null) => {
     if (!dateStr) return '-';
@@ -179,61 +267,381 @@ const ViagemDetailModal = ({
   };
 
   const getOperacaoColor = (tipo: string | undefined) => {
-    const colors: Record<string, string> = {
-      'Autoservice': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-      'Cesari': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-      'Mitsubishi': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-      'Sada': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-      'Superterminais': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-      'Tegma': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+    const colors: Record<string, { bg: string; gradient: string }> = {
+      'Autoservice': { bg: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', gradient: 'from-blue-500 to-blue-600' },
+      'Cesari': { bg: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', gradient: 'from-green-500 to-green-600' },
+      'Mitsubishi': { bg: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', gradient: 'from-red-500 to-red-600' },
+      'Sada': { bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', gradient: 'from-yellow-500 to-yellow-600' },
+      'Superterminais': { bg: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', gradient: 'from-purple-500 to-purple-600' },
+      'Tegma': { bg: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400', gradient: 'from-orange-500 to-orange-600' },
     };
-    return colors[tipo || ''] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
+    return colors[tipo || ''] || { bg: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400', gradient: 'from-gray-500 to-gray-600' };
+  };
+
+  const operacaoColors = getOperacaoColor(viagem.operacao_tipo);
+
+  // Componente para seção
+  const Section = ({ title, icon: Icon, children, className = '' }: { title: string; icon: any; children: React.ReactNode; className?: string }) => (
+    <div className={`bg-gray-50 dark:bg-gray-700/50 rounded-lg overflow-hidden ${className}`}>
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-600 flex items-center gap-2">
+        <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{title}</h3>
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+
+  // Componente para campo
+  const Field = ({ label, value, className = '' }: { label: string; value: React.ReactNode; className?: string }) => (
+    <div className={className}>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+      <div className="text-sm font-medium text-gray-900 dark:text-white">{value || '-'}</div>
+    </div>
+  );
+
+  // Renderização específica por operação
+  const renderAutoservice = () => (
+    <div className="space-y-4">
+      <Section title="Rota" icon={Navigation}>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Origem" value={dados.origem} />
+          <Field label="Destino" value={dados.destino} />
+          <Field label="Local de Embarque" value={dados.embarque} />
+          <Field label="Destino Final" value={dados.destino_final} />
+        </div>
+      </Section>
+      
+      <Section title="Cliente" icon={User}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Field label="Nome do Cliente" value={dados.nome_cliente} />
+          <Field label="Telefone" value={dados.tel_cliente ? (
+            <span className="flex items-center gap-1">
+              <Phone className="w-3 h-3" />
+              {dados.tel_cliente}
+            </span>
+          ) : '-'} />
+          <Field label="Valor do Frete" value={dados.valor_frete ? (
+            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+              <DollarSign className="w-3 h-3" />
+              {dados.valor_frete}
+            </span>
+          ) : '-'} />
+        </div>
+      </Section>
+      
+      <Section title="Veículo Transportado" icon={Car}>
+        <Field label="Placa do Veículo" value={dados.placa_veiculo} />
+      </Section>
+    </div>
+  );
+
+  const renderCesari = () => (
+    <div className="space-y-4">
+      <Section title="1ª Viagem" icon={Navigation}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Field label="Origem" value={dados.origem} />
+          <Field label="Destino" value={dados.destino} />
+          <Field label="Nº Manifesto" value={dados.nr_manifesto ? (
+            <span className="flex items-center gap-1">
+              <Hash className="w-3 h-3" />
+              {dados.nr_manifesto}
+            </span>
+          ) : '-'} />
+        </div>
+        {dados.ft_manifesto && (
+          <div className="mt-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Foto do Manifesto</p>
+            <PhotoThumbnail url={dados.ft_manifesto} label="Manifesto 1" />
+          </div>
+        )}
+      </Section>
+      
+      {(dados.v2_origem || dados.v2_desitno) && (
+        <Section title="2ª Viagem" icon={Navigation}>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <Field label="Data/Hora" value={dados.v2_dt_hora ? new Date(dados.v2_dt_hora).toLocaleString('pt-BR') : '-'} />
+            <Field label="Origem" value={dados.v2_origem} />
+            <Field label="Destino" value={dados.v2_desitno} />
+            <Field label="Capacidade" value={
+              dados.v2_capacidade !== null && dados.v2_capacidade !== undefined ? (
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  dados.v2_capacidade === 1 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
+                  {dados.v2_capacidade === 1 ? 'Cheio' : 'Vazio'}
+                </span>
+              ) : '-'
+            } />
+            <Field label="Nº Manifesto" value={dados.v2_nr_manifesto} />
+          </div>
+          {dados.v2_ft_manifesto && (
+            <div className="mt-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Foto do Manifesto</p>
+              <PhotoThumbnail url={dados.v2_ft_manifesto} label="Manifesto 2" />
+            </div>
+          )}
+        </Section>
+      )}
+      
+      <Section title="Informações Adicionais" icon={Calendar}>
+        <div className="flex flex-wrap gap-4">
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Pernoite</p>
+            <BooleanBadge value={dados.pernoite} />
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Fim de Semana/Feriado</p>
+            <BooleanBadge value={dados.dia_nao_util} trueLabel="Sim" falseLabel="Dia útil" />
+          </div>
+        </div>
+      </Section>
+    </div>
+  );
+
+  const renderMitsubishi = () => (
+    <div className="space-y-4">
+      <Section title="Rota" icon={Navigation}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Field label="Origem" value={dados.origem} />
+          <Field label="Destino" value={dados.destino} />
+          <Field label="Frota" value={dados.frota} />
+        </div>
+      </Section>
+      
+      <Section title="Veículos" icon={Truck}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Field label="Tipo de Carreta" value={
+            dados.tipo_carreta !== null && dados.tipo_carreta !== undefined ? (
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                dados.tipo_carreta === 1 
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+              }`}>
+                {dados.tipo_carreta === 1 ? 'Cegonha' : 'Prancha'}
+              </span>
+            ) : '-'
+          } />
+          <Field label="Quantidade de Carros" value={dados.qtd_carro} />
+          <Field label="Modelo do Carro" value={dados.modelo_carro} />
+          <Field label="KM Chegada Porto" value={dados.km_chegada_porto} />
+        </div>
+      </Section>
+    </div>
+  );
+
+  const renderSada = () => (
+    <div className="space-y-4">
+      <Section title="Rota" icon={Navigation}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Field label="Origem" value={dados.origem} />
+          <Field label="Destino" value={dados.destino} />
+          <Field label="Frota" value={dados.frota} />
+          <Field label="Nº Viagem" value={dados.nr_viagem ? (
+            <span className="flex items-center gap-1">
+              <Hash className="w-3 h-3" />
+              {dados.nr_viagem}
+            </span>
+          ) : '-'} />
+          <Field label="Tipo de Carga" value={dados.tipo_carga} />
+        </div>
+      </Section>
+      
+      <Section title="Veículos" icon={Truck}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Field label="Tipo de Carreta" value={
+            dados.tipo_carreta !== null && dados.tipo_carreta !== undefined ? (
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                dados.tipo_carreta === 1 
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+              }`}>
+                {dados.tipo_carreta === 1 ? 'Cegonha' : 'Prancha'}
+              </span>
+            ) : '-'
+          } />
+          <Field label="Quantidade de Carros" value={dados.qtd_carros} />
+          <Field label="Modelo" value={dados.modelo} />
+        </div>
+      </Section>
+    </div>
+  );
+
+  const renderSuperterminais = () => (
+    <div className="space-y-4">
+      <Section title="Operação Portuária" icon={Ship}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Field label="Tipo" value={
+            dados.embarque_desembarque !== null && dados.embarque_desembarque !== undefined ? (
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                dados.embarque_desembarque === 0 
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+              }`}>
+                {dados.embarque_desembarque === 0 ? 'Embarque' : 'Desembarque'}
+              </span>
+            ) : '-'
+          } />
+          <Field label="Nome do Navio" value={dados.nome_navio} />
+          <Field label="Capacidade" value={
+            dados.capacidade !== null && dados.capacidade !== undefined ? (
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                dados.capacidade === 1 
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+              }`}>
+                {dados.capacidade === 1 ? 'Cheio' : 'Vazio'}
+              </span>
+            ) : '-'
+          } />
+          <Field label="Nº Container" value={dados.nr_container ? (
+            <span className="flex items-center gap-1 font-mono">
+              <Package className="w-3 h-3" />
+              {dados.nr_container}
+            </span>
+          ) : '-'} />
+        </div>
+      </Section>
+      
+      <Section title="Informações Adicionais" icon={Calendar}>
+        <div className="flex flex-wrap gap-4">
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Diária de Fim de Semana</p>
+            <BooleanBadge value={dados.fim_de_semana} />
+          </div>
+        </div>
+      </Section>
+      
+      {dados.ft_tablet && (
+        <Section title="Foto do Tablet" icon={Image}>
+          <PhotoThumbnail url={dados.ft_tablet} label="Foto do Tablet" />
+        </Section>
+      )}
+    </div>
+  );
+
+  const renderTegma = () => (
+    <div className="space-y-4">
+      <Section title="Tipo de Viagem" icon={Truck}>
+        <Field label="Tipo" value={
+          dados.tipo_viagem ? (
+            <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
+              {dados.tipo_viagem}
+            </span>
+          ) : '-'
+        } />
+      </Section>
+      
+      <Section title="1ª Puxada" icon={Navigation}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Field label="Origem" value={dados.origem} />
+          <Field label="Destino" value={dados.destino} />
+          <Field label="Placa da Carreta" value={dados.placa_carreta} />
+          <Field label="Nº Cautela" value={dados.nr_cautela ? (
+            <span className="flex items-center gap-1">
+              <Hash className="w-3 h-3" />
+              {dados.nr_cautela}
+            </span>
+          ) : '-'} />
+          <Field label="Nº Viagem" value={dados.nr_viagem} />
+          <Field label="Empresa" value={dados.empresa} />
+          <Field label="Qtd. Carros" value={dados.qtd_carros} />
+        </div>
+        {dados.ft_cautela && (
+          <div className="mt-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Foto da Cautela</p>
+            <PhotoThumbnail url={dados.ft_cautela} label="Cautela 1" />
+          </div>
+        )}
+      </Section>
+      
+      {(dados.p2_origem || dados.p2_destino) && (
+        <Section title="2ª Puxada" icon={Navigation}>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <Field label="Origem" value={dados.p2_origem} />
+            <Field label="Destino" value={dados.p2_destino} />
+            <Field label="Placa do Veículo" value={dados.p2_placa_veiculo} />
+            <Field label="Veículo Transportado" value={dados.veiculo_transportado} />
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Retorno</p>
+              <BooleanBadge value={dados.retorno} />
+            </div>
+          </div>
+        </Section>
+      )}
+      
+      {dados.foto_viagem && (
+        <Section title="Foto da Viagem" icon={Image}>
+          <PhotoThumbnail url={dados.foto_viagem} label="Foto da Viagem" />
+        </Section>
+      )}
+    </div>
+  );
+
+  const renderOperacaoContent = () => {
+    if (!viagem.operacao_tipo || !viagem.operacao_dados) {
+      return (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 text-center">
+          <p className="text-yellow-700 dark:text-yellow-400">
+            Esta viagem não possui dados de operação específica vinculados.
+          </p>
+        </div>
+      );
+    }
+
+    switch (viagem.operacao_tipo) {
+      case 'Autoservice': return renderAutoservice();
+      case 'Cesari': return renderCesari();
+      case 'Mitsubishi': return renderMitsubishi();
+      case 'Sada': return renderSada();
+      case 'Superterminais': return renderSuperterminais();
+      case 'Tegma': return renderTegma();
+      default: return null;
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-xl"
+        className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Detalhes da Viagem #{viagem.id}
-            </h2>
-            {viagem.operacao_tipo && (
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getOperacaoColor(viagem.operacao_tipo)}`}>
-                {viagem.operacao_tipo}
-              </span>
-            )}
+        {/* Header com gradiente */}
+        <div className={`bg-gradient-to-r ${operacaoColors.gradient} p-4`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
+                <span className="text-white text-xl font-bold">#{viagem.id}</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white">
+                  Detalhes da Viagem
+                </h2>
+                {viagem.operacao_tipo && (
+                  <span className="text-white/80 text-sm">
+                    Operação {viagem.operacao_tipo}
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              data-testid="button-close-modal"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            data-testid="button-close-modal"
-          >
-            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          </button>
         </div>
 
-        <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
-          <div className="space-y-6">
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                Informações da Viagem
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Data/Hora Inicial</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{formatDateTime(viagem.data_hora_inicial)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Data/Hora Final</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{formatDateTime(viagem.data_hora_final)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Status</p>
+        <div className="p-4 overflow-y-auto max-h-[calc(90vh-140px)]">
+          <div className="space-y-4">
+            {/* Informações básicas da viagem */}
+            <Section title="Informações da Viagem" icon={Clock}>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Field label="Data/Hora Inicial" value={formatDateTime(viagem.data_hora_inicial)} />
+                <Field label="Data/Hora Final" value={formatDateTime(viagem.data_hora_final)} />
+                <Field label="Status" value={
                   <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
                     viagem.data_hora_final 
                       ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
@@ -241,62 +649,36 @@ const ViagemDetailModal = ({
                   }`}>
                     {viagem.data_hora_final ? 'Concluída' : 'Em Andamento'}
                   </span>
-                </div>
+                } />
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Motorista</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{viagem.motorista_nome || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Veículo</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{viagem.veiculo_placa || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">KM Inicial</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{viagem.km_inicial || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">KM Final</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{viagem.km_final || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Janta</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {viagem.janta ? `Sim${viagem.hora_janta ? ` (${viagem.hora_janta})` : ''}` : 'Não'}
-                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Janta</p>
+                  <BooleanBadge value={viagem.janta || false} />
                 </div>
               </div>
-            </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                <Field label="Motorista" value={
+                  viagem.motorista_nome ? (
+                    <span className="flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {viagem.motorista_nome}
+                    </span>
+                  ) : '-'
+                } />
+                <Field label="Veículo" value={
+                  viagem.veiculo_placa ? (
+                    <span className="flex items-center gap-1 font-mono">
+                      <Truck className="w-3 h-3" />
+                      {viagem.veiculo_placa}
+                    </span>
+                  ) : '-'
+                } />
+                <Field label="KM Inicial" value={viagem.km_inicial} />
+                <Field label="KM Final" value={viagem.km_final} />
+              </div>
+            </Section>
 
-            {viagem.operacao_tipo && operacaoConfig && viagem.operacao_dados && (
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Dados da Operação {viagem.operacao_tipo}
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {operacaoConfig.campos.map((campo) => {
-                    const value = viagem.operacao_dados[campo.key];
-                    
-                    return (
-                      <div key={campo.key} data-testid={`field-${campo.key}`}>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{campo.label}</p>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {formatValue(campo.key, value)}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {!viagem.operacao_tipo && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 text-center">
-                <p className="text-yellow-700 dark:text-yellow-400">
-                  Esta viagem não possui dados de operação específica vinculados.
-                </p>
-              </div>
-            )}
+            {/* Conteúdo específico da operação */}
+            {renderOperacaoContent()}
           </div>
         </div>
 
