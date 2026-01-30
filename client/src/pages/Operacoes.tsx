@@ -760,6 +760,77 @@ const OperacoesDashboard = () => {
     enabled: !!companyId,
   });
 
+  // Query para contar operações por tipo de dashboard (com filtro por empresa)
+  const { data: dashboardCounts = { sada: 0, tegma: 0, superterminais: 0, cesari: 0, total: 0 } } = useQuery({
+    queryKey: ['dashboard-counts', companyId],
+    queryFn: async () => {
+      console.log('[Dashboard Counts] Iniciando busca com companyId:', companyId);
+      
+      // Buscar motoristas da empresa
+      const { data: motoristasEmpresa, error: motError } = await supabase
+        .from('motorista')
+        .select('motorista_id')
+        .eq('company_id', companyId);
+      
+      if (motError) {
+        console.error('[Dashboard Counts] Erro ao buscar motoristas:', motError);
+      }
+      console.log('[Dashboard Counts] Motoristas encontrados:', motoristasEmpresa?.length || 0);
+      
+      if (!motoristasEmpresa || motoristasEmpresa.length === 0) {
+        return { sada: 0, tegma: 0, superterminais: 0, cesari: 0, total: 0 };
+      }
+      
+      const motoristaIds = motoristasEmpresa.map((m: any) => m.motorista_id);
+      
+      // Buscar viagens da empresa
+      const { data: viagensData, error: viagError } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id')
+        .in('motorista_id', motoristaIds);
+      
+      if (viagError) {
+        console.error('[Dashboard Counts] Erro ao buscar viagens:', viagError);
+      }
+      console.log('[Dashboard Counts] Viagens encontradas:', viagensData?.length || 0);
+      
+      if (!viagensData || viagensData.length === 0) {
+        return { sada: 0, tegma: 0, superterminais: 0, cesari: 0, total: 0 };
+      }
+      
+      const viagemIds = viagensData.map((v: any) => v.id);
+      
+      // Buscar contagens de cada operação
+      const [sadaRes, tegmaRes, superRes, cesariRes] = await Promise.all([
+        supabase.from('operacao_sada').select('id', { count: 'exact', head: true }).in('id_viagem', viagemIds),
+        supabase.from('operacao_tegma').select('id', { count: 'exact', head: true }).in('id_viagem', viagemIds),
+        supabase.from('operacao_superterminais').select('id', { count: 'exact', head: true }).in('id_viagem', viagemIds),
+        supabase.from('operacao_cesari').select('id', { count: 'exact', head: true }).in('id_viagem', viagemIds),
+      ]);
+      
+      console.log('[Dashboard Counts] Resultados:', {
+        sada: sadaRes.count, sadaError: sadaRes.error,
+        tegma: tegmaRes.count, tegmaError: tegmaRes.error,
+        superterminais: superRes.count, superError: superRes.error,
+        cesari: cesariRes.count, cesariError: cesariRes.error,
+      });
+      
+      const sada = sadaRes.count || 0;
+      const tegma = tegmaRes.count || 0;
+      const superterminais = superRes.count || 0;
+      const cesari = cesariRes.count || 0;
+      
+      return {
+        sada,
+        tegma,
+        superterminais,
+        cesari,
+        total: sada + tegma + superterminais + cesari
+      };
+    },
+    enabled: !!companyId,
+  });
+
   const { data: viagensHistograma = [] } = useQuery({
     queryKey: ['viagens-histograma', companyId],
     queryFn: async () => {
@@ -990,7 +1061,19 @@ const OperacoesDashboard = () => {
             {DASHBOARD_OPERATIONS.map((op) => {
               const isSelected = selectedOperation === op.id;
               const IconComponent = op.icon;
-              const isAllButton = op.id === 'all';
+              
+              // Obter contagem baseada no tipo de operação
+              const getCount = () => {
+                switch (op.id) {
+                  case 'all': return dashboardCounts.total;
+                  case 'sada': return dashboardCounts.sada;
+                  case 'tegma': return dashboardCounts.tegma;
+                  case 'superterminais': return dashboardCounts.superterminais;
+                  case 'cesari': return dashboardCounts.cesari;
+                  default: return 0;
+                }
+              };
+              const count = getCount();
               
               return (
                 <button
@@ -1011,6 +1094,13 @@ const OperacoesDashboard = () => {
                     isSelected ? 'scale-110' : 'group-hover:scale-105'
                   }`}>
                     <IconComponent className="w-7 h-7 text-white" />
+                    {count > 0 && (
+                      <div className="absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center border-2 border-current shadow-sm">
+                        <span className={`text-xs font-bold bg-gradient-to-r ${op.cor} bg-clip-text text-transparent`}>
+                          {count > 99 ? '99+' : count}
+                        </span>
+                      </div>
+                    )}
                     {isSelected && (
                       <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800 shadow-sm">
                         <Check className="w-3 h-3 text-white" />
@@ -1023,7 +1113,7 @@ const OperacoesDashboard = () => {
                       {op.nome}
                     </p>
                     <p className={`text-xs mt-0.5 ${isSelected ? 'text-gray-600 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                      {op.descricao}
+                      {count > 0 ? `${count} ${count === 1 ? 'viagem' : 'viagens'}` : op.descricao}
                     </p>
                   </div>
                 </button>
