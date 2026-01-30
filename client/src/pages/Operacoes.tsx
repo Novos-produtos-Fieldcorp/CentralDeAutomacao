@@ -870,8 +870,9 @@ const OperacoesDashboard = () => {
   const periodoAtual = PERIODOS_HISTOGRAMA.find(p => p.id === histogramaPeriodo);
   const diasPeriodo = histogramaPeriodo === 'custom' ? 0 : (periodoAtual?.dias || 30);
 
-  const { data: viagensHistograma = [], isFetching: isHistogramaLoading } = useQuery({
+  const { data: viagensHistograma = [] } = useQuery({
     queryKey: ['viagens-histograma', companyId, histogramaPeriodo, histogramaDataInicio, histogramaDataFim],
+    placeholderData: (previousData) => previousData,
     queryFn: async () => {
       const hoje = new Date();
       let dataInicio: Date;
@@ -1097,27 +1098,7 @@ const OperacoesDashboard = () => {
         </div>
         
         <div className="p-6">
-          {isHistogramaLoading ? (
-            <div className="space-y-4 animate-pulse">
-              <div className="flex items-end justify-between gap-1 h-48">
-                {Array.from({ length: diasPeriodo || 30 }).map((_, index) => (
-                  <div key={index} className="flex-1 flex flex-col items-center">
-                    <div className="w-full flex flex-col items-center justify-end h-40">
-                      <div 
-                        className="w-full max-w-[20px] rounded-t-sm bg-gray-200 dark:bg-gray-700"
-                        style={{ height: `${Math.random() * 60 + 20}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-between">
-                <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
-                <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
-                <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
-              </div>
-            </div>
-          ) : (() => {
+          {(() => {
             const totalViagens = viagensHistograma.reduce((acc, d) => acc + d.total, 0);
             const maxValue = Math.max(...viagensHistograma.map(d => d.total), 1);
             
@@ -2459,8 +2440,37 @@ const OperacoesViagens = () => {
 
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-            Carregando viagens...
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-700/50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora Inicial</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Operação</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ajudante</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destino</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <tr key={index} className="animate-pulse">
+                    <td className="px-4 py-3"><div className="h-4 w-8 bg-gray-200 dark:bg-gray-700 rounded" /></td>
+                    <td className="px-4 py-3"><div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded" /></td>
+                    <td className="px-4 py-3"><div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" /></td>
+                    <td className="px-4 py-3"><div className="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded" /></td>
+                    <td className="px-4 py-3"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" /></td>
+                    <td className="px-4 py-3"><div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded" /></td>
+                    <td className="px-4 py-3"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" /></td>
+                    <td className="px-4 py-3"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" /></td>
+                    <td className="px-4 py-3"><div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : filteredViagens.length === 0 ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-400">
