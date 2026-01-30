@@ -1935,7 +1935,6 @@ const OperacoesViagens = () => {
       const { data, error } = await supabase
         .from('motorista')
         .select('motorista_id, nome')
-        .eq('company_id', companyId)
         .order('nome');
       
       if (error) {
@@ -1953,7 +1952,6 @@ const OperacoesViagens = () => {
       const { data, error } = await supabase
         .from('documento_ajudante')
         .select('id_ajudante, nome')
-        .eq('company_id', companyId)
         .order('nome');
       
       if (error) {
@@ -1971,7 +1969,6 @@ const OperacoesViagens = () => {
       const { data, error } = await supabase
         .from('veiculo')
         .select('veiculo_id, placa')
-        .eq('company_id', companyId)
         .order('placa');
       
       if (error) {
