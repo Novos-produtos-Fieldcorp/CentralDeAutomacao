@@ -641,6 +641,8 @@ const OperacoesViagens = () => {
   const [selectedOperacao, setSelectedOperacao] = useState<string>('all');
   const [selectedMotorista, setSelectedMotorista] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [dataInicio, setDataInicio] = useState<string>('');
+  const [dataFim, setDataFim] = useState<string>('');
   const [isOperacaoDropdownOpen, setIsOperacaoDropdownOpen] = useState(false);
   const [isMotoristaDropdownOpen, setIsMotoristaDropdownOpen] = useState(false);
   const [selectedViagem, setSelectedViagem] = useState<ViagemEnriquecida | null>(null);
@@ -683,16 +685,24 @@ const OperacoesViagens = () => {
   });
 
   const { data: viagens = [], isLoading } = useQuery<ViagemBase[]>({
-    queryKey: ['viagens', companyId, selectedMotorista],
+    queryKey: ['viagens', companyId, selectedMotorista, dataInicio, dataFim],
     queryFn: async () => {
       let query = supabase
         .from('acompanhamento_viagem')
         .select('*')
         .order('data_hora_inicial', { ascending: false })
-        .limit(100);
+        .limit(500);
 
       if (selectedMotorista !== 'all') {
         query = query.eq('motorista_id', parseInt(selectedMotorista));
+      }
+      
+      if (dataInicio) {
+        query = query.gte('data_hora_inicial', `${dataInicio}T00:00:00`);
+      }
+      
+      if (dataFim) {
+        query = query.lte('data_hora_inicial', `${dataFim}T23:59:59`);
       }
       
       const { data, error } = await query;
@@ -927,6 +937,40 @@ const OperacoesViagens = () => {
                   </button>
                 ))}
               </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-gray-400" />
+              <input
+                type="date"
+                value={dataInicio}
+                onChange={(e) => setDataInicio(e.target.value)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                data-testid="input-data-inicio"
+              />
+            </div>
+            <span className="text-gray-400">até</span>
+            <input
+              type="date"
+              value={dataFim}
+              onChange={(e) => setDataFim(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              data-testid="input-data-fim"
+            />
+            {(dataInicio || dataFim) && (
+              <button
+                onClick={() => {
+                  setDataInicio('');
+                  setDataFim('');
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                title="Limpar filtro de data"
+                data-testid="button-limpar-data"
+              >
+                <X className="w-4 h-4" />
+              </button>
             )}
           </div>
 
