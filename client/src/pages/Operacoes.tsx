@@ -882,12 +882,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
   const { data: viagensDetalhadas = [], isLoading: isLoadingViagensDetalhadas, refetch: refetchViagensDetalhadas } = useQuery({
     queryKey: ['viagens-detalhadas-modal', companyId, selectedOperacao, statsModalOpen],
     queryFn: async () => {
-      console.log('[Modal Query] Executando query com:', { companyId, selectedOperacao, statsModalOpen });
-      
-      if (!statsModalOpen || !companyId) {
-        console.log('[Modal Query] Modal não aberto ou sem companyId, retornando vazio');
-        return [];
-      }
+      if (!statsModalOpen || !companyId) return [];
       
       // Buscar viagens da empresa
       let query = supabase
@@ -902,7 +897,6 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
         const hoje = new Date();
         const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).toISOString();
         const fimHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1).toISOString();
-        console.log('[Modal Query] Filtro hoje:', { inicioHoje, fimHoje });
         query = query.gte('data_hora_inicial', inicioHoje).lt('data_hora_inicial', fimHoje);
       } else if (statsModalOpen === 'emAndamento') {
         query = query.is('data_hora_final', null);
@@ -912,17 +906,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
       
       const { data: viagens, error } = await query;
       
-      console.log('[Modal Query] Resultado query:', { viagens: viagens?.length, error });
-      
-      if (error) {
-        console.error('[Modal Query] Erro:', error);
-        return [];
-      }
-      
-      if (!viagens || viagens.length === 0) {
-        console.log('[Modal Query] Nenhuma viagem encontrada');
-        return [];
-      }
+      if (error || !viagens || viagens.length === 0) return [];
       
       // Se filtro por operação específica, filtrar viagens
       let viagensFiltradas = viagens;
@@ -935,8 +919,6 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             .select('id_viagem')
             .in('id_viagem', viagemIds);
           
-          console.log('[Modal Query] Filtro operação:', { operacao: operacao.nome, opData: opData?.length });
-          
           if (opData && opData.length > 0) {
             const opViagemIds = new Set(opData.map((o: any) => o.id_viagem));
             viagensFiltradas = viagens.filter((v: any) => opViagemIds.has(v.id));
@@ -946,10 +928,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
         }
       }
       
-      if (viagensFiltradas.length === 0) {
-        console.log('[Modal Query] Viagens filtradas vazio');
-        return [];
-      }
+      if (viagensFiltradas.length === 0) return [];
       
       // Enriquecer com nomes de motorista e veículo
       const motoristaIds = [...new Set(viagensFiltradas.map((v: any) => v.motorista_id).filter(Boolean))];
@@ -969,14 +948,11 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
       (motoristasRes.data || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
       (veiculosRes.data || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
       
-      const result = viagensFiltradas.map((v: any) => ({
+      return viagensFiltradas.map((v: any) => ({
         ...v,
         motorista_nome: motoristasMap[v.motorista_id] || '-',
         veiculo_placa: veiculosMap[v.veiculo_id] || '-'
       }));
-      
-      console.log('[Modal Query] Retornando viagens:', result.length);
-      return result;
     },
     enabled: !!companyId && !!statsModalOpen,
     staleTime: 0,
@@ -986,7 +962,6 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
   // Forçar refetch quando o modal abrir
   useEffect(() => {
     if (statsModalOpen && companyId) {
-      console.log('[Modal] Abrindo modal, forçando refetch');
       refetchViagensDetalhadas();
     }
   }, [statsModalOpen, companyId, refetchViagensDetalhadas]);
