@@ -704,9 +704,22 @@ const DASHBOARD_OPERATIONS = [
   { id: 'cesari', nome: 'CESARI', descricao: 'Distribuição', icon: Boxes, cor: 'from-green-500 to-emerald-600', bgLight: 'bg-gradient-to-br from-green-50 to-emerald-100', bgDark: 'dark:bg-gradient-to-br dark:from-green-900/30 dark:to-emerald-900/40', borderColor: 'border-green-300 dark:border-green-700' },
 ];
 
+type HistogramaPeriodo = '30d' | '15d' | '7d' | '1d' | 'custom';
+
+const PERIODOS_HISTOGRAMA = [
+  { id: '30d' as HistogramaPeriodo, label: '30 dias', dias: 30 },
+  { id: '15d' as HistogramaPeriodo, label: '15 dias', dias: 15 },
+  { id: '7d' as HistogramaPeriodo, label: '7 dias', dias: 7 },
+  { id: '1d' as HistogramaPeriodo, label: 'Hoje', dias: 1 },
+  { id: 'custom' as HistogramaPeriodo, label: 'Personalizado', dias: 0 },
+];
+
 const OperacoesDashboard = () => {
   const { companyId } = useCurrentAccount();
   const [selectedOperation, setSelectedOperation] = useState<string>('all');
+  const [histogramaPeriodo, setHistogramaPeriodo] = useState<HistogramaPeriodo>('30d');
+  const [histogramaDataInicio, setHistogramaDataInicio] = useState<string>('');
+  const [histogramaDataFim, setHistogramaDataFim] = useState<string>('');
 
   const { data: operacoes = [] } = useQuery<Operacao[]>({
     queryKey: ['operacoes', companyId],
@@ -815,18 +828,33 @@ const OperacoesDashboard = () => {
     enabled: !!companyId,
   });
 
+  const periodoAtual = PERIODOS_HISTOGRAMA.find(p => p.id === histogramaPeriodo);
+  const diasPeriodo = histogramaPeriodo === 'custom' ? 0 : (periodoAtual?.dias || 30);
+
   const { data: viagensHistograma = [] } = useQuery({
-    queryKey: ['viagens-histograma', companyId],
+    queryKey: ['viagens-histograma', companyId, histogramaPeriodo, histogramaDataInicio, histogramaDataFim],
     queryFn: async () => {
       const hoje = new Date();
-      const dataInicio = new Date(hoje);
-      dataInicio.setDate(dataInicio.getDate() - 29);
+      let dataInicio: Date;
+      let dataFim: Date = hoje;
+      let numDias: number;
+      
+      if (histogramaPeriodo === 'custom' && histogramaDataInicio && histogramaDataFim) {
+        dataInicio = new Date(histogramaDataInicio);
+        dataFim = new Date(histogramaDataFim);
+        numDias = Math.ceil((dataFim.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      } else {
+        numDias = diasPeriodo;
+        dataInicio = new Date(hoje);
+        dataInicio.setDate(dataInicio.getDate() - (numDias - 1));
+      }
       
       const { data, error } = await supabase
         .from('acompanhamento_viagem')
         .select('id, data_hora_inicial')
         .eq('company_id', companyId)
         .gte('data_hora_inicial', dataInicio.toISOString())
+        .lte('data_hora_inicial', new Date(dataFim.getTime() + 24 * 60 * 60 * 1000).toISOString())
         .order('data_hora_inicial', { ascending: true });
       
       if (error) {
@@ -837,9 +865,9 @@ const OperacoesDashboard = () => {
       const diasMap: Record<string, { data: string; total: number; diaSemana: string }> = {};
       const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
       
-      for (let i = 0; i < 30; i++) {
-        const d = new Date(hoje);
-        d.setDate(d.getDate() - (29 - i));
+      for (let i = 0; i < numDias; i++) {
+        const d = new Date(dataInicio);
+        d.setDate(d.getDate() + i);
         const key = d.toISOString().split('T')[0];
         diasMap[key] = { 
           data: `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`,
@@ -859,7 +887,7 @@ const OperacoesDashboard = () => {
       
       return Object.values(diasMap);
     },
-    enabled: !!companyId,
+    enabled: !!companyId && (histogramaPeriodo !== 'custom' || (!!histogramaDataInicio && !!histogramaDataFim)),
     refetchOnWindowFocus: true,
     refetchInterval: 30000,
   });
@@ -918,37 +946,78 @@ const OperacoesDashboard = () => {
 
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Viagens - {histogramaPeriodo === 'custom' ? 'Período Personalizado' : periodoAtual?.label}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Histórico diário de viagens realizadas</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Viagens - Últimos 30 Dias</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Histórico diário de viagens realizadas</p>
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {viagensHistograma.reduce((acc, d) => acc + d.total, 0)}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Total período</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {viagensHistograma.length > 0 
+                      ? (viagensHistograma.reduce((acc, d) => acc + d.total, 0) / viagensHistograma.length).toFixed(1) 
+                      : '0'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Média/dia</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    {Math.max(...viagensHistograma.map(d => d.total), 0)}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Pico</p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {viagensHistograma.reduce((acc, d) => acc + d.total, 0)}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Total período</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {viagensHistograma.length > 0 
-                    ? (viagensHistograma.reduce((acc, d) => acc + d.total, 0) / viagensHistograma.length).toFixed(1) 
-                    : '0'}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Média/dia</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                  {Math.max(...viagensHistograma.map(d => d.total), 0)}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Pico</p>
-              </div>
+            
+            <div className="flex items-center gap-2 flex-wrap">
+              {PERIODOS_HISTOGRAMA.map((periodo) => (
+                <button
+                  key={periodo.id}
+                  onClick={() => setHistogramaPeriodo(periodo.id)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    histogramaPeriodo === periodo.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  data-testid={`btn-periodo-${periodo.id}`}
+                >
+                  {periodo.label}
+                </button>
+              ))}
+              
+              {histogramaPeriodo === 'custom' && (
+                <div className="flex items-center gap-2 ml-2">
+                  <input
+                    type="date"
+                    value={histogramaDataInicio}
+                    onChange={(e) => setHistogramaDataInicio(e.target.value)}
+                    className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    data-testid="input-histograma-data-inicio"
+                  />
+                  <span className="text-gray-400 text-sm">até</span>
+                  <input
+                    type="date"
+                    value={histogramaDataFim}
+                    onChange={(e) => setHistogramaDataFim(e.target.value)}
+                    className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    data-testid="input-histograma-data-fim"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -962,7 +1031,7 @@ const OperacoesDashboard = () => {
               return (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <Map className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Nenhuma viagem nos últimos 30 dias</p>
+                  <p>Nenhuma viagem no período selecionado</p>
                 </div>
               );
             }
@@ -1004,8 +1073,12 @@ const OperacoesDashboard = () => {
                 
                 <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-2">
                   <span>{viagensHistograma[0]?.data}</span>
-                  <span className="text-center">15 dias atrás</span>
-                  <span>{viagensHistograma[viagensHistograma.length - 1]?.data} (Hoje)</span>
+                  {viagensHistograma.length > 2 && (
+                    <span className="text-center">
+                      {Math.floor(viagensHistograma.length / 2)} dias atrás
+                    </span>
+                  )}
+                  <span>{viagensHistograma[viagensHistograma.length - 1]?.data}</span>
                 </div>
                 
                 <div className="flex items-center justify-center gap-6 pt-2">
