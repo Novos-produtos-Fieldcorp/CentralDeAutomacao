@@ -1079,8 +1079,8 @@ const OperacoesDashboard = () => {
                   }`}>
                     <IconComponent className="w-7 h-7 text-white" />
                     {count > 0 && (
-                      <div className="absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center border-2 border-current shadow-sm">
-                        <span className={`text-xs font-bold bg-gradient-to-r ${op.cor} bg-clip-text text-transparent`}>
+                      <div className="absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1 bg-red-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800 shadow-sm">
+                        <span className="text-xs font-bold text-white">
                           {count > 99 ? '99+' : count}
                         </span>
                       </div>
@@ -1097,7 +1097,7 @@ const OperacoesDashboard = () => {
                       {op.nome}
                     </p>
                     <p className={`text-xs mt-0.5 ${isSelected ? 'text-gray-600 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                      {count > 0 ? `${count} ${count === 1 ? 'viagem' : 'viagens'}` : op.descricao}
+                      {op.descricao}
                     </p>
                   </div>
                 </button>
