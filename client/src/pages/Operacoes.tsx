@@ -760,60 +760,17 @@ const OperacoesDashboard = () => {
     enabled: !!companyId,
   });
 
-  // Query para contar operações por tipo de dashboard (com filtro por empresa)
+  // Query para contar operações por tipo de dashboard (busca direta das tabelas de operação)
   const { data: dashboardCounts = { sada: 0, tegma: 0, superterminais: 0, cesari: 0, total: 0 } } = useQuery({
     queryKey: ['dashboard-counts', companyId],
     queryFn: async () => {
-      console.log('[Dashboard Counts] Iniciando busca com companyId:', companyId);
-      
-      // Buscar motoristas da empresa
-      const { data: motoristasEmpresa, error: motError } = await supabase
-        .from('motorista')
-        .select('motorista_id')
-        .eq('company_id', companyId);
-      
-      if (motError) {
-        console.error('[Dashboard Counts] Erro ao buscar motoristas:', motError);
-      }
-      console.log('[Dashboard Counts] Motoristas encontrados:', motoristasEmpresa?.length || 0);
-      
-      if (!motoristasEmpresa || motoristasEmpresa.length === 0) {
-        return { sada: 0, tegma: 0, superterminais: 0, cesari: 0, total: 0 };
-      }
-      
-      const motoristaIds = motoristasEmpresa.map((m: any) => m.motorista_id);
-      
-      // Buscar viagens da empresa
-      const { data: viagensData, error: viagError } = await supabase
-        .from('acompanhamento_viagem')
-        .select('id')
-        .in('motorista_id', motoristaIds);
-      
-      if (viagError) {
-        console.error('[Dashboard Counts] Erro ao buscar viagens:', viagError);
-      }
-      console.log('[Dashboard Counts] Viagens encontradas:', viagensData?.length || 0);
-      
-      if (!viagensData || viagensData.length === 0) {
-        return { sada: 0, tegma: 0, superterminais: 0, cesari: 0, total: 0 };
-      }
-      
-      const viagemIds = viagensData.map((v: any) => v.id);
-      
-      // Buscar contagens de cada operação
+      // Buscar contagens diretamente das tabelas de operação
       const [sadaRes, tegmaRes, superRes, cesariRes] = await Promise.all([
-        supabase.from('operacao_sada').select('id', { count: 'exact', head: true }).in('id_viagem', viagemIds),
-        supabase.from('operacao_tegma').select('id', { count: 'exact', head: true }).in('id_viagem', viagemIds),
-        supabase.from('operacao_superterminais').select('id', { count: 'exact', head: true }).in('id_viagem', viagemIds),
-        supabase.from('operacao_cesari').select('id', { count: 'exact', head: true }).in('id_viagem', viagemIds),
+        supabase.from('operacao_sada').select('id', { count: 'exact', head: true }),
+        supabase.from('operacao_tegma').select('id', { count: 'exact', head: true }),
+        supabase.from('operacao_superterminais').select('id', { count: 'exact', head: true }),
+        supabase.from('operacao_cesari').select('id', { count: 'exact', head: true }),
       ]);
-      
-      console.log('[Dashboard Counts] Resultados:', {
-        sada: sadaRes.count, sadaError: sadaRes.error,
-        tegma: tegmaRes.count, tegmaError: tegmaRes.error,
-        superterminais: superRes.count, superError: superRes.error,
-        cesari: cesariRes.count, cesariError: cesariRes.error,
-      });
       
       const sada = sadaRes.count || 0;
       const tegma = tegmaRes.count || 0;
@@ -1219,53 +1176,45 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
   const { data: sadaData = [], isLoading } = useQuery({
     queryKey: ['sada-dashboard', companyId],
     queryFn: async () => {
-      // Buscar motoristas da empresa para garantir isolamento de dados
-      const { data: motoristasEmpresa } = await supabase
-        .from('motorista')
-        .select('motorista_id, nome')
-        .eq('company_id', companyId);
+      // Buscar operações SADA diretamente
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_sada')
+        .select('*');
       
-      if (!motoristasEmpresa || motoristasEmpresa.length === 0) return [];
+      if (opError || !opData || opData.length === 0) return [];
       
-      const motoristasMap: Record<number, string> = {};
-      motoristasEmpresa.forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
-      const motoristaIds = motoristasEmpresa.map((m: any) => m.motorista_id);
+      const viagemIds = opData.map((op: any) => op.id_viagem).filter(Boolean);
+      if (viagemIds.length === 0) return opData.map((op: any) => ({ ...op, viagem: null }));
       
-      // Buscar veículos da empresa
-      const { data: veiculosEmpresa } = await supabase
-        .from('veiculo')
-        .select('veiculo_id, placa')
-        .eq('company_id', companyId);
-      
-      const veiculosMap: Record<number, string> = {};
-      (veiculosEmpresa || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
-      
-      // Buscar viagens que pertencem aos motoristas da empresa
+      // Buscar viagens relacionadas
       const { data: viagensData } = await supabase
         .from('acompanhamento_viagem')
         .select('id, motorista_id, veiculo_id, km_inicial, km_final, janta, data_hora_inicial')
+        .in('id', viagemIds);
+      
+      // Buscar motoristas
+      const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
         .in('motorista_id', motoristaIds);
       
-      if (!viagensData || viagensData.length === 0) return [];
+      const motoristasMap: Record<number, string> = {};
+      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
       
-      const viagemIds = viagensData.map((v: any) => v.id);
+      // Buscar veículos
+      const veiculoIds = [...new Set((viagensData || []).map((v: any) => v.veiculo_id).filter(Boolean))];
+      const { data: veiculosData } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .in('veiculo_id', veiculoIds);
       
-      // Buscar operações SADA correspondentes
-      const { data: opData, error: opError } = await supabase
-        .from('operacao_sada')
-        .select('*')
-        .in('id_viagem', viagemIds);
-      
-      if (opError) {
-        console.warn('Erro ao buscar dados SADA:', opError);
-        return [];
-      }
-      
-      if (!opData || opData.length === 0) return [];
+      const veiculosMap: Record<number, string> = {};
+      (veiculosData || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
       
       // Combinar dados
       return opData.map((op: any) => {
-        const viagem = viagensData.find((v: any) => v.id === op.id_viagem);
+        const viagem = (viagensData || []).find((v: any) => v.id === op.id_viagem);
         return {
           ...op,
           viagem: viagem ? {
@@ -1410,52 +1359,44 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
   const { data: tegmaData = [], isLoading } = useQuery({
     queryKey: ['tegma-dashboard', companyId],
     queryFn: async () => {
-      // Buscar motoristas da empresa
-      const { data: motoristasEmpresa } = await supabase
-        .from('motorista')
-        .select('motorista_id, nome')
-        .eq('company_id', companyId);
+      // Buscar operações TEGMA diretamente
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_tegma')
+        .select('*');
       
-      if (!motoristasEmpresa || motoristasEmpresa.length === 0) return [];
+      if (opError || !opData || opData.length === 0) return [];
       
-      const motoristasMap: Record<number, string> = {};
-      motoristasEmpresa.forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
-      const motoristaIds = motoristasEmpresa.map((m: any) => m.motorista_id);
+      const viagemIds = opData.map((op: any) => op.id_viagem).filter(Boolean);
+      if (viagemIds.length === 0) return opData.map((op: any) => ({ ...op, viagem: null }));
       
-      // Buscar veículos da empresa
-      const { data: veiculosEmpresa } = await supabase
-        .from('veiculo')
-        .select('veiculo_id, placa')
-        .eq('company_id', companyId);
-      
-      const veiculosMap: Record<number, string> = {};
-      (veiculosEmpresa || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
-      
-      // Buscar viagens da empresa
+      // Buscar viagens relacionadas
       const { data: viagensData } = await supabase
         .from('acompanhamento_viagem')
         .select('id, motorista_id, veiculo_id, km_inicial, km_final, janta, data_hora_inicial')
+        .in('id', viagemIds);
+      
+      // Buscar motoristas
+      const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
         .in('motorista_id', motoristaIds);
       
-      if (!viagensData || viagensData.length === 0) return [];
+      const motoristasMap: Record<number, string> = {};
+      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
       
-      const viagemIds = viagensData.map((v: any) => v.id);
+      // Buscar veículos
+      const veiculoIds = [...new Set((viagensData || []).map((v: any) => v.veiculo_id).filter(Boolean))];
+      const { data: veiculosData } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .in('veiculo_id', veiculoIds);
       
-      // Buscar operações TEGMA correspondentes
-      const { data: opData, error: opError } = await supabase
-        .from('operacao_tegma')
-        .select('*')
-        .in('id_viagem', viagemIds);
-      
-      if (opError) {
-        console.warn('Erro ao buscar dados TEGMA:', opError);
-        return [];
-      }
-      
-      if (!opData || opData.length === 0) return [];
+      const veiculosMap: Record<number, string> = {};
+      (veiculosData || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
       
       return opData.map((op: any) => {
-        const viagem = viagensData.find((v: any) => v.id === op.id_viagem);
+        const viagem = (viagensData || []).find((v: any) => v.id === op.id_viagem);
         return {
           ...op,
           viagem: viagem ? {
@@ -1600,52 +1541,44 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
   const { data: superData = [], isLoading } = useQuery({
     queryKey: ['superterminais-dashboard', companyId],
     queryFn: async () => {
-      // Buscar motoristas da empresa
-      const { data: motoristasEmpresa } = await supabase
-        .from('motorista')
-        .select('motorista_id, nome')
-        .eq('company_id', companyId);
+      // Buscar operações SUPERTERMINAIS diretamente
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_superterminais')
+        .select('*');
       
-      if (!motoristasEmpresa || motoristasEmpresa.length === 0) return [];
+      if (opError || !opData || opData.length === 0) return [];
       
-      const motoristasMap: Record<number, string> = {};
-      motoristasEmpresa.forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
-      const motoristaIds = motoristasEmpresa.map((m: any) => m.motorista_id);
+      const viagemIds = opData.map((op: any) => op.id_viagem).filter(Boolean);
+      if (viagemIds.length === 0) return opData.map((op: any) => ({ ...op, viagem: null }));
       
-      // Buscar veículos da empresa
-      const { data: veiculosEmpresa } = await supabase
-        .from('veiculo')
-        .select('veiculo_id, placa')
-        .eq('company_id', companyId);
-      
-      const veiculosMap: Record<number, string> = {};
-      (veiculosEmpresa || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
-      
-      // Buscar viagens da empresa
+      // Buscar viagens relacionadas
       const { data: viagensData } = await supabase
         .from('acompanhamento_viagem')
         .select('id, motorista_id, veiculo_id, data_hora_inicial')
+        .in('id', viagemIds);
+      
+      // Buscar motoristas
+      const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
         .in('motorista_id', motoristaIds);
       
-      if (!viagensData || viagensData.length === 0) return [];
+      const motoristasMap: Record<number, string> = {};
+      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
       
-      const viagemIds = viagensData.map((v: any) => v.id);
+      // Buscar veículos
+      const veiculoIds = [...new Set((viagensData || []).map((v: any) => v.veiculo_id).filter(Boolean))];
+      const { data: veiculosData } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .in('veiculo_id', veiculoIds);
       
-      // Buscar operações SUPERTERMINAIS correspondentes
-      const { data: opData, error: opError } = await supabase
-        .from('operacao_superterminais')
-        .select('*')
-        .in('id_viagem', viagemIds);
-      
-      if (opError) {
-        console.warn('Erro ao buscar dados SUPERTERMINAIS:', opError);
-        return [];
-      }
-      
-      if (!opData || opData.length === 0) return [];
+      const veiculosMap: Record<number, string> = {};
+      (veiculosData || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
       
       return opData.map((op: any) => {
-        const viagem = viagensData.find((v: any) => v.id === op.id_viagem);
+        const viagem = (viagensData || []).find((v: any) => v.id === op.id_viagem);
         return {
           ...op,
           viagem: viagem ? {
@@ -1777,52 +1710,44 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
   const { data: cesariData = [], isLoading } = useQuery({
     queryKey: ['cesari-dashboard', companyId],
     queryFn: async () => {
-      // Buscar motoristas da empresa
-      const { data: motoristasEmpresa } = await supabase
-        .from('motorista')
-        .select('motorista_id, nome')
-        .eq('company_id', companyId);
+      // Buscar operações CESARI diretamente
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_cesari')
+        .select('*');
       
-      if (!motoristasEmpresa || motoristasEmpresa.length === 0) return [];
+      if (opError || !opData || opData.length === 0) return [];
       
-      const motoristasMap: Record<number, string> = {};
-      motoristasEmpresa.forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
-      const motoristaIds = motoristasEmpresa.map((m: any) => m.motorista_id);
+      const viagemIds = opData.map((op: any) => op.id_viagem).filter(Boolean);
+      if (viagemIds.length === 0) return opData.map((op: any) => ({ ...op, viagem: null }));
       
-      // Buscar veículos da empresa
-      const { data: veiculosEmpresa } = await supabase
-        .from('veiculo')
-        .select('veiculo_id, placa')
-        .eq('company_id', companyId);
-      
-      const veiculosMap: Record<number, string> = {};
-      (veiculosEmpresa || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
-      
-      // Buscar viagens da empresa
+      // Buscar viagens relacionadas
       const { data: viagensData } = await supabase
         .from('acompanhamento_viagem')
         .select('id, motorista_id, veiculo_id, km_inicial, km_final, data_hora_inicial')
+        .in('id', viagemIds);
+      
+      // Buscar motoristas
+      const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
         .in('motorista_id', motoristaIds);
       
-      if (!viagensData || viagensData.length === 0) return [];
+      const motoristasMap: Record<number, string> = {};
+      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
       
-      const viagemIds = viagensData.map((v: any) => v.id);
+      // Buscar veículos
+      const veiculoIds = [...new Set((viagensData || []).map((v: any) => v.veiculo_id).filter(Boolean))];
+      const { data: veiculosData } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .in('veiculo_id', veiculoIds);
       
-      // Buscar operações CESARI correspondentes
-      const { data: opData, error: opError } = await supabase
-        .from('operacao_cesari')
-        .select('*')
-        .in('id_viagem', viagemIds);
-      
-      if (opError) {
-        console.warn('Erro ao buscar dados CESARI:', opError);
-        return [];
-      }
-      
-      if (!opData || opData.length === 0) return [];
+      const veiculosMap: Record<number, string> = {};
+      (veiculosData || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
       
       return opData.map((op: any) => {
-        const viagem = viagensData.find((v: any) => v.id === op.id_viagem);
+        const viagem = (viagensData || []).find((v: any) => v.id === op.id_viagem);
         return {
           ...op,
           viagem: viagem ? {
