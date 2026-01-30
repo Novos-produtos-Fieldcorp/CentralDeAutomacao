@@ -742,16 +742,49 @@ const OperacoesDashboard = () => {
   const { data: viagensStats } = useQuery({
     queryKey: ['viagens-stats', companyId],
     queryFn: async () => {
-      const { count, error } = await supabase
+      // Buscar total de viagens
+      const { count: totalCount, error: totalError } = await supabase
         .from('acompanhamento_viagem')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId);
       
-      if (error) {
-        console.warn('Tabela acompanhamento_viagem não acessível:', error);
-        return { total: 0 };
+      if (totalError) {
+        console.warn('Tabela acompanhamento_viagem não acessível:', totalError);
+        return { total: 0, hoje: 0, concluidas: 0, emAndamento: 0 };
       }
-      return { total: count || 0 };
+
+      // Viagens de hoje
+      const hoje = new Date();
+      const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).toISOString();
+      const fimHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1).toISOString();
+      
+      const { count: hojeCount } = await supabase
+        .from('acompanhamento_viagem')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .gte('data_hora_inicial', inicioHoje)
+        .lt('data_hora_inicial', fimHoje);
+
+      // Viagens concluídas (com data_hora_final preenchida)
+      const { count: concluidasCount } = await supabase
+        .from('acompanhamento_viagem')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .not('data_hora_final', 'is', null);
+
+      // Viagens em andamento (sem data_hora_final)
+      const { count: emAndamentoCount } = await supabase
+        .from('acompanhamento_viagem')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .is('data_hora_final', null);
+
+      return { 
+        total: totalCount || 0, 
+        hoje: hojeCount || 0, 
+        concluidas: concluidasCount || 0,
+        emAndamento: emAndamentoCount || 0
+      };
     },
     enabled: !!companyId,
   });
@@ -895,7 +928,7 @@ const OperacoesDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -923,11 +956,23 @@ const OperacoesDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-              <RefreshCw className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+              <Calendar className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
             </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Viagens Hoje</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{viagensStats?.hoje || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+              <RefreshCw className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Em Andamento</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{viagensStats?.emAndamento || 0}</p>
             </div>
           </div>
         </div>
@@ -935,11 +980,11 @@ const OperacoesDashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Truck className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              <Check className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Concluídas</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{viagensStats?.concluidas || 0}</p>
             </div>
           </div>
         </div>
