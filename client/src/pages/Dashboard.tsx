@@ -1086,27 +1086,38 @@ const OPERACOES_TABELAS = [
   { nome: 'Tegma', tabela: 'operacao_tegma' },
 ];
 
-const OperacoesHeroCard = ({ hasAccess = true }: { hasAccess?: boolean }) => {
+const OperacoesHeroCard = ({ hasAccess = true, companyId }: { hasAccess?: boolean; companyId: number | null }) => {
   const [operacoesStats, setOperacoesStats] = useState<{ nome: string; total: number }[]>([]);
   const [totalViagens, setTotalViagens] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
+      if (!companyId) {
+        setLoading(false);
+        return;
+      }
+      
       try {
-        // Get total trips
-        const { count: viagensCount } = await supabase
+        // Primeiro buscar IDs das viagens da empresa
+        const { data: viagensEmpresa } = await supabase
           .from('acompanhamento_viagem')
-          .select('*', { count: 'exact', head: true });
+          .select('id')
+          .eq('company_id', companyId);
         
-        setTotalViagens(viagensCount || 0);
+        const viagemIds = (viagensEmpresa || []).map((v: any) => v.id);
+        setTotalViagens(viagemIds.length);
 
-        // Get stats per operation
+        // Contar operações que pertencem às viagens da empresa
         const stats = await Promise.all(
           OPERACOES_TABELAS.map(async (op) => {
+            if (viagemIds.length === 0) {
+              return { nome: op.nome, total: 0 };
+            }
             const { count } = await supabase
               .from(op.tabela)
-              .select('*', { count: 'exact', head: true });
+              .select('*', { count: 'exact', head: true })
+              .in('id_viagem', viagemIds);
             return { nome: op.nome, total: count || 0 };
           })
         );
@@ -1119,7 +1130,7 @@ const OperacoesHeroCard = ({ hasAccess = true }: { hasAccess?: boolean }) => {
     };
 
     fetchStats();
-  }, []);
+  }, [companyId]);
 
   const pieColors = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#f97316'];
   const pieData = operacoesStats.filter(op => op.total > 0).map((op, index) => ({
@@ -2204,6 +2215,7 @@ const Dashboard: React.FC = () => {
         {/* Operações */}
         <OperacoesHeroCard 
           hasAccess={moduleAccess.operacoes} 
+          companyId={companyId}
         />
 
         {/* Resumo em Grupo */}
