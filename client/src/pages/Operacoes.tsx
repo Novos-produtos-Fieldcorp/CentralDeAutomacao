@@ -38,6 +38,7 @@ interface ViagemBase {
 
 interface ViagemEnriquecida extends ViagemBase {
   motorista_nome?: string;
+  ajudante_nome?: string;
   veiculo_placa?: string;
   operacao_tipo?: string;
   operacao_dados?: any;
@@ -1935,11 +1936,28 @@ const OperacoesViagens = () => {
         .from('motorista')
         .select('motorista_id, nome')
         .eq('company_id', companyId)
-        .eq('ativo', true)
         .order('nome');
       
       if (error) {
         console.warn('Erro ao buscar motoristas:', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!companyId,
+  });
+
+  const { data: ajudantes = [] } = useQuery<{ id_ajudante: number; nome: string }[]>({
+    queryKey: ['ajudantes-operacoes', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('documento_ajudante')
+        .select('id_ajudante, nome')
+        .eq('company_id', companyId)
+        .order('nome');
+      
+      if (error) {
+        console.warn('Erro ao buscar ajudantes:', error);
         return [];
       }
       return data || [];
@@ -2035,18 +2053,20 @@ const OperacoesViagens = () => {
   const viagensEnriquecidas = useMemo<ViagemEnriquecida[]>(() => {
     return viagens.map(viagem => {
       const motorista = motoristas.find(m => m.motorista_id === viagem.motorista_id);
+      const ajudante = ajudantes.find(a => a.id_ajudante === viagem.ajudante_id);
       const veiculo = veiculos.find(v => v.veiculo_id === viagem.veiculo_id);
       const operacaoInfo = operacoesData[viagem.id];
       
       return {
         ...viagem,
         motorista_nome: motorista?.nome,
+        ajudante_nome: ajudante?.nome,
         veiculo_placa: veiculo?.placa,
         operacao_tipo: operacaoInfo?.tipo,
         operacao_dados: operacaoInfo?.dados
       };
     });
-  }, [viagens, motoristas, veiculos, operacoesData]);
+  }, [viagens, motoristas, ajudantes, veiculos, operacoesData]);
 
   const filteredViagens = useMemo(() => {
     return viagensEnriquecidas.filter(viagem => {
@@ -2291,6 +2311,7 @@ const OperacoesViagens = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora Inicial</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Operação</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ajudante</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destino</th>
@@ -2319,6 +2340,7 @@ const OperacoesViagens = () => {
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.motorista_nome || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.ajudante_nome || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.veiculo_placa || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
                       {viagem.operacao_dados?.origem || '-'}
