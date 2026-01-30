@@ -2372,7 +2372,7 @@ const Operacoes = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Operações</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Operações</h1>
       </div>
 
       <div className="border-b border-gray-200 dark:border-gray-700">
