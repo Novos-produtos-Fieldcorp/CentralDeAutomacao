@@ -1221,13 +1221,13 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
 
       {/* Modal de viagens detalhadas */}
       {statsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setStatsModalOpen(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4" onClick={() => setStatsModalOpen(null)}>
           <div 
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden mx-4"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{getModalTitle()}</h2>
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{getModalTitle()}</h2>
               <button 
                 onClick={() => setStatsModalOpen(null)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
@@ -1237,7 +1237,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
               </button>
             </div>
             
-            <div className="overflow-auto max-h-[calc(80vh-80px)]">
+            <div className="overflow-auto max-h-[calc(90vh-60px)]">
               {isLoadingViagensDetalhadas ? (
                 <div className="p-6">
                   <div className="animate-pulse space-y-3">
@@ -1252,54 +1252,56 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                   <p>Nenhuma viagem encontrada</p>
                 </div>
               ) : (
-                <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">ID</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Data/Hora</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Operação</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Motorista</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ajudante</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Veículo</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Origem</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Destino</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {viagensDetalhadas.map((viagem: any) => (
-                      <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{viagem.id}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{formatDateTime(viagem.data_hora_inicial)}</td>
-                        <td className="px-4 py-3 text-sm">
-                          {viagem.operacao_tipo ? (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOperacaoColor(viagem.operacao_tipo)}`}>
-                              {viagem.operacao_tipo}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.motorista_nome || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.ajudante_nome || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.veiculo_placa || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.operacao_dados?.origem || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.operacao_dados?.destino || '-'}</td>
-                        <td className="px-4 py-3 text-sm">
-                          {viagem.data_hora_final ? (
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                              Concluída
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
-                              Em Andamento
-                            </span>
-                          )}
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[900px]">
+                    <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
+                      <tr>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap">ID</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap">Data/Hora</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap">Operação</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap">Motorista</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap">Ajudante</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap">Veículo</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap">Origem</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap">Destino</th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {viagensDetalhadas.map((viagem: any) => (
+                        <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                          <td className="px-3 py-3 text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">{viagem.id}</td>
+                          <td className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{formatDateTime(viagem.data_hora_inicial)}</td>
+                          <td className="px-3 py-3 text-sm whitespace-nowrap">
+                            {viagem.operacao_tipo ? (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getOperacaoColor(viagem.operacao_tipo)}`}>
+                                {viagem.operacao_tipo}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-3 text-sm text-gray-900 dark:text-white max-w-[120px] truncate" title={viagem.motorista_nome}>{viagem.motorista_nome || '-'}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 dark:text-white max-w-[100px] truncate" title={viagem.ajudante_nome}>{viagem.ajudante_nome || '-'}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 dark:text-white whitespace-nowrap">{viagem.veiculo_placa || '-'}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 dark:text-white max-w-[100px] truncate" title={viagem.operacao_dados?.origem}>{viagem.operacao_dados?.origem || '-'}</td>
+                          <td className="px-3 py-3 text-sm text-gray-900 dark:text-white max-w-[100px] truncate" title={viagem.operacao_dados?.destino}>{viagem.operacao_dados?.destino || '-'}</td>
+                          <td className="px-3 py-3 text-sm whitespace-nowrap">
+                            {viagem.data_hora_final ? (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 whitespace-nowrap">
+                                Concluída
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 whitespace-nowrap">
+                                Em Andamento
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
