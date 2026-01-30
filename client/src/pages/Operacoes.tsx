@@ -832,7 +832,7 @@ const OperacoesDashboard = () => {
   const periodoAtual = PERIODOS_HISTOGRAMA.find(p => p.id === histogramaPeriodo);
   const diasPeriodo = histogramaPeriodo === 'custom' ? 0 : (periodoAtual?.dias || 30);
 
-  const { data: viagensHistograma = [] } = useQuery({
+  const { data: viagensHistograma = [], isFetching: isHistogramaLoading } = useQuery({
     queryKey: ['viagens-histograma', companyId, histogramaPeriodo, histogramaDataInicio, histogramaDataFim],
     queryFn: async () => {
       const hoje = new Date();
@@ -1049,7 +1049,27 @@ const OperacoesDashboard = () => {
         </div>
         
         <div className="p-6">
-          {(() => {
+          {isHistogramaLoading ? (
+            <div className="space-y-4 animate-pulse">
+              <div className="flex items-end justify-between gap-1 h-48">
+                {Array.from({ length: diasPeriodo || 30 }).map((_, index) => (
+                  <div key={index} className="flex-1 flex flex-col items-center">
+                    <div className="w-full flex flex-col items-center justify-end h-40">
+                      <div 
+                        className="w-full max-w-[20px] rounded-t-sm bg-gray-200 dark:bg-gray-700"
+                        style={{ height: `${Math.random() * 60 + 20}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between">
+                <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="h-3 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
+              </div>
+            </div>
+          ) : (() => {
             const totalViagens = viagensHistograma.reduce((acc, d) => acc + d.total, 0);
             const maxValue = Math.max(...viagensHistograma.map(d => d.total), 1);
             
