@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 
@@ -421,18 +421,89 @@ const OperacoesDashboard = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Viagens por Operação</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {operacoesStats.map((op) => (
-            <div
-              key={op.nome}
-              className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 text-center"
-            >
-              <p className="font-medium text-gray-900 dark:text-white">{op.nome}</p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{op.total}</p>
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Viagens por Operação</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Distribuição de viagens entre operações</p>
+              </div>
             </div>
-          ))}
+            <div className="text-right">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {operacoesStats.reduce((acc, op) => acc + op.total, 0)}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total de viagens</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          {(() => {
+            const totalViagens = operacoesStats.reduce((acc, op) => acc + op.total, 0);
+            const sortedStats = [...operacoesStats].sort((a, b) => b.total - a.total);
+            const maxValue = Math.max(...operacoesStats.map(op => op.total), 1);
+            
+            const operacaoColors: Record<string, { bg: string; bar: string; text: string }> = {
+              'Autoservice': { bg: 'bg-blue-100 dark:bg-blue-900/30', bar: 'bg-gradient-to-r from-blue-500 to-blue-600', text: 'text-blue-600 dark:text-blue-400' },
+              'Cesari': { bg: 'bg-green-100 dark:bg-green-900/30', bar: 'bg-gradient-to-r from-green-500 to-green-600', text: 'text-green-600 dark:text-green-400' },
+              'Mitsubishi': { bg: 'bg-red-100 dark:bg-red-900/30', bar: 'bg-gradient-to-r from-red-500 to-red-600', text: 'text-red-600 dark:text-red-400' },
+              'Sada': { bg: 'bg-yellow-100 dark:bg-yellow-900/30', bar: 'bg-gradient-to-r from-yellow-500 to-yellow-600', text: 'text-yellow-600 dark:text-yellow-400' },
+              'Superterminais': { bg: 'bg-purple-100 dark:bg-purple-900/30', bar: 'bg-gradient-to-r from-purple-500 to-purple-600', text: 'text-purple-600 dark:text-purple-400' },
+              'Tegma': { bg: 'bg-orange-100 dark:bg-orange-900/30', bar: 'bg-gradient-to-r from-orange-500 to-orange-600', text: 'text-orange-600 dark:text-orange-400' },
+            };
+            
+            if (totalViagens === 0) {
+              return (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <Map className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>Nenhuma viagem registrada ainda</p>
+                </div>
+              );
+            }
+            
+            return (
+              <div className="space-y-4">
+                {sortedStats.map((op) => {
+                  const percentage = totalViagens > 0 ? ((op.total / totalViagens) * 100).toFixed(1) : '0';
+                  const widthPercent = (op.total / maxValue) * 100;
+                  const colors = operacaoColors[op.nome] || { bg: 'bg-gray-100 dark:bg-gray-700', bar: 'bg-gradient-to-r from-gray-500 to-gray-600', text: 'text-gray-600 dark:text-gray-400' };
+                  
+                  return (
+                    <div key={op.nome} className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${colors.bar}`} />
+                          <span className="font-medium text-gray-900 dark:text-white">{op.nome}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-sm font-semibold ${colors.text}`}>{op.total} viagens</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 w-12 text-right">{percentage}%</span>
+                        </div>
+                      </div>
+                      <div className="relative h-8 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                        <div 
+                          className={`absolute inset-y-0 left-0 ${colors.bar} rounded-lg transition-all duration-500 ease-out group-hover:opacity-90`}
+                          style={{ width: `${widthPercent}%` }}
+                        />
+                        {op.total > 0 && (
+                          <div className="absolute inset-0 flex items-center px-3">
+                            <span className="text-white text-sm font-medium drop-shadow-sm">
+                              {widthPercent > 20 ? `${op.total} viagens` : ''}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
