@@ -1926,6 +1926,7 @@ const OperacoesViagens = () => {
   const [isOperacaoDropdownOpen, setIsOperacaoDropdownOpen] = useState(false);
   const [isMotoristaDropdownOpen, setIsMotoristaDropdownOpen] = useState(false);
   const [selectedViagem, setSelectedViagem] = useState<ViagemEnriquecida | null>(null);
+  const [isDateFilterExpanded, setIsDateFilterExpanded] = useState(false);
 
   const { data: motoristas = [] } = useQuery<Motorista[]>({
     queryKey: ['motoristas-operacoes', companyId],
@@ -2222,36 +2223,55 @@ const OperacoesViagens = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-gray-400" />
-              <input
-                type="date"
-                value={dataInicio}
-                onChange={(e) => setDataInicio(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                data-testid="input-data-inicio"
-              />
-            </div>
-            <span className="text-gray-400">até</span>
-            <input
-              type="date"
-              value={dataFim}
-              onChange={(e) => setDataFim(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              data-testid="input-data-fim"
-            />
-            {(dataInicio || dataFim) && (
-              <button
-                onClick={() => {
-                  setDataInicio('');
-                  setDataFim('');
-                }}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                title="Limpar filtro de data"
-                data-testid="button-limpar-data"
-              >
-                <X className="w-4 h-4" />
-              </button>
+            <button
+              onClick={() => setIsDateFilterExpanded(!isDateFilterExpanded)}
+              className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-colors ${
+                (dataInicio || dataFim) 
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+                  : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+              }`}
+              data-testid="button-toggle-date-filter"
+            >
+              <Calendar className="w-4 h-4" />
+              <span className="text-sm">
+                {(dataInicio || dataFim) 
+                  ? `${dataInicio || '...'} até ${dataFim || '...'}` 
+                  : 'Filtrar por Data'}
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${isDateFilterExpanded ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isDateFilterExpanded && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={dataInicio}
+                  onChange={(e) => setDataInicio(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  data-testid="input-data-inicio"
+                />
+                <span className="text-gray-400">até</span>
+                <input
+                  type="date"
+                  value={dataFim}
+                  onChange={(e) => setDataFim(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  data-testid="input-data-fim"
+                />
+                {(dataInicio || dataFim) && (
+                  <button
+                    onClick={() => {
+                      setDataInicio('');
+                      setDataFim('');
+                    }}
+                    className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    title="Limpar filtro de data"
+                    data-testid="button-limpar-data"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
