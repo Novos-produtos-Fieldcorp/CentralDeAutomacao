@@ -711,12 +711,15 @@ const PERIODOS_HISTOGRAMA = [
   { id: 'custom' as HistogramaPeriodo, label: 'Personalizado', dias: 0 },
 ];
 
+type StatsModalType = 'total' | 'hoje' | 'emAndamento' | 'concluidas' | null;
+
 const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
   const [histogramaPeriodo, setHistogramaPeriodo] = useState<HistogramaPeriodo>('30d');
   const [histogramaDataInicio, setHistogramaDataInicio] = useState<string>('');
   const [histogramaDataFim, setHistogramaDataFim] = useState<string>('');
   const [isPeriodoExpanded, setIsPeriodoExpanded] = useState(false);
+  const [statsModalOpen, setStatsModalOpen] = useState<StatsModalType>(null);
 
   const { data: operacoes = [] } = useQuery<Operacao[]>({
     queryKey: ['operacoes', companyId],
@@ -875,6 +878,112 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
     enabled: !!companyId,
   });
 
+  // Query para buscar viagens detalhadas para o modal
+  const { data: viagensDetalhadas = [], isLoading: isLoadingViagensDetalhadas } = useQuery({
+    queryKey: ['viagens-detalhadas-modal', companyId, selectedOperacao, statsModalOpen],
+    queryFn: async () => {
+      if (!statsModalOpen) return [];
+      
+      // Buscar viagens da empresa
+      let query = supabase
+        .from('acompanhamento_viagem')
+        .select('id, data_hora_inicial, data_hora_final, motorista_id, veiculo_id, origem, destino, operacao_tipo')
+        .eq('company_id', companyId)
+        .order('data_hora_inicial', { ascending: false })
+        .limit(100);
+      
+      // Aplicar filtros baseado no tipo de modal
+      if (statsModalOpen === 'hoje') {
+        const hoje = new Date();
+        const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).toISOString();
+        const fimHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1).toISOString();
+        query = query.gte('data_hora_inicial', inicioHoje).lt('data_hora_inicial', fimHoje);
+      } else if (statsModalOpen === 'emAndamento') {
+        query = query.is('data_hora_final', null);
+      } else if (statsModalOpen === 'concluidas') {
+        query = query.not('data_hora_final', 'is', null);
+      }
+      
+      const { data: viagens, error } = await query;
+      
+      if (error || !viagens) return [];
+      
+      // Se filtro por operação específica, filtrar viagens
+      if (selectedOperacao !== 'all') {
+        const operacao = OPERACOES_TABELAS.find(op => op.nome === selectedOperacao);
+        if (operacao) {
+          const viagemIds = viagens.map((v: any) => v.id);
+          const { data: opData } = await supabase
+            .from(operacao.tabela)
+            .select('id_viagem')
+            .in('id_viagem', viagemIds);
+          
+          if (opData) {
+            const opViagemIds = new Set(opData.map((o: any) => o.id_viagem));
+            return viagens.filter((v: any) => opViagemIds.has(v.id));
+          }
+        }
+      }
+      
+      // Enriquecer com nomes de motorista e veículo
+      const motoristaIds = [...new Set(viagens.map((v: any) => v.motorista_id).filter(Boolean))];
+      const veiculoIds = [...new Set(viagens.map((v: any) => v.veiculo_id).filter(Boolean))];
+      
+      const [motoristasRes, veiculosRes] = await Promise.all([
+        motoristaIds.length > 0 
+          ? supabase.from('motorista').select('motorista_id, nome').in('motorista_id', motoristaIds)
+          : { data: [] },
+        veiculoIds.length > 0 
+          ? supabase.from('veiculo').select('veiculo_id, placa').in('veiculo_id', veiculoIds)
+          : { data: [] }
+      ]);
+      
+      const motoristasMap: Record<number, string> = {};
+      const veiculosMap: Record<number, string> = {};
+      (motoristasRes.data || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      (veiculosRes.data || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
+      
+      return viagens.map((v: any) => ({
+        ...v,
+        motorista_nome: motoristasMap[v.motorista_id] || '-',
+        veiculo_placa: veiculosMap[v.veiculo_id] || '-'
+      }));
+    },
+    enabled: !!companyId && !!statsModalOpen,
+  });
+
+  const getModalTitle = () => {
+    switch (statsModalOpen) {
+      case 'total': return 'Todas as Viagens';
+      case 'hoje': return 'Viagens de Hoje';
+      case 'emAndamento': return 'Viagens Em Andamento';
+      case 'concluidas': return 'Viagens Concluídas';
+      default: return 'Viagens';
+    }
+  };
+
+  const formatDateTime = (dateStr: string | null) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleString('pt-BR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: '2-digit',
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  const getOperacaoColor = (operacao: string | null) => {
+    switch (operacao?.toLowerCase()) {
+      case 'sada': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400';
+      case 'tegma': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400';
+      case 'superterminais': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400';
+      case 'cesari': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
+      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+    }
+  };
+
   const periodoAtual = PERIODOS_HISTOGRAMA.find(p => p.id === histogramaPeriodo);
   const diasPeriodo = histogramaPeriodo === 'custom' ? 0 : (periodoAtual?.dias || 30);
 
@@ -997,7 +1106,11 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <button 
+          onClick={() => setStatsModalOpen('total')}
+          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md transition-all cursor-pointer"
+          data-testid="card-total-viagens"
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex-shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
               <Map className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -1007,7 +1120,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
               <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.total || 0}</p>
             </div>
           </div>
-        </div>
+        </button>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-center gap-3">
@@ -1021,7 +1134,11 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <button 
+          onClick={() => setStatsModalOpen('hoje')}
+          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-yellow-300 dark:hover:border-yellow-600 hover:shadow-md transition-all cursor-pointer"
+          data-testid="card-viagens-hoje"
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex-shrink-0 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
               <Calendar className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
@@ -1031,9 +1148,13 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
               <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.hoje || 0}</p>
             </div>
           </div>
-        </div>
+        </button>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <button 
+          onClick={() => setStatsModalOpen('emAndamento')}
+          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md transition-all cursor-pointer"
+          data-testid="card-em-andamento"
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex-shrink-0 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
               <RefreshCw className="w-5 h-5 text-orange-600 dark:text-orange-400" />
@@ -1043,9 +1164,13 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
               <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.emAndamento || 0}</p>
             </div>
           </div>
-        </div>
+        </button>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <button 
+          onClick={() => setStatsModalOpen('concluidas')}
+          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-md transition-all cursor-pointer"
+          data-testid="card-concluidas"
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex-shrink-0 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
               <Check className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -1055,8 +1180,93 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
               <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.concluidas || 0}</p>
             </div>
           </div>
-        </div>
+        </button>
       </div>
+
+      {/* Modal de viagens detalhadas */}
+      {statsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setStatsModalOpen(null)}>
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] overflow-hidden mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{getModalTitle()}</h2>
+              <button 
+                onClick={() => setStatsModalOpen(null)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                data-testid="btn-close-modal"
+              >
+                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+            
+            <div className="overflow-auto max-h-[calc(80vh-80px)]">
+              {isLoadingViagensDetalhadas ? (
+                <div className="p-6">
+                  <div className="animate-pulse space-y-3">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="h-12 bg-gray-200 dark:bg-gray-700 rounded" />
+                    ))}
+                  </div>
+                </div>
+              ) : viagensDetalhadas.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  <Map className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>Nenhuma viagem encontrada</p>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">ID</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Data/Hora</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Operação</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Motorista</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Veículo</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Origem</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Destino</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {viagensDetalhadas.map((viagem: any) => (
+                      <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{viagem.id}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{formatDateTime(viagem.data_hora_inicial)}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {viagem.operacao_tipo ? (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOperacaoColor(viagem.operacao_tipo)}`}>
+                              {viagem.operacao_tipo}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{viagem.motorista_nome}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{viagem.veiculo_placa}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-[150px] truncate" title={viagem.origem}>{viagem.origem || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-[150px] truncate" title={viagem.destino}>{viagem.destino || '-'}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {viagem.data_hora_final ? (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                              Concluída
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+                              Em Andamento
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
