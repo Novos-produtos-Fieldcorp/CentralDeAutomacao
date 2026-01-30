@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes } from 'lucide-react';
 import { useState as useStateReact } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
@@ -696,11 +696,11 @@ const ViagemDetailModal = ({
 };
 
 const DASHBOARD_OPERATIONS = [
-  { id: 'all', nome: 'Todas', cor: 'from-gray-500 to-gray-600', bgLight: 'from-gray-50 to-slate-50', bgDark: 'from-gray-900/20 to-slate-900/20' },
-  { id: 'sada', nome: 'SADA', cor: 'from-yellow-500 to-amber-600', bgLight: 'from-yellow-50 to-amber-50', bgDark: 'from-yellow-900/20 to-amber-900/20' },
-  { id: 'tegma', nome: 'TEGMA', cor: 'from-orange-500 to-red-600', bgLight: 'from-orange-50 to-red-50', bgDark: 'from-orange-900/20 to-red-900/20' },
-  { id: 'superterminais', nome: 'Super Terminais', cor: 'from-purple-500 to-indigo-600', bgLight: 'from-purple-50 to-indigo-50', bgDark: 'from-purple-900/20 to-indigo-900/20' },
-  { id: 'cesari', nome: 'CESARI', cor: 'from-green-500 to-emerald-600', bgLight: 'from-green-50 to-emerald-50', bgDark: 'from-green-900/20 to-emerald-900/20' },
+  { id: 'all', nome: 'Todas', descricao: 'Visualizar todos', icon: Layers, cor: 'from-blue-600 to-indigo-700', bgLight: 'bg-gradient-to-br from-blue-50 to-indigo-100', bgDark: 'dark:bg-gradient-to-br dark:from-blue-900/30 dark:to-indigo-900/40', borderColor: 'border-blue-300 dark:border-blue-700' },
+  { id: 'sada', nome: 'SADA', descricao: 'Transporte veicular', icon: Car, cor: 'from-yellow-500 to-amber-600', bgLight: 'bg-gradient-to-br from-yellow-50 to-amber-100', bgDark: 'dark:bg-gradient-to-br dark:from-yellow-900/30 dark:to-amber-900/40', borderColor: 'border-yellow-300 dark:border-yellow-700' },
+  { id: 'tegma', nome: 'TEGMA', descricao: 'Logística automotiva', icon: Truck, cor: 'from-orange-500 to-red-600', bgLight: 'bg-gradient-to-br from-orange-50 to-red-100', bgDark: 'dark:bg-gradient-to-br dark:from-orange-900/30 dark:to-red-900/40', borderColor: 'border-orange-300 dark:border-orange-700' },
+  { id: 'superterminais', nome: 'Super Terminais', descricao: 'Operação portuária', icon: Container, cor: 'from-purple-500 to-indigo-600', bgLight: 'bg-gradient-to-br from-purple-50 to-indigo-100', bgDark: 'dark:bg-gradient-to-br dark:from-purple-900/30 dark:to-indigo-900/40', borderColor: 'border-purple-300 dark:border-purple-700' },
+  { id: 'cesari', nome: 'CESARI', descricao: 'Distribuição', icon: Boxes, cor: 'from-green-500 to-emerald-600', bgLight: 'bg-gradient-to-br from-green-50 to-emerald-100', bgDark: 'dark:bg-gradient-to-br dark:from-green-900/30 dark:to-emerald-900/40', borderColor: 'border-green-300 dark:border-green-700' },
 ];
 
 const OperacoesDashboard = () => {
@@ -986,37 +986,45 @@ const OperacoesDashboard = () => {
           </div>
         </div>
         <div className="p-6">
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
             {DASHBOARD_OPERATIONS.map((op) => {
               const isSelected = selectedOperation === op.id;
+              const IconComponent = op.icon;
+              const isAllButton = op.id === 'all';
+              
               return (
                 <button
                   key={op.id}
                   onClick={() => setSelectedOperation(op.id)}
-                  className={`group relative flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
+                  className={`group relative flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all duration-300 overflow-hidden ${
                     isSelected 
-                      ? 'border-transparent shadow-lg scale-105' 
-                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-md'
+                      ? `${op.borderColor} shadow-xl scale-[1.02] ${op.bgLight} ${op.bgDark}` 
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-lg bg-white dark:bg-gray-800'
                   }`}
                   data-testid={`filter-operacao-${op.id}`}
                 >
                   {isSelected && (
-                    <div className={`absolute inset-0 rounded-xl bg-gradient-to-r ${op.bgLight} dark:${op.bgDark} -z-10`} />
+                    <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${op.cor}`} />
                   )}
-                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${op.cor} flex items-center justify-center shadow-sm ${
-                    isSelected ? 'ring-2 ring-white dark:ring-gray-800 ring-offset-2' : ''
+                  
+                  <div className={`relative w-14 h-14 rounded-xl bg-gradient-to-br ${op.cor} flex items-center justify-center shadow-lg transition-transform duration-300 ${
+                    isSelected ? 'scale-110' : 'group-hover:scale-105'
                   }`}>
-                    <span className="text-white text-sm font-bold">{op.nome.charAt(0)}</span>
+                    <IconComponent className="w-7 h-7 text-white" />
+                    {isSelected && (
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800 shadow-sm">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    )}
                   </div>
-                  <div className="text-left">
-                    <p className={`font-medium ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                  
+                  <div className="text-center">
+                    <p className={`font-semibold text-sm ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                       {op.nome}
                     </p>
-                    {isSelected && (
-                      <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Selecionado
-                      </p>
-                    )}
+                    <p className={`text-xs mt-0.5 ${isSelected ? 'text-gray-600 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                      {op.descricao}
+                    </p>
                   </div>
                 </button>
               );
