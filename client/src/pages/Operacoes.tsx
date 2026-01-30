@@ -719,7 +719,7 @@ const PERIODOS_HISTOGRAMA = [
   { id: 'custom' as HistogramaPeriodo, label: 'Personalizado', dias: 0 },
 ];
 
-const OperacoesDashboard = () => {
+const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
   const [selectedOperation, setSelectedOperation] = useState<string>('all');
   const [histogramaPeriodo, setHistogramaPeriodo] = useState<HistogramaPeriodo>('30d');
@@ -745,13 +745,52 @@ const OperacoesDashboard = () => {
   });
 
   const { data: viagensStats } = useQuery({
-    queryKey: ['viagens-stats', companyId],
+    queryKey: ['viagens-stats', companyId, selectedOperacao],
+    placeholderData: (previousData) => previousData,
     queryFn: async () => {
+      // Se filtro por operação específica, buscar IDs das viagens dessa operação
+      let viagemIdsFilter: number[] | null = null;
+      
+      if (selectedOperacao !== 'all') {
+        const operacao = OPERACOES_TABELAS.find(op => op.nome === selectedOperacao);
+        if (operacao) {
+          // Primeiro buscar IDs de viagens da empresa
+          const { data: viagensEmpresa } = await supabase
+            .from('acompanhamento_viagem')
+            .select('id')
+            .eq('company_id', companyId);
+          
+          if (viagensEmpresa && viagensEmpresa.length > 0) {
+            const viagemIds = viagensEmpresa.map((v: any) => v.id);
+            
+            // Buscar viagens dessa operação específica
+            const { data: operacaoViagens } = await supabase
+              .from(operacao.tabela)
+              .select('id_viagem')
+              .in('id_viagem', viagemIds);
+            
+            if (operacaoViagens) {
+              viagemIdsFilter = operacaoViagens.map((ov: any) => ov.id_viagem);
+            }
+          }
+          
+          if (!viagemIdsFilter || viagemIdsFilter.length === 0) {
+            return { total: 0, hoje: 0, concluidas: 0, emAndamento: 0 };
+          }
+        }
+      }
+
       // Buscar total de viagens
-      const { count: totalCount, error: totalError } = await supabase
+      let totalQuery = supabase
         .from('acompanhamento_viagem')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId);
+      
+      if (viagemIdsFilter) {
+        totalQuery = totalQuery.in('id', viagemIdsFilter);
+      }
+      
+      const { count: totalCount, error: totalError } = await totalQuery;
       
       if (totalError) {
         console.warn('Tabela acompanhamento_viagem não acessível:', totalError);
@@ -763,26 +802,44 @@ const OperacoesDashboard = () => {
       const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).toISOString();
       const fimHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1).toISOString();
       
-      const { count: hojeCount } = await supabase
+      let hojeQuery = supabase
         .from('acompanhamento_viagem')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
         .gte('data_hora_inicial', inicioHoje)
         .lt('data_hora_inicial', fimHoje);
+      
+      if (viagemIdsFilter) {
+        hojeQuery = hojeQuery.in('id', viagemIdsFilter);
+      }
+      
+      const { count: hojeCount } = await hojeQuery;
 
       // Viagens concluídas (com data_hora_final preenchida)
-      const { count: concluidasCount } = await supabase
+      let concluidasQuery = supabase
         .from('acompanhamento_viagem')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
         .not('data_hora_final', 'is', null);
+      
+      if (viagemIdsFilter) {
+        concluidasQuery = concluidasQuery.in('id', viagemIdsFilter);
+      }
+      
+      const { count: concluidasCount } = await concluidasQuery;
 
       // Viagens em andamento (sem data_hora_final)
-      const { count: emAndamentoCount } = await supabase
+      let emAndamentoQuery = supabase
         .from('acompanhamento_viagem')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
         .is('data_hora_final', null);
+      
+      if (viagemIdsFilter) {
+        emAndamentoQuery = emAndamentoQuery.in('id', viagemIdsFilter);
+      }
+      
+      const { count: emAndamentoCount } = await emAndamentoQuery;
 
       return { 
         total: totalCount || 0, 
@@ -871,7 +928,7 @@ const OperacoesDashboard = () => {
   const diasPeriodo = histogramaPeriodo === 'custom' ? 0 : (periodoAtual?.dias || 30);
 
   const { data: viagensHistograma = [] } = useQuery({
-    queryKey: ['viagens-histograma', companyId, histogramaPeriodo, histogramaDataInicio, histogramaDataFim],
+    queryKey: ['viagens-histograma', companyId, histogramaPeriodo, histogramaDataInicio, histogramaDataFim, selectedOperacao],
     placeholderData: (previousData) => previousData,
     queryFn: async () => {
       const hoje = new Date();
@@ -889,13 +946,67 @@ const OperacoesDashboard = () => {
         dataInicio.setDate(dataInicio.getDate() - (numDias - 1));
       }
       
-      const { data, error } = await supabase
+      // Se filtro por operação específica, buscar IDs das viagens dessa operação
+      let viagemIdsFilter: number[] | null = null;
+      
+      if (selectedOperacao !== 'all') {
+        const operacao = OPERACOES_TABELAS.find(op => op.nome === selectedOperacao);
+        if (operacao) {
+          // Primeiro buscar IDs de viagens da empresa no período
+          const { data: viagensEmpresa } = await supabase
+            .from('acompanhamento_viagem')
+            .select('id')
+            .eq('company_id', companyId)
+            .gte('data_hora_inicial', dataInicio.toISOString())
+            .lte('data_hora_inicial', new Date(dataFim.getTime() + 24 * 60 * 60 * 1000).toISOString());
+          
+          if (viagensEmpresa && viagensEmpresa.length > 0) {
+            const viagemIds = viagensEmpresa.map((v: any) => v.id);
+            
+            // Buscar viagens dessa operação específica
+            const { data: operacaoViagens } = await supabase
+              .from(operacao.tabela)
+              .select('id_viagem')
+              .in('id_viagem', viagemIds);
+            
+            if (operacaoViagens) {
+              viagemIdsFilter = operacaoViagens.map((ov: any) => ov.id_viagem);
+            }
+          }
+          
+          if (!viagemIdsFilter || viagemIdsFilter.length === 0) {
+            // Retornar dias vazios
+            const diasMap: Record<string, { data: string; total: number; diaSemana: string }> = {};
+            const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            
+            for (let i = 0; i < numDias; i++) {
+              const d = new Date(dataInicio);
+              d.setDate(d.getDate() + i);
+              const key = d.toISOString().split('T')[0];
+              diasMap[key] = { 
+                data: `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`,
+                total: 0,
+                diaSemana: diasSemana[d.getDay()]
+              };
+            }
+            return Object.values(diasMap);
+          }
+        }
+      }
+      
+      let query = supabase
         .from('acompanhamento_viagem')
         .select('id, data_hora_inicial')
         .eq('company_id', companyId)
         .gte('data_hora_inicial', dataInicio.toISOString())
         .lte('data_hora_inicial', new Date(dataFim.getTime() + 24 * 60 * 60 * 1000).toISOString())
         .order('data_hora_inicial', { ascending: true });
+      
+      if (viagemIdsFilter) {
+        query = query.in('id', viagemIdsFilter);
+      }
+      
+      const { data, error } = await query;
       
       if (error) {
         console.warn('Erro ao buscar histograma:', error);
@@ -2065,14 +2176,12 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
   );
 };
 
-const OperacoesViagens = () => {
+const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedOperacao: string; setSelectedOperacao: (op: string) => void }) => {
   const { companyId } = useCurrentAccount();
-  const [selectedOperacao, setSelectedOperacao] = useState<string>('all');
   const [selectedMotorista, setSelectedMotorista] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [dataInicio, setDataInicio] = useState<string>('');
   const [dataFim, setDataFim] = useState<string>('');
-  const [isOperacaoDropdownOpen, setIsOperacaoDropdownOpen] = useState(false);
   const [isMotoristaDropdownOpen, setIsMotoristaDropdownOpen] = useState(false);
   const [selectedViagem, setSelectedViagem] = useState<ViagemEnriquecida | null>(null);
   const [isDateFilterExpanded, setIsDateFilterExpanded] = useState(false);
@@ -2296,55 +2405,7 @@ const OperacoesViagens = () => {
           <div className="relative">
             <button
               onClick={() => {
-                setIsOperacaoDropdownOpen(!isOperacaoDropdownOpen);
-                setIsMotoristaDropdownOpen(false);
-              }}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 min-w-[180px] justify-between"
-              data-testid="button-filter-operacao"
-            >
-              <Filter className="w-4 h-4" />
-              <span className="truncate">
-                {selectedOperacao === 'all' ? 'Todas Operações' : selectedOperacao}
-              </span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${isOperacaoDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isOperacaoDropdownOpen && (
-              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                <button
-                  onClick={() => {
-                    setSelectedOperacao('all');
-                    setIsOperacaoDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                    selectedOperacao === 'all' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
-                  }`}
-                >
-                  Todas Operações
-                </button>
-                {OPERACOES_TABELAS.map((op) => (
-                  <button
-                    key={op.nome}
-                    onClick={() => {
-                      setSelectedOperacao(op.nome);
-                      setIsOperacaoDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                      selectedOperacao === op.nome ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
-                    }`}
-                  >
-                    {op.nome}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="relative">
-            <button
-              onClick={() => {
                 setIsMotoristaDropdownOpen(!isMotoristaDropdownOpen);
-                setIsOperacaoDropdownOpen(false);
               }}
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 min-w-[180px] justify-between"
               data-testid="button-filter-motorista"
@@ -2552,6 +2613,8 @@ const OperacoesViagens = () => {
 const Operacoes = () => {
   const location = useLocation();
   const currentPath = location.pathname;
+  const [selectedOperacao, setSelectedOperacao] = useState<string>('all');
+  const [isOperacaoDropdownOpen, setIsOperacaoDropdownOpen] = useState(false);
 
   const tabs = [
     { path: '/operacoes', label: 'Dashboard', icon: LayoutDashboard },
@@ -2567,8 +2630,52 @@ const Operacoes = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Operações</h1>
+        
+        <div className="relative">
+          <button
+            onClick={() => setIsOperacaoDropdownOpen(!isOperacaoDropdownOpen)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 min-w-[180px] justify-between"
+            data-testid="button-filter-operacao-global"
+          >
+            <Filter className="w-4 h-4" />
+            <span className="truncate">
+              {selectedOperacao === 'all' ? 'Todas Operações' : selectedOperacao}
+            </span>
+            <ChevronDown className={`w-4 h-4 transition-transform ${isOperacaoDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {isOperacaoDropdownOpen && (
+            <div className="absolute right-0 z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <button
+                onClick={() => {
+                  setSelectedOperacao('all');
+                  setIsOperacaoDropdownOpen(false);
+                }}
+                className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                  selectedOperacao === 'all' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                }`}
+              >
+                Todas Operações
+              </button>
+              {OPERACOES_TABELAS.map((op) => (
+                <button
+                  key={op.nome}
+                  onClick={() => {
+                    setSelectedOperacao(op.nome);
+                    setIsOperacaoDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                    selectedOperacao === op.nome ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                  }`}
+                >
+                  {op.nome}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="border-b border-gray-200 dark:border-gray-700">
@@ -2592,8 +2699,8 @@ const Operacoes = () => {
       </div>
 
       <Routes>
-        <Route path="/" element={<OperacoesDashboard />} />
-        <Route path="/viagens" element={<OperacoesViagens />} />
+        <Route path="/" element={<OperacoesDashboard selectedOperacao={selectedOperacao} />} />
+        <Route path="/viagens" element={<OperacoesViagens selectedOperacao={selectedOperacao} setSelectedOperacao={setSelectedOperacao} />} />
       </Routes>
     </div>
   );
