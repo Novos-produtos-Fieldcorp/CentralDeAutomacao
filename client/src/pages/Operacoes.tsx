@@ -369,6 +369,54 @@ const OperacoesDashboard = () => {
     enabled: !!companyId,
   });
 
+  const { data: viagensHistograma = [] } = useQuery({
+    queryKey: ['viagens-histograma', companyId],
+    queryFn: async () => {
+      const hoje = new Date();
+      const dataInicio = new Date(hoje);
+      dataInicio.setDate(dataInicio.getDate() - 29);
+      
+      const { data, error } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, data_hora_inicial')
+        .gte('data_hora_inicial', dataInicio.toISOString())
+        .order('data_hora_inicial', { ascending: true });
+      
+      if (error) {
+        console.warn('Erro ao buscar histograma:', error);
+        return [];
+      }
+      
+      const diasMap: Record<string, { data: string; total: number; diaSemana: string }> = {};
+      const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(hoje);
+        d.setDate(d.getDate() - (29 - i));
+        const key = d.toISOString().split('T')[0];
+        diasMap[key] = { 
+          data: `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`,
+          total: 0,
+          diaSemana: diasSemana[d.getDay()]
+        };
+      }
+      
+      (data || []).forEach((v: any) => {
+        if (v.data_hora_inicial) {
+          const key = v.data_hora_inicial.split('T')[0];
+          if (diasMap[key]) {
+            diasMap[key].total++;
+          }
+        }
+      });
+      
+      return Object.values(diasMap);
+    },
+    enabled: !!companyId,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
+  });
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -423,84 +471,110 @@ const OperacoesDashboard = () => {
 
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Viagens por Operação</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Distribuição de viagens entre operações</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Viagens - Últimos 30 Dias</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Histórico diário de viagens realizadas</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {operacoesStats.reduce((acc, op) => acc + op.total, 0)}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Total de viagens</p>
+            <div className="flex items-center gap-6">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {viagensHistograma.reduce((acc, d) => acc + d.total, 0)}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Total período</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {viagensHistograma.length > 0 
+                    ? (viagensHistograma.reduce((acc, d) => acc + d.total, 0) / viagensHistograma.length).toFixed(1) 
+                    : '0'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Média/dia</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                  {Math.max(...viagensHistograma.map(d => d.total), 0)}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Pico</p>
+              </div>
             </div>
           </div>
         </div>
         
         <div className="p-6">
           {(() => {
-            const totalViagens = operacoesStats.reduce((acc, op) => acc + op.total, 0);
-            const sortedStats = [...operacoesStats].sort((a, b) => b.total - a.total);
-            const maxValue = Math.max(...operacoesStats.map(op => op.total), 1);
-            
-            const operacaoColors: Record<string, { bg: string; bar: string; text: string }> = {
-              'Autoservice': { bg: 'bg-blue-100 dark:bg-blue-900/30', bar: 'bg-gradient-to-r from-blue-500 to-blue-600', text: 'text-blue-600 dark:text-blue-400' },
-              'Cesari': { bg: 'bg-green-100 dark:bg-green-900/30', bar: 'bg-gradient-to-r from-green-500 to-green-600', text: 'text-green-600 dark:text-green-400' },
-              'Mitsubishi': { bg: 'bg-red-100 dark:bg-red-900/30', bar: 'bg-gradient-to-r from-red-500 to-red-600', text: 'text-red-600 dark:text-red-400' },
-              'Sada': { bg: 'bg-yellow-100 dark:bg-yellow-900/30', bar: 'bg-gradient-to-r from-yellow-500 to-yellow-600', text: 'text-yellow-600 dark:text-yellow-400' },
-              'Superterminais': { bg: 'bg-purple-100 dark:bg-purple-900/30', bar: 'bg-gradient-to-r from-purple-500 to-purple-600', text: 'text-purple-600 dark:text-purple-400' },
-              'Tegma': { bg: 'bg-orange-100 dark:bg-orange-900/30', bar: 'bg-gradient-to-r from-orange-500 to-orange-600', text: 'text-orange-600 dark:text-orange-400' },
-            };
+            const totalViagens = viagensHistograma.reduce((acc, d) => acc + d.total, 0);
+            const maxValue = Math.max(...viagensHistograma.map(d => d.total), 1);
             
             if (totalViagens === 0) {
               return (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                   <Map className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Nenhuma viagem registrada ainda</p>
+                  <p>Nenhuma viagem nos últimos 30 dias</p>
                 </div>
               );
             }
             
             return (
               <div className="space-y-4">
-                {sortedStats.map((op) => {
-                  const percentage = totalViagens > 0 ? ((op.total / totalViagens) * 100).toFixed(1) : '0';
-                  const widthPercent = (op.total / maxValue) * 100;
-                  const colors = operacaoColors[op.nome] || { bg: 'bg-gray-100 dark:bg-gray-700', bar: 'bg-gradient-to-r from-gray-500 to-gray-600', text: 'text-gray-600 dark:text-gray-400' };
-                  
-                  return (
-                    <div key={op.nome} className="group">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${colors.bar}`} />
-                          <span className="font-medium text-gray-900 dark:text-white">{op.nome}</span>
+                <div className="flex items-end justify-between gap-1 h-48">
+                  {viagensHistograma.map((dia, index) => {
+                    const heightPercent = (dia.total / maxValue) * 100;
+                    const isWeekend = dia.diaSemana === 'Sáb' || dia.diaSemana === 'Dom';
+                    const isToday = index === viagensHistograma.length - 1;
+                    
+                    return (
+                      <div 
+                        key={index} 
+                        className="flex-1 flex flex-col items-center group relative"
+                        title={`${dia.data} (${dia.diaSemana}): ${dia.total} viagens`}
+                      >
+                        <div className="w-full flex flex-col items-center justify-end h-40">
+                          <div 
+                            className={`w-full max-w-[20px] rounded-t-sm transition-all duration-300 ${
+                              isToday 
+                                ? 'bg-gradient-to-t from-blue-600 to-blue-400' 
+                                : isWeekend 
+                                  ? 'bg-gradient-to-t from-gray-400 to-gray-300 dark:from-gray-600 dark:to-gray-500' 
+                                  : 'bg-gradient-to-t from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-500'
+                            } group-hover:opacity-80`}
+                            style={{ height: `${Math.max(heightPercent, dia.total > 0 ? 8 : 2)}%` }}
+                          />
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className={`text-sm font-semibold ${colors.text}`}>{op.total} viagens</span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 w-12 text-right">{percentage}%</span>
+                        
+                        <div className="invisible group-hover:visible absolute -top-8 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+                          {dia.data}: {dia.total} viagens
                         </div>
                       </div>
-                      <div className="relative h-8 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                        <div 
-                          className={`absolute inset-y-0 left-0 ${colors.bar} rounded-lg transition-all duration-500 ease-out group-hover:opacity-90`}
-                          style={{ width: `${widthPercent}%` }}
-                        />
-                        {op.total > 0 && (
-                          <div className="absolute inset-0 flex items-center px-3">
-                            <span className="text-white text-sm font-medium drop-shadow-sm">
-                              {widthPercent > 20 ? `${op.total} viagens` : ''}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+                
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-2">
+                  <span>{viagensHistograma[0]?.data}</span>
+                  <span className="text-center">15 dias atrás</span>
+                  <span>{viagensHistograma[viagensHistograma.length - 1]?.data} (Hoje)</span>
+                </div>
+                
+                <div className="flex items-center justify-center gap-6 pt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-sm bg-gradient-to-t from-blue-500 to-blue-400" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Dias úteis</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-sm bg-gradient-to-t from-gray-400 to-gray-300 dark:from-gray-600 dark:to-gray-500" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Fim de semana</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-sm bg-gradient-to-t from-blue-600 to-blue-400" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Hoje</span>
+                  </div>
+                </div>
               </div>
             );
           })()}
