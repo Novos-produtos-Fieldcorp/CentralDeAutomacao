@@ -878,65 +878,84 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
     enabled: !!companyId,
   });
 
-  // Query para buscar viagens detalhadas para o modal
+  // Query para buscar viagens detalhadas para o modal (mesma lógica da lista de viagens)
   const { data: viagensDetalhadas = [], isLoading: isLoadingViagensDetalhadas, refetch: refetchViagensDetalhadas } = useQuery({
     queryKey: ['viagens-detalhadas-modal', companyId, selectedOperacao, statsModalOpen],
     queryFn: async () => {
       if (!statsModalOpen || !companyId) return [];
       
-      // Buscar viagens da empresa
-      let query = supabase
+      // Buscar todas as viagens da empresa (mesma abordagem da lista de viagens)
+      const { data: viagens, error } = await supabase
         .from('acompanhamento_viagem')
-        .select('id, data_hora_inicial, data_hora_final, motorista_id, veiculo_id, km_inicial, km_final, operacao_tipo')
+        .select('*')
         .eq('company_id', companyId)
         .order('data_hora_inicial', { ascending: false })
-        .limit(100);
+        .limit(500);
+      
+      if (error || !viagens || viagens.length === 0) return [];
+      
+      // Buscar operações para todas as viagens (incluindo dados como origem/destino)
+      const viagemIds = viagens.map((v: any) => v.id);
+      const operacoesMap: Record<number, { tipo: string; dados: any }> = {};
+      
+      await Promise.all(
+        OPERACOES_TABELAS.map(async (op) => {
+          const { data } = await supabase
+            .from(op.tabela)
+            .select('*')
+            .in('id_viagem', viagemIds);
+          
+          if (data) {
+            data.forEach((item: any) => {
+              operacoesMap[item.id_viagem] = {
+                tipo: op.nome,
+                dados: item
+              };
+            });
+          }
+        })
+      );
+      
+      // Enriquecer com tipo de operação e dados
+      let viagensEnriquecidas = viagens.map((v: any) => ({
+        ...v,
+        operacao_tipo: operacoesMap[v.id]?.tipo || null,
+        operacao_dados: operacoesMap[v.id]?.dados || null
+      }));
+      
+      // Filtrar por operação se selecionada
+      if (selectedOperacao !== 'all') {
+        viagensEnriquecidas = viagensEnriquecidas.filter((v: any) => v.operacao_tipo === selectedOperacao);
+      }
       
       // Aplicar filtros baseado no tipo de modal
       if (statsModalOpen === 'hoje') {
         const hoje = new Date();
-        const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).toISOString();
-        const fimHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1).toISOString();
-        query = query.gte('data_hora_inicial', inicioHoje).lt('data_hora_inicial', fimHoje);
+        const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+        const fimHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + 1);
+        viagensEnriquecidas = viagensEnriquecidas.filter((v: any) => {
+          const dataViagem = new Date(v.data_hora_inicial);
+          return dataViagem >= inicioHoje && dataViagem < fimHoje;
+        });
       } else if (statsModalOpen === 'emAndamento') {
-        query = query.is('data_hora_final', null);
+        viagensEnriquecidas = viagensEnriquecidas.filter((v: any) => !v.data_hora_final);
       } else if (statsModalOpen === 'concluidas') {
-        query = query.not('data_hora_final', 'is', null);
+        viagensEnriquecidas = viagensEnriquecidas.filter((v: any) => !!v.data_hora_final);
       }
       
-      const { data: viagens, error } = await query;
+      if (viagensEnriquecidas.length === 0) return [];
       
-      if (error || !viagens || viagens.length === 0) return [];
+      // Enriquecer com nomes de motorista, ajudante e veículo
+      const motoristaIds = [...new Set(viagensEnriquecidas.map((v: any) => v.motorista_id).filter(Boolean))];
+      const ajudanteIds = [...new Set(viagensEnriquecidas.map((v: any) => v.ajudante_id).filter(Boolean))];
+      const veiculoIds = [...new Set(viagensEnriquecidas.map((v: any) => v.veiculo_id).filter(Boolean))];
       
-      // Se filtro por operação específica, filtrar viagens
-      let viagensFiltradas = viagens;
-      if (selectedOperacao !== 'all') {
-        const operacao = OPERACOES_TABELAS.find(op => op.nome === selectedOperacao);
-        if (operacao) {
-          const viagemIds = viagens.map((v: any) => v.id);
-          const { data: opData } = await supabase
-            .from(operacao.tabela)
-            .select('id_viagem')
-            .in('id_viagem', viagemIds);
-          
-          if (opData && opData.length > 0) {
-            const opViagemIds = new Set(opData.map((o: any) => o.id_viagem));
-            viagensFiltradas = viagens.filter((v: any) => opViagemIds.has(v.id));
-          } else {
-            viagensFiltradas = [];
-          }
-        }
-      }
-      
-      if (viagensFiltradas.length === 0) return [];
-      
-      // Enriquecer com nomes de motorista e veículo
-      const motoristaIds = [...new Set(viagensFiltradas.map((v: any) => v.motorista_id).filter(Boolean))];
-      const veiculoIds = [...new Set(viagensFiltradas.map((v: any) => v.veiculo_id).filter(Boolean))];
-      
-      const [motoristasRes, veiculosRes] = await Promise.all([
+      const [motoristasRes, ajudantesRes, veiculosRes] = await Promise.all([
         motoristaIds.length > 0 
           ? supabase.from('motorista').select('motorista_id, nome').in('motorista_id', motoristaIds)
+          : { data: [] },
+        ajudanteIds.length > 0 
+          ? supabase.from('documento_ajudante').select('id_ajudante, nome').in('id_ajudante', ajudanteIds)
           : { data: [] },
         veiculoIds.length > 0 
           ? supabase.from('veiculo').select('veiculo_id, placa').in('veiculo_id', veiculoIds)
@@ -944,13 +963,16 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
       ]);
       
       const motoristasMap: Record<number, string> = {};
+      const ajudantesMap: Record<number, string> = {};
       const veiculosMap: Record<number, string> = {};
       (motoristasRes.data || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      (ajudantesRes.data || []).forEach((a: any) => { ajudantesMap[a.id_ajudante] = a.nome; });
       (veiculosRes.data || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
       
-      return viagensFiltradas.map((v: any) => ({
+      return viagensEnriquecidas.map((v: any) => ({
         ...v,
         motorista_nome: motoristasMap[v.motorista_id] || '-',
+        ajudante_nome: ajudantesMap[v.ajudante_id] || '-',
         veiculo_placa: veiculosMap[v.veiculo_id] || '-'
       }));
     },
@@ -1237,9 +1259,10 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Data/Hora</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Operação</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Motorista</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ajudante</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Veículo</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">KM Inicial</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">KM Final</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Origem</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Destino</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
                     </tr>
                   </thead>
@@ -1257,10 +1280,11 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{viagem.motorista_nome}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{viagem.veiculo_placa}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{viagem.km_inicial || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{viagem.km_final || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.motorista_nome || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.ajudante_nome || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.veiculo_placa || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.operacao_dados?.origem || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.operacao_dados?.destino || '-'}</td>
                         <td className="px-4 py-3 text-sm">
                           {viagem.data_hora_final ? (
                             <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
