@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check } from 'lucide-react';
 import { useState as useStateReact } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
@@ -695,8 +695,17 @@ const ViagemDetailModal = ({
   );
 };
 
+const DASHBOARD_OPERATIONS = [
+  { id: 'all', nome: 'Todas', cor: 'from-gray-500 to-gray-600', bgLight: 'from-gray-50 to-slate-50', bgDark: 'from-gray-900/20 to-slate-900/20' },
+  { id: 'sada', nome: 'SADA', cor: 'from-yellow-500 to-amber-600', bgLight: 'from-yellow-50 to-amber-50', bgDark: 'from-yellow-900/20 to-amber-900/20' },
+  { id: 'tegma', nome: 'TEGMA', cor: 'from-orange-500 to-red-600', bgLight: 'from-orange-50 to-red-50', bgDark: 'from-orange-900/20 to-red-900/20' },
+  { id: 'superterminais', nome: 'Super Terminais', cor: 'from-purple-500 to-indigo-600', bgLight: 'from-purple-50 to-indigo-50', bgDark: 'from-purple-900/20 to-indigo-900/20' },
+  { id: 'cesari', nome: 'CESARI', cor: 'from-green-500 to-emerald-600', bgLight: 'from-green-50 to-emerald-50', bgDark: 'from-green-900/20 to-emerald-900/20' },
+];
+
 const OperacoesDashboard = () => {
   const { companyId } = useCurrentAccount();
+  const [selectedOperation, setSelectedOperation] = useState<string>('all');
 
   const { data: operacoes = [] } = useQuery<Operacao[]>({
     queryKey: ['operacoes', companyId],
@@ -963,64 +972,73 @@ const OperacoesDashboard = () => {
         </div>
       </div>
 
-      {operacoes.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
-                <LayoutDashboard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Operações Personalizadas</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{operacoes.length} operações cadastradas</p>
-              </div>
+      {/* Filtros de Operações */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+              <Filter className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             </div>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {operacoes.map((op, index) => {
-                const colors = [
-                  'from-blue-500 to-blue-600',
-                  'from-green-500 to-green-600',
-                  'from-purple-500 to-purple-600',
-                  'from-orange-500 to-orange-600',
-                  'from-pink-500 to-pink-600',
-                  'from-teal-500 to-teal-600',
-                  'from-indigo-500 to-indigo-600',
-                  'from-red-500 to-red-600',
-                ];
-                const bgColor = colors[index % colors.length];
-                
-                return (
-                  <div
-                    key={op.id}
-                    className="group relative bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-4 hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
-                    data-testid={`operacao-card-${op.id}`}
-                  >
-                    <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-xl bg-gradient-to-r ${bgColor}`} />
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${bgColor} flex items-center justify-center shadow-sm`}>
-                        <span className="text-white text-sm font-bold">{op.operacao.charAt(0).toUpperCase()}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 dark:text-white truncate">{op.operacao}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">ID: {op.id}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filtrar por Operação</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Selecione uma operação para ver seus detalhes</p>
             </div>
           </div>
         </div>
-      )}
+        <div className="p-6">
+          <div className="flex flex-wrap gap-3">
+            {DASHBOARD_OPERATIONS.map((op) => {
+              const isSelected = selectedOperation === op.id;
+              return (
+                <button
+                  key={op.id}
+                  onClick={() => setSelectedOperation(op.id)}
+                  className={`group relative flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
+                    isSelected 
+                      ? 'border-transparent shadow-lg scale-105' 
+                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-md'
+                  }`}
+                  data-testid={`filter-operacao-${op.id}`}
+                >
+                  {isSelected && (
+                    <div className={`absolute inset-0 rounded-xl bg-gradient-to-r ${op.bgLight} dark:${op.bgDark} -z-10`} />
+                  )}
+                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${op.cor} flex items-center justify-center shadow-sm ${
+                    isSelected ? 'ring-2 ring-white dark:ring-gray-800 ring-offset-2' : ''
+                  }`}>
+                    <span className="text-white text-sm font-bold">{op.nome.charAt(0)}</span>
+                  </div>
+                  <div className="text-left">
+                    <p className={`font-medium ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {op.nome}
+                    </p>
+                    {isSelected && (
+                      <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Selecionado
+                      </p>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
       {/* Dashboards específicos por operação */}
       <div className="space-y-6">
-        <SadaDashboard companyId={companyId!} />
-        <TegmaDashboard companyId={companyId!} />
-        <SuperterminaisDashboard companyId={companyId!} />
-        <CesariDashboard companyId={companyId!} />
+        {(selectedOperation === 'all' || selectedOperation === 'sada') && (
+          <SadaDashboard companyId={companyId!} />
+        )}
+        {(selectedOperation === 'all' || selectedOperation === 'tegma') && (
+          <TegmaDashboard companyId={companyId!} />
+        )}
+        {(selectedOperation === 'all' || selectedOperation === 'superterminais') && (
+          <SuperterminaisDashboard companyId={companyId!} />
+        )}
+        {(selectedOperation === 'all' || selectedOperation === 'cesari') && (
+          <CesariDashboard companyId={companyId!} />
+        )}
       </div>
     </div>
   );
