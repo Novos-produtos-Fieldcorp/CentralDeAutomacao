@@ -1014,6 +1014,775 @@ const OperacoesDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Dashboards específicos por operação */}
+      <div className="space-y-6">
+        <SadaDashboard companyId={companyId!} />
+        <TegmaDashboard companyId={companyId!} />
+        <SuperterminaisDashboard companyId={companyId!} />
+        <CesariDashboard companyId={companyId!} />
+      </div>
+    </div>
+  );
+};
+
+// Componente de gráfico de barras horizontais reutilizável
+const HorizontalBarChart = ({ 
+  title, 
+  data, 
+  valueKey = 'value',
+  labelKey = 'label',
+  color = 'bg-primary'
+}: { 
+  title: string; 
+  data: Array<{ label: string; value: number }>; 
+  valueKey?: string;
+  labelKey?: string;
+  color?: string;
+}) => {
+  const maxValue = Math.max(...data.map(d => d.value), 1);
+  
+  if (data.length === 0) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">{title}</h4>
+        <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
+          Sem dados disponíveis
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">{title}</h4>
+      <div className="space-y-2 max-h-80 overflow-y-auto">
+        {data.slice(0, 15).map((item, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <div className="w-24 text-xs text-gray-600 dark:text-gray-400 truncate" title={item.label}>
+              {item.label}
+            </div>
+            <div className="flex-1 h-6 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
+              <div 
+                className={`h-full ${color} transition-all duration-300`}
+                style={{ width: `${(item.value / maxValue) * 100}%` }}
+              />
+            </div>
+            <div className="w-16 text-right text-xs font-medium text-gray-700 dark:text-gray-300">
+              {item.value.toLocaleString('pt-BR')}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Card de estatística
+const StatCard = ({ 
+  label, 
+  value, 
+  icon: Icon,
+  color = 'text-primary'
+}: { 
+  label: string; 
+  value: string | number; 
+  icon?: any;
+  color?: string;
+}) => (
+  <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>
+    <p className={`text-xl font-bold ${color}`}>
+      {typeof value === 'number' ? value.toLocaleString('pt-BR') : value}
+    </p>
+  </div>
+);
+
+// Dashboard SADA
+const SadaDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: sadaData = [], isLoading } = useQuery({
+    queryKey: ['sada-dashboard', companyId],
+    queryFn: async () => {
+      // Buscar dados da operação SADA
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_sada')
+        .select('*');
+      
+      if (opError) {
+        console.warn('Erro ao buscar dados SADA:', opError);
+        return [];
+      }
+      
+      if (!opData || opData.length === 0) return [];
+      
+      // Buscar viagens correspondentes
+      const viagemIds = opData.map((op: any) => op.id_viagem).filter(Boolean);
+      if (viagemIds.length === 0) return [];
+      
+      const { data: viagensData } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, km_inicial, km_final, janta, data_hora_inicial')
+        .in('id', viagemIds);
+      
+      // Buscar motoristas e veículos
+      const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
+      const veiculoIds = [...new Set((viagensData || []).map((v: any) => v.veiculo_id).filter(Boolean))];
+      
+      const [motoristasRes, veiculosRes] = await Promise.all([
+        motoristaIds.length > 0 ? supabase.from('motorista').select('motorista_id, nome').in('motorista_id', motoristaIds) : { data: [] },
+        veiculoIds.length > 0 ? supabase.from('veiculo').select('veiculo_id, placa').in('veiculo_id', veiculoIds) : { data: [] }
+      ]);
+      
+      const motoristasMap: Record<number, string> = {};
+      const veiculosMap: Record<number, string> = {};
+      (motoristasRes.data || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      (veiculosRes.data || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
+      
+      // Combinar dados
+      return opData.map((op: any) => {
+        const viagem = (viagensData || []).find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          viagem: viagem ? {
+            ...viagem,
+            motorista_nome: motoristasMap[viagem.motorista_id] || 'Desconhecido',
+            veiculo_placa: veiculosMap[viagem.veiculo_id] || 'Desconhecido'
+          } : null
+        };
+      });
+    },
+    enabled: !!companyId,
+  });
+
+  const stats = useMemo(() => {
+    const totalViagens = sadaData.length;
+    let kmTotal = 0;
+    let volumeJantas = 0;
+    const kmPorMotorista: Record<string, number> = {};
+    const carrosPorMotorista: Record<string, number> = {};
+    const kmPorCavalo: Record<string, number> = {};
+    const viagensPorMes: Record<string, number> = {};
+
+    sadaData.forEach((item: any) => {
+      const viagem = item.viagem;
+      if (!viagem) return;
+
+      const kmInicial = parseFloat(viagem.km_inicial) || 0;
+      const kmFinal = parseFloat(viagem.km_final) || 0;
+      const km = kmFinal - kmInicial;
+      if (km > 0) kmTotal += km;
+      if (viagem.janta) volumeJantas++;
+
+      const motoristaNome = viagem.motorista_nome || 'Desconhecido';
+      const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
+
+      kmPorMotorista[motoristaNome] = (kmPorMotorista[motoristaNome] || 0) + (km > 0 ? km : 0);
+      carrosPorMotorista[motoristaNome] = (carrosPorMotorista[motoristaNome] || 0) + (item.qtd_carros || 0);
+      kmPorCavalo[veiculoPlaca] = (kmPorCavalo[veiculoPlaca] || 0) + (km > 0 ? km : 0);
+
+      if (viagem.data_hora_inicial) {
+        const mes = viagem.data_hora_inicial.substring(0, 7);
+        viagensPorMes[mes] = (viagensPorMes[mes] || 0) + 1;
+      }
+    });
+
+    return {
+      totalViagens,
+      kmTotal,
+      volumeJantas,
+      kmPorMotorista: Object.entries(kmPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      carrosPorMotorista: Object.entries(carrosPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      kmPorCavalo: Object.entries(kmPorCavalo)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      viagensPorMes: Object.entries(viagensPorMes)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    };
+  }, [sadaData]);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32" />
+          <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SADA</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+      </div>
+      
+      <div className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <HorizontalBarChart 
+                title="KM por Motorista" 
+                data={stats.kmPorMotorista}
+                color="bg-yellow-500 dark:bg-yellow-600"
+              />
+              <HorizontalBarChart 
+                title="Carros por Motorista" 
+                data={stats.carrosPorMotorista}
+                color="bg-yellow-500 dark:bg-yellow-600"
+              />
+              <HorizontalBarChart 
+                title="KM por Cavalo" 
+                data={stats.kmPorCavalo}
+                color="bg-yellow-500 dark:bg-yellow-600"
+              />
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
+              {stats.viagensPorMes.length > 0 ? (
+                <div className="flex items-end gap-2 h-32 overflow-x-auto pb-2">
+                  {stats.viagensPorMes.map((item, index) => {
+                    const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                    const heightPercent = (item.value / maxVal) * 100;
+                    return (
+                      <div key={index} className="flex flex-col items-center min-w-[60px]">
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
+                        <div 
+                          className="w-12 bg-yellow-500 dark:bg-yellow-600 rounded-t"
+                          style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                        />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+              )}
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-yellow-600 dark:text-yellow-400" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-yellow-600 dark:text-yellow-400" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-yellow-600 dark:text-yellow-400" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Dashboard TEGMA
+const TegmaDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: tegmaData = [], isLoading } = useQuery({
+    queryKey: ['tegma-dashboard', companyId],
+    queryFn: async () => {
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_tegma')
+        .select('*');
+      
+      if (opError) {
+        console.warn('Erro ao buscar dados TEGMA:', opError);
+        return [];
+      }
+      
+      if (!opData || opData.length === 0) return [];
+      
+      const viagemIds = opData.map((op: any) => op.id_viagem).filter(Boolean);
+      if (viagemIds.length === 0) return [];
+      
+      const { data: viagensData } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, km_inicial, km_final, janta, data_hora_inicial')
+        .in('id', viagemIds);
+      
+      const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
+      const veiculoIds = [...new Set((viagensData || []).map((v: any) => v.veiculo_id).filter(Boolean))];
+      
+      const [motoristasRes, veiculosRes] = await Promise.all([
+        motoristaIds.length > 0 ? supabase.from('motorista').select('motorista_id, nome').in('motorista_id', motoristaIds) : { data: [] },
+        veiculoIds.length > 0 ? supabase.from('veiculo').select('veiculo_id, placa').in('veiculo_id', veiculoIds) : { data: [] }
+      ]);
+      
+      const motoristasMap: Record<number, string> = {};
+      const veiculosMap: Record<number, string> = {};
+      (motoristasRes.data || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      (veiculosRes.data || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
+      
+      return opData.map((op: any) => {
+        const viagem = (viagensData || []).find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          viagem: viagem ? {
+            ...viagem,
+            motorista_nome: motoristasMap[viagem.motorista_id] || 'Desconhecido',
+            veiculo_placa: veiculosMap[viagem.veiculo_id] || 'Desconhecido'
+          } : null
+        };
+      });
+    },
+    enabled: !!companyId,
+  });
+
+  const stats = useMemo(() => {
+    const totalViagens = tegmaData.length;
+    let kmTotal = 0;
+    let volumeJantas = 0;
+    const kmPorMotorista: Record<string, number> = {};
+    const carrosPorMotorista: Record<string, number> = {};
+    const kmPorCavalo: Record<string, number> = {};
+    const viagensPorMes: Record<string, number> = {};
+
+    tegmaData.forEach((item: any) => {
+      const viagem = item.viagem;
+      if (!viagem) return;
+
+      const kmInicial = parseFloat(viagem.km_inicial) || 0;
+      const kmFinal = parseFloat(viagem.km_final) || 0;
+      const km = kmFinal - kmInicial;
+      if (km > 0) kmTotal += km;
+      if (viagem.janta) volumeJantas++;
+
+      const motoristaNome = viagem.motorista_nome || 'Desconhecido';
+      const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
+
+      kmPorMotorista[motoristaNome] = (kmPorMotorista[motoristaNome] || 0) + (km > 0 ? km : 0);
+      carrosPorMotorista[motoristaNome] = (carrosPorMotorista[motoristaNome] || 0) + (item.qtd_carros || 0);
+      kmPorCavalo[veiculoPlaca] = (kmPorCavalo[veiculoPlaca] || 0) + (km > 0 ? km : 0);
+
+      if (viagem.data_hora_inicial) {
+        const mes = viagem.data_hora_inicial.substring(0, 7);
+        viagensPorMes[mes] = (viagensPorMes[mes] || 0) + 1;
+      }
+    });
+
+    return {
+      totalViagens,
+      kmTotal,
+      volumeJantas,
+      kmPorMotorista: Object.entries(kmPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      carrosPorMotorista: Object.entries(carrosPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      kmPorCavalo: Object.entries(kmPorCavalo)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      viagensPorMes: Object.entries(viagensPorMes)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    };
+  }, [tegmaData]);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32" />
+          <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">TEGMA</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+      </div>
+      
+      <div className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <HorizontalBarChart 
+                title="KM por Motorista" 
+                data={stats.kmPorMotorista}
+                color="bg-orange-500 dark:bg-orange-600"
+              />
+              <HorizontalBarChart 
+                title="Carros por Motorista" 
+                data={stats.carrosPorMotorista}
+                color="bg-orange-500 dark:bg-orange-600"
+              />
+              <HorizontalBarChart 
+                title="KM por Cavalo" 
+                data={stats.kmPorCavalo}
+                color="bg-orange-500 dark:bg-orange-600"
+              />
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
+              {stats.viagensPorMes.length > 0 ? (
+                <div className="flex items-end gap-2 h-32 overflow-x-auto pb-2">
+                  {stats.viagensPorMes.map((item, index) => {
+                    const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                    const heightPercent = (item.value / maxVal) * 100;
+                    return (
+                      <div key={index} className="flex flex-col items-center min-w-[60px]">
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
+                        <div 
+                          className="w-12 bg-orange-500 dark:bg-orange-600 rounded-t"
+                          style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                        />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+              )}
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-orange-600 dark:text-orange-400" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-orange-600 dark:text-orange-400" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-orange-600 dark:text-orange-400" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Dashboard SUPERTERMINAIS
+const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: superData = [], isLoading } = useQuery({
+    queryKey: ['superterminais-dashboard', companyId],
+    queryFn: async () => {
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_superterminais')
+        .select('*');
+      
+      if (opError) {
+        console.warn('Erro ao buscar dados SUPERTERMINAIS:', opError);
+        return [];
+      }
+      
+      if (!opData || opData.length === 0) return [];
+      
+      const viagemIds = opData.map((op: any) => op.id_viagem).filter(Boolean);
+      if (viagemIds.length === 0) return [];
+      
+      const { data: viagensData } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, data_hora_inicial')
+        .in('id', viagemIds);
+      
+      const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
+      const veiculoIds = [...new Set((viagensData || []).map((v: any) => v.veiculo_id).filter(Boolean))];
+      
+      const [motoristasRes, veiculosRes] = await Promise.all([
+        motoristaIds.length > 0 ? supabase.from('motorista').select('motorista_id, nome').in('motorista_id', motoristaIds) : { data: [] },
+        veiculoIds.length > 0 ? supabase.from('veiculo').select('veiculo_id, placa').in('veiculo_id', veiculoIds) : { data: [] }
+      ]);
+      
+      const motoristasMap: Record<number, string> = {};
+      const veiculosMap: Record<number, string> = {};
+      (motoristasRes.data || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      (veiculosRes.data || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
+      
+      return opData.map((op: any) => {
+        const viagem = (viagensData || []).find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          viagem: viagem ? {
+            ...viagem,
+            motorista_nome: motoristasMap[viagem.motorista_id] || 'Desconhecido',
+            veiculo_placa: veiculosMap[viagem.veiculo_id] || 'Desconhecido'
+          } : null
+        };
+      });
+    },
+    enabled: !!companyId,
+  });
+
+  const stats = useMemo(() => {
+    const totalViagens = superData.length;
+    let containersCheio = 0;
+    let containersVazio = 0;
+    const containersPorMotorista: Record<string, number> = {};
+    const containersPorCavalo: Record<string, number> = {};
+    const viagensPorMes: Record<string, number> = {};
+
+    superData.forEach((item: any) => {
+      const viagem = item.viagem;
+      if (!viagem) return;
+
+      if (item.capacidade === 1) containersCheio++;
+      else containersVazio++;
+
+      const motoristaNome = viagem.motorista_nome || 'Desconhecido';
+      const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
+
+      containersPorMotorista[motoristaNome] = (containersPorMotorista[motoristaNome] || 0) + 1;
+      containersPorCavalo[veiculoPlaca] = (containersPorCavalo[veiculoPlaca] || 0) + 1;
+
+      if (viagem.data_hora_inicial) {
+        const mes = viagem.data_hora_inicial.substring(0, 7);
+        viagensPorMes[mes] = (viagensPorMes[mes] || 0) + 1;
+      }
+    });
+
+    return {
+      totalViagens,
+      containersCheio,
+      containersVazio,
+      containersPorMotorista: Object.entries(containersPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      containersPorCavalo: Object.entries(containersPorCavalo)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      viagensPorMes: Object.entries(viagensPorMes)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    };
+  }, [superData]);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32" />
+          <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPER TERMINAIS</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação portuária</p>
+      </div>
+      
+      <div className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <HorizontalBarChart 
+                title="Containers por Motorista" 
+                data={stats.containersPorMotorista}
+                color="bg-purple-500 dark:bg-purple-600"
+              />
+              <HorizontalBarChart 
+                title="Containers por Cavalo" 
+                data={stats.containersPorCavalo}
+                color="bg-purple-500 dark:bg-purple-600"
+              />
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Volume de Viagens - Super Terminais por Ano e Mês</h4>
+              {stats.viagensPorMes.length > 0 ? (
+                <div className="flex items-end gap-2 h-32 overflow-x-auto pb-2">
+                  {stats.viagensPorMes.map((item, index) => {
+                    const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                    const heightPercent = (item.value / maxVal) * 100;
+                    return (
+                      <div key={index} className="flex flex-col items-center min-w-[60px]">
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
+                        <div 
+                          className="w-12 bg-purple-500 dark:bg-purple-600 rounded-t"
+                          style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                        />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+              )}
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <StatCard label="Volume de Viagens" value={stats.totalViagens} color="text-purple-600 dark:text-purple-400" />
+            <StatCard label="Containers Cheio" value={stats.containersCheio} color="text-purple-600 dark:text-purple-400" />
+            <StatCard label="Containers Vazio" value={stats.containersVazio} color="text-purple-600 dark:text-purple-400" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Dashboard CESARI
+const CesariDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: cesariData = [], isLoading } = useQuery({
+    queryKey: ['cesari-dashboard', companyId],
+    queryFn: async () => {
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_cesari')
+        .select('*');
+      
+      if (opError) {
+        console.warn('Erro ao buscar dados CESARI:', opError);
+        return [];
+      }
+      
+      if (!opData || opData.length === 0) return [];
+      
+      const viagemIds = opData.map((op: any) => op.id_viagem).filter(Boolean);
+      if (viagemIds.length === 0) return [];
+      
+      const { data: viagensData } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, km_inicial, km_final, data_hora_inicial')
+        .in('id', viagemIds);
+      
+      const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
+      const veiculoIds = [...new Set((viagensData || []).map((v: any) => v.veiculo_id).filter(Boolean))];
+      
+      const [motoristasRes, veiculosRes] = await Promise.all([
+        motoristaIds.length > 0 ? supabase.from('motorista').select('motorista_id, nome').in('motorista_id', motoristaIds) : { data: [] },
+        veiculoIds.length > 0 ? supabase.from('veiculo').select('veiculo_id, placa').in('veiculo_id', veiculoIds) : { data: [] }
+      ]);
+      
+      const motoristasMap: Record<number, string> = {};
+      const veiculosMap: Record<number, string> = {};
+      (motoristasRes.data || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      (veiculosRes.data || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
+      
+      return opData.map((op: any) => {
+        const viagem = (viagensData || []).find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          viagem: viagem ? {
+            ...viagem,
+            motorista_nome: motoristasMap[viagem.motorista_id] || 'Desconhecido',
+            veiculo_placa: veiculosMap[viagem.veiculo_id] || 'Desconhecido'
+          } : null
+        };
+      });
+    },
+    enabled: !!companyId,
+  });
+
+  const stats = useMemo(() => {
+    const totalViagens = cesariData.length;
+    let kmTotal = 0;
+    const kmPorMotorista: Record<string, number> = {};
+    const kmPorCavalo: Record<string, number> = {};
+    const viagensPorMes: Record<string, number> = {};
+
+    cesariData.forEach((item: any) => {
+      const viagem = item.viagem;
+      if (!viagem) return;
+
+      const kmInicial = parseFloat(viagem.km_inicial) || 0;
+      const kmFinal = parseFloat(viagem.km_final) || 0;
+      const km = kmFinal - kmInicial;
+      if (km > 0) kmTotal += km;
+
+      const motoristaNome = viagem.motorista_nome || 'Desconhecido';
+      const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
+
+      kmPorMotorista[motoristaNome] = (kmPorMotorista[motoristaNome] || 0) + (km > 0 ? km : 0);
+      kmPorCavalo[veiculoPlaca] = (kmPorCavalo[veiculoPlaca] || 0) + (km > 0 ? km : 0);
+
+      if (viagem.data_hora_inicial) {
+        const mes = viagem.data_hora_inicial.substring(0, 7);
+        viagensPorMes[mes] = (viagensPorMes[mes] || 0) + 1;
+      }
+    });
+
+    return {
+      totalViagens,
+      kmTotal,
+      kmPorMotorista: Object.entries(kmPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      kmPorCavalo: Object.entries(kmPorCavalo)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      viagensPorMes: Object.entries(viagensPorMes)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    };
+  }, [cesariData]);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32" />
+          <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">CESARI</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+      </div>
+      
+      <div className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <HorizontalBarChart 
+                title="KM por Motorista" 
+                data={stats.kmPorMotorista}
+                color="bg-green-500 dark:bg-green-600"
+              />
+              <HorizontalBarChart 
+                title="KM por Cavalo" 
+                data={stats.kmPorCavalo}
+                color="bg-green-500 dark:bg-green-600"
+              />
+            </div>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens - CESARI por Ano e Mês</h4>
+              {stats.viagensPorMes.length > 0 ? (
+                <div className="flex items-end gap-2 h-32 overflow-x-auto pb-2">
+                  {stats.viagensPorMes.map((item, index) => {
+                    const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                    const heightPercent = (item.value / maxVal) * 100;
+                    return (
+                      <div key={index} className="flex flex-col items-center min-w-[60px]">
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
+                        <div 
+                          className="w-12 bg-green-500 dark:bg-green-600 rounded-t"
+                          style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                        />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+              )}
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-green-600 dark:text-green-400" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(2)} Mil` : stats.kmTotal} color="text-green-600 dark:text-green-400" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
