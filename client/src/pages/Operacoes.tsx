@@ -906,9 +906,10 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
       
       const { data: viagens, error } = await query;
       
-      if (error || !viagens) return [];
+      if (error || !viagens || viagens.length === 0) return [];
       
       // Se filtro por operação específica, filtrar viagens
+      let viagensFiltradas = viagens;
       if (selectedOperacao !== 'all') {
         const operacao = OPERACOES_TABELAS.find(op => op.nome === selectedOperacao);
         if (operacao) {
@@ -918,16 +919,20 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             .select('id_viagem')
             .in('id_viagem', viagemIds);
           
-          if (opData) {
+          if (opData && opData.length > 0) {
             const opViagemIds = new Set(opData.map((o: any) => o.id_viagem));
-            return viagens.filter((v: any) => opViagemIds.has(v.id));
+            viagensFiltradas = viagens.filter((v: any) => opViagemIds.has(v.id));
+          } else {
+            viagensFiltradas = [];
           }
         }
       }
       
+      if (viagensFiltradas.length === 0) return [];
+      
       // Enriquecer com nomes de motorista e veículo
-      const motoristaIds = [...new Set(viagens.map((v: any) => v.motorista_id).filter(Boolean))];
-      const veiculoIds = [...new Set(viagens.map((v: any) => v.veiculo_id).filter(Boolean))];
+      const motoristaIds = [...new Set(viagensFiltradas.map((v: any) => v.motorista_id).filter(Boolean))];
+      const veiculoIds = [...new Set(viagensFiltradas.map((v: any) => v.veiculo_id).filter(Boolean))];
       
       const [motoristasRes, veiculosRes] = await Promise.all([
         motoristaIds.length > 0 
@@ -943,13 +948,14 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
       (motoristasRes.data || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
       (veiculosRes.data || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
       
-      return viagens.map((v: any) => ({
+      return viagensFiltradas.map((v: any) => ({
         ...v,
         motorista_nome: motoristasMap[v.motorista_id] || '-',
         veiculo_placa: veiculosMap[v.veiculo_id] || '-'
       }));
     },
     enabled: !!companyId && !!statsModalOpen,
+    staleTime: 0,
   });
 
   const getModalTitle = () => {
