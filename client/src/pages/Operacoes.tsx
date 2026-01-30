@@ -1027,10 +1027,10 @@ const OperacoesDashboard = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsPeriodoExpanded(!isPeriodoExpanded)}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`w-10 h-10 rounded-lg transition-colors flex items-center justify-center ${
                   isPeriodoExpanded 
                     ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
