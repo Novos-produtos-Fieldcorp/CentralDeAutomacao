@@ -107,7 +107,7 @@ const OPERACOES_CONFIG: Record<string, { tabela: string; campos: { key: string; 
     tabela: 'operacao_superterminais',
     campos: [
       { key: 'embarque_desembarque', label: 'Embarque/Desembarque' },
-      { key: 'nome_container', label: 'Nome Container' },
+      { key: 'nome_navio', label: 'Nome Navio' },
       { key: 'capacidade', label: 'Capacidade' },
       { key: 'nr_container', label: 'Nº Container' },
       { key: 'ft_tablet', label: 'Foto Tablet' },
