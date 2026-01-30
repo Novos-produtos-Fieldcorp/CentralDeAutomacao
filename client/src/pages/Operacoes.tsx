@@ -68,12 +68,12 @@ const OPERACOES_CONFIG: Record<string, { tabela: string; campos: { key: string; 
       { key: 'tipo_viagem', label: 'Tipo Viagem' },
       { key: 'pernoite', label: 'Pernoite' },
       { key: 'dia_nao_util', label: 'Dia Não Útil' },
-      { key: 'v2_dt_hora', label: 'V2 Data/Hora' },
-      { key: 'v2_origem', label: 'V2 Origem' },
-      { key: 'v2_desitno', label: 'V2 Destino' },
-      { key: 'v2_capacidade', label: 'V2 Capacidade' },
-      { key: 'v2_nr_manifesto', label: 'V2 Nº Manifesto' },
-      { key: 'v2_ft_manifesto', label: 'V2 Foto Manifesto' },
+      { key: 'v2_dt_hora', label: '2ª Viagem Data/Hora' },
+      { key: 'v2_origem', label: '2ª Viagem Origem' },
+      { key: 'v2_destino', label: '2ª Viagem Destino' },
+      { key: 'v2_capacidade', label: '2ª Viagem Capacidade' },
+      { key: 'v2_nr_manifesto', label: '2ª Viagem Nº Manifesto' },
+      { key: 'v2_ft_manifesto', label: '2ª Viagem Foto Manifesto' },
     ]
   },
   'Mitsubishi': {
@@ -154,7 +154,8 @@ const translateValue = (key: string, value: any): { text: string; type: 'text' |
     return { text: value === 0 ? 'Prancha' : value === 1 ? 'Cegonha' : String(value), type: 'badge' };
   }
   if (key === 'capacidade' || key === 'v2_capacidade') {
-    return { text: value === 0 ? 'Vazio' : value === 1 ? 'Cheio' : String(value), type: 'badge' };
+    const capacidadeTexto = value === 0 ? 'Vazio' : value === 1 ? 'Cheio' : value === 2 ? 'Manobra' : String(value);
+    return { text: capacidadeTexto, type: 'badge' };
   }
   if (key === 'embarque_desembarque') {
     return { text: value === 0 ? 'Embarque' : value === 1 ? 'Desembarque' : String(value), type: 'badge' };
@@ -362,15 +363,17 @@ const ViagemDetailModal = ({
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <Field label="Data/Hora" value={dados.v2_dt_hora ? new Date(dados.v2_dt_hora).toLocaleString('pt-BR') : '-'} />
             <Field label="Origem" value={dados.v2_origem} />
-            <Field label="Destino" value={dados.v2_desitno} />
+            <Field label="Destino" value={dados.v2_destino} />
             <Field label="Capacidade" value={
               dados.v2_capacidade !== null && dados.v2_capacidade !== undefined ? (
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                   dados.v2_capacidade === 1 
                     ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                    : dados.v2_capacidade === 2
+                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
                 }`}>
-                  {dados.v2_capacidade === 1 ? 'Cheio' : 'Vazio'}
+                  {dados.v2_capacidade === 0 ? 'Vazio' : dados.v2_capacidade === 1 ? 'Cheio' : dados.v2_capacidade === 2 ? 'Manobra' : dados.v2_capacidade}
                 </span>
               ) : '-'
             } />
@@ -489,9 +492,11 @@ const ViagemDetailModal = ({
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                 dados.capacidade === 1 
                   ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                  : dados.capacidade === 2
+                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
               }`}>
-                {dados.capacidade === 1 ? 'Cheio' : 'Vazio'}
+                {dados.capacidade === 0 ? 'Vazio' : dados.capacidade === 1 ? 'Cheio' : dados.capacidade === 2 ? 'Manobra' : dados.capacidade}
               </span>
             ) : '-'
           } />
