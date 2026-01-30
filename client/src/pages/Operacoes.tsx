@@ -720,6 +720,7 @@ const OperacoesDashboard = () => {
   const [histogramaPeriodo, setHistogramaPeriodo] = useState<HistogramaPeriodo>('30d');
   const [histogramaDataInicio, setHistogramaDataInicio] = useState<string>('');
   const [histogramaDataFim, setHistogramaDataFim] = useState<string>('');
+  const [isPeriodoExpanded, setIsPeriodoExpanded] = useState(false);
 
   const { data: operacoes = [] } = useQuery<Operacao[]>({
     queryKey: ['operacoes', companyId],
@@ -983,39 +984,64 @@ const OperacoesDashboard = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-2 flex-wrap">
-              {PERIODOS_HISTOGRAMA.map((periodo) => (
-                <button
-                  key={periodo.id}
-                  onClick={() => setHistogramaPeriodo(periodo.id)}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                    histogramaPeriodo === periodo.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                  data-testid={`btn-periodo-${periodo.id}`}
-                >
-                  {periodo.label}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsPeriodoExpanded(!isPeriodoExpanded)}
+                className={`p-2 rounded-lg transition-colors ${
+                  isPeriodoExpanded 
+                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                title={isPeriodoExpanded ? 'Fechar seletor de período' : 'Abrir seletor de período'}
+                data-testid="btn-toggle-periodo"
+              >
+                <Calendar className="w-5 h-5" />
+              </button>
               
-              {histogramaPeriodo === 'custom' && (
-                <div className="flex items-center gap-2 ml-2">
-                  <input
-                    type="date"
-                    value={histogramaDataInicio}
-                    onChange={(e) => setHistogramaDataInicio(e.target.value)}
-                    className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    data-testid="input-histograma-data-inicio"
-                  />
-                  <span className="text-gray-400 text-sm">até</span>
-                  <input
-                    type="date"
-                    value={histogramaDataFim}
-                    onChange={(e) => setHistogramaDataFim(e.target.value)}
-                    className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    data-testid="input-histograma-data-fim"
-                  />
+              {!isPeriodoExpanded && (
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {histogramaPeriodo === 'custom' && histogramaDataInicio && histogramaDataFim
+                    ? `${histogramaDataInicio.split('-').reverse().join('/')} - ${histogramaDataFim.split('-').reverse().join('/')}`
+                    : periodoAtual?.label}
+                </span>
+              )}
+              
+              {isPeriodoExpanded && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {PERIODOS_HISTOGRAMA.map((periodo) => (
+                    <button
+                      key={periodo.id}
+                      onClick={() => setHistogramaPeriodo(periodo.id)}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                        histogramaPeriodo === periodo.id
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                      data-testid={`btn-periodo-${periodo.id}`}
+                    >
+                      {periodo.label}
+                    </button>
+                  ))}
+                  
+                  {histogramaPeriodo === 'custom' && (
+                    <div className="flex items-center gap-2 ml-2">
+                      <input
+                        type="date"
+                        value={histogramaDataInicio}
+                        onChange={(e) => setHistogramaDataInicio(e.target.value)}
+                        className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        data-testid="input-histograma-data-inicio"
+                      />
+                      <span className="text-gray-400 text-sm">até</span>
+                      <input
+                        type="date"
+                        value={histogramaDataFim}
+                        onChange={(e) => setHistogramaDataFim(e.target.value)}
+                        className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        data-testid="input-histograma-data-fim"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
