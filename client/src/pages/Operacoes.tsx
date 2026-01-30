@@ -729,7 +729,8 @@ const OperacoesDashboard = () => {
     queryFn: async () => {
       const { count, error } = await supabase
         .from('acompanhamento_viagem')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId);
       
       if (error) {
         console.warn('Tabela acompanhamento_viagem não acessível:', error);
@@ -741,13 +742,26 @@ const OperacoesDashboard = () => {
   });
 
   const { data: operacoesStats = [] } = useQuery({
-    queryKey: ['operacoes-stats'],
+    queryKey: ['operacoes-stats', companyId],
     queryFn: async () => {
+      // Primeiro buscar IDs de viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) {
+        return OPERACOES_TABELAS.map(op => ({ nome: op.nome, total: 0 }));
+      }
+      
+      const viagemIds = viagensEmpresa.map((v: any) => v.id);
+      
       const stats = await Promise.all(
         OPERACOES_TABELAS.map(async (op) => {
           const { count, error } = await supabase
             .from(op.tabela)
-            .select('*', { count: 'exact', head: true });
+            .select('*', { count: 'exact', head: true })
+            .in('id_viagem', viagemIds);
           
           return {
             nome: op.nome,
@@ -760,16 +774,28 @@ const OperacoesDashboard = () => {
     enabled: !!companyId,
   });
 
-  // Query para contar operações por tipo de dashboard (busca direta das tabelas de operação)
+  // Query para contar operações por tipo de dashboard (filtrado por company_id via viagens)
   const { data: dashboardCounts = { sada: 0, tegma: 0, superterminais: 0, cesari: 0, total: 0 } } = useQuery({
     queryKey: ['dashboard-counts', companyId],
     queryFn: async () => {
-      // Buscar contagens diretamente das tabelas de operação
+      // Buscar IDs de viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) {
+        return { sada: 0, tegma: 0, superterminais: 0, cesari: 0, total: 0 };
+      }
+      
+      const viagemIds = viagensEmpresa.map((v: any) => v.id);
+      
+      // Contar operações que pertencem às viagens da empresa
       const [sadaRes, tegmaRes, superRes, cesariRes] = await Promise.all([
-        supabase.from('operacao_sada').select('id', { count: 'exact', head: true }),
-        supabase.from('operacao_tegma').select('id', { count: 'exact', head: true }),
-        supabase.from('operacao_superterminais').select('id', { count: 'exact', head: true }),
-        supabase.from('operacao_cesari').select('id', { count: 'exact', head: true }),
+        supabase.from('operacao_sada').select('id', { count: 'exact', head: true }).in('id_viagem', viagemIds),
+        supabase.from('operacao_tegma').select('id', { count: 'exact', head: true }).in('id_viagem', viagemIds),
+        supabase.from('operacao_superterminais').select('id', { count: 'exact', head: true }).in('id_viagem', viagemIds),
+        supabase.from('operacao_cesari').select('id', { count: 'exact', head: true }).in('id_viagem', viagemIds),
       ]);
       
       const sada = sadaRes.count || 0;
@@ -798,6 +824,7 @@ const OperacoesDashboard = () => {
       const { data, error } = await supabase
         .from('acompanhamento_viagem')
         .select('id, data_hora_inicial')
+        .eq('company_id', companyId)
         .gte('data_hora_inicial', dataInicio.toISOString())
         .order('data_hora_inicial', { ascending: true });
       
@@ -1176,21 +1203,25 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
   const { data: sadaData = [], isLoading } = useQuery({
     queryKey: ['sada-dashboard', companyId],
     queryFn: async () => {
-      // Buscar operações SADA diretamente
+      // Primeiro buscar viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, km_inicial, km_final, janta, data_hora_inicial')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIdsEmpresa = viagensEmpresa.map((v: any) => v.id);
+      
+      // Buscar operações SADA que pertencem às viagens da empresa
       const { data: opData, error: opError } = await supabase
         .from('operacao_sada')
-        .select('*');
+        .select('*')
+        .in('id_viagem', viagemIdsEmpresa);
       
       if (opError || !opData || opData.length === 0) return [];
       
-      const viagemIds = opData.map((op: any) => op.id_viagem).filter(Boolean);
-      if (viagemIds.length === 0) return opData.map((op: any) => ({ ...op, viagem: null }));
-      
-      // Buscar viagens relacionadas
-      const { data: viagensData } = await supabase
-        .from('acompanhamento_viagem')
-        .select('id, motorista_id, veiculo_id, km_inicial, km_final, janta, data_hora_inicial')
-        .in('id', viagemIds);
+      const viagensData = viagensEmpresa;
       
       // Buscar motoristas
       const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
@@ -1359,21 +1390,25 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
   const { data: tegmaData = [], isLoading } = useQuery({
     queryKey: ['tegma-dashboard', companyId],
     queryFn: async () => {
-      // Buscar operações TEGMA diretamente
+      // Primeiro buscar viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, km_inicial, km_final, janta, data_hora_inicial')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIdsEmpresa = viagensEmpresa.map((v: any) => v.id);
+      
+      // Buscar operações TEGMA que pertencem às viagens da empresa
       const { data: opData, error: opError } = await supabase
         .from('operacao_tegma')
-        .select('*');
+        .select('*')
+        .in('id_viagem', viagemIdsEmpresa);
       
       if (opError || !opData || opData.length === 0) return [];
       
-      const viagemIds = opData.map((op: any) => op.id_viagem).filter(Boolean);
-      if (viagemIds.length === 0) return opData.map((op: any) => ({ ...op, viagem: null }));
-      
-      // Buscar viagens relacionadas
-      const { data: viagensData } = await supabase
-        .from('acompanhamento_viagem')
-        .select('id, motorista_id, veiculo_id, km_inicial, km_final, janta, data_hora_inicial')
-        .in('id', viagemIds);
+      const viagensData = viagensEmpresa;
       
       // Buscar motoristas
       const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
@@ -1541,21 +1576,25 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
   const { data: superData = [], isLoading } = useQuery({
     queryKey: ['superterminais-dashboard', companyId],
     queryFn: async () => {
-      // Buscar operações SUPERTERMINAIS diretamente
+      // Primeiro buscar viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, data_hora_inicial')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIdsEmpresa = viagensEmpresa.map((v: any) => v.id);
+      
+      // Buscar operações SUPERTERMINAIS que pertencem às viagens da empresa
       const { data: opData, error: opError } = await supabase
         .from('operacao_superterminais')
-        .select('*');
+        .select('*')
+        .in('id_viagem', viagemIdsEmpresa);
       
       if (opError || !opData || opData.length === 0) return [];
       
-      const viagemIds = opData.map((op: any) => op.id_viagem).filter(Boolean);
-      if (viagemIds.length === 0) return opData.map((op: any) => ({ ...op, viagem: null }));
-      
-      // Buscar viagens relacionadas
-      const { data: viagensData } = await supabase
-        .from('acompanhamento_viagem')
-        .select('id, motorista_id, veiculo_id, data_hora_inicial')
-        .in('id', viagemIds);
+      const viagensData = viagensEmpresa;
       
       // Buscar motoristas
       const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
@@ -1710,21 +1749,25 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
   const { data: cesariData = [], isLoading } = useQuery({
     queryKey: ['cesari-dashboard', companyId],
     queryFn: async () => {
-      // Buscar operações CESARI diretamente
+      // Primeiro buscar viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, km_inicial, km_final, data_hora_inicial')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIdsEmpresa = viagensEmpresa.map((v: any) => v.id);
+      
+      // Buscar operações CESARI que pertencem às viagens da empresa
       const { data: opData, error: opError } = await supabase
         .from('operacao_cesari')
-        .select('*');
+        .select('*')
+        .in('id_viagem', viagemIdsEmpresa);
       
       if (opError || !opData || opData.length === 0) return [];
       
-      const viagemIds = opData.map((op: any) => op.id_viagem).filter(Boolean);
-      if (viagemIds.length === 0) return opData.map((op: any) => ({ ...op, viagem: null }));
-      
-      // Buscar viagens relacionadas
-      const { data: viagensData } = await supabase
-        .from('acompanhamento_viagem')
-        .select('id, motorista_id, veiculo_id, km_inicial, km_final, data_hora_inicial')
-        .in('id', viagemIds);
+      const viagensData = viagensEmpresa;
       
       // Buscar motoristas
       const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
@@ -1927,6 +1970,7 @@ const OperacoesViagens = () => {
       let query = supabase
         .from('acompanhamento_viagem')
         .select('*')
+        .eq('company_id', companyId)
         .order('data_hora_inicial', { ascending: false })
         .limit(500);
 
