@@ -420,7 +420,8 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   const renderEditablePhotos = () => {
     if (!checklist || checklist.id_tipo_checklist !== 1) return null;
     
-    const photoFields = [
+    // Fotos obrigatórias (sempre mostram)
+    const requiredPhotoFields = [
       { key: 'foto_hodometro', label: 'Hodômetro' },
       { key: 'foto_oleo', label: 'Óleo' },
       { key: 'foto_bateria', label: 'Bateria' },
@@ -429,15 +430,24 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       { key: 'foto_traseira', label: 'Traseira' },
       { key: 'foto_lateral_direita', label: 'Lateral Direita' },
       { key: 'foto_lateral_esquerda', label: 'Lateral Esquerda' },
+      { key: 'foto_estepe', label: 'Estepe' }
+    ];
+    
+    // Fotos opcionais (só mostram se existirem)
+    const optionalPhotoFields = [
       { key: 'foto_pneu_dianteiro_direito', label: 'Pneu Dianteiro Direito' },
       { key: 'foto_pneu_dianteiro_esquerdo', label: 'Pneu Dianteiro Esquerdo' },
       { key: 'foto_pneu_traseiro_direito', label: 'Pneu Traseiro Direito' },
       { key: 'foto_pneu_traseiro_esquerdo', label: 'Pneu Traseiro Esquerdo' },
       { key: 'foto_macaco', label: 'Macaco' },
       { key: 'foto_chavederoda', label: 'Chave de Roda' },
-      { key: 'foto_triangulo', label: 'Triângulo' },
-      { key: 'foto_estepe', label: 'Estepe' }
+      { key: 'foto_triangulo', label: 'Triângulo' }
     ];
+    
+    // Filtrar fotos opcionais que existem
+    const visibleOptionalFields = optionalPhotoFields.filter(({ key }) => editPhotos[key]);
+    
+    const photoFields = [...requiredPhotoFields, ...visibleOptionalFields];
     
     return (
       <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
