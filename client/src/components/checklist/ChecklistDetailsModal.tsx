@@ -428,7 +428,15 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       { key: 'foto_dianteira', label: 'Dianteira' },
       { key: 'foto_traseira', label: 'Traseira' },
       { key: 'foto_lateral_direita', label: 'Lateral Direita' },
-      { key: 'foto_lateral_esquerda', label: 'Lateral Esquerda' }
+      { key: 'foto_lateral_esquerda', label: 'Lateral Esquerda' },
+      { key: 'foto_pneu_dianteiro_direito', label: 'Pneu Dianteiro Direito' },
+      { key: 'foto_pneu_dianteiro_esquerdo', label: 'Pneu Dianteiro Esquerdo' },
+      { key: 'foto_pneu_traseiro_direito', label: 'Pneu Traseiro Direito' },
+      { key: 'foto_pneu_traseiro_esquerdo', label: 'Pneu Traseiro Esquerdo' },
+      { key: 'foto_macaco', label: 'Macaco' },
+      { key: 'foto_chavederoda', label: 'Chave de Roda' },
+      { key: 'foto_triangulo', label: 'Triângulo' },
+      { key: 'foto_estepe', label: 'Estepe' }
     ];
     
     return (
