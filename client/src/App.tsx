@@ -28,6 +28,7 @@ import TagsAdmin from "./pages/TagsAdmin";
 import Comprovantes from "./pages/Comprovantes";
 import Vagas from "./pages/Vagas";
 import ComprovRota from "./pages/ComprovRota";
+import Operacoes from "./pages/Operacoes";
 
 const AppRoutes = () => {
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -97,6 +98,10 @@ const AppRoutes = () => {
                 <Route
                   path="/vagas/*"
                   element={<Vagas />}
+                />
+                <Route
+                  path="/operacoes/*"
+                  element={<Operacoes />}
                 />
               </Routes>
               <Version />

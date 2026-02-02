@@ -1,0 +1,45 @@
+create table public.motorista (
+  motorista_id bigserial not null,
+  cpf text null,
+  dt_nascimento date null,
+  genero text null,
+  telefone numeric null,
+  email text null,
+  funcao text null,
+  nome text null,
+  origem_usuario text null,
+  st_cadastro text null default 'Cadastrado'::text,
+  autorizacao_lgpd text null,
+  company_id bigint null,
+  data_cadastro date null,
+  cliente_id bigint null,
+  conversation_id bigint null,
+  ativo boolean not null default true,
+  foto_whatsapp text null,
+  plataforma_atuacao text null,
+  constraint motorista_pk primary key (motorista_id),
+  constraint motorista_cliente_id_fkey foreign KEY (cliente_id) references cliente (cliente_id) on update CASCADE on delete CASCADE,
+  constraint motorista_company_id_fkey foreign KEY (company_id) references company (company_id) on update CASCADE on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_motorista_cliente on public.motorista using btree (cliente_id) TABLESPACE pg_default;
+
+create index IF not exists idx_motorista_cliente_id on public.motorista using btree (cliente_id) TABLESPACE pg_default;
+
+create index IF not exists idx_motorista_company_funcao on public.motorista using btree (company_id, funcao) TABLESPACE pg_default;
+
+create index IF not exists idx_motorista_company_status on public.motorista using btree (company_id, st_cadastro) TABLESPACE pg_default;
+
+create index IF not exists idx_motorista_cpf on public.motorista using btree (cpf) TABLESPACE pg_default;
+
+create index IF not exists idx_motorista_data_cadastro on public.motorista using btree (data_cadastro desc) TABLESPACE pg_default;
+
+create index IF not exists idx_motorista_data_cadastro_desc on public.motorista using btree (data_cadastro desc) TABLESPACE pg_default;
+
+create index IF not exists idx_motorista_nome on public.motorista using btree (nome) TABLESPACE pg_default;
+
+create index IF not exists idx_motorista_nome_lower on public.motorista using btree (lower(nome)) TABLESPACE pg_default;
+
+create index IF not exists idx_motorista_st_cadastro on public.motorista using btree (st_cadastro) TABLESPACE pg_default;
+
+create index IF not exists idx_motorista_telefone on public.motorista using btree (telefone) TABLESPACE pg_default;
