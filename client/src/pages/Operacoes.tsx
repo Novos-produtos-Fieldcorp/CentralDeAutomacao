@@ -1599,7 +1599,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
       // Primeiro buscar viagens da empresa
       const { data: viagensEmpresa } = await supabase
         .from('acompanhamento_viagem')
-        .select('id, motorista_id, veiculo_id, km_inicial, km_final, janta, data_hora_inicial')
+        .select('id, motorista_id, veiculo_id, km_rodado, janta, data_hora_inicial')
         .eq('company_id', companyId);
       
       if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
@@ -1665,9 +1665,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
       const viagem = item.viagem;
       if (!viagem) return;
 
-      const kmInicial = parseFloat(viagem.km_inicial) || 0;
-      const kmFinal = parseFloat(viagem.km_final) || 0;
-      const km = kmFinal - kmInicial;
+      const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
       if (viagem.janta) volumeJantas++;
 
@@ -1786,7 +1784,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
       // Primeiro buscar viagens da empresa
       const { data: viagensEmpresa } = await supabase
         .from('acompanhamento_viagem')
-        .select('id, motorista_id, veiculo_id, km_inicial, km_final, janta, data_hora_inicial')
+        .select('id, motorista_id, veiculo_id, km_rodado, janta, data_hora_inicial')
         .eq('company_id', companyId);
       
       if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
@@ -1851,9 +1849,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
       const viagem = item.viagem;
       if (!viagem) return;
 
-      const kmInicial = parseFloat(viagem.km_inicial) || 0;
-      const kmFinal = parseFloat(viagem.km_final) || 0;
-      const km = kmFinal - kmInicial;
+      const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
       if (viagem.janta) volumeJantas++;
 
@@ -2145,7 +2141,7 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
       // Primeiro buscar viagens da empresa
       const { data: viagensEmpresa } = await supabase
         .from('acompanhamento_viagem')
-        .select('id, motorista_id, veiculo_id, km_inicial, km_final, data_hora_inicial')
+        .select('id, motorista_id, veiculo_id, km_rodado, data_hora_inicial')
         .eq('company_id', companyId);
       
       if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
@@ -2208,9 +2204,7 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
       const viagem = item.viagem;
       if (!viagem) return;
 
-      const kmInicial = parseFloat(viagem.km_inicial) || 0;
-      const kmFinal = parseFloat(viagem.km_final) || 0;
-      const km = kmFinal - kmInicial;
+      const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
 
       const motoristaNome = viagem.motorista_nome || 'Desconhecido';
