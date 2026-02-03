@@ -261,7 +261,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       pollingIntervalRef.current = setInterval(async () => {
         try {
           const response = await api.get(
-            `/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`,
+            `/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`,
             {
               params: {
                 page: 1,
@@ -331,7 +331,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             Accept: "application/json",
           },
         });
-        const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
+        const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
         
         // Verificar se há erro de autenticação
         if (response.data?.error === "WiseApp authentication failed") {
@@ -415,7 +415,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         },
       });
 
-      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
+      const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
       if (response.data?.payload) {
         setInboxes(response.data.payload);
 
@@ -489,7 +489,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       });
 
       const contactResponse = await api.get(
-        `/api/v1/accounts/${accountId}/contacts/${contactId}`,
+        `/v1/accounts/${accountId}/contacts/${contactId}`,
       );
 
       if (contactResponse.data) {
@@ -531,14 +531,14 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       });
 
       const conversationsResponse = await api.get(
-        `/api/v1/accounts/${accountId}/contacts/${contactId}/conversations`,
+        `/v1/accounts/${accountId}/contacts/${contactId}/conversations`,
       );
 
       if (conversationsResponse.data?.payload) {
         const conversations = await Promise.all(
           conversationsResponse.data.payload.map(async (conv: any) => {
             const inboxResponse = await api.get(
-              `/api/v1/accounts/${accountId}/inboxes/${conv.inbox_id}`,
+              `/v1/accounts/${accountId}/inboxes/${conv.inbox_id}`,
             );
             const inbox = inboxResponse.data;
 
@@ -621,7 +621,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         let contactToUse: Contact | undefined;
         try {
           const searchResponse = await api.get(
-            `/api/v1/accounts/${accountId}/contacts/search`,
+            `/v1/accounts/${accountId}/contacts/search`,
             {
               params: {
                 q: digitsOnly,
@@ -646,7 +646,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           
           try {
             const newContactResponse = await api.post(
-              `/api/v1/accounts/${accountId}/contacts`,
+              `/v1/accounts/${accountId}/contacts`,
               {
                 inbox_id: selectedInboxId,
                 name: contactNameToUse,
@@ -672,7 +672,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           try {
             // Buscar conversas existentes para o contato e inbox
             const conversationsResponse = await api.get(
-              `/api/v1/accounts/${accountId}/contacts/${contactToUse.id}/conversations`,
+              `/v1/accounts/${accountId}/contacts/${contactToUse.id}/conversations`,
             );
             let existingConversation = null;
             if (conversationsResponse.data?.payload) {
@@ -719,7 +719,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
             } else {
               // Se não existe, criar nova conversa
               const newConversationResponse = await api.post(
-                `/api/v1/accounts/${accountId}/conversations`,
+                `/v1/accounts/${accountId}/conversations`,
                 {
                   inbox_id: inboxId.toString(),
                   contact_id: contactToUse.id.toString(),
@@ -799,7 +799,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       });
 
       const response = await api.get(
-        `/api/v1/accounts/${accountId}/conversations/${conversationId}/messages`,
+        `/v1/accounts/${accountId}/conversations/${conversationId}/messages`,
         {
           params: {
             page,
@@ -964,7 +964,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
   const handleNewConversation = async () => {
     try {
       const response = await api.post(
-        `/api/v1/accounts/${accountId}/conversations`,
+        `/v1/accounts/${accountId}/conversations`,
         {
           inbox_id: selectedInboxId,
           contact_id: null,
@@ -999,7 +999,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
     try {
       setSelectedInboxId(inboxId);
       const response = await api.get(
-        `/api/v1/accounts/${accountId}/inboxes/${inboxId}`,
+        `/v1/accounts/${accountId}/inboxes/${inboxId}`,
       );
 
       const conversation: Conversation = {
@@ -1058,7 +1058,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
         }
 
         const response = await api.post(
-          `/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`,
+          `/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`,
           {
             content: textData,
             message_type: "outgoing",
@@ -1115,7 +1115,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
       });
 
       const response = await api.post(
-        `/api/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`,
+        `/v1/accounts/${accountId}/conversations/${activeConversation.id}/messages`,
         formData,
         {
           headers: {
@@ -1293,7 +1293,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
 
       // Buscar apenas as conversas do contato específico
       const conversationsResponse = await api.get(
-        `/api/v1/accounts/${accountId}/contacts/${contact.id}/conversations`,
+        `/v1/accounts/${accountId}/contacts/${contact.id}/conversations`,
       );
 
       if (conversationsResponse.data?.payload) {
@@ -1314,7 +1314,7 @@ const FloatingChat: React.FC<FloatingChatProps> = ({
           inboxConversations.map(async (conv: any) => {
             try {
               const messagesResponse = await api.get(
-                `/api/v1/accounts/${accountId}/conversations/${conv.id}/messages`,
+                `/v1/accounts/${accountId}/conversations/${conv.id}/messages`,
                 {
                   params: {
                     page: 1,

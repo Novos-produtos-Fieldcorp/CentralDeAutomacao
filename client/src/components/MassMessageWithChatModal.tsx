@@ -43,7 +43,7 @@ const MassMessageWithChatModal: React.FC<MassMessageWithChatModalProps> = ({
         },
       });
 
-      const response = await api.get(`/api/v1/accounts/${accountId}/inboxes`);
+      const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
       
       if (response.data && response.data.payload && response.data.payload.length > 0) {
         const allInboxes = response.data.payload.map((inbox: any) => ({

@@ -52,9 +52,10 @@ const ResumosGrupo = () => {
   const { accountId: hookAccountId, companyId } = useCurrentAccount();
   const effectiveCompanyId = companyId || legacyCompanyId;
   
-  // Use exact same logic as FloatingChat - URL param + localStorage only (no context dependency)
+  // AccountId: URL/localStorage primeiro (como FloatingChat), depois hook para carregar inboxes ao criar/editar grupo
   const accountId = searchParams.get("account_id") 
-    || (typeof localStorage !== 'undefined' ? localStorage.getItem("account_id") : null);
+    || (typeof localStorage !== 'undefined' ? localStorage.getItem("account_id") : null)
+    || hookAccountId || null;
   const [loading, setLoading] = useState(true);
   const [grupos, setGrupos] = useState<GrupoResumo[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
