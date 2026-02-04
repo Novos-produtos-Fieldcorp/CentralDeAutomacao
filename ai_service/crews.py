@@ -14,47 +14,58 @@ def create_group_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
         - account_id: {account_id}
         - api_key: {api_key}
         
+        REGRA IMPORTANTE: Baseie seu resumo APENAS nas mensagens REAIS que voce encontrar.
+        NAO invente informacoes. NAO use textos genericos como "suporte tecnico", "duvidas sobre produtos" se nao estiverem nas mensagens.
+        
         O resumo deve conter:
-        1. Visao geral do periodo (quantidade de conversas, status)
-        2. Principais assuntos discutidos
-        3. Problemas ou reclamacoes identificadas
-        4. Solicitacoes pendentes ou urgentes
-        5. Tom geral das conversas (positivo, neutro, negativo)
+        1. Quantidade de mensagens encontradas hoje
+        2. Principais assuntos ESPECIFICOS discutidos (cite nomes, termos, temas das mensagens reais)
+        3. Problemas ou reclamacoes ESPECIFICAS identificadas nas mensagens
+        4. Solicitacoes pendentes ou urgentes mencionadas
+        5. Tom geral das conversas baseado no conteudo real
         
-        Seja objetivo e direto. O resumo sera enviado para gestores.""",
-        expected_output="""Um resumo executivo estruturado contendo:
+        Se nao houver mensagens hoje, diga claramente "Nenhuma mensagem encontrada hoje neste grupo."
         
-        RESUMO DO GRUPO: [nome do grupo]
+        Seja objetivo e direto. Use dados REAIS das mensagens.""",
+        expected_output="""Um resumo executivo baseado nas mensagens REAIS, contendo:
         
-        Estatisticas:
-        - Total de conversas: X
-        - Abertas: X | Resolvidas: X | Pendentes: X
+        RESUMO DO DIA - [nome do grupo]
         
-        Principais Assuntos:
-        [lista dos principais topicos]
+        Mensagens: X mensagens analisadas
         
-        Atencao Necessaria:
-        [problemas ou urgencias identificadas]
+        Assuntos Discutidos:
+        [lista dos topicos REAIS mencionados nas mensagens]
+        
+        Pontos de Atencao:
+        [problemas ou urgencias REAIS identificadas]
         
         Observacoes:
-        [insights relevantes]""",
+        [insights baseados no conteudo real]""",
         agent=analyst
     )
     
     insights_task = Task(
-        description=f"""Com base nas informacoes do grupo "{group_name}", identifique insights importantes.
+        description=f"""Com base nas mensagens REAIS do grupo "{group_name}", extraia insights ESPECIFICOS do que foi discutido.
         
         Use os seguintes parametros:
         - inbox_id: {inbox_id}
         - account_id: {account_id}
         - api_key: {api_key}
         
-        Foque em:
-        1. Padroes de comportamento dos clientes
-        2. Horarios de maior demanda
-        3. Tipos de solicitacoes mais frequentes
-        4. Oportunidades de melhoria no atendimento""",
-        expected_output="""Insights formatados de forma clara e acionavel.""",
+        IMPORTANTE: Analise APENAS o conteudo REAL das mensagens. NAO use textos genericos ou exemplos.
+        
+        Para cada topico abaixo, extraia informacoes CONCRETAS das conversas:
+        
+        1. Comportamento observado: Descreva especificamente como os participantes se comportaram nas conversas de hoje (tom, urgencia, tipos de perguntas feitas)
+        
+        2. Horarios de atividade: Mencione os horarios em que houve mais mensagens baseado nos timestamps reais das conversas
+        
+        3. Assuntos discutidos: Liste os topicos ESPECIFICOS mencionados nas conversas (nomes de produtos, servicos, problemas concretos, etc)
+        
+        4. Acoes recomendadas: Sugira acoes ESPECIFICAS baseadas nos problemas ou solicitacoes reais identificadas nas mensagens
+        
+        Se nao houver informacao suficiente para algum topico, diga "Sem dados suficientes para este periodo" em vez de inventar informacoes genericas.""",
+        expected_output="""Insights ESPECIFICOS extraidos das conversas reais, sem textos genericos ou exemplos inventados.""",
         agent=insights,
         context=[summary_task]
     )
