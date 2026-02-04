@@ -1151,7 +1151,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
             <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-              <Map className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <Map className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.total || 0}</p>
@@ -1161,7 +1161,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Operações</span>
             <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-              <LayoutDashboard className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <LayoutDashboard className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{OPERACOES_TABELAS.length}</p>
@@ -1175,7 +1175,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Hoje</span>
             <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-              <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.hoje || 0}</p>
@@ -1189,7 +1189,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Em Andamento</span>
             <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-              <RefreshCw className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.emAndamento || 0}</p>
@@ -1203,7 +1203,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Concluídas</span>
             <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-              <Check className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <Check className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.concluidas || 0}</p>
@@ -1431,10 +1431,10 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                           <div 
                             className={`w-full max-w-[20px] rounded-t-sm transition-all duration-300 ${
                               isToday 
-                                ? 'bg-gray-900 dark:bg-white' 
+                                ? 'bg-blue-700 dark:bg-blue-300' 
                                 : isWeekend 
-                                  ? 'bg-gray-300 dark:bg-gray-600' 
-                                  : 'bg-gray-500 dark:bg-gray-400'
+                                  ? 'bg-blue-300 dark:bg-blue-700' 
+                                  : 'bg-blue-500 dark:bg-blue-400'
                             } group-hover:opacity-70`}
                             style={{ height: `${Math.max(heightPercent, dia.total > 0 ? 8 : 2)}%` }}
                           />
@@ -1460,15 +1460,15 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                 
                 <div className="flex items-center justify-center gap-6 pt-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-gray-500 dark:bg-gray-400" />
+                    <div className="w-3 h-3 rounded-sm bg-blue-500 dark:bg-blue-400" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Dias úteis</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-gray-300 dark:bg-gray-600" />
+                    <div className="w-3 h-3 rounded-sm bg-blue-300 dark:bg-blue-700" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Fim de semana</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-gray-900 dark:bg-white" />
+                    <div className="w-3 h-3 rounded-sm bg-blue-700 dark:bg-blue-300" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Hoje</span>
                   </div>
                 </div>
@@ -1709,17 +1709,17 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-gray-600 dark:bg-gray-400"
+                color="bg-blue-600 dark:bg-blue-400"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-gray-500 dark:bg-gray-500"
+                color="bg-blue-500 dark:bg-blue-500"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-gray-400 dark:bg-gray-600"
+                color="bg-blue-400 dark:bg-blue-600"
               />
             </div>
             
@@ -1734,7 +1734,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
                       <div key={index} className="flex flex-col items-center min-w-[60px]">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
                         <div 
-                          className="w-12 bg-gray-600 dark:bg-gray-400 rounded-t"
+                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
                           style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
@@ -1898,17 +1898,17 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-gray-600 dark:bg-gray-400"
+                color="bg-blue-600 dark:bg-blue-400"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-gray-600 dark:bg-gray-400"
+                color="bg-blue-500 dark:bg-blue-500"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-gray-600 dark:bg-gray-400"
+                color="bg-blue-400 dark:bg-blue-600"
               />
             </div>
             
@@ -1923,7 +1923,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
                       <div key={index} className="flex flex-col items-center min-w-[60px]">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
                         <div 
-                          className="w-12 bg-gray-600 dark:bg-gray-400 rounded-t"
+                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
                           style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
@@ -2081,12 +2081,12 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="Containers por Motorista" 
                 data={stats.containersPorMotorista}
-                color="bg-gray-600 dark:bg-gray-400"
+                color="bg-blue-600 dark:bg-blue-400"
               />
               <HorizontalBarChart 
                 title="Containers por Cavalo" 
                 data={stats.containersPorCavalo}
-                color="bg-gray-600 dark:bg-gray-400"
+                color="bg-blue-500 dark:bg-blue-500"
               />
             </div>
             
@@ -2101,7 +2101,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
                       <div key={index} className="flex flex-col items-center min-w-[60px]">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
                         <div 
-                          className="w-12 bg-gray-600 dark:bg-gray-400 rounded-t"
+                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
                           style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
@@ -2257,12 +2257,12 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-gray-600 dark:bg-gray-400"
+                color="bg-blue-600 dark:bg-blue-400"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-gray-600 dark:bg-gray-400"
+                color="bg-blue-500 dark:bg-blue-500"
               />
             </div>
             
@@ -2277,7 +2277,7 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
                       <div key={index} className="flex flex-col items-center min-w-[60px]">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
                         <div 
-                          className="w-12 bg-gray-600 dark:bg-gray-400 rounded-t"
+                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
                           style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
