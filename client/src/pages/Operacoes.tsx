@@ -2760,6 +2760,7 @@ interface FaturamentoSada {
 // Componente Financeiro - Lista de viagens com cálculo de faturamento
 const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
+  const [filtroPeriodo, setFiltroPeriodo] = useState<'15' | '30' | 'all'>('30');
 
   // Query para buscar os preços atuais da SADA
   const { data: precosSada } = useQuery({
@@ -3007,16 +3008,67 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       );
     }
 
+    // Filtrar viagens por período
+    const agora = new Date();
+    const viagensFiltradas = viagensSada.filter((v: any) => {
+      if (filtroPeriodo === 'all') return true;
+      if (!v.data_viagem) return false;
+      const dataViagem = new Date(v.data_viagem);
+      const diasAtras = filtroPeriodo === '15' ? 15 : 30;
+      const dataLimite = new Date(agora.getTime() - diasAtras * 24 * 60 * 60 * 1000);
+      return dataViagem >= dataLimite;
+    });
+
     // Calcular totais
     let totalFrete = 0;
     let totalComissao = 0;
-    viagensSada.forEach((v: any) => {
+    viagensFiltradas.forEach((v: any) => {
       totalFrete += calcularValorFrete(v.modelo, v.qtd_carros);
       totalComissao += calcularComissao(v.tipo_carreta, v.modelo, v.qtd_carros);
     });
 
     return (
       <div className="space-y-4">
+        {/* Filtro de período */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500 dark:text-gray-400">Período:</span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setFiltroPeriodo('15')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                filtroPeriodo === '15'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              data-testid="filter-15-days"
+            >
+              15 dias
+            </button>
+            <button
+              onClick={() => setFiltroPeriodo('30')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                filtroPeriodo === '30'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              data-testid="filter-30-days"
+            >
+              30 dias
+            </button>
+            <button
+              onClick={() => setFiltroPeriodo('all')}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                filtroPeriodo === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              data-testid="filter-all-days"
+            >
+              Todos
+            </button>
+          </div>
+        </div>
+
         {/* Cards de resumo */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
@@ -3029,7 +3081,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
           </div>
           <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
             <p className="text-sm text-purple-600 dark:text-purple-400">Total Viagens</p>
-            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{viagensSada.length}</p>
+            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{viagensFiltradas.length}</p>
           </div>
         </div>
 
@@ -3048,7 +3100,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-              {viagensSada.map((viagem: any) => {
+              {viagensFiltradas.map((viagem: any) => {
                 const valorFrete = calcularValorFrete(viagem.modelo, viagem.qtd_carros);
                 const comissao = calcularComissao(viagem.tipo_carreta, viagem.modelo, viagem.qtd_carros);
                 const tipoCarreta = viagem.tipo_carreta === 0 ? 'Prancha' : viagem.tipo_carreta === 1 ? 'Cegonha' : '-';
