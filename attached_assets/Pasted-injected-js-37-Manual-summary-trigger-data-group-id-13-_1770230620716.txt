@@ -1,0 +1,44 @@
+injected.js:37 Manual summary trigger data: {group_id: 13, company_id: 2, account_id: 1, inbox_id: '211', has_api_key: true}
+injected.js:37 AI Summary error: litellm.BadRequestError: GroqException - {"error":{"message":"The model `llama-3.1-70b-versatile` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.","type":"invalid_request_error","code":"model_decommissioned"}}
+
+(anonymous) @ injected.js:37
+handleSendManualSummary @ ResumosGrupo.tsx:529
+await in handleSendManualSummary
+onClick @ ResumosGrupo.tsx:1014
+callCallback2 @ chunk-NFC5BX5N.js?v=d94cdbd3:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=d94cdbd3:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=d94cdbd3:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=d94cdbd3:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=d94cdbd3:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=d94cdbd3:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=d94cdbd3:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=d94cdbd3:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=d94cdbd3:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=d94cdbd3:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=d94cdbd3:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=d94cdbd3:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=d94cdbd3:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=d94cdbd3:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=d94cdbd3:5449
+injected.js:37 Error sending manual summary: Error: litellm.BadRequestError: GroqException - {"error":{"message":"The model `llama-3.1-70b-versatile` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use instead.","type":"invalid_request_error","code":"model_decommissioned"}}
+
+    at handleSendManualSummary (ResumosGrupo.tsx:530:15)
+(anonymous) @ injected.js:37
+handleSendManualSummary @ ResumosGrupo.tsx:547
+await in handleSendManualSummary
+onClick @ ResumosGrupo.tsx:1014
+callCallback2 @ chunk-NFC5BX5N.js?v=d94cdbd3:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=d94cdbd3:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=d94cdbd3:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=d94cdbd3:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=d94cdbd3:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=d94cdbd3:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=d94cdbd3:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=d94cdbd3:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=d94cdbd3:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=d94cdbd3:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=d94cdbd3:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=d94cdbd3:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=d94cdbd3:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=d94cdbd3:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=d94cdbd3:5449

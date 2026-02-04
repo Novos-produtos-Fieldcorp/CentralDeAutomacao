@@ -7,7 +7,8 @@ from tools import buscar_mensagens_inbox, buscar_conversas_recentes
 def get_groq_llm():
     """Retorna o LLM configurado para Groq usando langchain_groq"""
     api_key = os.getenv("GROQ_API_KEY")
-    model = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")
+    # Usando llama-3.3-70b-versatile (modelo atual, llama-3.1 foi descontinuado)
+    model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
     
     # Adiciona prefixo groq/ para o LiteLLM reconhecer o provider
     return ChatGroq(
