@@ -4,7 +4,6 @@ from agents import create_group_summary_analyst, create_insights_analyst
 
 def create_group_summary_crew(inbox_id: str, account_id: str, api_key: str, group_name: str):
     analyst = create_group_summary_analyst()
-    insights = create_insights_analyst()
     
     summary_task = Task(
         description=f"""Analise as conversas do grupo "{group_name}" e gere um resumo executivo.
@@ -14,65 +13,35 @@ def create_group_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
         - account_id: {account_id}
         - api_key: {api_key}
         
-        REGRA IMPORTANTE: Baseie seu resumo APENAS nas mensagens REAIS que voce encontrar.
-        NAO invente informacoes. NAO use textos genericos como "suporte tecnico", "duvidas sobre produtos" se nao estiverem nas mensagens.
+        REGRAS IMPORTANTES:
+        1. Baseie seu resumo APENAS nas mensagens REAIS que voce encontrar
+        2. NAO invente informacoes ou use textos genericos
+        3. O titulo DEVE ser exatamente: Resumo do Grupo "{group_name}"
+        4. DEVE terminar com a frase: Este resumo foi gerado automaticamente pela IAzinha
         
-        O resumo deve conter:
-        1. Quantidade de mensagens encontradas hoje
-        2. Principais assuntos ESPECIFICOS discutidos (cite nomes, termos, temas das mensagens reais)
-        3. Problemas ou reclamacoes ESPECIFICAS identificadas nas mensagens
-        4. Solicitacoes pendentes ou urgentes mencionadas
-        5. Tom geral das conversas baseado no conteudo real
+        O resumo deve incluir:
+        - Quantidade de mensagens encontradas hoje
+        - Principais assuntos ESPECIFICOS discutidos (cite nomes, termos das mensagens reais)
+        - Problemas ou pendencias identificadas
+        - Tom geral das conversas
         
-        Se nao houver mensagens hoje, diga claramente "Nenhuma mensagem encontrada hoje neste grupo."
-        
-        Seja objetivo e direto. Use dados REAIS das mensagens.""",
-        expected_output="""Um resumo executivo baseado nas mensagens REAIS, contendo:
-        
-        RESUMO DO DIA - [nome do grupo]
-        
-        Mensagens: X mensagens analisadas
-        
-        Assuntos Discutidos:
-        [lista dos topicos REAIS mencionados nas mensagens]
-        
-        Pontos de Atencao:
-        [problemas ou urgencias REAIS identificadas]
-        
-        Observacoes:
-        [insights baseados no conteudo real]""",
+        Se nao houver mensagens hoje, responda apenas:
+        Resumo do Grupo "{group_name}"
+        Nenhuma mensagem encontrada hoje neste grupo.
+        Este resumo foi gerado automaticamente pela IAzinha""",
+        expected_output=f"""FORMATO OBRIGATORIO:
+
+Resumo do Grupo "{group_name}"
+
+[conteudo do resumo baseado nas mensagens reais]
+
+Este resumo foi gerado automaticamente pela IAzinha""",
         agent=analyst
     )
     
-    insights_task = Task(
-        description=f"""Com base nas mensagens REAIS do grupo "{group_name}", extraia insights ESPECIFICOS do que foi discutido.
-        
-        Use a ferramenta "Buscar Mensagens do Grupo" com os seguintes parametros:
-        - group_name: {group_name}
-        - account_id: {account_id}
-        - api_key: {api_key}
-        
-        IMPORTANTE: Analise APENAS o conteudo REAL das mensagens. NAO use textos genericos ou exemplos.
-        
-        Para cada topico abaixo, extraia informacoes CONCRETAS das conversas:
-        
-        1. Comportamento observado: Descreva especificamente como os participantes se comportaram nas conversas de hoje (tom, urgencia, tipos de perguntas feitas)
-        
-        2. Horarios de atividade: Mencione os horarios em que houve mais mensagens baseado nos timestamps reais das conversas
-        
-        3. Assuntos discutidos: Liste os topicos ESPECIFICOS mencionados nas conversas (nomes de produtos, servicos, problemas concretos, etc)
-        
-        4. Acoes recomendadas: Sugira acoes ESPECIFICAS baseadas nos problemas ou solicitacoes reais identificadas nas mensagens
-        
-        Se nao houver informacao suficiente para algum topico, diga "Sem dados suficientes para este periodo" em vez de inventar informacoes genericas.""",
-        expected_output="""Insights ESPECIFICOS extraidos das conversas reais, sem textos genericos ou exemplos inventados.""",
-        agent=insights,
-        context=[summary_task]
-    )
-    
     return Crew(
-        agents=[analyst, insights],
-        tasks=[summary_task, insights_task],
+        agents=[analyst],
+        tasks=[summary_task],
         verbose=True
     )
 
