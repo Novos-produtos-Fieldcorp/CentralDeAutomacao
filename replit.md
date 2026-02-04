@@ -72,12 +72,19 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **Port**: 8000 (internal, proxied through Express on port 5000)
 - **Endpoints**:
   - `POST /api/group-summary`: Generate AI summary for a group/inbox
+  - `POST /webhook/resumo-grupo`: Webhook compatibility endpoint
   - `GET /health`: Health check endpoint
 - **Agents**:
   - Group Summary Analyst: Analyzes conversations and generates executive summaries
   - Insights Analyst: Extracts insights and metrics from analyzed conversations
 - **Configuration**: Requires `GROQ_API_KEY` environment variable
 - **Integration**: Replaces previous n8n webhook integration for group summaries
+- **Features**:
+  - Optional inbox_id: Generates basic summary if inbox not configured
+  - Automatic summary delivery: Sends generated summary back to WiseApp group
+  - Group name matching: Uses group name to target correct conversation
+  - Response includes message_sent and send_error for delivery status monitoring
+- **Future Improvement**: Implement deterministic conversation targeting using group_id mapping
 
 ### Utilities & UI Enhancements
 - **Date Handling**: `date-fns`.
