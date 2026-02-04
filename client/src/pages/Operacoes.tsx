@@ -3117,77 +3117,94 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     });
 
     return (
-      <div className="space-y-4">
-        {/* Cards de resumo */}
+      <div className="space-y-6">
+        {/* Cards de resumo - Design monocromático */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-            <p className="text-sm text-green-600 dark:text-green-400">Total Frete</p>
-            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{formatCurrency(totalFrete)}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Frete</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalFrete)}</p>
           </div>
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-            <p className="text-sm text-blue-600 dark:text-blue-400">Total Comissões</p>
-            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{formatCurrency(totalComissao)}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Comissões</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalComissao)}</p>
           </div>
-          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
-            <p className="text-sm text-purple-600 dark:text-purple-400">Total Viagens</p>
-            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{viagensFiltradas.length}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{viagensFiltradas.length}</p>
           </div>
         </div>
 
-        {/* Tabela de viagens */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Modelo</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Qtd</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor Frete</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-              {viagensFiltradas.map((viagem: any) => {
-                const valorFrete = calcularValorFrete(viagem.modelo, viagem.qtd_carros);
-                const comissao = calcularComissao(viagem.tipo_carreta, viagem.modelo, viagem.qtd_carros);
-                const tipoCarreta = viagem.tipo_carreta === 0 ? 'Prancha' : viagem.tipo_carreta === 1 ? 'Cegonha' : '-';
-                
-                return (
-                  <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {formatDate(viagem.data_viagem)}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                      {viagem.motorista_nome}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                      {viagem.modelo || '-'}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                      {viagem.qtd_carros || '-'}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        viagem.tipo_carreta === 0 
-                          ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                      }`}>
-                        {tipoCarreta}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-green-600 dark:text-green-400">
-                      {formatCurrency(valorFrete)}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
-                      {formatCurrency(comissao)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        {/* Tabela de viagens - Layout limpo */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Modelo</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Qtd</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor Frete</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                {viagensFiltradas.map((viagem: any) => {
+                  const valorFrete = calcularValorFrete(viagem.modelo, viagem.qtd_carros);
+                  const comissao = calcularComissao(viagem.tipo_carreta, viagem.modelo, viagem.qtd_carros);
+                  const tipoCarreta = viagem.tipo_carreta === 0 ? 'Prancha' : viagem.tipo_carreta === 1 ? 'Cegonha' : '-';
+                  
+                  return (
+                    <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
+                        {formatDate(viagem.data_viagem)}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {viagem.motorista_nome}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {viagem.modelo || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 text-center">
+                        {viagem.qtd_carros || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm">
+                        <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
+                          viagem.tipo_carreta === 0 
+                            ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                            : 'bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100'
+                        }`}>
+                          {tipoCarreta}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white text-right">
+                        {formatCurrency(valorFrete)}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm font-medium text-gray-600 dark:text-gray-300 text-right">
+                        {formatCurrency(comissao)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );
@@ -3234,63 +3251,72 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     const totalComissao = viagensFiltradas.length * comissaoMotorista;
 
     return (
-      <div className="space-y-4">
-        {/* Cards de resumo */}
+      <div className="space-y-6">
+        {/* Cards de resumo - Design monocromático */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-            <p className="text-sm text-green-600 dark:text-green-400">Total Recebido</p>
-            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{formatCurrency(totalFrete)}</p>
-            <p className="text-xs text-green-500 dark:text-green-400 mt-1">{formatCurrency(valorViagem)}/viagem</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Recebido</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalFrete)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(valorViagem)} por viagem</p>
           </div>
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-            <p className="text-sm text-blue-600 dark:text-blue-400">Total Comissões</p>
-            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{formatCurrency(totalComissao)}</p>
-            <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">{formatCurrency(comissaoMotorista)}/viagem</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Comissões</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalComissao)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(comissaoMotorista)} por viagem</p>
           </div>
-          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
-            <p className="text-sm text-purple-600 dark:text-purple-400">Total Viagens</p>
-            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{viagensFiltradas.length}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{viagensFiltradas.length}</p>
           </div>
         </div>
 
-        {/* Tabela de viagens */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destino</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-              {viagensFiltradas.map((viagem: any) => (
-                <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {formatDate(viagem.data_viagem)}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                    {viagem.motorista_nome}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                    {viagem.origem || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                    {viagem.destino || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-green-600 dark:text-green-400">
-                    {formatCurrency(valorViagem)}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
-                    {formatCurrency(comissaoMotorista)}
-                  </td>
+        {/* Tabela de viagens - Layout limpo */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                {viagensFiltradas.map((viagem: any) => (
+                  <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
+                      {formatDate(viagem.data_viagem)}
+                    </td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                      {viagem.motorista_nome}
+                    </td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white text-right">
+                      {formatCurrency(valorViagem)}
+                    </td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm font-medium text-gray-600 dark:text-gray-300 text-right">
+                      {formatCurrency(comissaoMotorista)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );
@@ -3300,22 +3326,20 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   const renderFinanceiroContent = () => {
     if (selectedOperacao === 'all') {
       return (
-        <div className="space-y-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
-              <h3 className="text-lg font-semibold text-white">SADA - Faturamento</h3>
+        <div className="space-y-10">
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SADA</h3>
             </div>
-            <div className="p-4">
-              {renderSadaFinanceiro()}
-            </div>
+            {renderSadaFinanceiro()}
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3">
-              <h3 className="text-lg font-semibold text-white">SUPERTERMINAIS - Faturamento</h3>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPERTERMINAIS</h3>
             </div>
-            <div className="p-4">
-              {renderSuperterminaisFinanceiro()}
-            </div>
+            {renderSuperterminaisFinanceiro()}
           </div>
         </div>
       );
@@ -3323,26 +3347,24 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 
     if (selectedOperacao === 'Sada') {
       return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
-            <h3 className="text-lg font-semibold text-white">SADA - Faturamento</h3>
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SADA</h3>
           </div>
-          <div className="p-4">
-            {renderSadaFinanceiro()}
-          </div>
+          {renderSadaFinanceiro()}
         </div>
       );
     }
 
     if (selectedOperacao === 'Superterminais') {
       return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3">
-            <h3 className="text-lg font-semibold text-white">SUPERTERMINAIS - Faturamento</h3>
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPERTERMINAIS</h3>
           </div>
-          <div className="p-4">
-            {renderSuperterminaisFinanceiro()}
-          </div>
+          {renderSuperterminaisFinanceiro()}
         </div>
       );
     }
