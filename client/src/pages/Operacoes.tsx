@@ -2842,42 +2842,112 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     'familia_basica': 'familia_basica',
     'familia basica': 'familia_basica',
     'familia básica': 'familia_basica',
+    'familiabasica': 'familia_basica',
+    'familia': 'familia_basica',
+    'basica': 'familia_basica',
     'compass': 'compass',
     'toro': 'toro',
     'commander': 'commander',
     'jlr': 'jlr',
     'rampage': 'rampage',
     'ram rampage': 'rampage',
+    'ram': 'rampage',
     'titano': 'titano',
     'scudo': 'scudo',
     'ducato': 'ducato',
     'caminhoes': 'caminhoes',
     'caminhões': 'caminhoes',
+    'caminhao': 'caminhoes',
+    'caminhão': 'caminhoes',
   };
 
-  // Calcular valor do frete baseado no modelo e quantidade
-  const calcularValorFrete = (modelo: string | null, qtdCarros: number | null): number => {
-    if (!modelo || !qtdCarros || !precosSada) return 0;
+  // Função para extrair veículos e quantidades do texto do modelo
+  // Ex: "2 compass e 1 toro" → [{modelo: 'compass', qtd: 2}, {modelo: 'toro', qtd: 1}]
+  const parseModeloTexto = (texto: string): { modelo: string; qtd: number }[] => {
+    const resultado: { modelo: string; qtd: number }[] = [];
+    const textoLower = texto.toLowerCase().trim();
     
-    const modeloLower = modelo.toLowerCase().trim();
-    const chave = modeloParaChave[modeloLower];
+    // Padrão: número seguido de nome do modelo
+    // Exemplos: "2 compass", "1 toro", "3 familia basica"
+    const regex = /(\d+)\s*([a-záàâãéèêíïóôõöúçñ\s]+?)(?=\s*(?:e\s+\d|\+|\,|$))/gi;
     
-    if (!chave) return 0;
+    let match;
+    while ((match = regex.exec(textoLower)) !== null) {
+      const qtd = parseInt(match[1], 10);
+      const modeloTexto = match[2].trim();
+      
+      if (qtd > 0 && modeloTexto) {
+        resultado.push({ modelo: modeloTexto, qtd });
+      }
+    }
     
-    const precoUnitario = parseFloat(precosSada[chave] as string || '0');
-    return precoUnitario * qtdCarros;
+    // Se não encontrou com regex, tenta parsing simples
+    if (resultado.length === 0) {
+      // Tenta encontrar apenas o modelo (sem quantidade explícita)
+      for (const chaveModelo of Object.keys(modeloParaChave)) {
+        if (textoLower.includes(chaveModelo)) {
+          resultado.push({ modelo: chaveModelo, qtd: 1 });
+          break;
+        }
+      }
+    }
+    
+    return resultado;
+  };
+
+  // Calcular valor do frete baseado no texto do modelo (parsing inteligente)
+  const calcularValorFrete = (modelo: string | null, qtdCarrosTotal: number | null): number => {
+    if (!modelo || !precosSada) return 0;
+    
+    const veiculosParsed = parseModeloTexto(modelo);
+    
+    if (veiculosParsed.length === 0) {
+      // Fallback: se não conseguiu parsear, usa modelo direto com qtd_carros
+      const modeloLower = modelo.toLowerCase().trim();
+      const chave = modeloParaChave[modeloLower];
+      if (chave && qtdCarrosTotal) {
+        const precoUnitario = parseFloat(precosSada[chave] as string || '0');
+        return precoUnitario * qtdCarrosTotal;
+      }
+      return 0;
+    }
+    
+    // Soma o valor de cada tipo de veículo encontrado
+    let valorTotal = 0;
+    for (const item of veiculosParsed) {
+      const chave = modeloParaChave[item.modelo];
+      if (chave) {
+        const precoUnitario = parseFloat(precosSada[chave] as string || '0');
+        valorTotal += precoUnitario * item.qtd;
+      }
+    }
+    
+    return valorTotal;
+  };
+
+  // Calcular quantidade total de veículos do texto do modelo
+  const calcularQtdTotal = (modelo: string | null, qtdCarrosFallback: number | null): number => {
+    if (!modelo) return qtdCarrosFallback || 0;
+    
+    const veiculosParsed = parseModeloTexto(modelo);
+    if (veiculosParsed.length > 0) {
+      return veiculosParsed.reduce((sum, item) => sum + item.qtd, 0);
+    }
+    return qtdCarrosFallback || 0;
   };
 
   // Calcular comissão do motorista
-  const calcularComissao = (tipoCarreta: number | null, qtdCarros: number | null): number => {
+  const calcularComissao = (tipoCarreta: number | null, modelo: string | null, qtdCarros: number | null): number => {
     if (!precosSada) return 0;
+    
+    const qtdTotal = calcularQtdTotal(modelo, qtdCarros);
     
     // tipo_carreta: 0 = Prancha (fixo), 1 = Cegonha (por veículo)
     if (tipoCarreta === 0) {
       return parseFloat(precosSada.comissao_motorista_prancha || '0');
     } else if (tipoCarreta === 1) {
       const valorPorVeiculo = parseFloat(precosSada.comissao_motorista_cegonha || '0');
-      return valorPorVeiculo * (qtdCarros || 0);
+      return valorPorVeiculo * qtdTotal;
     }
     return 0;
   };
@@ -2926,7 +2996,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     let totalComissao = 0;
     viagensSada.forEach((v: any) => {
       totalFrete += calcularValorFrete(v.modelo, v.qtd_carros);
-      totalComissao += calcularComissao(v.tipo_carreta, v.qtd_carros);
+      totalComissao += calcularComissao(v.tipo_carreta, v.modelo, v.qtd_carros);
     });
 
     return (
@@ -2964,7 +3034,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
               {viagensSada.map((viagem: any) => {
                 const valorFrete = calcularValorFrete(viagem.modelo, viagem.qtd_carros);
-                const comissao = calcularComissao(viagem.tipo_carreta, viagem.qtd_carros);
+                const comissao = calcularComissao(viagem.tipo_carreta, viagem.modelo, viagem.qtd_carros);
                 const tipoCarreta = viagem.tipo_carreta === 0 ? 'Prancha' : viagem.tipo_carreta === 1 ? 'Cegonha' : '-';
                 
                 return (
