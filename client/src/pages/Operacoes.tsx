@@ -1154,7 +1154,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
               <Map className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">{viagensStats?.total || 0}</p>
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.total || 0}</p>
         </button>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
@@ -1178,7 +1178,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
               <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">{viagensStats?.hoje || 0}</p>
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.hoje || 0}</p>
         </button>
 
         <button 
@@ -1192,7 +1192,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
               <RefreshCw className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">{viagensStats?.emAndamento || 0}</p>
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.emAndamento || 0}</p>
         </button>
 
         <button 
@@ -1206,7 +1206,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
               <Check className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">{viagensStats?.concluidas || 0}</p>
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.concluidas || 0}</p>
         </button>
       </div>
 
@@ -1749,9 +1749,9 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-gray-900 dark:text-white" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-gray-900 dark:text-white" />
-            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-gray-900 dark:text-white" />
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -1938,9 +1938,9 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-gray-900 dark:text-white" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-gray-900 dark:text-white" />
-            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-gray-900 dark:text-white" />
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -2116,9 +2116,9 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Volume de Viagens" value={stats.totalViagens} color="text-gray-900 dark:text-white" />
-            <StatCard label="Containers Cheio" value={stats.containersCheio} color="text-gray-900 dark:text-white" />
-            <StatCard label="Containers Vazio" value={stats.containersVazio} color="text-gray-900 dark:text-white" />
+            <StatCard label="Volume de Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Containers Cheio" value={stats.containersCheio} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Containers Vazio" value={stats.containersVazio} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -2292,8 +2292,8 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-gray-900 dark:text-white" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(2)} Mil` : stats.kmTotal} color="text-gray-900 dark:text-white" />
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(2)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
