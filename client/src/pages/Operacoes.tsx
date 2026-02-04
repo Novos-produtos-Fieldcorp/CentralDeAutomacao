@@ -1164,7 +1164,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
               <LayoutDashboard className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">{OPERACOES_TABELAS.length}</p>
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{OPERACOES_TABELAS.length}</p>
         </div>
 
         <button 
