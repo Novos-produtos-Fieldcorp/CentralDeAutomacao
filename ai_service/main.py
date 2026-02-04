@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Union
 import config
 from crews import create_group_summary_crew, create_quick_summary_crew
 from tools import send_message_to_inbox
@@ -23,11 +23,11 @@ app.add_middleware(
 
 class GroupSummaryRequest(BaseModel):
     nome_do_grupo: str
-    company_id: int
-    group_id: int
-    account_id: Optional[str] = None
+    company_id: Union[int, str]
+    group_id: Union[int, str]
+    account_id: Optional[Union[int, str]] = None
     api_key: Optional[str] = None
-    inbox_id: Optional[int] = None
+    inbox_id: Optional[Union[int, str]] = None
     quick_mode: Optional[bool] = False
 
 

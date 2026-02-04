@@ -1,6 +1,10 @@
 import httpx
+from datetime import datetime, timezone, timedelta
 from crewai.tools import tool
 from config import WISEAPP_API_URL
+
+# Brasilia timezone (UTC-3)
+BRASILIA_TZ = timezone(timedelta(hours=-3))
 
 
 def send_message_to_inbox(inbox_id: str, account_id: str, api_key: str, message: str, group_name: str = None) -> dict:
@@ -73,16 +77,47 @@ def send_message_to_inbox(inbox_id: str, account_id: str, api_key: str, message:
         return {"success": False, "error": str(e)}
 
 
+def get_today_brasilia():
+    """Retorna a data de hoje no fuso horario de Brasilia"""
+    now = datetime.now(BRASILIA_TZ)
+    return now.date()
+
+
+def is_message_from_today(message: dict) -> bool:
+    """Verifica se uma mensagem foi enviada hoje (horario de Brasilia)"""
+    try:
+        created_at = message.get("created_at")
+        if not created_at:
+            return False
+        
+        # Parse the timestamp (format: 2025-02-04T10:30:00.000Z or Unix timestamp)
+        if isinstance(created_at, (int, float)):
+            msg_time = datetime.fromtimestamp(created_at, tz=timezone.utc)
+        else:
+            # Handle ISO format string
+            if created_at.endswith('Z'):
+                created_at = created_at[:-1] + '+00:00'
+            msg_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+        
+        # Convert to Brasilia timezone and compare dates
+        msg_date_brasilia = msg_time.astimezone(BRASILIA_TZ).date()
+        today_brasilia = get_today_brasilia()
+        
+        return msg_date_brasilia == today_brasilia
+    except Exception:
+        return False
+
+
 @tool("Buscar Mensagens do Inbox")
-def buscar_mensagens_inbox(inbox_id: str, account_id: str, api_key: str, limit: int = 100) -> str:
-    """Busca as mensagens de um inbox/grupo para analise.
+def buscar_mensagens_inbox(inbox_id: str, account_id: str, api_key: str, limit: int = 80) -> str:
+    """Busca as mensagens de um inbox/grupo para analise, filtrando apenas as de HOJE.
     Args:
         inbox_id: ID do inbox (grupo)
         account_id: ID da conta WiseApp
         api_key: Token de API do WiseApp
         limit: Numero maximo de mensagens a retornar
     Returns:
-        Lista de mensagens formatadas ou erro
+        Lista de mensagens do dia formatadas ou erro
     """
     try:
         headers = {
@@ -91,9 +126,11 @@ def buscar_mensagens_inbox(inbox_id: str, account_id: str, api_key: str, limit: 
         }
         
         with httpx.Client() as client:
+            # Buscar conversas do inbox
             response = client.get(
                 f"{WISEAPP_API_URL}/v1/accounts/{account_id}/inboxes/{inbox_id}/conversations",
                 headers=headers,
+                params={"status": "all", "page": 1},
                 timeout=30
             )
             
@@ -104,31 +141,95 @@ def buscar_mensagens_inbox(inbox_id: str, account_id: str, api_key: str, limit: 
             if not conversations:
                 return "Nenhuma conversa encontrada neste inbox."
             
-            all_messages = []
-            for conv in conversations[:20]:
-                conv_id = conv.get("id")
-                if conv_id:
-                    msg_response = client.get(
-                        f"{WISEAPP_API_URL}/v1/accounts/{account_id}/conversations/{conv_id}/messages",
-                        headers=headers,
-                        params={"limit": 10},
-                        timeout=30
-                    )
+            # Pegar a primeira conversa (o grupo)
+            conv = conversations[0] if conversations else None
+            if not conv:
+                return "Nenhuma conversa encontrada."
+            
+            conv_id = conv.get("id")
+            group_name = conv.get("meta", {}).get("sender", {}).get("name", "Grupo")
+            
+            # Buscar mensagens da conversa (pegar mais mensagens para filtrar)
+            msg_response = client.get(
+                f"{WISEAPP_API_URL}/v1/accounts/{account_id}/conversations/{conv_id}/messages",
+                headers=headers,
+                params={"limit": 200},  # Buscar mais para garantir que pegamos todas do dia
+                timeout=60
+            )
+            
+            if msg_response.status_code != 200:
+                return f"Erro ao buscar mensagens: {msg_response.text}"
+            
+            messages_data = msg_response.json()
+            messages = messages_data.get("payload", [])
+            
+            if not messages:
+                return "Nenhuma mensagem encontrada na conversa."
+            
+            # Filtrar apenas mensagens de hoje
+            today_messages = []
+            for msg in messages:
+                if is_message_from_today(msg):
+                    # Pegar nome do remetente
+                    sender_info = msg.get("sender", {})
+                    sender_name = sender_info.get("name", "Desconhecido")
                     
-                    if msg_response.status_code == 200:
-                        messages = msg_response.json().get("payload", [])
-                        contact_name = conv.get("meta", {}).get("sender", {}).get("name", "Desconhecido")
-                        
-                        for msg in messages[-5:]:
-                            sender = contact_name if msg.get("message_type") == 0 else "Atendente"
-                            content = msg.get("content", "[sem texto]")
-                            if content:
-                                all_messages.append(f"[{sender}]: {content}")
+                    # Tipo de mensagem: 0 = incoming, 1 = outgoing
+                    msg_type = msg.get("message_type")
+                    if msg_type == 1:
+                        sender_name = "Atendente"
+                    
+                    content = msg.get("content", "")
+                    content_type = msg.get("content_type", "text")
+                    
+                    # Tratar tipos de conteudo
+                    if content_type == "image":
+                        content = "[Imagem enviada]"
+                    elif content_type == "audio":
+                        content = "[Audio enviado]"
+                    elif content_type == "video":
+                        content = "[Video enviado]"
+                    elif content_type == "file":
+                        content = "[Arquivo enviado]"
+                    elif content_type == "sticker":
+                        content = "[Sticker]"
+                    elif not content:
+                        content = "[Mensagem sem texto]"
+                    
+                    # Pegar horario da mensagem
+                    created_at = msg.get("created_at", "")
+                    time_str = ""
+                    try:
+                        if isinstance(created_at, (int, float)):
+                            msg_time = datetime.fromtimestamp(created_at, tz=timezone.utc)
+                        else:
+                            msg_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                        msg_time_brasilia = msg_time.astimezone(BRASILIA_TZ)
+                        time_str = msg_time_brasilia.strftime("%H:%M")
+                    except Exception:
+                        pass
+                    
+                    today_messages.append({
+                        "sender": sender_name,
+                        "content": content,
+                        "time": time_str
+                    })
             
-            if not all_messages:
-                return "Nenhuma mensagem encontrada nas conversas."
+            if not today_messages:
+                return f"Nenhuma mensagem encontrada hoje no grupo '{group_name}'."
             
-            return "\n".join(all_messages[-limit:])
+            # Formatar mensagens (mais antigas primeiro)
+            today_messages.reverse()
+            formatted = [f"MENSAGENS DO DIA - {group_name}"]
+            formatted.append(f"Data: {get_today_brasilia().strftime('%d/%m/%Y')}")
+            formatted.append(f"Total de mensagens hoje: {len(today_messages)}")
+            formatted.append("-" * 40)
+            
+            for msg in today_messages[-limit:]:
+                time_prefix = f"[{msg['time']}] " if msg['time'] else ""
+                formatted.append(f"{time_prefix}{msg['sender']}: {msg['content']}")
+            
+            return "\n".join(formatted)
             
     except Exception as e:
         return f"Erro ao buscar mensagens: {str(e)}"
