@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2 } from 'lucide-react';
 import { useState as useStateReact } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
@@ -2737,6 +2737,550 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
   );
 };
 
+// Interface para faturamento
+interface FaturamentoSada {
+  id: number;
+  created_at: string;
+  updated_at: string | null;
+  company_id?: number;
+  familia_basica: string | null;
+  compass: string | null;
+  toro: string | null;
+  commander: string | null;
+  jlr: string | null;
+  rampage: string | null;
+  titano: string | null;
+  scudo: string | null;
+  ducato: string | null;
+  caminhoes: string | null;
+  comissao_motorista_prancha: string | null;
+  comissao_motorista_cegonha: string | null;
+}
+
+// Componente Financeiro - Lista de registros de faturamento
+const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
+  const { companyId } = useCurrentAccount();
+
+  // Query para buscar faturamento SADA com filtro de company_id
+  const { data: faturamentoSada = [], isLoading: isLoadingSada, isError: isErrorSada } = useQuery({
+    queryKey: ['faturamento-sada', companyId, selectedOperacao],
+    queryFn: async () => {
+      if (!companyId) throw new Error('Company ID não disponível');
+      
+      const { data, error } = await supabase
+        .from('faturamento_sada')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as FaturamentoSada[];
+    },
+    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Sada'),
+  });
+
+  const formatCurrency = (value: string | null) => {
+    if (!value) return '-';
+    const num = parseFloat(value);
+    if (isNaN(num)) return value;
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
+  };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Configuração dos campos de preço por operação (preparado para futuras operações)
+  const precosConfig: Record<string, { label: string; campos: { key: string; label: string }[] }> = {
+    'Sada': {
+      label: 'SADA',
+      campos: [
+        { key: 'familia_basica', label: 'Família Básica' },
+        { key: 'compass', label: 'Compass' },
+        { key: 'toro', label: 'Toro' },
+        { key: 'commander', label: 'Commander' },
+        { key: 'jlr', label: 'JLR' },
+        { key: 'rampage', label: 'Rampage' },
+        { key: 'titano', label: 'Titano' },
+        { key: 'scudo', label: 'Scudo' },
+        { key: 'ducato', label: 'Ducato' },
+        { key: 'caminhoes', label: 'Caminhões' },
+        { key: 'comissao_motorista_prancha', label: 'Comissão Motorista (Prancha)' },
+        { key: 'comissao_motorista_cegonha', label: 'Comissão Motorista (Cegonha)' },
+      ]
+    },
+    // Preparado para futuras operações
+    // 'Cesari': { ... },
+    // 'Tegma': { ... },
+  };
+
+  const renderSadaFinanceiro = () => {
+    if (isLoadingSada) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando...</span>
+        </div>
+      );
+    }
+
+    if (isErrorSada) {
+      return (
+        <div className="text-center py-12">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar dados de faturamento.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Por favor, tente novamente mais tarde.</p>
+        </div>
+      );
+    }
+
+    if (faturamentoSada.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhum registro de faturamento encontrado para SADA.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Configure os preços na aba "Preços" para começar.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Família Básica</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Compass</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Toro</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Commander</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">JLR</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Com. Prancha</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Com. Cegonha</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+            {faturamentoSada.map((item) => (
+              <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  {formatDate(item.created_at)}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.familia_basica)}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.compass)}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.toro)}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.commander)}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.jlr)}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.comissao_motorista_prancha)}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.comissao_motorista_cegonha)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // Renderização baseada na operação selecionada
+  const renderFinanceiroContent = () => {
+    if (!companyId) {
+      return (
+        <div className="text-center py-12">
+          <Building className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma empresa selecionada.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Faça login para visualizar os dados de faturamento.</p>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'all') {
+      return (
+        <div className="space-y-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">SADA - Faturamento</h3>
+            </div>
+            <div className="p-4">
+              {renderSadaFinanceiro()}
+            </div>
+          </div>
+          {/* Placeholder para futuras operações */}
+          <div className="text-center py-8 text-gray-400 dark:text-gray-500">
+            <p className="text-sm">Outras operações serão adicionadas em breve.</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Sada') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">SADA - Faturamento</h3>
+          </div>
+          <div className="p-4">
+            {renderSadaFinanceiro()}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="text-center py-12">
+        <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+        <p className="text-gray-500 dark:text-gray-400">Faturamento para {selectedOperacao} ainda não está disponível.</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Esta funcionalidade será implementada em breve.</p>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Financeiro</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Registros de comissão e recebimento por operação</p>
+        </div>
+      </div>
+
+      {renderFinanceiroContent()}
+    </div>
+  );
+};
+
+// Componente Preços - Edição de preços e comissões
+const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => {
+  const { companyId } = useCurrentAccount();
+  const [editingSada, setEditingSada] = useState(false);
+  const [sadaForm, setSadaForm] = useState<Partial<FaturamentoSada>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Query para buscar último registro de faturamento SADA com filtro de company_id
+  const { data: currentSadaPrices, isLoading: isLoadingSada, isError: isErrorSada, refetch: refetchSada } = useQuery({
+    queryKey: ['faturamento-sada-current', companyId, selectedOperacao],
+    queryFn: async () => {
+      if (!companyId) throw new Error('Company ID não disponível');
+      
+      const { data, error } = await supabase
+        .from('faturamento_sada')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return data?.[0] as FaturamentoSada | undefined;
+    },
+    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Sada'),
+  });
+
+  useEffect(() => {
+    if (currentSadaPrices) {
+      setSadaForm(currentSadaPrices);
+    }
+  }, [currentSadaPrices]);
+
+  // Reset form state when company changes
+  useEffect(() => {
+    setEditingSada(false);
+    setSaveError(null);
+    setSadaForm({});
+  }, [companyId]);
+
+  const handleSadaChange = (field: string, value: string) => {
+    setSadaForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveSada = async () => {
+    if (!companyId) {
+      setSaveError('Empresa não selecionada');
+      return;
+    }
+    
+    setIsSaving(true);
+    setSaveError(null);
+    
+    try {
+      const updateData = {
+        familia_basica: sadaForm.familia_basica || null,
+        compass: sadaForm.compass || null,
+        toro: sadaForm.toro || null,
+        commander: sadaForm.commander || null,
+        jlr: sadaForm.jlr || null,
+        rampage: sadaForm.rampage || null,
+        titano: sadaForm.titano || null,
+        scudo: sadaForm.scudo || null,
+        ducato: sadaForm.ducato || null,
+        caminhoes: sadaForm.caminhoes || null,
+        comissao_motorista_prancha: sadaForm.comissao_motorista_prancha || null,
+        comissao_motorista_cegonha: sadaForm.comissao_motorista_cegonha || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (currentSadaPrices?.id) {
+        // Atualizar registro existente (com verificação de company_id)
+        const { error } = await supabase
+          .from('faturamento_sada')
+          .update(updateData)
+          .eq('id', currentSadaPrices.id)
+          .eq('company_id', companyId);
+        
+        if (error) throw error;
+      } else {
+        // Criar novo registro com company_id
+        const { error } = await supabase
+          .from('faturamento_sada')
+          .insert([{ ...updateData, company_id: companyId }]);
+        
+        if (error) throw error;
+      }
+
+      await refetchSada();
+      setEditingSada(false);
+    } catch (error: any) {
+      console.error('Erro ao salvar preços SADA:', error);
+      setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const sadaCampos = [
+    { key: 'familia_basica', label: 'Família Básica', group: 'veiculos' },
+    { key: 'compass', label: 'Compass', group: 'veiculos' },
+    { key: 'toro', label: 'Toro', group: 'veiculos' },
+    { key: 'commander', label: 'Commander', group: 'veiculos' },
+    { key: 'jlr', label: 'JLR', group: 'veiculos' },
+    { key: 'rampage', label: 'Rampage', group: 'veiculos' },
+    { key: 'titano', label: 'Titano', group: 'veiculos' },
+    { key: 'scudo', label: 'Scudo', group: 'veiculos' },
+    { key: 'ducato', label: 'Ducato', group: 'veiculos' },
+    { key: 'caminhoes', label: 'Caminhões', group: 'veiculos' },
+    { key: 'comissao_motorista_prancha', label: 'Comissão Motorista (Prancha)', group: 'comissao' },
+    { key: 'comissao_motorista_cegonha', label: 'Comissão Motorista (Cegonha)', group: 'comissao' },
+  ];
+
+  const renderSadaPrecos = () => {
+    if (isLoadingSada) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando...</span>
+        </div>
+      );
+    }
+
+    if (isErrorSada) {
+      return (
+        <div className="text-center py-12">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar preços.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Por favor, tente novamente mais tarde.</p>
+        </div>
+      );
+    }
+
+    const veiculosCampos = sadaCampos.filter(c => c.group === 'veiculos');
+    const comissaoCampos = sadaCampos.filter(c => c.group === 'comissao');
+
+    return (
+      <div className="space-y-6">
+        {saveError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center gap-2">
+            <XCircle className="w-5 h-5 text-red-500" />
+            <span className="text-red-700 dark:text-red-400 text-sm">{saveError}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {currentSadaPrices ? 'Última atualização: ' + new Date(currentSadaPrices.updated_at || currentSadaPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
+          </p>
+          {!editingSada ? (
+            <button
+              onClick={() => setEditingSada(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              data-testid="button-edit-sada-prices"
+            >
+              <Edit className="w-4 h-4" />
+              Editar Preços
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setEditingSada(false);
+                  setSadaForm(currentSadaPrices || {});
+                }}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                disabled={isSaving}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveSada}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                data-testid="button-save-sada-prices"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Salvar
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Preços por Veículo */}
+        <div>
+          <h4 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+            <Car className="w-4 h-4" />
+            Preços por Modelo de Veículo (por carro)
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {veiculosCampos.map((campo) => (
+              <div key={campo.key} className="space-y-1">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {campo.label}
+                </label>
+                {editingSada ? (
+                  <input
+                    type="text"
+                    value={sadaForm[campo.key as keyof FaturamentoSada] || ''}
+                    onChange={(e) => handleSadaChange(campo.key, e.target.value)}
+                    placeholder="0,00"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    data-testid={`input-sada-${campo.key}`}
+                  />
+                ) : (
+                  <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                    {sadaForm[campo.key as keyof FaturamentoSada] || '-'}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Comissões */}
+        <div>
+          <h4 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+            <DollarSign className="w-4 h-4" />
+            Comissões do Motorista (por viagem)
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {comissaoCampos.map((campo) => (
+              <div key={campo.key} className="space-y-1">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {campo.label}
+                </label>
+                {editingSada ? (
+                  <input
+                    type="text"
+                    value={sadaForm[campo.key as keyof FaturamentoSada] || ''}
+                    onChange={(e) => handleSadaChange(campo.key, e.target.value)}
+                    placeholder="0,00"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    data-testid={`input-sada-${campo.key}`}
+                  />
+                ) : (
+                  <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                    {sadaForm[campo.key as keyof FaturamentoSada] || '-'}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderPrecosContent = () => {
+    if (!companyId) {
+      return (
+        <div className="text-center py-12">
+          <Building className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma empresa selecionada.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Faça login para configurar os preços.</p>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'all') {
+      return (
+        <div className="space-y-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">SADA - Configuração de Preços</h3>
+            </div>
+            <div className="p-4">
+              {renderSadaPrecos()}
+            </div>
+          </div>
+          {/* Placeholder para futuras operações */}
+          <div className="text-center py-8 text-gray-400 dark:text-gray-500">
+            <p className="text-sm">Configurações de preços para outras operações serão adicionadas em breve.</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Sada') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">SADA - Configuração de Preços</h3>
+          </div>
+          <div className="p-4">
+            {renderSadaPrecos()}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="text-center py-12">
+        <Settings className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+        <p className="text-gray-500 dark:text-gray-400">Configuração de preços para {selectedOperacao} ainda não está disponível.</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Esta funcionalidade será implementada em breve.</p>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Preços</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Configure os valores de comissão e recebimento por operação</p>
+        </div>
+      </div>
+
+      {renderPrecosContent()}
+    </div>
+  );
+};
+
 const Operacoes = () => {
   const location = useLocation();
   const currentPath = location.pathname;
@@ -2746,6 +3290,8 @@ const Operacoes = () => {
   const tabs = [
     { path: '/operacoes', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/operacoes/viagens', label: 'Viagens', icon: Map },
+    { path: '/operacoes/financeiro', label: 'Financeiro', icon: Wallet },
+    { path: '/operacoes/precos', label: 'Preços', icon: Settings },
   ];
 
   const isActiveTab = (path: string) => {
@@ -2828,6 +3374,8 @@ const Operacoes = () => {
       <Routes>
         <Route path="/" element={<OperacoesDashboard selectedOperacao={selectedOperacao} />} />
         <Route path="/viagens" element={<OperacoesViagens selectedOperacao={selectedOperacao} setSelectedOperacao={setSelectedOperacao} />} />
+        <Route path="/financeiro" element={<OperacoesFinanceiro selectedOperacao={selectedOperacao} />} />
+        <Route path="/precos" element={<OperacoesPrecos selectedOperacao={selectedOperacao} />} />
       </Routes>
     </div>
   );
