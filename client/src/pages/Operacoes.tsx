@@ -2757,6 +2757,14 @@ interface FaturamentoSada {
   comissao_motorista_cegonha: string | null;
 }
 
+interface FaturamentoSuperterminais {
+  id: number;
+  valor_viagem: string | null;
+  comissao_motorista: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Componente Financeiro - Lista de viagens com cálculo de faturamento
 const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
@@ -2800,6 +2808,22 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       return data?.[0] as FaturamentoSada | null;
     },
     enabled: selectedOperacao === 'all' || selectedOperacao === 'Sada',
+  });
+
+  // Query para buscar os preços atuais da SUPERTERMINAIS
+  const { data: precosSuperterminais } = useQuery({
+    queryKey: ['faturamento-superterminais-precos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('faturamento_superterminais')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return data?.[0] as FaturamentoSuperterminais | null;
+    },
+    enabled: selectedOperacao === 'all' || selectedOperacao === 'Superterminais',
   });
 
   // Query para buscar viagens SADA com dados de faturamento
@@ -2847,6 +2871,55 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
     enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Sada'),
+  });
+
+  // Query para buscar viagens SUPERTERMINAIS com dados de faturamento
+  const { data: viagensSuperterminais = [], isLoading: isLoadingSuperterminais, isError: isErrorSuperterminais } = useQuery({
+    queryKey: ['financeiro-superterminais-viagens', companyId, selectedOperacao],
+    queryFn: async () => {
+      if (!companyId) return [];
+      
+      // Buscar viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIds = viagensEmpresa.map((v: any) => v.id);
+      
+      // Buscar operações SUPERTERMINAIS
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_superterminais')
+        .select('*')
+        .in('id_viagem', viagemIds);
+      
+      if (opError || !opData) return [];
+      
+      // Buscar motoristas
+      const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .in('motorista_id', motoristaIds);
+      
+      const motoristasMap: Record<number, string> = {};
+      motoristasData?.forEach((m: any) => {
+        motoristasMap[m.motorista_id] = m.nome;
+      });
+      
+      // Combinar dados
+      return opData.map((op: any) => {
+        const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          data_viagem: viagem?.data_hora_inicial,
+          motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+        };
+      }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
+    },
+    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Superterminais'),
   });
 
   const formatCurrency = (value: number) => {
@@ -3120,6 +3193,109 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     );
   };
 
+  // Função de renderização para SUPERTERMINAIS
+  const renderSuperterminaisFinanceiro = () => {
+    if (isLoadingSuperterminais) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando viagens...</span>
+        </div>
+      );
+    }
+
+    if (isErrorSuperterminais) {
+      return (
+        <div className="text-center py-12">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar dados de faturamento.</p>
+        </div>
+      );
+    }
+
+    if (!viagensSuperterminais || viagensSuperterminais.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma viagem SUPERTERMINAIS encontrada.</p>
+        </div>
+      );
+    }
+
+    // Filtrar viagens por período
+    const viagensFiltradas = filtrarPorPeriodo(viagensSuperterminais);
+
+    // Valores de preço (usa preço da tabela ou valores padrão)
+    const valorViagem = parsePreco(precosSuperterminais?.valor_viagem || '135,00');
+    const comissaoMotorista = parsePreco(precosSuperterminais?.comissao_motorista || '10,00');
+
+    // Calcular totais (valor fixo por viagem)
+    const totalFrete = viagensFiltradas.length * valorViagem;
+    const totalComissao = viagensFiltradas.length * comissaoMotorista;
+
+    return (
+      <div className="space-y-4">
+        {/* Cards de resumo */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+            <p className="text-sm text-green-600 dark:text-green-400">Total Recebido</p>
+            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{formatCurrency(totalFrete)}</p>
+            <p className="text-xs text-green-500 dark:text-green-400 mt-1">{formatCurrency(valorViagem)}/viagem</p>
+          </div>
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-600 dark:text-blue-400">Total Comissões</p>
+            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{formatCurrency(totalComissao)}</p>
+            <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">{formatCurrency(comissaoMotorista)}/viagem</p>
+          </div>
+          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+            <p className="text-sm text-purple-600 dark:text-purple-400">Total Viagens</p>
+            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{viagensFiltradas.length}</p>
+          </div>
+        </div>
+
+        {/* Tabela de viagens */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destino</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+              {viagensFiltradas.map((viagem: any) => (
+                <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    {formatDate(viagem.data_viagem)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                    {viagem.motorista_nome}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                    {viagem.origem || '-'}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                    {viagem.destino || '-'}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-green-600 dark:text-green-400">
+                    {formatCurrency(valorViagem)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
+                    {formatCurrency(comissaoMotorista)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   // Renderização baseada na operação selecionada
   const renderFinanceiroContent = () => {
     if (selectedOperacao === 'all') {
@@ -3133,9 +3309,13 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
               {renderSadaFinanceiro()}
             </div>
           </div>
-          {/* Placeholder para futuras operações */}
-          <div className="text-center py-8 text-gray-400 dark:text-gray-500">
-            <p className="text-sm">Outras operações serão adicionadas em breve.</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">SUPERTERMINAIS - Faturamento</h3>
+            </div>
+            <div className="p-4">
+              {renderSuperterminaisFinanceiro()}
+            </div>
           </div>
         </div>
       );
@@ -3149,6 +3329,19 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
           </div>
           <div className="p-4">
             {renderSadaFinanceiro()}
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Superterminais') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">SUPERTERMINAIS - Faturamento</h3>
+          </div>
+          <div className="p-4">
+            {renderSuperterminaisFinanceiro()}
           </div>
         </div>
       );
@@ -3253,6 +3446,8 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const { companyId } = useCurrentAccount();
   const [editingSada, setEditingSada] = useState(false);
   const [sadaForm, setSadaForm] = useState<Partial<FaturamentoSada>>({});
+  const [editingSuperterminais, setEditingSuperterminais] = useState(false);
+  const [superterminaisForm, setSuperterminaisForm] = useState<Partial<FaturamentoSuperterminais>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -3273,15 +3468,38 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     enabled: selectedOperacao === 'all' || selectedOperacao === 'Sada',
   });
 
+  // Query para buscar último registro de faturamento SUPERTERMINAIS
+  const { data: currentSuperterminaisPrices, isLoading: isLoadingSuperterminais, isError: isErrorSuperterminais, refetch: refetchSuperterminais } = useQuery({
+    queryKey: ['faturamento-superterminais-current', selectedOperacao],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('faturamento_superterminais')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return (data?.[0] as FaturamentoSuperterminais) || null;
+    },
+    enabled: selectedOperacao === 'all' || selectedOperacao === 'Superterminais',
+  });
+
   useEffect(() => {
     if (currentSadaPrices) {
       setSadaForm(currentSadaPrices);
     }
   }, [currentSadaPrices]);
 
+  useEffect(() => {
+    if (currentSuperterminaisPrices) {
+      setSuperterminaisForm(currentSuperterminaisPrices);
+    }
+  }, [currentSuperterminaisPrices]);
+
   // Reset editing state when company changes (don't reset form data - let query refetch handle it)
   useEffect(() => {
     setEditingSada(false);
+    setEditingSuperterminais(false);
     setSaveError(null);
   }, [companyId]);
 
@@ -3331,6 +3549,46 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
       setEditingSada(false);
     } catch (error: any) {
       console.error('Erro ao salvar preços SADA:', error);
+      setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSuperterminaisChange = (field: string, value: string) => {
+    setSuperterminaisForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveSuperterminais = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    
+    try {
+      const updateData = {
+        valor_viagem: superterminaisForm.valor_viagem || null,
+        comissao_motorista: superterminaisForm.comissao_motorista || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (currentSuperterminaisPrices?.id) {
+        const { error } = await supabase
+          .from('faturamento_superterminais')
+          .update(updateData)
+          .eq('id', currentSuperterminaisPrices.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('faturamento_superterminais')
+          .insert([updateData]);
+        
+        if (error) throw error;
+      }
+
+      await refetchSuperterminais();
+      setEditingSuperterminais(false);
+    } catch (error: any) {
+      console.error('Erro ao salvar preços SUPERTERMINAIS:', error);
       setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
     } finally {
       setIsSaving(false);
@@ -3486,6 +3744,130 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     );
   };
 
+  // Função de renderização de preços para SUPERTERMINAIS
+  const renderSuperterminaisPrecos = () => {
+    if (isLoadingSuperterminais) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando...</span>
+        </div>
+      );
+    }
+
+    if (isErrorSuperterminais) {
+      return (
+        <div className="text-center py-12">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar preços.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Por favor, tente novamente mais tarde.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {saveError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center gap-2">
+            <XCircle className="w-5 h-5 text-red-500" />
+            <span className="text-red-700 dark:text-red-400 text-sm">{saveError}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {currentSuperterminaisPrices ? 'Última atualização: ' + new Date(currentSuperterminaisPrices.updated_at || currentSuperterminaisPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
+          </p>
+          {!editingSuperterminais ? (
+            <button
+              onClick={() => setEditingSuperterminais(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              data-testid="button-edit-superterminais-prices"
+            >
+              <Edit className="w-4 h-4" />
+              Editar Preços
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setEditingSuperterminais(false);
+                  setSuperterminaisForm(currentSuperterminaisPrices || {});
+                }}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                disabled={isSaving}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveSuperterminais}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                data-testid="button-save-superterminais-prices"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Salvar
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Valores por Viagem */}
+        <div>
+          <h4 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+            <DollarSign className="w-4 h-4" />
+            Valores por Viagem (valor fixo)
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                Valor por Viagem (Recebido)
+              </label>
+              {editingSuperterminais ? (
+                <input
+                  type="text"
+                  value={superterminaisForm.valor_viagem || ''}
+                  onChange={(e) => handleSuperterminaisChange('valor_viagem', e.target.value)}
+                  placeholder="135,00"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  data-testid="input-superterminais-valor_viagem"
+                />
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                  {currentSuperterminaisPrices?.valor_viagem || '135,00'}
+                </div>
+              )}
+            </div>
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                Comissão do Motorista (por viagem)
+              </label>
+              {editingSuperterminais ? (
+                <input
+                  type="text"
+                  value={superterminaisForm.comissao_motorista || ''}
+                  onChange={(e) => handleSuperterminaisChange('comissao_motorista', e.target.value)}
+                  placeholder="10,00"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  data-testid="input-superterminais-comissao_motorista"
+                />
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                  {currentSuperterminaisPrices?.comissao_motorista || '10,00'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+          <p className="text-sm text-purple-700 dark:text-purple-300">
+            <strong>Modelo de Precificação SUPERTERMINAIS:</strong> Valor fixo por viagem, independente do tipo de carga ou distância.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   const renderPrecosContent = () => {
     if (selectedOperacao === 'all') {
       return (
@@ -3498,9 +3880,13 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
               {renderSadaPrecos()}
             </div>
           </div>
-          {/* Placeholder para futuras operações */}
-          <div className="text-center py-8 text-gray-400 dark:text-gray-500">
-            <p className="text-sm">Configurações de preços para outras operações serão adicionadas em breve.</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">SUPERTERMINAIS - Configuração de Preços</h3>
+            </div>
+            <div className="p-4">
+              {renderSuperterminaisPrecos()}
+            </div>
           </div>
         </div>
       );
@@ -3514,6 +3900,19 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
           </div>
           <div className="p-4">
             {renderSadaPrecos()}
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Superterminais') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">SUPERTERMINAIS - Configuração de Preços</h3>
+          </div>
+          <div className="p-4">
+            {renderSuperterminaisPrecos()}
           </div>
         </div>
       );

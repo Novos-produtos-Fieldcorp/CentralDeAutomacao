@@ -33,8 +33,10 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **Operações Module**: Comprehensive module for trip and operations management featuring:
   - **Dashboard Tab**: Statistics cards, 30-day histogram with daily trip counts (weekday/weekend differentiation), and custom operations cards with gradients. Uses `km_rodado` directly from database (generated column).
   - **Viagens Tab**: Filterable list with operation type, driver, and date range filters. Auto-refresh every 30 seconds.
-  - **Financeiro Tab**: Lists billing records (faturamento) by operation with vehicle model prices and driver commissions. Multi-tenant isolation via company_id filtering.
-  - **Preços Tab**: Edit operation-specific pricing (vehicle models and driver commissions). Currently implemented for SADA with `faturamento_sada` table. Architecture prepared for future operations (Cesari, Tegma, etc.). Features: inline editing, save/cancel actions, error handling.
+  - **Financeiro Tab**: Lists billing records (faturamento) by operation with vehicle model prices and driver commissions. Global date filter (15 days, 30 days, custom range with calendar). Multi-tenant isolation via company_id filtering.
+  - **Preços Tab**: Edit operation-specific pricing (vehicle models and driver commissions). Features: inline editing, save/cancel actions, error handling.
+  - **SADA Operation**: Complex pricing model with 10 vehicle models (familia_basica, compass, toro, commander, jlr, rampage, titano, scudo, ducato, caminhoes) + 2 commission types (Cegonha per vehicle, Prancha fixed). Intelligent modelo field parsing for multi-vehicle trips (e.g., "2 compass e 1 toro"). Table: `faturamento_sada`.
+  - **SUPERTERMINAIS Operation**: Simple flat pricing model. R$135/trip fixed rate + R$10 driver commission per trip. Table: `faturamento_superterminais`.
   - **Enhanced Detail Modal**: Operation-specific layouts for each of the 6 operation types (Autoservice, Cesari, Mitsubishi, Sada, Superterminais, Tegma). Features include:
     - Automatic translation of numeric codes (tipo_carreta: 0=Prancha/1=Cegonha, capacidade: 0=Vazio/1=Cheio, embarque_desembarque: 0=Embarque/1=Desembarque)
     - Photo thumbnails with lightbox preview for ft_cautela, ft_manifesto, ft_tablet, foto_viagem fields
@@ -42,7 +44,9 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
     - Organized sections (Rota, Veículos, Cliente, 1ª/2ª Puxada for Tegma, 1ª/2ª Viagem for Cesari)
     - Gradient header matching operation color theme
   - Access controlled via `operacoes_access` column in company table.
-  - **Faturamento Tables**: `faturamento_sada` table stores pricing per vehicle model (familia_basica, compass, toro, commander, jlr, rampage, titano, scudo, ducato, caminhoes) and driver commissions (comissao_motorista_prancha, comissao_motorista_cegonha). Must include `company_id` for multi-tenant isolation.
+  - **Faturamento Tables**: 
+    - `faturamento_sada`: Stores pricing per vehicle model (familia_basica, compass, toro, commander, jlr, rampage, titano, scudo, ducato, caminhoes) and driver commissions (comissao_motorista_prancha, comissao_motorista_cegonha).
+    - `faturamento_superterminais`: Stores flat pricing (valor_viagem, comissao_motorista) with default values R$135,00 and R$10,00.
 - **Database Schema Notes**: The `cliente` table uses `st_cliente` (not `ativo`) for active status. City data (`nome_cidade`) should be fetched from views like `vw_agregados_completo` or `vw_motoristas_completo`, not directly from `end_motorista` table.
 - **Deployment**: Configured for Replit with Vite dev server and Express backend.
 
