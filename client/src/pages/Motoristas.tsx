@@ -17,6 +17,7 @@ import VagasList from '../components/VagasList';
 import AddVagaModal from '../components/AddVagaModal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useModuleAccess } from '../hooks/useModuleAccess';
+import { API_BASE_URL } from '../lib/api-config-supabase';
 import AccessTooltip from '../components/AccessTooltip';
 
 const Motoristas = () => {
@@ -41,9 +42,7 @@ const Motoristas = () => {
     try {
       if (!companyId) return;
       
-      const apiBaseUrl = window.location.hostname.includes('netlify.app') 
-        ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
-        : '/api';
+      const apiBaseUrl = API_BASE_URL;
       const response = await fetch(`${apiBaseUrl}/vagas/dashboard/${companyId}`);
       if (response.ok) {
         const data = await response.json();

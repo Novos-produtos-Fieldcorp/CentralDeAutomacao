@@ -17,7 +17,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Configuração híbrida: usar API local em desenvolvimento, Supabase Functions em produção
-export const API_BASE_URL = forceExpressBackend ? '/api' : (isNetlify ? `${supabaseUrl}/functions/v1` : '/api');
+// Em Netlify a Edge Function é "api", então a URL correta é .../functions/v1/api (evita /v1/v1/ na path)
+export const API_BASE_URL = forceExpressBackend ? '/api' : (isNetlify ? `${supabaseUrl}/functions/v1/api` : '/api');
 
 console.log('Hybrid API Configuration:', {
   hostname: window.location.hostname,

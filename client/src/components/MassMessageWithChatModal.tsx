@@ -5,6 +5,7 @@ import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import MassMessageModal from './MassMessageModal';
 import axios from 'axios';
+import { API_BASE_URL } from '../lib/api-config-supabase';
 
 interface MassMessageWithChatModalProps {
   isOpen: boolean;
@@ -33,9 +34,7 @@ const MassMessageWithChatModal: React.FC<MassMessageWithChatModalProps> = ({
   const fetchInboxes = async (accountId: string, apiKey: string) => {
     try {
       const api = axios.create({
-        baseURL: window.location.hostname.includes('netlify.app') 
-          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
-          : '/api',
+        baseURL: API_BASE_URL,
         headers: {
           api_access_token: apiKey,
           "Content-Type": "application/json",

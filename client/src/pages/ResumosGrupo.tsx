@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube, Info } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../lib/api-config-supabase';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
@@ -156,9 +157,7 @@ const ResumosGrupo = () => {
     setLoadingInboxes(true);
     try {
       const api = axios.create({
-        baseURL: window.location.hostname.includes('netlify.app')
-          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1'
-          : '/api',
+        baseURL: API_BASE_URL,
         headers: {
           api_access_token: apiKey,
           'Content-Type': 'application/json',

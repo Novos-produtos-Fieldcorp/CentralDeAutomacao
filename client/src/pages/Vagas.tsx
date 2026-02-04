@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Plus, MapPin, Calendar, Clock, Users, Building, LayoutDashboard } from 'lucide-react';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
+import { API_BASE_URL } from '../lib/api-config-supabase';
 import DashboardStats from '../components/DashboardStats';
 import VagasList from '../components/VagasList';
 import AddVagaModal from '../components/AddVagaModal';
@@ -37,9 +38,7 @@ const Vagas: React.FC = () => {
       const companyId = companyData.company_id;
       
       // Then fetch dashboard data using company_id
-      const apiBaseUrl = window.location.hostname.includes('netlify.app') 
-        ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
-        : '/api';
+      const apiBaseUrl = API_BASE_URL;
       const response = await fetch(`${apiBaseUrl}/vagas/dashboard/${companyId}`);
       if (response.ok) {
         const data = await response.json();

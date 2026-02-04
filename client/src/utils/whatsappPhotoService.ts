@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/queryClient';
+import { API_BASE_URL } from '@/lib/api-config-supabase';
 
 export interface WhatsAppPhotoUpdate {
   motorista_id: number;
@@ -53,9 +54,7 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string, apiKey?: string, a
     // Usar axios igual ao FloatingChat para manter consistência
     const axios = (await import('axios')).default;
     const apiClient = axios.create({
-      baseURL: window.location.hostname.includes('netlify.app') 
-        ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1' 
-        : '/api',
+      baseURL: API_BASE_URL,
       headers: {
         'api_access_token': token,
         'Content-Type': 'application/json',
@@ -72,7 +71,7 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string, apiKey?: string, a
 
     // Primeiro tentar busca por ID exato
     try {
-      const searchResponse = await apiClient.get(`/api/v1/accounts/${account}/contacts/search`, {
+      const searchResponse = await apiClient.get(`/v1/accounts/${account}/contacts/search`, {
         params: {
           q: digitsOnly
         }
@@ -83,7 +82,7 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string, apiKey?: string, a
         // Contact found via search
         
         // Buscar dados completos do contato igual ao FloatingChat
-        const contactResponse = await apiClient.get(`/api/v1/accounts/${accountId}/contacts/${contact.id}`);
+        const contactResponse = await apiClient.get(`/v1/accounts/${accountId}/contacts/${contact.id}`);
         
         if (contactResponse.data) {
           const photoUrl = contactResponse.data.avatar_url || contactResponse.data.thumbnail;
@@ -100,7 +99,7 @@ export const fetchWhatsAppPhoto = async (phoneNumber: string, apiKey?: string, a
 
     // Se não encontrou, tentar busca geral como o FloatingChat
     try {
-      const searchUrl = `/api/v1/accounts/${accountId}/contacts?q=${encodeURIComponent(phoneNumber)}&sort=name&_t=${Date.now()}`;
+      const searchUrl = `/v1/accounts/${accountId}/contacts?q=${encodeURIComponent(phoneNumber)}&sort=name&_t=${Date.now()}`;
       const response = await apiClient.get(searchUrl);
       
       if (response.data && response.data.payload && response.data.payload.length > 0) {
