@@ -1,0 +1,44 @@
+injected.js:37 Manual summary trigger data: {group_id: 13, company_id: 2, account_id: 1, inbox_id: '211', has_api_key: true}
+injected.js:37 AI Summary error: litellm.RateLimitError: RateLimitError: GroqException - {"error":{"message":"Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01jc19nctzf6as7r14rkbdmpc2` service tier `on_demand` on tokens per minute (TPM): Limit 12000, Used 11847, Requested 696. Please try again in 2.715s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing","type":"tokens","code":"rate_limit_exceeded"}}
+
+(anonymous) @ injected.js:37
+handleSendManualSummary @ ResumosGrupo.tsx:529
+await in handleSendManualSummary
+onClick @ ResumosGrupo.tsx:1014
+callCallback2 @ chunk-NFC5BX5N.js?v=d94cdbd3:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=d94cdbd3:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=d94cdbd3:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=d94cdbd3:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=d94cdbd3:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=d94cdbd3:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=d94cdbd3:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=d94cdbd3:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=d94cdbd3:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=d94cdbd3:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=d94cdbd3:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=d94cdbd3:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=d94cdbd3:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=d94cdbd3:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=d94cdbd3:5449
+injected.js:37 Error sending manual summary: Error: litellm.RateLimitError: RateLimitError: GroqException - {"error":{"message":"Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01jc19nctzf6as7r14rkbdmpc2` service tier `on_demand` on tokens per minute (TPM): Limit 12000, Used 11847, Requested 696. Please try again in 2.715s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing","type":"tokens","code":"rate_limit_exceeded"}}
+
+    at handleSendManualSummary (ResumosGrupo.tsx:530:15)
+(anonymous) @ injected.js:37
+handleSendManualSummary @ ResumosGrupo.tsx:547
+await in handleSendManualSummary
+onClick @ ResumosGrupo.tsx:1014
+callCallback2 @ chunk-NFC5BX5N.js?v=d94cdbd3:3674
+invokeGuardedCallbackDev @ chunk-NFC5BX5N.js?v=d94cdbd3:3699
+invokeGuardedCallback @ chunk-NFC5BX5N.js?v=d94cdbd3:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-NFC5BX5N.js?v=d94cdbd3:3736
+executeDispatch @ chunk-NFC5BX5N.js?v=d94cdbd3:7014
+processDispatchQueueItemsInOrder @ chunk-NFC5BX5N.js?v=d94cdbd3:7034
+processDispatchQueue @ chunk-NFC5BX5N.js?v=d94cdbd3:7043
+dispatchEventsForPlugins @ chunk-NFC5BX5N.js?v=d94cdbd3:7051
+(anonymous) @ chunk-NFC5BX5N.js?v=d94cdbd3:7174
+batchedUpdates$1 @ chunk-NFC5BX5N.js?v=d94cdbd3:18913
+batchedUpdates @ chunk-NFC5BX5N.js?v=d94cdbd3:3579
+dispatchEventForPluginEventSystem @ chunk-NFC5BX5N.js?v=d94cdbd3:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-NFC5BX5N.js?v=d94cdbd3:5478
+dispatchEvent @ chunk-NFC5BX5N.js?v=d94cdbd3:5472
+dispatchDiscreteEvent @ chunk-NFC5BX5N.js?v=d94cdbd3:5449

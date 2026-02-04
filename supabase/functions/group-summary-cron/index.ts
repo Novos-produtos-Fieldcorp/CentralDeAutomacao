@@ -7,8 +7,10 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
-// Webhook URL for sending summaries
-const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
+// AI Summary Service URL (uses Express proxy)
+// Set REPLIT_APP_URL environment variable in Supabase Edge Functions settings
+const AI_SERVICE_URL = Deno.env.get('REPLIT_APP_URL') || 'https://your-replit-app.replit.app';
+const AI_SUMMARY_ENDPOINT = `${AI_SERVICE_URL}/api/ai/group-summary`;
 Deno.serve(async (req)=>{
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -138,25 +140,31 @@ async function sendWebhook(grupo: any) {
     }
   }
   
-  // Prepare the webhook payload with required fields including account_id and api_key
-  const webhookData = {
+  // Prepare the AI summary request with required fields
+  const summaryData = {
     "nome_do_grupo": grupo.nome_grupo,
     "company_id": grupo.company_id,
     "group_id": grupo.id,
     "account_id": accountId,
-    "api_key": userApiKey
+    "api_key": userApiKey,
+    "inbox_id": grupo.inbox_id
   };
-  console.log('Sending webhook data:', JSON.stringify({ ...webhookData, api_key: userApiKey ? '[REDACTED]' : null }, null, 2));
-  const response = await fetch(WEBHOOK_URL, {
+  console.log('Sending AI summary request:', JSON.stringify({ ...summaryData, api_key: userApiKey ? '[REDACTED]' : null }, null, 2));
+  const response = await fetch(AI_SUMMARY_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(webhookData)
+    body: JSON.stringify(summaryData)
   });
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`Webhook request failed with status ${response.status}: ${errorBody}`);
+    throw new Error(`AI Summary request failed with status ${response.status}: ${errorBody}`);
   }
-  console.log('Webhook sent successfully!');
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(`AI Summary failed: ${result.error}`);
+  }
+  console.log('AI Summary generated successfully!');
+  return result.summary;
 }
