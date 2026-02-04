@@ -1,17 +1,19 @@
-from crewai import Agent, LLM
+from crewai import Agent
+from langchain_groq import ChatGroq
 import os
 from tools import buscar_mensagens_inbox, buscar_conversas_recentes
 
 
 def get_groq_llm():
-    """Retorna o LLM configurado para Groq usando a nova API do CrewAI 1.9+"""
+    """Retorna o LLM configurado para Groq usando langchain_groq"""
     api_key = os.getenv("GROQ_API_KEY")
     model = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")
     
-    return LLM(
-        model=f"groq/{model}",
+    return ChatGroq(
+        model=model,
         api_key=api_key,
-        temperature=0.3
+        temperature=0.3,
+        max_tokens=2000
     )
 
 
