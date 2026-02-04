@@ -2500,14 +2500,14 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
   };
 
   const getOperacaoColor = (tipo: string | undefined) => {
-    // Design monocromático - diferentes tonalidades de cinza
+    // Badges de operação coloridos para identificação visual
     const colors: Record<string, string> = {
-      'Autoservice': 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800',
-      'Cesari': 'bg-gray-700 text-white dark:bg-gray-300 dark:text-gray-800',
-      'Mitsubishi': 'bg-gray-600 text-white dark:bg-gray-400 dark:text-gray-900',
-      'Sada': 'bg-gray-500 text-white dark:bg-gray-400 dark:text-gray-900',
-      'Superterminais': 'bg-gray-400 text-gray-900 dark:bg-gray-500 dark:text-white',
-      'Tegma': 'bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-white',
+      'Autoservice': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      'Cesari': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      'Mitsubishi': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+      'Sada': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+      'Superterminais': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+      'Tegma': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     };
     return colors[tipo || ''] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
   };
