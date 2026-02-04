@@ -9,9 +9,10 @@ def get_groq_llm():
     api_key = os.getenv("GROQ_API_KEY")
     model = os.getenv("GROQ_MODEL", "llama-3.1-70b-versatile")
     
+    # Adiciona prefixo groq/ para o LiteLLM reconhecer o provider
     return ChatGroq(
-        model=model,
-        api_key=api_key,
+        model_name=f"groq/{model}",
+        groq_api_key=api_key,
         temperature=0.3,
         max_tokens=2000
     )
