@@ -2757,31 +2757,75 @@ interface FaturamentoSada {
   comissao_motorista_cegonha: string | null;
 }
 
-// Componente Financeiro - Lista de registros de faturamento
+// Componente Financeiro - Lista de viagens com cálculo de faturamento
 const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
 
-  // Query para buscar faturamento SADA
-  // NOTA: A tabela atual não tem company_id. Para multi-tenancy, adicionar coluna company_id à tabela.
-  const { data: faturamentoSada = [], isLoading: isLoadingSada, isError: isErrorSada } = useQuery({
-    queryKey: ['faturamento-sada', selectedOperacao],
+  // Query para buscar os preços atuais da SADA
+  const { data: precosSada } = useQuery({
+    queryKey: ['faturamento-sada-precos'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('faturamento_sada')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(1);
       
       if (error) throw error;
-      return data as FaturamentoSada[];
+      return data?.[0] as FaturamentoSada | null;
     },
     enabled: selectedOperacao === 'all' || selectedOperacao === 'Sada',
   });
 
-  const formatCurrency = (value: string | null) => {
-    if (!value) return '-';
-    const num = parseFloat(value);
-    if (isNaN(num)) return value;
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
+  // Query para buscar viagens SADA com dados de faturamento
+  const { data: viagensSada = [], isLoading: isLoadingSada, isError: isErrorSada } = useQuery({
+    queryKey: ['financeiro-sada-viagens', companyId, selectedOperacao],
+    queryFn: async () => {
+      if (!companyId) return [];
+      
+      // Buscar viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIds = viagensEmpresa.map((v: any) => v.id);
+      
+      // Buscar operações SADA
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_sada')
+        .select('*')
+        .in('id_viagem', viagemIds);
+      
+      if (opError || !opData) return [];
+      
+      // Buscar motoristas
+      const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .in('motorista_id', motoristaIds);
+      
+      const motoristasMap: Record<number, string> = {};
+      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      
+      // Combinar dados
+      return opData.map((op: any) => {
+        const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          data_viagem: viagem?.data_hora_inicial,
+          motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+        };
+      }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
+    },
+    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Sada'),
+  });
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -2790,33 +2834,52 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
     });
   };
 
-  // Configuração dos campos de preço por operação (preparado para futuras operações)
-  const precosConfig: Record<string, { label: string; campos: { key: string; label: string }[] }> = {
-    'Sada': {
-      label: 'SADA',
-      campos: [
-        { key: 'familia_basica', label: 'Família Básica' },
-        { key: 'compass', label: 'Compass' },
-        { key: 'toro', label: 'Toro' },
-        { key: 'commander', label: 'Commander' },
-        { key: 'jlr', label: 'JLR' },
-        { key: 'rampage', label: 'Rampage' },
-        { key: 'titano', label: 'Titano' },
-        { key: 'scudo', label: 'Scudo' },
-        { key: 'ducato', label: 'Ducato' },
-        { key: 'caminhoes', label: 'Caminhões' },
-        { key: 'comissao_motorista_prancha', label: 'Comissão Motorista (Prancha)' },
-        { key: 'comissao_motorista_cegonha', label: 'Comissão Motorista (Cegonha)' },
-      ]
-    },
-    // Preparado para futuras operações
-    // 'Cesari': { ... },
-    // 'Tegma': { ... },
+  // Mapeamento de modelo para chave do banco
+  const modeloParaChave: Record<string, keyof FaturamentoSada> = {
+    'familia_basica': 'familia_basica',
+    'familia basica': 'familia_basica',
+    'familia básica': 'familia_basica',
+    'compass': 'compass',
+    'toro': 'toro',
+    'commander': 'commander',
+    'jlr': 'jlr',
+    'rampage': 'rampage',
+    'ram rampage': 'rampage',
+    'titano': 'titano',
+    'scudo': 'scudo',
+    'ducato': 'ducato',
+    'caminhoes': 'caminhoes',
+    'caminhões': 'caminhoes',
+  };
+
+  // Calcular valor do frete baseado no modelo e quantidade
+  const calcularValorFrete = (modelo: string | null, qtdCarros: number | null): number => {
+    if (!modelo || !qtdCarros || !precosSada) return 0;
+    
+    const modeloLower = modelo.toLowerCase().trim();
+    const chave = modeloParaChave[modeloLower];
+    
+    if (!chave) return 0;
+    
+    const precoUnitario = parseFloat(precosSada[chave] as string || '0');
+    return precoUnitario * qtdCarros;
+  };
+
+  // Calcular comissão do motorista
+  const calcularComissao = (tipoCarreta: number | null, qtdCarros: number | null): number => {
+    if (!precosSada) return 0;
+    
+    // tipo_carreta: 0 = Prancha (fixo), 1 = Cegonha (por veículo)
+    if (tipoCarreta === 0) {
+      return parseFloat(precosSada.comissao_motorista_prancha || '0');
+    } else if (tipoCarreta === 1) {
+      const valorPorVeiculo = parseFloat(precosSada.comissao_motorista_cegonha || '0');
+      return valorPorVeiculo * (qtdCarros || 0);
+    }
+    return 0;
   };
 
   const renderSadaFinanceiro = () => {
@@ -2839,82 +2902,106 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       );
     }
 
-    if (faturamentoSada.length === 0) {
+    if (!precosSada) {
       return (
         <div className="text-center py-12">
-          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">Nenhum registro de faturamento encontrado para SADA.</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Configure os preços na aba "Preços" para começar.</p>
+          <Settings className="w-12 h-12 mx-auto text-yellow-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Preços não configurados para SADA.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Configure os preços na aba "Preços" para visualizar o faturamento.</p>
         </div>
       );
     }
 
+    if (viagensSada.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma viagem SADA encontrada.</p>
+        </div>
+      );
+    }
+
+    // Calcular totais
+    let totalFrete = 0;
+    let totalComissao = 0;
+    viagensSada.forEach((v: any) => {
+      totalFrete += calcularValorFrete(v.modelo, v.qtd_carros);
+      totalComissao += calcularComissao(v.tipo_carreta, v.qtd_carros);
+    });
+
     return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fam. Básica</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Compass</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Toro</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Commander</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">JLR</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">RAM Ramp.</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Titano</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Scudo</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ducato</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Caminhões</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cegonha</th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Prancha</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {faturamentoSada.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  {formatDate(item.created_at)}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.familia_basica)}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.compass)}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.toro)}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.commander)}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.jlr)}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.rampage)}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.titano)}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.scudo)}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.ducato)}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.caminhoes)}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.comissao_motorista_cegonha)}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.comissao_motorista_prancha)}
-                </td>
+      <div className="space-y-4">
+        {/* Cards de resumo */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+            <p className="text-sm text-green-600 dark:text-green-400">Total Frete</p>
+            <p className="text-2xl font-bold text-green-700 dark:text-green-300">{formatCurrency(totalFrete)}</p>
+          </div>
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-600 dark:text-blue-400">Total Comissões</p>
+            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{formatCurrency(totalComissao)}</p>
+          </div>
+          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+            <p className="text-sm text-purple-600 dark:text-purple-400">Total Viagens</p>
+            <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{viagensSada.length}</p>
+          </div>
+        </div>
+
+        {/* Tabela de viagens */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Modelo</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Qtd</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor Frete</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+              {viagensSada.map((viagem: any) => {
+                const valorFrete = calcularValorFrete(viagem.modelo, viagem.qtd_carros);
+                const comissao = calcularComissao(viagem.tipo_carreta, viagem.qtd_carros);
+                const tipoCarreta = viagem.tipo_carreta === 0 ? 'Prancha' : viagem.tipo_carreta === 1 ? 'Cegonha' : '-';
+                
+                return (
+                  <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {formatDate(viagem.data_viagem)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                      {viagem.motorista_nome}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                      {viagem.modelo || '-'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                      {viagem.qtd_carros || '-'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        viagem.tipo_carreta === 0 
+                          ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                      }`}>
+                        {tipoCarreta}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-green-600 dark:text-green-400">
+                      {formatCurrency(valorFrete)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
+                      {formatCurrency(comissao)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   };
