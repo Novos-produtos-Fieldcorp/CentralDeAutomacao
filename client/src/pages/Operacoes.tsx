@@ -2760,7 +2760,31 @@ interface FaturamentoSada {
 // Componente Financeiro - Lista de viagens com cálculo de faturamento
 const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
-  const [filtroPeriodo, setFiltroPeriodo] = useState<'15' | '30' | 'all'>('30');
+  const [filtroPeriodo, setFiltroPeriodo] = useState<'15' | '30' | 'custom'>('30');
+  const [isDateFilterExpanded, setIsDateFilterExpanded] = useState(false);
+  const [dataInicio, setDataInicio] = useState('');
+  const [dataFim, setDataFim] = useState('');
+
+  // Função para filtrar viagens por período (usada por todas as operações)
+  const filtrarPorPeriodo = (viagens: any[]) => {
+    const agora = new Date();
+    return viagens.filter((v: any) => {
+      const dataViagem = v.data_viagem ? new Date(v.data_viagem) : null;
+      if (!dataViagem) return false;
+      
+      if (filtroPeriodo === 'custom') {
+        const inicio = dataInicio ? new Date(dataInicio + 'T00:00:00') : null;
+        const fim = dataFim ? new Date(dataFim + 'T23:59:59') : null;
+        if (inicio && dataViagem < inicio) return false;
+        if (fim && dataViagem > fim) return false;
+        return true;
+      }
+      
+      const diasAtras = filtroPeriodo === '15' ? 15 : 30;
+      const dataLimite = new Date(agora.getTime() - diasAtras * 24 * 60 * 60 * 1000);
+      return dataViagem >= dataLimite;
+    });
+  };
 
   // Query para buscar os preços atuais da SADA
   const { data: precosSada } = useQuery({
@@ -3009,15 +3033,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     }
 
     // Filtrar viagens por período
-    const agora = new Date();
-    const viagensFiltradas = viagensSada.filter((v: any) => {
-      if (filtroPeriodo === 'all') return true;
-      if (!v.data_viagem) return false;
-      const dataViagem = new Date(v.data_viagem);
-      const diasAtras = filtroPeriodo === '15' ? 15 : 30;
-      const dataLimite = new Date(agora.getTime() - diasAtras * 24 * 60 * 60 * 1000);
-      return dataViagem >= dataLimite;
-    });
+    const viagensFiltradas = filtrarPorPeriodo(viagensSada);
 
     // Calcular totais
     let totalFrete = 0;
@@ -3029,46 +3045,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 
     return (
       <div className="space-y-4">
-        {/* Filtro de período */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400">Período:</span>
-          <div className="flex gap-1">
-            <button
-              onClick={() => setFiltroPeriodo('15')}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                filtroPeriodo === '15'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-              data-testid="filter-15-days"
-            >
-              15 dias
-            </button>
-            <button
-              onClick={() => setFiltroPeriodo('30')}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                filtroPeriodo === '30'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-              data-testid="filter-30-days"
-            >
-              30 dias
-            </button>
-            <button
-              onClick={() => setFiltroPeriodo('all')}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                filtroPeriodo === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-              data-testid="filter-all-days"
-            >
-              Todos
-            </button>
-          </div>
-        </div>
-
         {/* Cards de resumo */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
@@ -3189,10 +3165,81 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Financeiro</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">Registros de comissão e recebimento por operação</p>
+        </div>
+
+        {/* Filtro de período global */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex gap-1">
+            <button
+              onClick={() => { setFiltroPeriodo('15'); setDataInicio(''); setDataFim(''); }}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                filtroPeriodo === '15'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              data-testid="filter-15-days"
+            >
+              15 dias
+            </button>
+            <button
+              onClick={() => { setFiltroPeriodo('30'); setDataInicio(''); setDataFim(''); }}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                filtroPeriodo === '30'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              data-testid="filter-30-days"
+            >
+              30 dias
+            </button>
+          </div>
+
+          <button
+            onClick={() => setIsDateFilterExpanded(!isDateFilterExpanded)}
+            className={`p-2 border rounded-lg transition-colors ${
+              filtroPeriodo === 'custom'
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+            }`}
+            title="Filtrar por Data Personalizada"
+            data-testid="button-toggle-date-filter-financeiro"
+          >
+            <Calendar className="w-4 h-4" />
+          </button>
+
+          {isDateFilterExpanded && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dataInicio}
+                onChange={(e) => { setDataInicio(e.target.value); setFiltroPeriodo('custom'); }}
+                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                data-testid="input-data-inicio-financeiro"
+              />
+              <span className="text-gray-400 text-sm">até</span>
+              <input
+                type="date"
+                value={dataFim}
+                onChange={(e) => { setDataFim(e.target.value); setFiltroPeriodo('custom'); }}
+                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                data-testid="input-data-fim-financeiro"
+              />
+              {(dataInicio || dataFim) && (
+                <button
+                  onClick={() => { setDataInicio(''); setDataFim(''); setFiltroPeriodo('30'); }}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  title="Limpar filtro de data"
+                  data-testid="button-limpar-data-financeiro"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
