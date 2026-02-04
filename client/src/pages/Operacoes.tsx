@@ -3713,16 +3713,20 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
                   {campo.label}
                 </label>
                 {editingSada ? (
-                  <input
-                    type="text"
-                    value={sadaForm[campo.key as keyof FaturamentoSada] || ''}
-                    onChange={(e) => handleSadaChange(campo.key, e.target.value)}
-                    placeholder="0,00"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                    data-testid={`input-sada-${campo.key}`}
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
+                    <input
+                      type="text"
+                      value={sadaForm[campo.key as keyof FaturamentoSada] || ''}
+                      onChange={(e) => handleSadaChange(campo.key, e.target.value)}
+                      placeholder="0,00"
+                      className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      data-testid={`input-sada-${campo.key}`}
+                    />
+                  </div>
                 ) : (
-                  <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                  <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
+                    <span className="text-gray-500 dark:text-gray-400">R$</span>
                     {currentSadaPrices?.[campo.key as keyof FaturamentoSada] || '-'}
                   </div>
                 )}
@@ -3744,16 +3748,20 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
                   {campo.label}
                 </label>
                 {editingSada ? (
-                  <input
-                    type="text"
-                    value={sadaForm[campo.key as keyof FaturamentoSada] || ''}
-                    onChange={(e) => handleSadaChange(campo.key, e.target.value)}
-                    placeholder="0,00"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                    data-testid={`input-sada-${campo.key}`}
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
+                    <input
+                      type="text"
+                      value={sadaForm[campo.key as keyof FaturamentoSada] || ''}
+                      onChange={(e) => handleSadaChange(campo.key, e.target.value)}
+                      placeholder="0,00"
+                      className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      data-testid={`input-sada-${campo.key}`}
+                    />
+                  </div>
                 ) : (
-                  <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                  <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
+                    <span className="text-gray-500 dark:text-gray-400">R$</span>
                     {currentSadaPrices?.[campo.key as keyof FaturamentoSada] || '-'}
                   </div>
                 )}
@@ -3844,16 +3852,20 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
                 Valor por Viagem (Recebido)
               </label>
               {editingSuperterminais ? (
-                <input
-                  type="text"
-                  value={superterminaisForm.valor_viagem || ''}
-                  onChange={(e) => handleSuperterminaisChange('valor_viagem', e.target.value)}
-                  placeholder="135,00"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                  data-testid="input-superterminais-valor_viagem"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
+                  <input
+                    type="text"
+                    value={superterminaisForm.valor_viagem || ''}
+                    onChange={(e) => handleSuperterminaisChange('valor_viagem', e.target.value)}
+                    placeholder="135,00"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    data-testid="input-superterminais-valor_viagem"
+                  />
+                </div>
               ) : (
-                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
+                  <span className="text-gray-500 dark:text-gray-400">R$</span>
                   {currentSuperterminaisPrices?.valor_viagem || '135,00'}
                 </div>
               )}
@@ -3863,16 +3875,20 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
                 Comissão do Motorista (por viagem)
               </label>
               {editingSuperterminais ? (
-                <input
-                  type="text"
-                  value={superterminaisForm.comissao_motorista || ''}
-                  onChange={(e) => handleSuperterminaisChange('comissao_motorista', e.target.value)}
-                  placeholder="10,00"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                  data-testid="input-superterminais-comissao_motorista"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
+                  <input
+                    type="text"
+                    value={superterminaisForm.comissao_motorista || ''}
+                    onChange={(e) => handleSuperterminaisChange('comissao_motorista', e.target.value)}
+                    placeholder="10,00"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    data-testid="input-superterminais-comissao_motorista"
+                  />
+                </div>
               ) : (
-                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
+                  <span className="text-gray-500 dark:text-gray-400">R$</span>
                   {currentSuperterminaisPrices?.comissao_motorista || '10,00'}
                 </div>
               )}
