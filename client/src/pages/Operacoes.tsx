@@ -2990,7 +2990,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         .limit(1);
       
       if (error) throw error;
-      return data?.[0] as FaturamentoSada | undefined;
+      return (data?.[0] as FaturamentoSada) || null;
     },
     enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Sada'),
   });
