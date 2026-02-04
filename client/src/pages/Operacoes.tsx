@@ -2828,6 +2828,22 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
+  // Converte string de preço (formato BR ou US) para número
+  const parsePreco = (valor: string | null): number => {
+    if (!valor) return 0;
+    // Remove espaços e R$
+    let limpo = valor.replace(/[R$\s]/g, '').trim();
+    // Se tem vírgula e ponto, assume formato BR (1.234,56)
+    if (limpo.includes(',') && limpo.includes('.')) {
+      limpo = limpo.replace(/\./g, '').replace(',', '.');
+    } else if (limpo.includes(',')) {
+      // Apenas vírgula, assume formato BR (234,56)
+      limpo = limpo.replace(',', '.');
+    }
+    const num = parseFloat(limpo);
+    return isNaN(num) ? 0 : num;
+  };
+
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('pt-BR', {
@@ -2906,7 +2922,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       const modeloLower = modelo.toLowerCase().trim();
       const chave = modeloParaChave[modeloLower];
       if (chave && qtdCarrosTotal) {
-        const precoUnitario = parseFloat(precosSada[chave] as string || '0');
+        const precoUnitario = parsePreco(precosSada[chave] as string);
         return precoUnitario * qtdCarrosTotal;
       }
       return 0;
@@ -2917,7 +2933,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     for (const item of veiculosParsed) {
       const chave = modeloParaChave[item.modelo];
       if (chave) {
-        const precoUnitario = parseFloat(precosSada[chave] as string || '0');
+        const precoUnitario = parsePreco(precosSada[chave] as string);
         valorTotal += precoUnitario * item.qtd;
       }
     }
@@ -2944,9 +2960,9 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     
     // tipo_carreta: 0 = Prancha (fixo), 1 = Cegonha (por veículo)
     if (tipoCarreta === 0) {
-      return parseFloat(precosSada.comissao_motorista_prancha || '0');
+      return parsePreco(precosSada.comissao_motorista_prancha);
     } else if (tipoCarreta === 1) {
-      const valorPorVeiculo = parseFloat(precosSada.comissao_motorista_cegonha || '0');
+      const valorPorVeiculo = parsePreco(precosSada.comissao_motorista_cegonha);
       return valorPorVeiculo * qtdTotal;
     }
     return 0;
