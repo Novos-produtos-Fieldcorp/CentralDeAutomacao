@@ -1153,81 +1153,72 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      {/* Cards de estatísticas - Design monocromático */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <button 
           onClick={() => setStatsModalOpen('total')}
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md transition-all cursor-pointer"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
           data-testid="card-total-viagens"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <Map className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Total Viagens</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.total || 0}</p>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
+            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <Map className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </div>
           </div>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">{viagensStats?.total || 0}</p>
         </button>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <LayoutDashboard className="w-5 h-5 text-green-600 dark:text-green-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Operações</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{OPERACOES_TABELAS.length}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Operações</span>
+            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <LayoutDashboard className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </div>
           </div>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">{OPERACOES_TABELAS.length}</p>
         </div>
 
         <button 
           onClick={() => setStatsModalOpen('hoje')}
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-yellow-300 dark:hover:border-yellow-600 hover:shadow-md transition-all cursor-pointer"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
           data-testid="card-viagens-hoje"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Hoje</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.hoje || 0}</p>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Hoje</span>
+            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </div>
           </div>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">{viagensStats?.hoje || 0}</p>
         </button>
 
         <button 
           onClick={() => setStatsModalOpen('emAndamento')}
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md transition-all cursor-pointer"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
           data-testid="card-em-andamento"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-              <RefreshCw className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Em Andamento</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.emAndamento || 0}</p>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Em Andamento</span>
+            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <RefreshCw className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </div>
           </div>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">{viagensStats?.emAndamento || 0}</p>
         </button>
 
         <button 
           onClick={() => setStatsModalOpen('concluidas')}
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-md transition-all cursor-pointer"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
           data-testid="card-concluidas"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Check className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Concluídas</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.concluidas || 0}</p>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Concluídas</span>
+            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <Check className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             </div>
           </div>
+          <p className="text-3xl font-bold text-gray-900 dark:text-white">{viagensStats?.concluidas || 0}</p>
         </button>
       </div>
 
@@ -1300,11 +1291,11 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                           <td className="px-3 py-3 text-sm text-gray-900 dark:text-white max-w-[100px] truncate" title={viagem.operacao_dados?.destino}>{viagem.operacao_dados?.destino || '-'}</td>
                           <td className="px-3 py-3 text-sm whitespace-nowrap">
                             {viagem.data_hora_final ? (
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 whitespace-nowrap">
+                              <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800 whitespace-nowrap">
                                 Concluída
                               </span>
                             ) : (
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 whitespace-nowrap">
+                              <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 whitespace-nowrap">
                                 Em Andamento
                               </span>
                             )}
@@ -1320,39 +1311,38 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
+      {/* Histograma de viagens - Design monocromático */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
+                <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full" />
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Viagens</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Histórico diário de viagens realizadas</p>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <div className="flex items-center gap-8">
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {viagensHistograma.reduce((acc, d) => acc + d.total, 0)}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Total período</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total período</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {viagensHistograma.length > 0 
                       ? (viagensHistograma.reduce((acc, d) => acc + d.total, 0) / viagensHistograma.length).toFixed(1) 
                       : '0'}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Média/dia</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Média/dia</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {Math.max(...viagensHistograma.map(d => d.total), 0)}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Pico</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Pico</p>
                 </div>
               </div>
             </div>
@@ -1362,7 +1352,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                 onClick={() => setIsPeriodoExpanded(!isPeriodoExpanded)}
                 className={`w-10 h-10 rounded-lg transition-colors flex items-center justify-center ${
                   isPeriodoExpanded 
-                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
+                    ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800' 
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
                 title={isPeriodoExpanded ? 'Fechar seletor de período' : 'Abrir seletor de período'}
@@ -1387,7 +1377,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                       onClick={() => setHistogramaPeriodo(periodo.id)}
                       className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                         histogramaPeriodo === periodo.id
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                       data-testid={`btn-periodo-${periodo.id}`}
@@ -1453,16 +1443,16 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                           <div 
                             className={`w-full max-w-[20px] rounded-t-sm transition-all duration-300 ${
                               isToday 
-                                ? 'bg-gradient-to-t from-blue-600 to-blue-400' 
+                                ? 'bg-gray-900 dark:bg-white' 
                                 : isWeekend 
-                                  ? 'bg-gradient-to-t from-gray-400 to-gray-300 dark:from-gray-600 dark:to-gray-500' 
-                                  : 'bg-gradient-to-t from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-500'
-                            } group-hover:opacity-80`}
+                                  ? 'bg-gray-300 dark:bg-gray-600' 
+                                  : 'bg-gray-500 dark:bg-gray-400'
+                            } group-hover:opacity-70`}
                             style={{ height: `${Math.max(heightPercent, dia.total > 0 ? 8 : 2)}%` }}
                           />
                         </div>
                         
-                        <div className="invisible group-hover:visible absolute -top-8 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+                        <div className="invisible group-hover:visible absolute -top-8 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-2 py-1 rounded whitespace-nowrap z-10">
                           {dia.data}: {dia.total} viagens
                         </div>
                       </div>
@@ -1482,15 +1472,15 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                 
                 <div className="flex items-center justify-center gap-6 pt-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-gradient-to-t from-blue-500 to-blue-400" />
+                    <div className="w-3 h-3 rounded-sm bg-gray-500 dark:bg-gray-400" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Dias úteis</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-gradient-to-t from-gray-400 to-gray-300 dark:from-gray-600 dark:to-gray-500" />
+                    <div className="w-3 h-3 rounded-sm bg-gray-300 dark:bg-gray-600" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Fim de semana</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-gradient-to-t from-blue-600 to-blue-400" />
+                    <div className="w-3 h-3 rounded-sm bg-gray-900 dark:bg-white" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Hoje</span>
                   </div>
                 </div>
@@ -2502,20 +2492,22 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
   };
 
   const getOperacaoColor = (tipo: string | undefined) => {
+    // Design monocromático - diferentes tonalidades de cinza
     const colors: Record<string, string> = {
-      'Autoservice': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-      'Cesari': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-      'Mitsubishi': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-      'Sada': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-      'Superterminais': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-      'Tegma': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+      'Autoservice': 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800',
+      'Cesari': 'bg-gray-700 text-white dark:bg-gray-300 dark:text-gray-800',
+      'Mitsubishi': 'bg-gray-600 text-white dark:bg-gray-400 dark:text-gray-900',
+      'Sada': 'bg-gray-500 text-white dark:bg-gray-400 dark:text-gray-900',
+      'Superterminais': 'bg-gray-400 text-gray-900 dark:bg-gray-500 dark:text-white',
+      'Tegma': 'bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-white',
     };
     return colors[tipo || ''] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
   };
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      {/* Filtros - Design monocromático */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -2524,7 +2516,7 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
               placeholder="Buscar por motorista, placa, origem ou destino..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-400 focus:border-gray-400 focus:bg-white"
               data-testid="input-search-viagens"
             />
           </div>
@@ -2626,11 +2618,12 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      {/* Tabela de viagens - Design monocromático */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         {isLoading ? (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
+              <thead>
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora Inicial</th>
@@ -2667,54 +2660,52 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
-                <tr>
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora Inicial</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Operação</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ajudante</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destino</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                 {filteredViagens.map((viagem) => (
                   <tr 
                     key={viagem.id} 
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer transition-colors"
                     onClick={() => setSelectedViagem(viagem)}
                     data-testid={`row-viagem-${viagem.id}`}
                   >
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">{viagem.id}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{viagem.id}</td>
+                    <td className="px-4 py-3.5 text-sm text-gray-900 dark:text-white font-medium">
                       {formatDateTime(viagem.data_hora_inicial)}
                     </td>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="px-4 py-3.5 text-sm">
                       {viagem.operacao_tipo ? (
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOperacaoColor(viagem.operacao_tipo)}`}>
+                        <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${getOperacaoColor(viagem.operacao_tipo)}`}>
                           {viagem.operacao_tipo}
                         </span>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.motorista_nome || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.ajudante_nome || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.veiculo_placa || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                    <td className="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-300">{viagem.motorista_nome || '-'}</td>
+                    <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{viagem.veiculo_placa || '-'}</td>
+                    <td className="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-300">
                       {viagem.operacao_dados?.origem || '-'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                    <td className="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-300">
                       {viagem.operacao_dados?.destino || '-'}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
                         viagem.data_hora_final 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800'
+                          : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                       }`}>
                         {viagem.data_hora_final ? 'Concluída' : 'Em Andamento'}
                       </span>
