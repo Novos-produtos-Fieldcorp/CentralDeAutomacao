@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Loader2, Calendar, MessagesSquare, Trash2, BarChart2, Clock, Link2, Send, Edit2, AlertTriangle, CheckCircle2, XCircle, Settings, Smartphone, LayoutList, History, Users, Bell, FileText, Home, Truck, Gauge, ClipboardCheck, Store, Mail, Phone, Map, Star, Heart, Bookmark, Flag, Award, Zap, Briefcase, Coffee, Compass, Database, Headphones, Image, Key, Layers, Music, Package, Printer, Radio, Shield, ShoppingBag, Smile, Sun, Terminal, Umbrella, Video, Wifi, Activity, Anchor, Archive, AtSign, Battery, Book, Box, Camera, Cast, Cloud, Code, Command, Copy, CreditCard, Disc, Download, Droplet, Eye, Facebook, Film, Filter, Folder, Gift, GitBranch, Globe, Grid, HardDrive, Hash, Instagram, Laptop, Leaf, LifeBuoy, Link, Linkedin, List, Lock, Maximize, Menu, MessageCircle, Mic, Monitor, Moon, Move, Navigation, Octagon, Paperclip, Pause, Percent, Play, Power, RefreshCw as Refresh, RotateCcw, Save, Search, Server, Share, ShoppingCart, Slash, Sliders, Speaker, Square, Tag, Target, ThumbsUp, Trash, Twitter, Upload, User, Voicemail, Volume, Watch, Wind, Youtube, Info } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
+import axios from 'axios';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
+import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -51,9 +53,10 @@ const ResumosGrupo = () => {
   const { query, companyId: legacyCompanyId } = useCompanyData();
   const { accountId: hookAccountId, companyId } = useCurrentAccount();
   const effectiveCompanyId = companyId || legacyCompanyId;
-  
+  const { token: wiseAppToken } = useWiseAppAccess();
+
   // AccountId: URL/localStorage primeiro (como FloatingChat), depois hook para carregar inboxes ao criar/editar grupo
-  const accountId = searchParams.get("account_id") 
+  const accountId = searchParams.get("account_id")
     || (typeof localStorage !== 'undefined' ? localStorage.getItem("account_id") : null)
     || hookAccountId || null;
   const [loading, setLoading] = useState(true);
@@ -139,37 +142,50 @@ const ResumosGrupo = () => {
     setPaginatedEnvios(filteredEnvios.slice(startIndex, endIndex));
   }, [filteredEnvios, currentPage, pageSize]);
 
-  // Load inboxes when modal opens
+  // Load inboxes when modal opens — mesma forma que em contratados (FloatingChat) ao enviar chat individual
   useEffect(() => {
-    if ((isAddModalOpen || isEditModalOpen) && effectiveCompanyId && accountId) {
+    if ((isAddModalOpen || isEditModalOpen) && accountId && wiseAppToken) {
       loadInboxes();
     }
-  }, [isAddModalOpen, isEditModalOpen, effectiveCompanyId, accountId]);
+  }, [isAddModalOpen, isEditModalOpen, accountId, wiseAppToken]);
 
   const loadInboxes = async () => {
-    if (!effectiveCompanyId || !accountId) return;
-    
-    console.log('Loading inboxes for company:', effectiveCompanyId, 'account:', accountId);
-    
+    const apiKey = wiseAppToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('wiseapp_token') : null);
+    if (!accountId || !apiKey) return;
+
     setLoadingInboxes(true);
     try {
-      const response = await fetch(`/api/inboxes/${effectiveCompanyId}?account_id=${accountId}`, {
-        method: 'GET',
+      const api = axios.create({
+        baseURL: window.location.hostname.includes('netlify.app')
+          ? 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1'
+          : '/api',
         headers: {
+          api_access_token: apiKey,
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
+          Accept: 'application/json',
+        },
       });
+      const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data?.payload && Array.isArray(data.payload)) {
-          setAvailableInboxes(data.payload);
-        }
+      if (response.data?.error === 'WiseApp authentication failed') {
+        setAvailableInboxes([]);
+        return;
+      }
+
+      const inboxesData = response.data?.payload ?? response.data?.inboxes ?? response.data;
+      if (inboxesData && Array.isArray(inboxesData) && inboxesData.length > 0) {
+        setAvailableInboxes(inboxesData.map((inbox: any) => ({
+          id: inbox.id,
+          name: inbox.name ?? inbox.nome,
+          channel_type: inbox.channel_type ?? 'channel',
+          phone_number: inbox.phone_number,
+        })));
+      } else {
+        setAvailableInboxes([]);
       }
     } catch (error) {
       console.error('Error loading inboxes:', error);
+      setAvailableInboxes([]);
     } finally {
       setLoadingInboxes(false);
     }

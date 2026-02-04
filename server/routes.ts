@@ -358,26 +358,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fetching inboxes for company_id: ${companyId}, accountId: ${accountId}`);
 
-      // Buscar token WiseApp para esta empresa
-      const token = await storage.getWiseappToken(parseInt(companyId));
-      
-      if (!token) {
-        return res.status(404).json({ 
-          error: "Token WiseApp não configurado para esta empresa" 
-        });
-      }
-
-      // Buscar dados da empresa para validar accountId
-      const { data: companies, error: companyError } = await supabaseBackend
+      // 1. Buscar id_conta_wiseapp da empresa
+      const { data: companyData, error: companyError } = await supabaseBackend
         .from("company")
         .select("id_conta_wiseapp")
         .eq("company_id", parseInt(companyId))
-        .eq("id_conta_wiseapp", accountId)
-        .limit(1);
+        .single();
 
-      if (companyError || !companies || companies.length === 0) {
+      if (companyError || !companyData) {
+        return res.status(404).json({ 
+          error: "Empresa não encontrada" 
+        });
+      }
+
+      const idContaWiseapp = String(companyData.id_conta_wiseapp);
+
+      // 2. Validar que accountId corresponde à empresa
+      if (idContaWiseapp !== String(accountId)) {
         return res.status(403).json({ 
           error: "Account ID não corresponde à empresa especificada" 
+        });
+      }
+
+      // 3. Buscar access_token em wiseapp_acesso via id_conta_wiseapp
+      const { data: wiseappAcesso, error: tokenError } = await supabaseBackend
+        .from("wiseapp_acesso")
+        .select("access_token_wiseapp")
+        .eq("id_conta_wiseapp", idContaWiseapp)
+        .single();
+
+      const token = !tokenError && wiseappAcesso?.access_token_wiseapp
+        ? wiseappAcesso.access_token_wiseapp
+        : null;
+
+      if (!token) {
+        return res.status(404).json({ 
+          error: "Token WiseApp não configurado para esta empresa" 
         });
       }
 
@@ -390,7 +406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await fetch(targetUrl, {
         method: 'GET',
         headers: {
-          'api_access_token': token,
+          'access_token': token,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'Cache-Control': 'no-cache'
