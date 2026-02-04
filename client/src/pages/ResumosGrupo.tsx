@@ -47,7 +47,8 @@ interface Inbox {
   phone_number?: string;
 }
 
-const WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
+// API endpoint for AI-powered group summary (replaces n8n webhook)
+const AI_SUMMARY_URL = '/api/ai/group-summary';
 
 const ResumosGrupo = () => {
   const [searchParams] = useSearchParams();
@@ -502,11 +503,12 @@ const ResumosGrupo = () => {
         group_id: grupo.id,
         company_id: effectiveCompanyId,
         account_id: wiseappAccountId,
+        inbox_id: grupo.inbox_id,
         has_api_key: !!apiKey
       });
       
-      // Send directly to n8n webhook
-      const response = await fetch(WEBHOOK_URL, {
+      // Send to AI Summary Service
+      const response = await fetch(AI_SUMMARY_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -516,17 +518,25 @@ const ResumosGrupo = () => {
           company_id: effectiveCompanyId,
           group_id: grupo.id,
           account_id: wiseappAccountId,
-          api_key: apiKey
+          api_key: apiKey,
+          inbox_id: grupo.inbox_id
         })
       });
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Webhook error response:', errorText);
-        throw new Error(`Falha ao enviar webhook: ${response.status}`);
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        console.error('AI Summary error:', result.error);
+        throw new Error(result.error || `Falha ao gerar resumo: ${response.status}`);
       }
       
-      toast.success('Automação iniciada com sucesso');
+      // Show success and display summary if available
+      if (result.summary) {
+        toast.success('Resumo gerado com sucesso!');
+        console.log('AI Generated Summary:', result.summary);
+      } else {
+        toast.success('Resumo gerado com sucesso!');
+      }
       
       // Refresh the delivery history
       fetchEnvios(grupo.id);

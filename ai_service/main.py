@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 import config
 from crews import create_group_summary_crew, create_quick_summary_crew
+from tools import send_message_to_inbox
 
 app = FastAPI(
     title="AI Summary Service",
@@ -55,30 +56,42 @@ async def generate_group_summary(request: GroupSummaryRequest):
                 "group_id": request.group_id
             }
         
-        if not request.inbox_id:
-            return {
-                "success": False,
-                "error": "inbox_id e obrigatorio para buscar mensagens",
-                "group_id": request.group_id
-            }
-        
-        inbox_id = str(request.inbox_id)
+        # inbox_id is optional - if not provided, generate a basic summary without message fetching
+        inbox_id = str(request.inbox_id) if request.inbox_id else None
         account_id = str(request.account_id)
         api_key = request.api_key
         group_name = request.nome_do_grupo
         
-        if request.quick_mode:
-            crew = create_quick_summary_crew(inbox_id, account_id, api_key, group_name)
+        if inbox_id:
+            # Full summary with message fetching
+            if request.quick_mode:
+                crew = create_quick_summary_crew(inbox_id, account_id, api_key, group_name)
+            else:
+                crew = create_group_summary_crew(inbox_id, account_id, api_key, group_name)
+            
+            result = crew.kickoff()
+            summary_text = str(result)
         else:
-            crew = create_group_summary_crew(inbox_id, account_id, api_key, group_name)
+            # Basic summary without inbox
+            summary_text = f"RESUMO DO GRUPO: {group_name}\n\nInbox nao configurado - configure o inbox_id para obter resumos detalhados das conversas."
         
-        result = crew.kickoff()
+        # Send summary to WiseApp if inbox_id is available
+        message_sent = False
+        send_error = None
+        if inbox_id:
+            send_result = send_message_to_inbox(inbox_id, account_id, api_key, summary_text, group_name)
+            message_sent = send_result.get("success", False)
+            if not message_sent:
+                send_error = send_result.get("error")
+                print(f"Warning: Failed to send summary to WiseApp: {send_error}")
         
         return {
             "success": True,
-            "summary": str(result),
+            "summary": summary_text,
             "group_id": request.group_id,
-            "group_name": request.nome_do_grupo
+            "group_name": request.nome_do_grupo,
+            "message_sent": message_sent,
+            "send_error": send_error
         }
         
     except Exception as e:

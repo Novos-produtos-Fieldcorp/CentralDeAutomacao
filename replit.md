@@ -64,6 +64,20 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **FIPE API (placas.fipeapi.com.br)**: For real-time vehicle data consultation.
 - **CEP APIs**: ViaCEP, BrasilAPI, PostMon, RepublicaVirtual for address lookup.
 - **CPF API**: For automatic data population in forms.
+- **Groq AI (via CrewAI)**: AI-powered group summary generation service.
+
+### AI Summary Service (ai_service/)
+- **Technology**: Python 3.11 with CrewAI framework and FastAPI
+- **LLM Provider**: Groq (llama-3.1-70b-versatile model)
+- **Port**: 8000 (internal, proxied through Express on port 5000)
+- **Endpoints**:
+  - `POST /api/group-summary`: Generate AI summary for a group/inbox
+  - `GET /health`: Health check endpoint
+- **Agents**:
+  - Group Summary Analyst: Analyzes conversations and generates executive summaries
+  - Insights Analyst: Extracts insights and metrics from analyzed conversations
+- **Configuration**: Requires `GROQ_API_KEY` environment variable
+- **Integration**: Replaces previous n8n webhook integration for group summaries
 
 ### Utilities & UI Enhancements
 - **Date Handling**: `date-fns`.

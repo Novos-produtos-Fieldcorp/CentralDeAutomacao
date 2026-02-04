@@ -8,8 +8,10 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
-// Webhook URL for sending summaries
-const WEBHOOK_URL = "https://n8nqp.wiseapp360.com/webhook/resumo-grupo";
+// AI Summary Service URL (uses Express proxy)
+// Set REPLIT_APP_URL environment variable in Supabase Edge Functions settings
+const AI_SERVICE_URL = Deno.env.get('REPLIT_APP_URL') || 'https://your-replit-app.replit.app';
+const AI_SUMMARY_ENDPOINT = `${AI_SERVICE_URL}/api/ai/group-summary`;
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -84,40 +86,46 @@ Deno.serve(async (req) => {
       }
     }
     
-    // Send webhook with just the required fields
+    // Send AI Summary request
     try {
-      // Prepare the webhook payload with required fields including company_id, group_id, account_id and api_key
-      const webhookData = {
+      // Prepare the AI summary request with required fields
+      const summaryData = {
         nome_do_grupo: grupo.nome_grupo,
         company_id: grupo.company_id,
         group_id: grupo.id,
         account_id: accountId,
         api_key: userApiKey,
+        inbox_id: grupo.inbox_id,
       };
       console.log(
-        "Sending webhook data:",
-        JSON.stringify({ ...webhookData, api_key: userApiKey ? '[REDACTED]' : null }, null, 2),
+        "Sending AI summary request:",
+        JSON.stringify({ ...summaryData, api_key: userApiKey ? '[REDACTED]' : null }, null, 2),
       );
-      // Send the webhook
-      const response = await fetch(WEBHOOK_URL, {
+      // Send to AI Summary Service
+      const response = await fetch(AI_SUMMARY_ENDPOINT, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(webhookData),
+        body: JSON.stringify(summaryData),
       });
-      console.log("Webhook response status:", response.status);
+      console.log("AI Summary response status:", response.status);
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`Webhook error response: ${errorText}`);
+        console.error(`AI Summary error response: ${errorText}`);
         throw new Error(
-          `Failed to send webhook: ${response.status} - ${errorText}`,
+          `Failed to generate AI summary: ${response.status} - ${errorText}`,
         );
+      }
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(`AI Summary failed: ${result.error}`);
       }
       return new Response(
         JSON.stringify({
           success: true,
-          message: `Summary sent successfully for group ${grupo.nome_grupo}`,
+          message: `AI Summary generated successfully for group ${grupo.nome_grupo}`,
+          summary: result.summary,
           data: {
             group_id: grupo.id,
             group_name: grupo.nome_grupo,
@@ -131,8 +139,8 @@ Deno.serve(async (req) => {
           status: 200,
         },
       );
-    } catch (webhookError: any) {
-      const errorMessage = `Error sending webhook: ${webhookError.message}`;
+    } catch (aiError: any) {
+      const errorMessage = `Error generating AI summary: ${aiError.message}`;
       console.error(errorMessage);
       throw new Error(errorMessage);
     }

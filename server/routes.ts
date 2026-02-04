@@ -5383,6 +5383,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register CPF API route
   // CPF consultado diretamente no frontend
 
+  // AI Summary Service proxy route
+  app.post("/api/ai/group-summary", async (req, res) => {
+    try {
+      const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
+      
+      console.log("[AI Service] Proxying request to:", AI_SERVICE_URL);
+      console.log("[AI Service] Request body:", JSON.stringify(req.body, null, 2));
+      
+      const response = await axios.post(
+        `${AI_SERVICE_URL}/api/group-summary`,
+        req.body,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 120000, // 2 minutes timeout for AI processing
+        }
+      );
+      
+      console.log("[AI Service] Response:", JSON.stringify(response.data, null, 2));
+      res.json(response.data);
+    } catch (error: any) {
+      console.error("[AI Service] Error:", error.message);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Erro ao processar resumo com IA",
+      });
+    }
+  });
+
+  // AI Service health check
+  app.get("/api/ai/health", async (req, res) => {
+    try {
+      const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
+      const response = await axios.get(`${AI_SERVICE_URL}/health`, { timeout: 5000 });
+      res.json(response.data);
+    } catch (error: any) {
+      res.status(503).json({
+        status: "unavailable",
+        error: error.message,
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

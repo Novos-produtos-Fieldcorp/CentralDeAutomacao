@@ -11,7 +11,7 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 WISEAPP_API_URL = os.getenv("WISEAPP_API_URL", "https://api.wiseapp360.com")
 
-AI_SERVICE_PORT = int(os.getenv("AI_SERVICE_PORT", "8001"))
+AI_SERVICE_PORT = int(os.getenv("AI_SERVICE_PORT", "8000"))
 
 if not GROQ_API_KEY:
     print("Warning: GROQ_API_KEY not set. AI service will not work properly.")

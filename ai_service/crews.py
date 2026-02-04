@@ -24,19 +24,19 @@ def create_group_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
         Seja objetivo e direto. O resumo sera enviado para gestores.""",
         expected_output="""Um resumo executivo estruturado contendo:
         
-        📊 RESUMO DO GRUPO: [nome do grupo]
+        RESUMO DO GRUPO: [nome do grupo]
         
-        📈 Estatisticas:
+        Estatisticas:
         - Total de conversas: X
         - Abertas: X | Resolvidas: X | Pendentes: X
         
-        📝 Principais Assuntos:
+        Principais Assuntos:
         [lista dos principais topicos]
         
-        ⚠️ Atencao Necessaria:
+        Atencao Necessaria:
         [problemas ou urgencias identificadas]
         
-        💡 Observacoes:
+        Observacoes:
         [insights relevantes]""",
         agent=analyst
     )
