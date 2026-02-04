@@ -2761,22 +2761,20 @@ interface FaturamentoSada {
 const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
 
-  // Query para buscar faturamento SADA com filtro de company_id
+  // Query para buscar faturamento SADA
+  // NOTA: A tabela atual não tem company_id. Para multi-tenancy, adicionar coluna company_id à tabela.
   const { data: faturamentoSada = [], isLoading: isLoadingSada, isError: isErrorSada } = useQuery({
-    queryKey: ['faturamento-sada', companyId, selectedOperacao],
+    queryKey: ['faturamento-sada', selectedOperacao],
     queryFn: async () => {
-      if (!companyId) throw new Error('Company ID não disponível');
-      
       const { data, error } = await supabase
         .from('faturamento_sada')
         .select('*')
-        .eq('company_id', companyId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as FaturamentoSada[];
     },
-    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Sada'),
+    enabled: selectedOperacao === 'all' || selectedOperacao === 'Sada',
   });
 
   const formatCurrency = (value: string | null) => {
@@ -2903,16 +2901,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 
   // Renderização baseada na operação selecionada
   const renderFinanceiroContent = () => {
-    if (!companyId) {
-      return (
-        <div className="text-center py-12">
-          <Building className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">Nenhuma empresa selecionada.</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Faça login para visualizar os dados de faturamento.</p>
-        </div>
-      );
-    }
-
     if (selectedOperacao === 'all') {
       return (
         <div className="space-y-8">
@@ -2976,23 +2964,21 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Query para buscar último registro de faturamento SADA com filtro de company_id
+  // Query para buscar último registro de faturamento SADA
+  // NOTA: A tabela atual não tem company_id. Para multi-tenancy, adicionar coluna company_id à tabela.
   const { data: currentSadaPrices, isLoading: isLoadingSada, isError: isErrorSada, refetch: refetchSada } = useQuery({
-    queryKey: ['faturamento-sada-current', companyId, selectedOperacao],
+    queryKey: ['faturamento-sada-current', selectedOperacao],
     queryFn: async () => {
-      if (!companyId) throw new Error('Company ID não disponível');
-      
       const { data, error } = await supabase
         .from('faturamento_sada')
         .select('*')
-        .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(1);
       
       if (error) throw error;
       return (data?.[0] as FaturamentoSada) || null;
     },
-    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Sada'),
+    enabled: selectedOperacao === 'all' || selectedOperacao === 'Sada',
   });
 
   useEffect(() => {
@@ -3013,11 +2999,6 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   };
 
   const handleSaveSada = async () => {
-    if (!companyId) {
-      setSaveError('Empresa não selecionada');
-      return;
-    }
-    
     setIsSaving(true);
     setSaveError(null);
     
@@ -3039,19 +3020,18 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
       };
 
       if (currentSadaPrices?.id) {
-        // Atualizar registro existente (com verificação de company_id)
+        // Atualizar registro existente
         const { error } = await supabase
           .from('faturamento_sada')
           .update(updateData)
-          .eq('id', currentSadaPrices.id)
-          .eq('company_id', companyId);
+          .eq('id', currentSadaPrices.id);
         
         if (error) throw error;
       } else {
-        // Criar novo registro com company_id
+        // Criar novo registro
         const { error } = await supabase
           .from('faturamento_sada')
-          .insert([{ ...updateData, company_id: companyId }]);
+          .insert([updateData]);
         
         if (error) throw error;
       }
@@ -3216,16 +3196,6 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   };
 
   const renderPrecosContent = () => {
-    if (!companyId) {
-      return (
-        <div className="text-center py-12">
-          <Building className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">Nenhuma empresa selecionada.</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Faça login para configurar os preços.</p>
-        </div>
-      );
-    }
-
     if (selectedOperacao === 'all') {
       return (
         <div className="space-y-8">
