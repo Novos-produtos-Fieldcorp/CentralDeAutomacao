@@ -7,10 +7,10 @@ def create_group_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
     insights = create_insights_analyst()
     
     summary_task = Task(
-        description=f"""Analise as conversas do grupo "{group_name}" (inbox_id: {inbox_id}) e gere um resumo executivo.
+        description=f"""Analise as conversas do grupo "{group_name}" e gere um resumo executivo.
         
-        Use os seguintes parametros para buscar as mensagens:
-        - inbox_id: {inbox_id}
+        Use a ferramenta "Buscar Mensagens do Grupo" com os seguintes parametros:
+        - group_name: {group_name}
         - account_id: {account_id}
         - api_key: {api_key}
         
@@ -47,8 +47,8 @@ def create_group_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
     insights_task = Task(
         description=f"""Com base nas mensagens REAIS do grupo "{group_name}", extraia insights ESPECIFICOS do que foi discutido.
         
-        Use os seguintes parametros:
-        - inbox_id: {inbox_id}
+        Use a ferramenta "Buscar Mensagens do Grupo" com os seguintes parametros:
+        - group_name: {group_name}
         - account_id: {account_id}
         - api_key: {api_key}
         

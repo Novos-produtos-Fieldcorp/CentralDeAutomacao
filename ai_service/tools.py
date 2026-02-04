@@ -8,51 +8,67 @@ BRASILIA_TZ = timezone(timedelta(hours=-3))
 
 
 def send_message_to_inbox(inbox_id: str, account_id: str, api_key: str, message: str, group_name: str = None) -> dict:
-    """Envia uma mensagem para o inbox do WiseApp (nao e uma tool do CrewAI)
+    """Envia uma mensagem para o grupo no WiseApp (nao e uma tool do CrewAI)
+    
+    Fluxo:
+    1. Busca o contato pelo nome do grupo
+    2. Pega as conversas do contato
+    3. Envia mensagem na conversa
     
     Args:
-        inbox_id: ID do inbox
+        inbox_id: ID do inbox (nao usado, mantido para compatibilidade)
         account_id: ID da conta WiseApp
         api_key: Token de API
         message: Mensagem a enviar
-        group_name: Nome do grupo para matching (opcional)
+        group_name: Nome do grupo para buscar
     """
     try:
+        if not group_name:
+            return {"success": False, "error": "Nome do grupo nao informado"}
+        
         headers = {
             "api_access_token": api_key,
             "Content-Type": "application/json"
         }
         
         with httpx.Client() as client:
-            # Get conversations from the inbox
-            response = client.get(
-                f"{WISEAPP_API_URL}/v1/accounts/{account_id}/inboxes/{inbox_id}/conversations",
+            # PASSO 1: Buscar o contato pelo nome do grupo
+            search_response = client.get(
+                f"{WISEAPP_API_URL}/v1/accounts/{account_id}/contacts/search",
                 headers=headers,
-                params={"status": "all", "page": 1},
+                params={"q": group_name},
                 timeout=30
             )
             
-            if response.status_code != 200:
-                return {"success": False, "error": f"Failed to get conversations: {response.text}"}
+            if search_response.status_code != 200:
+                return {"success": False, "error": f"Erro ao buscar grupo: {search_response.text}"}
             
-            conversations = response.json()
-            if not conversations or len(conversations) == 0:
-                return {"success": False, "error": "No conversations found in inbox"}
+            search_data = search_response.json()
+            contacts = search_data.get("payload", [])
             
-            # Try to find the group conversation by name matching
-            target_conv = None
-            if group_name:
-                group_name_lower = group_name.lower()
-                for conv in conversations:
-                    conv_name = conv.get("meta", {}).get("sender", {}).get("name", "")
-                    if conv_name and group_name_lower in conv_name.lower():
-                        target_conv = conv
-                        break
+            if not contacts:
+                return {"success": False, "error": f"Grupo '{group_name}' nao encontrado"}
             
-            # Fallback to the most recent conversation if no match found
-            if not target_conv:
-                target_conv = conversations[0]
+            contact = contacts[0]
+            contact_id = contact.get("id")
             
+            # PASSO 2: Buscar conversas do contato
+            conv_response = client.get(
+                f"{WISEAPP_API_URL}/v1/accounts/{account_id}/contacts/{contact_id}/conversations",
+                headers=headers,
+                timeout=30
+            )
+            
+            if conv_response.status_code != 200:
+                return {"success": False, "error": f"Erro ao buscar conversas: {conv_response.text}"}
+            
+            conversations = conv_response.json()
+            conv_list = conversations.get("payload", [])
+            
+            if not conv_list:
+                return {"success": False, "error": f"Nenhuma conversa encontrada para o grupo '{group_name}'"}
+            
+            target_conv = conv_list[0]
             conv_id = target_conv.get("id")
             if not conv_id:
                 return {"success": False, "error": "No valid conversation found"}
@@ -108,11 +124,17 @@ def is_message_from_today(message: dict) -> bool:
         return False
 
 
-@tool("Buscar Mensagens do Inbox")
-def buscar_mensagens_inbox(inbox_id: str, account_id: str, api_key: str, limit: int = 80) -> str:
-    """Busca as mensagens de um inbox/grupo para analise, filtrando apenas as de HOJE.
+@tool("Buscar Mensagens do Grupo")
+def buscar_mensagens_grupo(group_name: str, account_id: str, api_key: str, limit: int = 80) -> str:
+    """Busca as mensagens de um grupo pelo NOME, filtrando apenas as de HOJE.
+    
+    Fluxo:
+    1. Busca o contato pelo nome do grupo
+    2. Pega as conversas do contato
+    3. Filtra mensagens de hoje
+    
     Args:
-        inbox_id: ID do inbox (grupo)
+        group_name: Nome do grupo para buscar
         account_id: ID da conta WiseApp
         api_key: Token de API do WiseApp
         limit: Numero maximo de mensagens a retornar
@@ -126,34 +148,55 @@ def buscar_mensagens_inbox(inbox_id: str, account_id: str, api_key: str, limit: 
         }
         
         with httpx.Client() as client:
-            # Buscar conversas do inbox
-            response = client.get(
-                f"{WISEAPP_API_URL}/v1/accounts/{account_id}/inboxes/{inbox_id}/conversations",
+            # PASSO 1: Buscar o contato pelo nome do grupo
+            search_response = client.get(
+                f"{WISEAPP_API_URL}/v1/accounts/{account_id}/contacts/search",
                 headers=headers,
-                params={"status": "all", "page": 1},
+                params={"q": group_name},
                 timeout=30
             )
             
-            if response.status_code != 200:
-                return f"Erro ao buscar conversas: {response.text}"
+            if search_response.status_code != 200:
+                return f"Erro ao buscar grupo: {search_response.text}"
             
-            conversations = response.json()
-            if not conversations:
-                return "Nenhuma conversa encontrada neste inbox."
+            search_data = search_response.json()
+            contacts = search_data.get("payload", [])
             
-            # Pegar a primeira conversa (o grupo)
-            conv = conversations[0] if conversations else None
-            if not conv:
-                return "Nenhuma conversa encontrada."
+            if not contacts:
+                return f"Grupo '{group_name}' nao encontrado. Verifique se o nome esta correto."
             
+            # Pegar o primeiro contato encontrado
+            contact = contacts[0]
+            contact_id = contact.get("id")
+            contact_name = contact.get("name", group_name)
+            
+            print(f"Grupo encontrado: {contact_name} (ID: {contact_id})")
+            
+            # PASSO 2: Buscar conversas do contato/grupo
+            conv_response = client.get(
+                f"{WISEAPP_API_URL}/v1/accounts/{account_id}/contacts/{contact_id}/conversations",
+                headers=headers,
+                timeout=30
+            )
+            
+            if conv_response.status_code != 200:
+                return f"Erro ao buscar conversas do grupo: {conv_response.text}"
+            
+            conversations = conv_response.json()
+            conv_list = conversations.get("payload", [])
+            
+            if not conv_list:
+                return f"Nenhuma conversa encontrada para o grupo '{contact_name}'."
+            
+            # Pegar a primeira conversa
+            conv = conv_list[0]
             conv_id = conv.get("id")
-            group_name = conv.get("meta", {}).get("sender", {}).get("name", "Grupo")
             
-            # Buscar mensagens da conversa (pegar mais mensagens para filtrar)
+            # Buscar mensagens da conversa
             msg_response = client.get(
                 f"{WISEAPP_API_URL}/v1/accounts/{account_id}/conversations/{conv_id}/messages",
                 headers=headers,
-                params={"limit": 200},  # Buscar mais para garantir que pegamos todas do dia
+                params={"limit": 200},
                 timeout=60
             )
             
@@ -164,17 +207,15 @@ def buscar_mensagens_inbox(inbox_id: str, account_id: str, api_key: str, limit: 
             messages = messages_data.get("payload", [])
             
             if not messages:
-                return "Nenhuma mensagem encontrada na conversa."
+                return f"Nenhuma mensagem encontrada na conversa do grupo '{contact_name}'."
             
-            # Filtrar apenas mensagens de hoje
+            # PASSO 3: Filtrar apenas mensagens de hoje
             today_messages = []
             for msg in messages:
                 if is_message_from_today(msg):
-                    # Pegar nome do remetente
                     sender_info = msg.get("sender", {})
                     sender_name = sender_info.get("name", "Desconhecido")
                     
-                    # Tipo de mensagem: 0 = incoming, 1 = outgoing
                     msg_type = msg.get("message_type")
                     if msg_type == 1:
                         sender_name = "Atendente"
@@ -182,7 +223,6 @@ def buscar_mensagens_inbox(inbox_id: str, account_id: str, api_key: str, limit: 
                     content = msg.get("content", "")
                     content_type = msg.get("content_type", "text")
                     
-                    # Tratar tipos de conteudo
                     if content_type == "image":
                         content = "[Imagem enviada]"
                     elif content_type == "audio":
@@ -196,7 +236,6 @@ def buscar_mensagens_inbox(inbox_id: str, account_id: str, api_key: str, limit: 
                     elif not content:
                         content = "[Mensagem sem texto]"
                     
-                    # Pegar horario da mensagem
                     created_at = msg.get("created_at", "")
                     time_str = ""
                     try:
@@ -216,11 +255,11 @@ def buscar_mensagens_inbox(inbox_id: str, account_id: str, api_key: str, limit: 
                     })
             
             if not today_messages:
-                return f"Nenhuma mensagem encontrada hoje no grupo '{group_name}'."
+                return f"Nenhuma mensagem encontrada HOJE no grupo '{contact_name}'. O grupo existe mas nao teve atividade hoje."
             
             # Formatar mensagens (mais antigas primeiro)
             today_messages.reverse()
-            formatted = [f"MENSAGENS DO DIA - {group_name}"]
+            formatted = [f"MENSAGENS DO DIA - {contact_name}"]
             formatted.append(f"Data: {get_today_brasilia().strftime('%d/%m/%Y')}")
             formatted.append(f"Total de mensagens hoje: {len(today_messages)}")
             formatted.append("-" * 40)
@@ -232,7 +271,7 @@ def buscar_mensagens_inbox(inbox_id: str, account_id: str, api_key: str, limit: 
             return "\n".join(formatted)
             
     except Exception as e:
-        return f"Erro ao buscar mensagens: {str(e)}"
+        return f"Erro ao buscar mensagens do grupo: {str(e)}"
 
 
 @tool("Buscar Conversas Recentes")

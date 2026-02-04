@@ -1,7 +1,7 @@
 from crewai import Agent
 from langchain_groq import ChatGroq
 import os
-from tools import buscar_mensagens_inbox, buscar_conversas_recentes
+from tools import buscar_mensagens_grupo, buscar_conversas_recentes
 
 
 def get_groq_llm():
@@ -27,7 +27,7 @@ def create_group_summary_analyst():
         Voce consegue identificar os principais topicos discutidos, problemas recorrentes,
         solicitacoes pendentes e o tom geral das conversas.
         Voce fornece resumos claros, objetivos e acionaveis para gestores.""",
-        tools=[buscar_mensagens_inbox, buscar_conversas_recentes],
+        tools=[buscar_mensagens_grupo, buscar_conversas_recentes],
         llm=get_groq_llm(),
         verbose=True,
         allow_delegation=False
