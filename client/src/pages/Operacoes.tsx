@@ -3094,11 +3094,10 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     }
   }, [currentSadaPrices]);
 
-  // Reset form state when company changes
+  // Reset editing state when company changes (don't reset form data - let query refetch handle it)
   useEffect(() => {
     setEditingSada(false);
     setSaveError(null);
-    setSadaForm({});
   }, [companyId]);
 
   const handleSadaChange = (field: string, value: string) => {
@@ -3260,7 +3259,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
                   />
                 ) : (
                   <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
-                    {sadaForm[campo.key as keyof FaturamentoSada] || '-'}
+                    {currentSadaPrices?.[campo.key as keyof FaturamentoSada] || '-'}
                   </div>
                 )}
               </div>
@@ -3291,7 +3290,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
                   />
                 ) : (
                   <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
-                    {sadaForm[campo.key as keyof FaturamentoSada] || '-'}
+                    {currentSadaPrices?.[campo.key as keyof FaturamentoSada] || '-'}
                   </div>
                 )}
               </div>
