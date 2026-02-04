@@ -27,6 +27,7 @@ import archiver from 'archiver';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { z } from 'zod';
+import { startGroupSummaryCron } from './cron/groupSummaryCron';
 // CPF agora é consultado diretamente do frontend
 
 // Job tracking system for progress monitoring
@@ -5428,6 +5429,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+
+  startGroupSummaryCron();
 
   return httpServer;
 }
