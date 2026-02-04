@@ -2854,42 +2854,62 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Família Básica</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Compass</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Toro</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Commander</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">JLR</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Com. Prancha</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Com. Cegonha</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fam. Básica</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Compass</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Toro</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Commander</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">JLR</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">RAM Ramp.</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Titano</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Scudo</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ducato</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Caminhões</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cegonha</th>
+              <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Prancha</th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {faturamentoSada.map((item) => (
               <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                   {formatDate(item.created_at)}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                   {formatCurrency(item.familia_basica)}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                   {formatCurrency(item.compass)}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                   {formatCurrency(item.toro)}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                   {formatCurrency(item.commander)}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                   {formatCurrency(item.jlr)}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.comissao_motorista_prancha)}
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.rampage)}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.titano)}
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.scudo)}
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.ducato)}
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.caminhoes)}
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
                   {formatCurrency(item.comissao_motorista_cegonha)}
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                  {formatCurrency(item.comissao_motorista_prancha)}
                 </td>
               </tr>
             ))}
@@ -3052,13 +3072,13 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     { key: 'toro', label: 'Toro', group: 'veiculos' },
     { key: 'commander', label: 'Commander', group: 'veiculos' },
     { key: 'jlr', label: 'JLR', group: 'veiculos' },
-    { key: 'rampage', label: 'Rampage', group: 'veiculos' },
+    { key: 'rampage', label: 'RAM Rampage', group: 'veiculos' },
     { key: 'titano', label: 'Titano', group: 'veiculos' },
     { key: 'scudo', label: 'Scudo', group: 'veiculos' },
     { key: 'ducato', label: 'Ducato', group: 'veiculos' },
     { key: 'caminhoes', label: 'Caminhões', group: 'veiculos' },
-    { key: 'comissao_motorista_prancha', label: 'Comissão Motorista (Prancha)', group: 'comissao' },
-    { key: 'comissao_motorista_cegonha', label: 'Comissão Motorista (Cegonha)', group: 'comissao' },
+    { key: 'comissao_motorista_cegonha', label: 'Cegonha (por veículo)', group: 'comissao' },
+    { key: 'comissao_motorista_prancha', label: 'Prancha (fixo por viagem)', group: 'comissao' },
   ];
 
   const renderSadaPrecos = () => {
