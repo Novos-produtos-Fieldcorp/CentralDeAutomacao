@@ -268,19 +268,7 @@ const ViagemDetailModal = ({
     }
   };
 
-  const getOperacaoColor = (tipo: string | undefined) => {
-    const colors: Record<string, { bg: string; gradient: string }> = {
-      'Autoservice': { bg: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', gradient: 'from-blue-500 to-blue-600' },
-      'Cesari': { bg: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', gradient: 'from-green-500 to-green-600' },
-      'Mitsubishi': { bg: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', gradient: 'from-red-500 to-red-600' },
-      'Sada': { bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', gradient: 'from-yellow-500 to-yellow-600' },
-      'Superterminais': { bg: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', gradient: 'from-purple-500 to-purple-600' },
-      'Tegma': { bg: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400', gradient: 'from-orange-500 to-orange-600' },
-    };
-    return colors[tipo || ''] || { bg: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400', gradient: 'from-gray-500 to-gray-600' };
-  };
-
-  const operacaoColors = getOperacaoColor(viagem.operacao_tipo);
+  // Design monocromático - cores removidas
 
   // Componente para seção
   const Section = ({ title, icon: Icon, children, className = '' }: { title: string; icon: any; children: React.ReactNode; className?: string }) => (
@@ -323,7 +311,7 @@ const ViagemDetailModal = ({
             </span>
           ) : '-'} />
           <Field label="Valor do Frete" value={dados.valor_frete ? (
-            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+            <span className="flex items-center gap-1 text-gray-900 dark:text-white font-medium">
               <DollarSign className="w-3 h-3" />
               {dados.valor_frete}
             </span>
@@ -366,12 +354,12 @@ const ViagemDetailModal = ({
             <Field label="Destino" value={dados.v2_destino} />
             <Field label="Capacidade" value={
               dados.v2_capacidade !== null && dados.v2_capacidade !== undefined ? (
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
                   dados.v2_capacidade === 1 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800'
                     : dados.v2_capacidade === 2
-                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                      ? 'bg-gray-400 text-white dark:bg-gray-500 dark:text-white'
+                      : 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-300'
                 }`}>
                   {dados.v2_capacidade === 0 ? 'Vazio' : dados.v2_capacidade === 1 ? 'Cheio' : dados.v2_capacidade === 2 ? 'Manobra' : dados.v2_capacidade}
                 </span>
@@ -417,10 +405,10 @@ const ViagemDetailModal = ({
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Field label="Tipo de Carreta" value={
             dados.tipo_carreta !== null && dados.tipo_carreta !== undefined ? (
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
                 dados.tipo_carreta === 1 
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                  ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800'
+                  : 'bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
               }`}>
                 {dados.tipo_carreta === 1 ? 'Cegonha' : 'Prancha'}
               </span>
@@ -455,10 +443,10 @@ const ViagemDetailModal = ({
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Field label="Tipo de Carreta" value={
             dados.tipo_carreta !== null && dados.tipo_carreta !== undefined ? (
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
                 dados.tipo_carreta === 1 
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                  ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800'
+                  : 'bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
               }`}>
                 {dados.tipo_carreta === 1 ? 'Cegonha' : 'Prancha'}
               </span>
@@ -612,11 +600,11 @@ const ViagemDetailModal = ({
         className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header com gradiente */}
-        <div className={`bg-gradient-to-r ${operacaoColors.gradient} p-4`}>
+        {/* Header monocromático */}
+        <div className="bg-gray-900 dark:bg-gray-900 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur rounded-lg flex items-center justify-center">
                 <span className="text-white text-xl font-bold">#{viagem.id}</span>
               </div>
               <div>
@@ -624,7 +612,7 @@ const ViagemDetailModal = ({
                   Detalhes da Viagem
                 </h2>
                 {viagem.operacao_tipo && (
-                  <span className="text-white/80 text-sm">
+                  <span className="text-gray-400 text-sm">
                     Operação {viagem.operacao_tipo}
                   </span>
                 )}
@@ -632,7 +620,7 @@ const ViagemDetailModal = ({
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               data-testid="button-close-modal"
             >
               <X className="w-5 h-5 text-white" />
@@ -648,10 +636,10 @@ const ViagemDetailModal = ({
                 <Field label="Data/Hora Inicial" value={formatDateTime(viagem.data_hora_inicial)} />
                 <Field label="Data/Hora Final" value={formatDateTime(viagem.data_hora_final)} />
                 <Field label="Status" value={
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                  <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-medium ${
                     viagem.data_hora_final 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800'
+                      : 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'
                   }`}>
                     {viagem.data_hora_final ? 'Concluída' : 'Em Andamento'}
                   </span>
@@ -1704,9 +1692,14 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SADA</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-gray-800 dark:bg-gray-200 rounded-full"></div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SADA</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+          </div>
+        </div>
       </div>
       
       <div className="p-6">
@@ -1716,17 +1709,17 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-yellow-500 dark:bg-yellow-600"
+                color="bg-gray-600 dark:bg-gray-400"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-yellow-500 dark:bg-yellow-600"
+                color="bg-gray-500 dark:bg-gray-500"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-yellow-500 dark:bg-yellow-600"
+                color="bg-gray-400 dark:bg-gray-600"
               />
             </div>
             
@@ -1741,7 +1734,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
                       <div key={index} className="flex flex-col items-center min-w-[60px]">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
                         <div 
-                          className="w-12 bg-yellow-500 dark:bg-yellow-600 rounded-t"
+                          className="w-12 bg-gray-600 dark:bg-gray-400 rounded-t"
                           style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
@@ -1756,9 +1749,9 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-yellow-600 dark:text-yellow-400" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-yellow-600 dark:text-yellow-400" />
-            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-yellow-600 dark:text-yellow-400" />
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-gray-900 dark:text-white" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-gray-900 dark:text-white" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-gray-900 dark:text-white" />
           </div>
         </div>
       </div>
@@ -1888,9 +1881,14 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">TEGMA</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-gray-800 dark:bg-gray-200 rounded-full"></div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">TEGMA</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+          </div>
+        </div>
       </div>
       
       <div className="p-6">
@@ -1900,17 +1898,17 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-orange-500 dark:bg-orange-600"
+                color="bg-gray-600 dark:bg-gray-400"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-orange-500 dark:bg-orange-600"
+                color="bg-gray-600 dark:bg-gray-400"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-orange-500 dark:bg-orange-600"
+                color="bg-gray-600 dark:bg-gray-400"
               />
             </div>
             
@@ -1925,7 +1923,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
                       <div key={index} className="flex flex-col items-center min-w-[60px]">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
                         <div 
-                          className="w-12 bg-orange-500 dark:bg-orange-600 rounded-t"
+                          className="w-12 bg-gray-600 dark:bg-gray-400 rounded-t"
                           style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
@@ -1940,9 +1938,9 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-orange-600 dark:text-orange-400" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-orange-600 dark:text-orange-400" />
-            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-orange-600 dark:text-orange-400" />
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-gray-900 dark:text-white" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-gray-900 dark:text-white" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-gray-900 dark:text-white" />
           </div>
         </div>
       </div>
@@ -2066,9 +2064,14 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPER TERMINAIS</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação portuária</p>
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-gray-800 dark:bg-gray-200 rounded-full"></div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPER TERMINAIS</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação portuária</p>
+          </div>
+        </div>
       </div>
       
       <div className="p-6">
@@ -2078,12 +2081,12 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="Containers por Motorista" 
                 data={stats.containersPorMotorista}
-                color="bg-purple-500 dark:bg-purple-600"
+                color="bg-gray-600 dark:bg-gray-400"
               />
               <HorizontalBarChart 
                 title="Containers por Cavalo" 
                 data={stats.containersPorCavalo}
-                color="bg-purple-500 dark:bg-purple-600"
+                color="bg-gray-600 dark:bg-gray-400"
               />
             </div>
             
@@ -2098,7 +2101,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
                       <div key={index} className="flex flex-col items-center min-w-[60px]">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
                         <div 
-                          className="w-12 bg-purple-500 dark:bg-purple-600 rounded-t"
+                          className="w-12 bg-gray-600 dark:bg-gray-400 rounded-t"
                           style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
@@ -2113,9 +2116,9 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Volume de Viagens" value={stats.totalViagens} color="text-purple-600 dark:text-purple-400" />
-            <StatCard label="Containers Cheio" value={stats.containersCheio} color="text-purple-600 dark:text-purple-400" />
-            <StatCard label="Containers Vazio" value={stats.containersVazio} color="text-purple-600 dark:text-purple-400" />
+            <StatCard label="Volume de Viagens" value={stats.totalViagens} color="text-gray-900 dark:text-white" />
+            <StatCard label="Containers Cheio" value={stats.containersCheio} color="text-gray-900 dark:text-white" />
+            <StatCard label="Containers Vazio" value={stats.containersVazio} color="text-gray-900 dark:text-white" />
           </div>
         </div>
       </div>
@@ -2237,9 +2240,14 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">CESARI</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-gray-800 dark:bg-gray-200 rounded-full"></div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">CESARI</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+          </div>
+        </div>
       </div>
       
       <div className="p-6">
@@ -2249,12 +2257,12 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-green-500 dark:bg-green-600"
+                color="bg-gray-600 dark:bg-gray-400"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-green-500 dark:bg-green-600"
+                color="bg-gray-600 dark:bg-gray-400"
               />
             </div>
             
@@ -2269,7 +2277,7 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
                       <div key={index} className="flex flex-col items-center min-w-[60px]">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
                         <div 
-                          className="w-12 bg-green-500 dark:bg-green-600 rounded-t"
+                          className="w-12 bg-gray-600 dark:bg-gray-400 rounded-t"
                           style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
@@ -2284,8 +2292,8 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-green-600 dark:text-green-400" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(2)} Mil` : stats.kmTotal} color="text-green-600 dark:text-green-400" />
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-gray-900 dark:text-white" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(2)} Mil` : stats.kmTotal} color="text-gray-900 dark:text-white" />
           </div>
         </div>
       </div>
@@ -3886,7 +3894,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
       return (
         <div className="space-y-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
+            <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
               <h3 className="text-lg font-semibold text-white">SADA - Configuração de Preços</h3>
             </div>
             <div className="p-4">
@@ -3894,7 +3902,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
             </div>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3">
+            <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
               <h3 className="text-lg font-semibold text-white">SUPERTERMINAIS - Configuração de Preços</h3>
             </div>
             <div className="p-4">
@@ -3908,7 +3916,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     if (selectedOperacao === 'Sada') {
       return (
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
+          <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
             <h3 className="text-lg font-semibold text-white">SADA - Configuração de Preços</h3>
           </div>
           <div className="p-4">
@@ -3921,7 +3929,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     if (selectedOperacao === 'Superterminais') {
       return (
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-4 py-3">
+          <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
             <h3 className="text-lg font-semibold text-white">SUPERTERMINAIS - Configuração de Preços</h3>
           </div>
           <div className="p-4">
