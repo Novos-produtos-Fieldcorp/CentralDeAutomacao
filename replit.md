@@ -24,6 +24,7 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
 - **Form Validation**: Enhanced CNH validation and real-time input sanitization.
 - **Pagination**: Comprehensive system across lists with configurable page sizes.
 - **License Plate API**: Real-time vehicle data consultation via FIPE API.
+- **Vehicle Duplicate Prevention**: Validation in AddVeiculoModal prevents adding vehicles with existing plates. VeiculosEmpresa page includes a duplicate detection system that identifies and allows bulk removal of duplicate vehicle records (keeping the most recent entry per plate).
 - **Performance Optimization**: Optimized database queries and pagination for large datasets.
 - **Fuel Pump Integration**: `bomba_gasolina` table for odometer readings, including price, liters, and photo management with access control.
 - **Minuta Management**: Full minuta management in the Hodômetros module with search, filtering, and editing, supporting multiple `romaneio` numbers.
