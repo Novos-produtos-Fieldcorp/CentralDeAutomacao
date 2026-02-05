@@ -892,13 +892,13 @@ const HodometrosDashboard = () => {
       const minutas = data || [];
       const totalMinutasCount = minutas.length;
       
-      // Calculate unique days (extract date part without creating Date object)
-      const uniqueDays = new Set(
-        minutas.map(m => m.created_at.split('T')[0])
-      ).size;
+      // Calculate total days in the selected period
+      const start = new Date(dateRange.startDate);
+      const end = new Date(dateRange.endDate);
+      const totalDaysInPeriod = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
       
-      // Calculate average minutas per day
-      const avgPerDay = uniqueDays > 0 ? totalMinutasCount / uniqueDays : 0;
+      // Calculate average minutas per day based on total period days
+      const avgPerDay = totalDaysInPeriod > 0 ? totalMinutasCount / totalDaysInPeriod : 0;
       
       // Only calculate average per driver if bomba module is not active (metric won't be displayed)
       let avgPerDriver = 0;
@@ -1850,13 +1850,13 @@ const HodometrosDashboard = () => {
           <>
             <StatCard
               title="Total de leituras de abastecimentos"
-              value={totalBomba + totalMinutas}
+              value={totalBomba}
               icon={Fuel}
               color="purple"
             />
             <StatCard
               title="Total de leituras de minutas"
-              value={todayBombaMinuta}
+              value={totalMinutas}
               icon={ClipboardList}
               color="amber"
             />
