@@ -154,6 +154,7 @@ const VeiculosEmpresa = () => {
           )
         `)
         .eq('company_id', companyId)
+        .eq('status_veiculo', true)
         .is('motorista_id', null);
 
       if (error) throw error;
