@@ -3328,14 +3328,14 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         <div className="space-y-10">
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full" />
+              <div className="w-1 h-6 bg-yellow-500 dark:bg-yellow-400 rounded-full" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SADA</h3>
             </div>
             {renderSadaFinanceiro()}
           </div>
           <div className="border-t border-gray-200 dark:border-gray-700 pt-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full" />
+              <div className="w-1 h-6 bg-purple-500 dark:bg-purple-400 rounded-full" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPERTERMINAIS</h3>
             </div>
             {renderSuperterminaisFinanceiro()}
@@ -3348,7 +3348,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       return (
         <div>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full" />
+            <div className="w-1 h-6 bg-yellow-500 dark:bg-yellow-400 rounded-full" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SADA</h3>
           </div>
           {renderSadaFinanceiro()}
@@ -3360,7 +3360,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       return (
         <div>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full" />
+            <div className="w-1 h-6 bg-purple-500 dark:bg-purple-400 rounded-full" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPERTERMINAIS</h3>
           </div>
           {renderSuperterminaisFinanceiro()}
