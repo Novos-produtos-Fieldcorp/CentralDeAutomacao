@@ -4029,20 +4029,34 @@ const Operacoes = () => {
               >
                 Todas Operações
               </button>
-              {OPERACOES_TABELAS.map((op) => (
-                <button
-                  key={op.nome}
-                  onClick={() => {
-                    setSelectedOperacao(op.nome);
-                    setIsOperacaoDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                    selectedOperacao === op.nome ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
-                  }`}
-                >
-                  {op.nome}
-                </button>
-              ))}
+              {OPERACOES_TABELAS.map((op) => {
+                const getOperacaoColor = (nome: string) => {
+                  switch (nome) {
+                    case 'Autoservice': return 'bg-blue-500 dark:bg-blue-400';
+                    case 'Cesari': return 'bg-green-500 dark:bg-green-400';
+                    case 'Mitsubishi': return 'bg-red-500 dark:bg-red-400';
+                    case 'Sada': return 'bg-yellow-500 dark:bg-yellow-400';
+                    case 'Superterminais': return 'bg-purple-500 dark:bg-purple-400';
+                    case 'Tegma': return 'bg-orange-500 dark:bg-orange-400';
+                    default: return 'bg-gray-500 dark:bg-gray-400';
+                  }
+                };
+                return (
+                  <button
+                    key={op.nome}
+                    onClick={() => {
+                      setSelectedOperacao(op.nome);
+                      setIsOperacaoDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${
+                      selectedOperacao === op.nome ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    <div className={`w-2 h-2 rounded-full ${getOperacaoColor(op.nome)}`} />
+                    {op.nome}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
