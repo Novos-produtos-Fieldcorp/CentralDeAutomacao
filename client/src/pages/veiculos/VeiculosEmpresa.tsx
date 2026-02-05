@@ -317,10 +317,10 @@ const VeiculosEmpresa = () => {
         return;
       }
       
-      // Use soft delete (status_veiculo = false) for consistency with other deletion flows
+      // Hard delete duplicates permanently
       const { error } = await supabase
         .from('veiculo')
-        .update({ status_veiculo: false })
+        .delete()
         .in('veiculo_id', idsToDelete);
         
       if (error) throw error;
