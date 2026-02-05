@@ -1694,7 +1694,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-8 bg-gray-800 dark:bg-gray-200 rounded-full"></div>
+          <div className="w-1 h-8 bg-yellow-500 dark:bg-yellow-400 rounded-full"></div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SADA</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
@@ -1883,7 +1883,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-8 bg-gray-800 dark:bg-gray-200 rounded-full"></div>
+          <div className="w-1 h-8 bg-orange-500 dark:bg-orange-400 rounded-full"></div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">TEGMA</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
@@ -2066,7 +2066,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-8 bg-gray-800 dark:bg-gray-200 rounded-full"></div>
+          <div className="w-1 h-8 bg-purple-500 dark:bg-purple-400 rounded-full"></div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPER TERMINAIS</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação portuária</p>
@@ -2242,7 +2242,7 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-8 bg-gray-800 dark:bg-gray-200 rounded-full"></div>
+          <div className="w-1 h-8 bg-green-500 dark:bg-green-400 rounded-full"></div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">CESARI</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
