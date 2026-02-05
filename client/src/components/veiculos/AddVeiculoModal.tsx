@@ -71,10 +71,27 @@ const AddVeiculoModal = ({ isOpen, onClose, onSuccess, isEmpresa = false, motori
     try {
       setSubmitting(true);
 
+      const placaFormatada = formData.placa.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const { data: existingVehicle, error: checkError } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .eq('placa', placaFormatada)
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      if (existingVehicle) {
+        toast.error(`Já existe um veículo cadastrado com a placa ${placaFormatada}`);
+        setSubmitting(false);
+        return;
+      }
+
       const { error } = await supabase
         .from('veiculo')
         .insert({
           ...formData,
+          placa: placaFormatada,
           motorista_id: formData.motorista_id ? Number(formData.motorista_id) : null,
           tipologia: formData.tipologia.toUpperCase(),
          status_veiculo: true,

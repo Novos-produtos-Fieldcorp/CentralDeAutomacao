@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Edit2, Search, Plus, FilePen, AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { Edit2, Search, Plus, FilePen, AlertCircle, CheckCircle2, X, Trash2, Loader2 } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import type { Veiculo, Motorista } from '../../types/database';
 import AddVeiculoModal from '../../components/veiculos/AddVeiculoModal';
@@ -65,6 +65,14 @@ const VeiculosEmpresa = () => {
     veiculo: null,
   });
 
+  // Duplicate removal state
+  const [duplicateCount, setDuplicateCount] = useState(0);
+  const [isRemovingDuplicates, setIsRemovingDuplicates] = useState(false);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+
+  // Status filter state
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active');
+
   // Aumentado o delay do debounce de 500ms para 1000ms para alinhar com outros componentes
   const debouncedSearchTerm = useDebounce(searchTerm, 1000);
 
@@ -82,14 +90,14 @@ const VeiculosEmpresa = () => {
         setInitialLoading(false);
       }
     };
-    if (currentPage === 1 && pageSize === 100 && debouncedSearchTerm === '') {
+    if (currentPage === 1 && pageSize === 100 && debouncedSearchTerm === '' && statusFilter === 'active') {
       // Só mostra o loading inicial na primeira montagem
       init();
     } else {
       fetchVeiculos();
       fetchMotoristas();
     }
-  }, [currentPage, pageSize, debouncedSearchTerm]);
+  }, [currentPage, pageSize, debouncedSearchTerm, statusFilter]);
 
   useEffect(() => {
     // Count vehicles with missing characteristics
@@ -97,6 +105,25 @@ const VeiculosEmpresa = () => {
       !veiculo.tipologia || !veiculo.peso || !veiculo.cubagem
     ).length;
     setMissingDataCount(count);
+  }, [veiculos]);
+
+  useEffect(() => {
+    // Count duplicate plates (excluding blank/invalid plates)
+    const placaCount = new Map<string, number>();
+    veiculos.forEach(v => {
+      const placa = v.placa?.toUpperCase().trim() || '';
+      if (placa.length >= 7) {
+        placaCount.set(placa, (placaCount.get(placa) || 0) + 1);
+      }
+    });
+    const duplicates = veiculos.filter(v => {
+      const placa = v.placa?.toUpperCase().trim() || '';
+      return placa.length >= 7 && (placaCount.get(placa) || 0) > 1;
+    });
+    // Count how many to remove (total duplicates - unique plates)
+    const uniqueDuplicatePlates = new Set(duplicates.map(v => v.placa?.toUpperCase().trim()));
+    const toRemove = duplicates.length - uniqueDuplicatePlates.size;
+    setDuplicateCount(toRemove);
   }, [veiculos]);
 
   useEffect(() => {
@@ -117,8 +144,7 @@ const VeiculosEmpresa = () => {
     if (!companyId) return;
     
     try {
-      
-      const { data, error } = await supabase
+      let query = supabase
         .from('veiculo')
         .select(`
           *,
@@ -131,6 +157,16 @@ const VeiculosEmpresa = () => {
         `)
         .eq('company_id', companyId)
         .is('motorista_id', null);
+
+      // Apply status filter
+      if (statusFilter === 'active') {
+        query = query.eq('status_veiculo', true);
+      } else if (statusFilter === 'inactive') {
+        query = query.eq('status_veiculo', false);
+      }
+      // 'all' doesn't add any filter
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -243,6 +279,61 @@ const VeiculosEmpresa = () => {
   const handleViewVehicle = (veiculo: VeiculoWithMotorista) => {
     setSelectedVeiculo(veiculo);
     setIsCombinedModalOpen(true);
+  };
+
+  const handleRemoveDuplicates = async () => {
+    if (!companyId) return;
+    
+    try {
+      setIsRemovingDuplicates(true);
+      
+      const placaGroups = new Map<string, VeiculoWithMotorista[]>();
+      veiculos.forEach(v => {
+        const placa = v.placa?.toUpperCase().trim() || '';
+        // Only process valid plates (7+ characters)
+        if (placa.length >= 7) {
+          if (!placaGroups.has(placa)) {
+            placaGroups.set(placa, []);
+          }
+          placaGroups.get(placa)!.push(v);
+        }
+      });
+      
+      const idsToDelete: number[] = [];
+      
+      placaGroups.forEach((group) => {
+        if (group.length > 1) {
+          // Keep the most recent (highest veiculo_id), remove the rest
+          const sorted = group.sort((a, b) => b.veiculo_id - a.veiculo_id);
+          for (let i = 1; i < sorted.length; i++) {
+            idsToDelete.push(sorted[i].veiculo_id);
+          }
+        }
+      });
+      
+      if (idsToDelete.length === 0) {
+        toast.success('Nenhum veículo duplicado encontrado');
+        setIsDuplicateModalOpen(false);
+        return;
+      }
+      
+      // Hard delete duplicates permanently
+      const { error } = await supabase
+        .from('veiculo')
+        .delete()
+        .in('veiculo_id', idsToDelete);
+        
+      if (error) throw error;
+      
+      setVeiculos(prev => prev.filter(v => !idsToDelete.includes(v.veiculo_id)));
+      toast.success(`${idsToDelete.length} veículo${idsToDelete.length !== 1 ? 's' : ''} duplicado${idsToDelete.length !== 1 ? 's' : ''} removido${idsToDelete.length !== 1 ? 's' : ''}`);
+      setIsDuplicateModalOpen(false);
+    } catch (error) {
+      console.error('Error removing duplicates:', error);
+      toast.error('Erro ao remover veículos duplicados');
+    } finally {
+      setIsRemovingDuplicates(false);
+    }
   };
 
   const handleToggleStatus = async (veiculo: VeiculoWithMotorista, e: React.MouseEvent) => {
@@ -400,8 +491,8 @@ const VeiculosEmpresa = () => {
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-  <div className="relative w-full flex-1">
-    <div className="relative">
+  <div className="flex gap-3 w-full flex-1">
+    <div className="relative flex-1">
       <input
         type="text"
         placeholder="Buscar por placa, marca, modelo, nome ou CPF..."
@@ -412,9 +503,68 @@ const VeiculosEmpresa = () => {
       />
       <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
     </div>
+    <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden" data-testid="select-status-filter">
+      <button
+        onClick={() => {
+          setStatusFilter('active');
+          setCurrentPage(1);
+        }}
+        className={`px-3 py-2 text-sm font-medium transition-colors ${
+          statusFilter === 'active'
+            ? 'bg-green-600 text-white'
+            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+        }`}
+      >
+        Ativos
+      </button>
+      <button
+        onClick={() => {
+          setStatusFilter('inactive');
+          setCurrentPage(1);
+        }}
+        className={`px-3 py-2 text-sm font-medium border-l border-gray-300 dark:border-gray-600 transition-colors ${
+          statusFilter === 'inactive'
+            ? 'bg-red-600 text-white'
+            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+        }`}
+      >
+        Inativos
+      </button>
+      <button
+        onClick={() => {
+          setStatusFilter('all');
+          setCurrentPage(1);
+        }}
+        className={`px-3 py-2 text-sm font-medium border-l border-gray-300 dark:border-gray-600 transition-colors ${
+          statusFilter === 'all'
+            ? 'bg-blue-600 text-white'
+            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+        }`}
+      >
+        Todos
+      </button>
+    </div>
   </div>
 
           <div className="flex gap-2">
+            {duplicateCount > 0 && (
+              <div className="relative group">
+                <button
+                  onClick={() => setIsDuplicateModalOpen(true)}
+                  className="p-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 
+                           focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 
+                           transition-colors flex items-center justify-center"
+                  aria-label="Remover Duplicados"
+                  data-testid="button-remove-duplicates"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  <span className="ml-1 text-xs font-bold">{duplicateCount}</span>
+                </button>
+                <div className="invisible group-hover:visible absolute z-10 w-auto px-1.5 py-0.5 text-xs text-white bg-gray-800 rounded shadow -bottom-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  Remover {duplicateCount} Duplicado{duplicateCount !== 1 ? 's' : ''}
+                </div>
+              </div>
+            )}
             <div className="relative group">
               <button
                 onClick={() => setIsAddModalOpen(true)}
@@ -704,6 +854,48 @@ const VeiculosEmpresa = () => {
         itemCount={selectedItems.size}
         itemType="veículo"
       />
+
+      {isDuplicateModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Remover Veículos Duplicados
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Foram encontrados <span className="font-bold text-amber-600">{duplicateCount}</span> veículo{duplicateCount !== 1 ? 's' : ''} duplicado{duplicateCount !== 1 ? 's' : ''}.
+              <br /><br />
+              Esta ação irá manter apenas o cadastro mais recente de cada placa e remover os registros antigos duplicados.
+              <br /><br />
+              <span className="text-red-600 font-medium">Esta ação não pode ser desfeita.</span>
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsDuplicateModalOpen(false)}
+                disabled={isRemovingDuplicates}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                data-testid="button-cancel-duplicates"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleRemoveDuplicates}
+                disabled={isRemovingDuplicates}
+                className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                data-testid="button-confirm-duplicates"
+              >
+                {isRemovingDuplicates ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Removendo...
+                  </>
+                ) : (
+                  'Remover Duplicados'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
