@@ -70,6 +70,9 @@ const VeiculosEmpresa = () => {
   const [isRemovingDuplicates, setIsRemovingDuplicates] = useState(false);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
 
+  // Status filter state
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('active');
+
   // Aumentado o delay do debounce de 500ms para 1000ms para alinhar com outros componentes
   const debouncedSearchTerm = useDebounce(searchTerm, 1000);
 
@@ -87,14 +90,14 @@ const VeiculosEmpresa = () => {
         setInitialLoading(false);
       }
     };
-    if (currentPage === 1 && pageSize === 100 && debouncedSearchTerm === '') {
+    if (currentPage === 1 && pageSize === 100 && debouncedSearchTerm === '' && statusFilter === 'active') {
       // Só mostra o loading inicial na primeira montagem
       init();
     } else {
       fetchVeiculos();
       fetchMotoristas();
     }
-  }, [currentPage, pageSize, debouncedSearchTerm]);
+  }, [currentPage, pageSize, debouncedSearchTerm, statusFilter]);
 
   useEffect(() => {
     // Count vehicles with missing characteristics
@@ -141,8 +144,7 @@ const VeiculosEmpresa = () => {
     if (!companyId) return;
     
     try {
-      
-      const { data, error } = await supabase
+      let query = supabase
         .from('veiculo')
         .select(`
           *,
@@ -154,8 +156,17 @@ const VeiculosEmpresa = () => {
           )
         `)
         .eq('company_id', companyId)
-        .eq('status_veiculo', true)
         .is('motorista_id', null);
+
+      // Apply status filter
+      if (statusFilter === 'active') {
+        query = query.eq('status_veiculo', true);
+      } else if (statusFilter === 'inactive') {
+        query = query.eq('status_veiculo', false);
+      }
+      // 'all' doesn't add any filter
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -480,8 +491,8 @@ const VeiculosEmpresa = () => {
 
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-  <div className="relative w-full flex-1">
-    <div className="relative">
+  <div className="flex gap-3 w-full flex-1">
+    <div className="relative flex-1">
       <input
         type="text"
         placeholder="Buscar por placa, marca, modelo, nome ou CPF..."
@@ -492,6 +503,19 @@ const VeiculosEmpresa = () => {
       />
       <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
     </div>
+    <select
+      value={statusFilter}
+      onChange={(e) => {
+        setStatusFilter(e.target.value as 'all' | 'active' | 'inactive');
+        setCurrentPage(1);
+      }}
+      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-w-[130px]"
+      data-testid="select-status-filter"
+    >
+      <option value="active">Ativos</option>
+      <option value="inactive">Inativos</option>
+      <option value="all">Todos</option>
+    </select>
   </div>
 
           <div className="flex gap-2">
