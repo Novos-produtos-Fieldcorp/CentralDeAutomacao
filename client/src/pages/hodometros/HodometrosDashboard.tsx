@@ -1926,21 +1926,37 @@ const HodometrosDashboard = () => {
               <h3 className="text-lg font-bold text-black dark:text-white">Média de Consumo por Veículo (km/L)</h3>
             </div>
             
-            {vehicleFuelStats.length > 0 ? (
-              <div className="overflow-x-auto overflow-y-visible pt-12">
-                <div className="min-w-[600px]">
-                  {(() => {
-                    const maxValue = Math.max(...vehicleFuelStats.map(s => s.mediaKmPorLitro), 1);
-                    
-                    return (
-                      <div className="flex items-end justify-around gap-3 px-4" style={{ height: '350px' }}>
-                        {vehicleFuelStats
-                          .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
-                          .map((stats) => {
-                            const barHeight = ((stats.mediaKmPorLitro / maxValue) * 280) + 'px';
-                            
-                            return (
-                              <div 
+            {(() => {
+              // Filter out vehicles with no valid data (zero consumption or invalid plates)
+              const validStats = vehicleFuelStats.filter(s => 
+                s.mediaKmPorLitro > 0 && 
+                s.placa && 
+                s.placa !== 'DESCONHECIDA' && 
+                s.placa.length >= 7
+              );
+              
+              if (validStats.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700 rounded-2xl shadow">
+                    <BarChart2 className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
+                    <p className="text-gray-400">Nenhum dado de consumo válido para o período selecionado</p>
+                  </div>
+                );
+              }
+              
+              const maxValue = Math.max(...validStats.map(s => s.mediaKmPorLitro), 1);
+              
+              return (
+                <div className="overflow-x-auto overflow-y-visible pt-12">
+                  <div className="min-w-[600px]">
+                    <div className="flex items-end justify-around gap-3 px-4" style={{ height: '350px' }}>
+                      {validStats
+                        .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
+                        .map((stats) => {
+                          const barHeight = ((stats.mediaKmPorLitro / maxValue) * 280) + 'px';
+                          
+                          return (
+                            <div 
                                 key={stats.placa}
                                 className="flex flex-col items-center justify-end flex-1 max-w-[90px]"
                                 data-testid={`bar-vehicle-${stats.placa}`}
@@ -1970,18 +1986,12 @@ const HodometrosDashboard = () => {
                                 </div>
                               </div>
                             );
-                          })}
-                      </div>
-                    );
-                  })()}
+                        })}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700 rounded-2xl shadow">
-                <BarChart2 className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-                <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Custo por Litro Table */}
