@@ -382,7 +382,7 @@ const HodometrosDashboard = () => {
           motorista_id: hodometro.motorista_id,
           motorista_nome: hodometro.motorista?.nome || 'Desconhecido',
           veiculo_id: hodometro.veiculo_id,
-          veiculo_placa: hodometro.veiculo?.placa || null
+          veiculo_placa: hodometro.veiculo?.placa?.toUpperCase() || null
         };
         
         // Update first and last readings

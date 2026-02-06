@@ -425,7 +425,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
           'Hora': reading.hora,
           'Motorista': reading.motorista?.nome || 'Não informado',
           'CPF': reading.motorista?.cpf ? formatCPF(reading.motorista.cpf) : 'Não informado',
-          'Veículo': reading.veiculo?.placa || 'Não informado',
+          'Veículo': reading.veiculo?.placa?.toUpperCase() || 'Não informado',
           'Marca/Modelo': `${reading.veiculo?.marca || ''} ${reading.veiculo?.tipo || ''}`.trim() || 'Não informado',
           'Hodômetro Informado': reading.hod_informado !== null ? formatNumber(reading.hod_informado) : '-',
           'Hodômetro Lido': reading.hod_lido !== null ? formatNumber(reading.hod_lido) : '-',
@@ -799,7 +799,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <Truck className="h-4 w-4 text-gray-400 mr-1" />
-                          <div className="text-sm text-gray-900 dark:text-white">{reading.veiculo?.placa || 'Não informado'}</div>
+                          <div className="text-sm text-gray-900 dark:text-white">{reading.veiculo?.placa?.toUpperCase() || 'Não informado'}</div>
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 ml-5">{reading.veiculo?.marca} {reading.veiculo?.tipo}</div>
                       </td>
@@ -996,7 +996,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
                   <div className="flex items-center gap-2 mb-3">
                     <Truck className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                     <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Veículo: {selectedReading.veiculo?.placa} - {selectedReading.veiculo?.marca} {selectedReading.veiculo?.tipo}
+                      Veículo: {selectedReading.veiculo?.placa?.toUpperCase()} - {selectedReading.veiculo?.marca} {selectedReading.veiculo?.tipo}
                     </h4>
                   </div>
                   
