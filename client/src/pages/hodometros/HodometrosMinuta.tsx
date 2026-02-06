@@ -257,6 +257,7 @@ const HodometrosMinuta: React.FC = () => {
   };
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [plateFilter, setPlateFilter] = useState<string>('all');
   const [minutas, setMinutas] = useState<Minuta[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMinutas, setLoadingMinutas] = useState(false);
@@ -374,7 +375,30 @@ const HodometrosMinuta: React.FC = () => {
     }
   }, [showPeriodDropdown]);
 
+  const uniquePlates = React.useMemo(() => {
+    const plates = new Set<string>();
+    let hasNoPlate = false;
+    minutas.forEach(m => {
+      const placa = m.veiculo?.placa?.trim();
+      if (placa) {
+        plates.add(placa.toUpperCase());
+      } else {
+        hasNoPlate = true;
+      }
+    });
+    const sorted = Array.from(plates).sort();
+    return { plates: sorted, hasNoPlate };
+  }, [minutas]);
+
   const filteredMinutas = minutas.filter(m => {
+    if (plateFilter !== 'all') {
+      if (plateFilter === '__no_plate__') {
+        if (m.veiculo?.placa?.trim()) return false;
+      } else {
+        if ((m.veiculo?.placa?.trim()?.toUpperCase() || '') !== plateFilter) return false;
+      }
+    }
+
     const s = searchTerm.toLowerCase();
     return (
       !searchTerm ||
@@ -671,6 +695,21 @@ const HodometrosMinuta: React.FC = () => {
           />
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
         </div>
+
+        <select
+          value={plateFilter}
+          onChange={(e) => setPlateFilter(e.target.value)}
+          className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[150px] h-[38px]"
+          data-testid="select-plate-filter"
+        >
+          <option value="all">Todas as placas</option>
+          {uniquePlates.plates.map(plate => (
+            <option key={plate} value={plate}>{plate}</option>
+          ))}
+          {uniquePlates.hasNoPlate && (
+            <option value="__no_plate__">Não informados</option>
+          )}
+        </select>
 
         <div className="relative z-[40]" ref={periodDropdownRef}>
           <button
