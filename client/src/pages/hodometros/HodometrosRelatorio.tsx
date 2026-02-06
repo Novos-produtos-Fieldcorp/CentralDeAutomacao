@@ -71,6 +71,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [photoType, setPhotoType] = useState<'hodometro' | 'bomba'>('hodometro');
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
+  const [plateFilter, setPlateFilter] = useState<string>('all');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   
@@ -519,8 +520,30 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
     }
   };
 
+  const uniquePlates = React.useMemo(() => {
+    const plates = new Set<string>();
+    let hasNoPlate = false;
+    readings.forEach(r => {
+      const placa = r.veiculo?.placa?.trim();
+      if (placa) {
+        plates.add(placa.toUpperCase());
+      } else {
+        hasNoPlate = true;
+      }
+    });
+    const sorted = Array.from(plates).sort();
+    return { plates: sorted, hasNoPlate };
+  }, [readings]);
+
   const filteredReadings = readings.filter(reading => {
-    // Apply search filter
+    if (plateFilter !== 'all') {
+      if (plateFilter === '__no_plate__') {
+        if (reading.veiculo?.placa?.trim()) return false;
+      } else {
+        if ((reading.veiculo?.placa?.trim()?.toUpperCase() || '') !== plateFilter) return false;
+      }
+    }
+
     const searchString = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm || 
       reading.motorista?.nome.toLowerCase().includes(searchString) ||
@@ -529,7 +552,6 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       reading.veiculo?.marca?.toLowerCase().includes(searchString) ||
       reading.veiculo?.tipo?.toLowerCase().includes(searchString);
     
-    // Apply vehicle type filter
     const isElectric = reading.bateria !== null && reading.bateria !== undefined;
     const matchesVehicleType = 
       vehicleTypeFilter === 'all' || 
@@ -592,6 +614,22 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
           />
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
         </div>
+
+        {/* Vehicle Plate Filter */}
+        <select
+          value={plateFilter}
+          onChange={(e) => setPlateFilter(e.target.value)}
+          className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[150px] h-[38px]"
+          data-testid="select-plate-filter-leituras"
+        >
+          <option value="all">Todas as placas</option>
+          {uniquePlates.plates.map(plate => (
+            <option key={plate} value={plate}>{plate}</option>
+          ))}
+          {uniquePlates.hasNoPlate && (
+            <option value="__no_plate__">Não informados</option>
+          )}
+        </select>
 
         {/* Período Filter */}
         <div className="relative z-[40]" ref={periodDropdownRef}>
