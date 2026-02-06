@@ -419,7 +419,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       const hasBombaAccess = moduleAccess?.bomba;
       
       // Prepare data for export
-      const exportData = readings.map(reading => {
+      const exportData = filteredReadings.map(reading => {
         // Base fields
         const baseData: Record<string, any> = {
           'Data': formatDateBR(reading.data),
