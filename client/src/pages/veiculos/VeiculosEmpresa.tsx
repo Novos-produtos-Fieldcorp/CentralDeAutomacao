@@ -317,10 +317,10 @@ const VeiculosEmpresa = () => {
         return;
       }
       
-      // Use soft delete (status_veiculo = false) for consistency with other deletion flows
+      // Hard delete duplicates permanently
       const { error } = await supabase
         .from('veiculo')
-        .update({ status_veiculo: false })
+        .delete()
         .in('veiculo_id', idsToDelete);
         
       if (error) throw error;
@@ -503,19 +503,47 @@ const VeiculosEmpresa = () => {
       />
       <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
     </div>
-    <select
-      value={statusFilter}
-      onChange={(e) => {
-        setStatusFilter(e.target.value as 'all' | 'active' | 'inactive');
-        setCurrentPage(1);
-      }}
-      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-w-[130px]"
-      data-testid="select-status-filter"
-    >
-      <option value="active">Ativos</option>
-      <option value="inactive">Inativos</option>
-      <option value="all">Todos</option>
-    </select>
+    <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden" data-testid="select-status-filter">
+      <button
+        onClick={() => {
+          setStatusFilter('active');
+          setCurrentPage(1);
+        }}
+        className={`px-3 py-2 text-sm font-medium transition-colors ${
+          statusFilter === 'active'
+            ? 'bg-green-600 text-white'
+            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+        }`}
+      >
+        Ativos
+      </button>
+      <button
+        onClick={() => {
+          setStatusFilter('inactive');
+          setCurrentPage(1);
+        }}
+        className={`px-3 py-2 text-sm font-medium border-l border-gray-300 dark:border-gray-600 transition-colors ${
+          statusFilter === 'inactive'
+            ? 'bg-red-600 text-white'
+            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+        }`}
+      >
+        Inativos
+      </button>
+      <button
+        onClick={() => {
+          setStatusFilter('all');
+          setCurrentPage(1);
+        }}
+        className={`px-3 py-2 text-sm font-medium border-l border-gray-300 dark:border-gray-600 transition-colors ${
+          statusFilter === 'all'
+            ? 'bg-blue-600 text-white'
+            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+        }`}
+      >
+        Todos
+      </button>
+    </div>
   </div>
 
           <div className="flex gap-2">

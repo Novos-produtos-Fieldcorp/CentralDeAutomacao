@@ -753,10 +753,11 @@ const HodometrosDashboard = () => {
         }))
         .sort((a, b) => b.value - a.value);
       
-      // Calculate average km per day
-      const uniqueDays = new Set(dailyMileageArray.map(item => item.date)).size;
-      const avgKmPerDay = uniqueDays > 0 ? totalKilometers / uniqueDays : 0;
-      //const somaKmTotal = calculateKmRodadoForPeriod;
+      // Calculate average km per day using total days in the selected period
+      const start = new Date(dateRange.startDate);
+      const end = new Date(dateRange.endDate);
+      const totalDaysInPeriod = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      const avgKmPerDay = totalDaysInPeriod > 0 ? totalKilometers / totalDaysInPeriod : 0;
       
       // Update state with processed data
       setDailyMileage(dailyMileageArray);
@@ -892,13 +893,13 @@ const HodometrosDashboard = () => {
       const minutas = data || [];
       const totalMinutasCount = minutas.length;
       
-      // Calculate unique days (extract date part without creating Date object)
-      const uniqueDays = new Set(
-        minutas.map(m => m.created_at.split('T')[0])
-      ).size;
+      // Calculate total days in the selected period
+      const start = new Date(dateRange.startDate);
+      const end = new Date(dateRange.endDate);
+      const totalDaysInPeriod = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
       
-      // Calculate average minutas per day
-      const avgPerDay = uniqueDays > 0 ? totalMinutasCount / uniqueDays : 0;
+      // Calculate average minutas per day based on total period days
+      const avgPerDay = totalDaysInPeriod > 0 ? totalMinutasCount / totalDaysInPeriod : 0;
       
       // Only calculate average per driver if bomba module is not active (metric won't be displayed)
       let avgPerDriver = 0;
@@ -932,10 +933,10 @@ const HodometrosDashboard = () => {
     try {
       setConnectionError(false);
       
-      // Fetch bomba_gasolina records within date range
+      // Fetch bomba_gasolina records within date range (include litro_lido and preco_lido for filtering)
       const { data, error } = await supabase
         .from('bomba_gasolina')
-        .select('id, data')
+        .select('id, data, litro_lido, preco_lido')
         .eq('company_id', companyId)
         .gte('data', dateRange.startDate)
         .lte('data', dateRange.endDate)
@@ -944,7 +945,12 @@ const HodometrosDashboard = () => {
       if (error) throw error;
       
       const bombas = data || [];
-      setTotalBomba(bombas.length);
+      const validBombas = bombas.filter((b: any) => {
+        const litros = parseFloat(b.litro_lido) || 0;
+        const preco = parseFloat(b.preco_lido) || 0;
+        return litros > 0 || preco > 0;
+      });
+      setTotalBomba(validBombas.length);
       
     } catch (error) {
       handleSupabaseError(error, 'carregar estatísticas de bomba');
@@ -1087,10 +1093,13 @@ const HodometrosDashboard = () => {
           vehicleIdsInPeriod.add(hod.veiculo_id);
           const veiculo = Array.isArray(hod.veiculo) ? hod.veiculo[0] : hod.veiculo;
           if (veiculo) {
-            vehicleDataMap.set(hod.veiculo_id, {
-              placa: veiculo.placa || 'Desconhecida',
-              marca: veiculo.marca || 'Desconhecida'
-            });
+            const placaNorm = (veiculo.placa || '').trim().toUpperCase();
+            if (placaNorm && placaNorm.length >= 7) {
+              vehicleDataMap.set(hod.veiculo_id, {
+                placa: placaNorm,
+                marca: veiculo.marca || 'Desconhecida'
+              });
+            }
           }
         }
       });
@@ -1257,7 +1266,8 @@ const HodometrosDashboard = () => {
         const veiculo = Array.isArray(bomba.veiculo) ? bomba.veiculo[0] : bomba.veiculo;
         if (!veiculo || !veiculo.veiculo_id) return;
         
-        const placaNormalizada = (veiculo.placa || 'Desconhecida').toUpperCase();
+        const placaNormalizada = (veiculo.placa || '').trim().toUpperCase();
+        if (!placaNormalizada || placaNormalizada.length < 7) return;
         
         // Only store if we haven't found the last refuel for this plate yet
         if (!lastRefuelByPlaca.has(placaNormalizada)) {
@@ -1277,7 +1287,8 @@ const HodometrosDashboard = () => {
         if (!veiculo || !veiculo.veiculo_id) return;
         
         const veiculoId = veiculo.veiculo_id;
-        const placaNormalizada = (veiculo.placa || 'Desconhecida').toUpperCase();
+        const placaNormalizada = (veiculo.placa || '').trim().toUpperCase();
+        if (!placaNormalizada || placaNormalizada.length < 7) return;
         const marca = veiculo.marca || 'Desconhecida';
         
         // Get the last refuel for this vehicle
@@ -1342,12 +1353,14 @@ const HodometrosDashboard = () => {
 
       // Update totalKm state with the sum from all vehicles
       setTotalKm(totalKmFromAllVehicles);
-      // Convert km vs price map to array
-      const kmVsPrice = Array.from(kmVsPriceMap.entries()).map(([placa, data]) => ({
-        placa,
-        km: data.km,
-        preco: data.preco
-      }));
+      // Convert km vs price map to array, filtering out invalid plates
+      const kmVsPrice = Array.from(kmVsPriceMap.entries())
+        .filter(([placa]) => placa && placa !== 'DESCONHECIDA' && placa.length >= 7)
+        .map(([placa, data]) => ({
+          placa,
+          km: data.km,
+          preco: data.preco
+        }));
       
       // Calculate average cost per liter
       const avgCusto = totalLitrosSum > 0 ? totalGastoSum / totalLitrosSum : 0;
@@ -1850,13 +1863,13 @@ const HodometrosDashboard = () => {
           <>
             <StatCard
               title="Total de leituras de abastecimentos"
-              value={totalBomba + totalMinutas}
+              value={totalBomba}
               icon={Fuel}
               color="purple"
             />
             <StatCard
               title="Total de leituras de minutas"
-              value={todayBombaMinuta}
+              value={totalMinutas}
               icon={ClipboardList}
               color="amber"
             />
@@ -1926,21 +1939,37 @@ const HodometrosDashboard = () => {
               <h3 className="text-lg font-bold text-black dark:text-white">Média de Consumo por Veículo (km/L)</h3>
             </div>
             
-            {vehicleFuelStats.length > 0 ? (
-              <div className="overflow-x-auto overflow-y-visible pt-12">
-                <div className="min-w-[600px]">
-                  {(() => {
-                    const maxValue = Math.max(...vehicleFuelStats.map(s => s.mediaKmPorLitro), 1);
-                    
-                    return (
-                      <div className="flex items-end justify-around gap-3 px-4" style={{ height: '350px' }}>
-                        {vehicleFuelStats
-                          .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
-                          .map((stats) => {
-                            const barHeight = ((stats.mediaKmPorLitro / maxValue) * 280) + 'px';
-                            
-                            return (
-                              <div 
+            {(() => {
+              // Filter out vehicles with no valid data (zero consumption or invalid plates)
+              const validStats = vehicleFuelStats.filter(s => 
+                s.mediaKmPorLitro > 0 && 
+                s.placa && 
+                s.placa !== 'DESCONHECIDA' && 
+                s.placa.length >= 7
+              );
+              
+              if (validStats.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700 rounded-2xl shadow">
+                    <BarChart2 className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
+                    <p className="text-gray-400">Nenhum dado de consumo válido para o período selecionado</p>
+                  </div>
+                );
+              }
+              
+              const maxValue = Math.max(...validStats.map(s => s.mediaKmPorLitro), 1);
+              
+              return (
+                <div className="overflow-x-auto overflow-y-visible pt-12">
+                  <div className="min-w-[600px]">
+                    <div className="flex items-end justify-around gap-3 px-4" style={{ height: '350px' }}>
+                      {validStats
+                        .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
+                        .map((stats) => {
+                          const barHeight = ((stats.mediaKmPorLitro / maxValue) * 280) + 'px';
+                          
+                          return (
+                            <div 
                                 key={stats.placa}
                                 className="flex flex-col items-center justify-end flex-1 max-w-[90px]"
                                 data-testid={`bar-vehicle-${stats.placa}`}
@@ -1970,18 +1999,12 @@ const HodometrosDashboard = () => {
                                 </div>
                               </div>
                             );
-                          })}
-                      </div>
-                    );
-                  })()}
+                        })}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-60 bg-gray-50 dark:bg-gray-700 rounded-2xl shadow">
-                <BarChart2 className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
-                <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Custo por Litro Table */}
@@ -1991,7 +2014,13 @@ const HodometrosDashboard = () => {
               <h3 className="text-lg font-bold text-black dark:text-white">Custo por Litro por Veículo</h3>
             </div>
             
-            {vehicleFuelStats.length > 0 ? (
+            {(() => {
+              const validTableStats = vehicleFuelStats.filter(s => 
+                s.placa && 
+                s.placa !== 'DESCONHECIDA' && 
+                s.placa.length >= 7
+              );
+              return validTableStats.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full" data-testid="table-custo-por-litro">
                   <thead>
@@ -2006,7 +2035,7 @@ const HodometrosDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {vehicleFuelStats
+                    {validTableStats
                       .sort((a, b) => b.mediaKmPorLitro - a.mediaKmPorLitro)
                       .map((stats, index) => (
                         <tr 
@@ -2035,7 +2064,8 @@ const HodometrosDashboard = () => {
                 <FileBarChart className="w-12 h-12 text-gray-400 dark:text-gray-600 mb-4" />
                 <p className="text-gray-400">Nenhum dado disponível para o período selecionado</p>
               </div>
-            )}
+            );
+            })()}
           </div>
         </>
       )}
