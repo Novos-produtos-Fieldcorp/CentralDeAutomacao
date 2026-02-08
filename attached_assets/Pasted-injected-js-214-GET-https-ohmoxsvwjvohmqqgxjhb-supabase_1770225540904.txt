@@ -1,0 +1,76 @@
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/faturamento_sada?select=*&company_id=eq.16&order=created_at.desc&limit=1 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4404
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4425
+fulfilled @ @supabase_supabase-js.js?v=d94cdbd3:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=d94cdbd3:4390
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4392
+__awaiter8 @ @supabase_supabase-js.js?v=d94cdbd3:4374
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4415
+then @ @supabase_supabase-js.js?v=d94cdbd3:90
+setTimeout
+setTimeout @ @tanstack_react-query.js?v=d94cdbd3:51
+setTimeout @ @tanstack_react-query.js?v=d94cdbd3:86
+(anonymous) @ @tanstack_react-query.js?v=d94cdbd3:281
+sleep @ @tanstack_react-query.js?v=d94cdbd3:280
+(anonymous) @ @tanstack_react-query.js?v=d94cdbd3:814
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/faturamento_sada?select=*&company_id=eq.16&order=created_at.desc&limit=1 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4404
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4425
+fulfilled @ @supabase_supabase-js.js?v=d94cdbd3:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=d94cdbd3:4390
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4392
+__awaiter8 @ @supabase_supabase-js.js?v=d94cdbd3:4374
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4415
+then @ @supabase_supabase-js.js?v=d94cdbd3:90
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/faturamento_sada?select=*&company_id=eq.16&order=created_at.desc 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4404
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4425
+fulfilled @ @supabase_supabase-js.js?v=d94cdbd3:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=d94cdbd3:4390
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4392
+__awaiter8 @ @supabase_supabase-js.js?v=d94cdbd3:4374
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4415
+then @ @supabase_supabase-js.js?v=d94cdbd3:90
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/faturamento_sada?select=*&company_id=eq.16&order=created_at.desc 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4404
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4425
+fulfilled @ @supabase_supabase-js.js?v=d94cdbd3:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=d94cdbd3:4390
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4392
+__awaiter8 @ @supabase_supabase-js.js?v=d94cdbd3:4374
+(anonymous) @ @supabase_supabase-js.js?v=d94cdbd3:4415
+then @ @supabase_supabase-js.js?v=d94cdbd3:90
+setTimeout
+setTimeout @ @tanstack_react-query.js?v=d94cdbd3:51
+setTimeout @ @tanstack_react-query.js?v=d94cdbd3:86
+(anonymous) @ @tanstack_react-query.js?v=d94cdbd3:281
+sleep @ @tanstack_react-query.js?v=d94cdbd3:280
+(anonymous) @ @tanstack_react-query.js?v=d94cdbd3:814
+Promise.catch
+run @ @tanstack_react-query.js?v=d94cdbd3:799
+start @ @tanstack_react-query.js?v=d94cdbd3:838
+fetch @ @tanstack_react-query.js?v=d94cdbd3:1144
+executeFetch_fn @ @tanstack_react-query.js?v=d94cdbd3:1639
+onSubscribe @ @tanstack_react-query.js?v=d94cdbd3:1335
+subscribe @ @tanstack_react-query.js?v=d94cdbd3:24
+(anonymous) @ @tanstack_react-query.js?v=d94cdbd3:3298
+subscribeToStore @ chunk-NFC5BX5N.js?v=d94cdbd3:11984
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=d94cdbd3:16915
+commitPassiveMountOnFiber @ chunk-NFC5BX5N.js?v=d94cdbd3:18156
+commitPassiveMountEffects_complete @ chunk-NFC5BX5N.js?v=d94cdbd3:18129
+commitPassiveMountEffects_begin @ chunk-NFC5BX5N.js?v=d94cdbd3:18119
+commitPassiveMountEffects @ chunk-NFC5BX5N.js?v=d94cdbd3:18109
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=d94cdbd3:19490
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=d94cdbd3:19447
+(anonymous) @ chunk-NFC5BX5N.js?v=d94cdbd3:19328
+workLoop @ chunk-NFC5BX5N.js?v=d94cdbd3:197
+flushWork @ chunk-NFC5BX5N.js?v=d94cdbd3:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=d94cdbd3:384

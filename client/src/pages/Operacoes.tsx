@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2 } from 'lucide-react';
 import { useState as useStateReact } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
+import SpotlightCard from '../components/SpotlightCard';
 
 interface Operacao {
   id: number;
@@ -268,19 +269,7 @@ const ViagemDetailModal = ({
     }
   };
 
-  const getOperacaoColor = (tipo: string | undefined) => {
-    const colors: Record<string, { bg: string; gradient: string }> = {
-      'Autoservice': { bg: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', gradient: 'from-blue-500 to-blue-600' },
-      'Cesari': { bg: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', gradient: 'from-green-500 to-green-600' },
-      'Mitsubishi': { bg: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', gradient: 'from-red-500 to-red-600' },
-      'Sada': { bg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', gradient: 'from-yellow-500 to-yellow-600' },
-      'Superterminais': { bg: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', gradient: 'from-purple-500 to-purple-600' },
-      'Tegma': { bg: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400', gradient: 'from-orange-500 to-orange-600' },
-    };
-    return colors[tipo || ''] || { bg: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400', gradient: 'from-gray-500 to-gray-600' };
-  };
-
-  const operacaoColors = getOperacaoColor(viagem.operacao_tipo);
+  // Design monocromático - cores removidas
 
   // Componente para seção
   const Section = ({ title, icon: Icon, children, className = '' }: { title: string; icon: any; children: React.ReactNode; className?: string }) => (
@@ -323,7 +312,7 @@ const ViagemDetailModal = ({
             </span>
           ) : '-'} />
           <Field label="Valor do Frete" value={dados.valor_frete ? (
-            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+            <span className="flex items-center gap-1 text-gray-900 dark:text-white font-medium">
               <DollarSign className="w-3 h-3" />
               {dados.valor_frete}
             </span>
@@ -366,12 +355,12 @@ const ViagemDetailModal = ({
             <Field label="Destino" value={dados.v2_destino} />
             <Field label="Capacidade" value={
               dados.v2_capacidade !== null && dados.v2_capacidade !== undefined ? (
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
                   dados.v2_capacidade === 1 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800'
                     : dados.v2_capacidade === 2
-                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                      ? 'bg-gray-400 text-white dark:bg-gray-500 dark:text-white'
+                      : 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-300'
                 }`}>
                   {dados.v2_capacidade === 0 ? 'Vazio' : dados.v2_capacidade === 1 ? 'Cheio' : dados.v2_capacidade === 2 ? 'Manobra' : dados.v2_capacidade}
                 </span>
@@ -417,10 +406,10 @@ const ViagemDetailModal = ({
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Field label="Tipo de Carreta" value={
             dados.tipo_carreta !== null && dados.tipo_carreta !== undefined ? (
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
                 dados.tipo_carreta === 1 
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                  ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800'
+                  : 'bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
               }`}>
                 {dados.tipo_carreta === 1 ? 'Cegonha' : 'Prancha'}
               </span>
@@ -455,10 +444,10 @@ const ViagemDetailModal = ({
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Field label="Tipo de Carreta" value={
             dados.tipo_carreta !== null && dados.tipo_carreta !== undefined ? (
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
                 dados.tipo_carreta === 1 
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                  ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800'
+                  : 'bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
               }`}>
                 {dados.tipo_carreta === 1 ? 'Cegonha' : 'Prancha'}
               </span>
@@ -612,11 +601,11 @@ const ViagemDetailModal = ({
         className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header com gradiente */}
-        <div className={`bg-gradient-to-r ${operacaoColors.gradient} p-4`}>
+        {/* Header monocromático */}
+        <div className="bg-gray-900 dark:bg-gray-900 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur rounded-lg flex items-center justify-center">
                 <span className="text-white text-xl font-bold">#{viagem.id}</span>
               </div>
               <div>
@@ -624,7 +613,7 @@ const ViagemDetailModal = ({
                   Detalhes da Viagem
                 </h2>
                 {viagem.operacao_tipo && (
-                  <span className="text-white/80 text-sm">
+                  <span className="text-gray-400 text-sm">
                     Operação {viagem.operacao_tipo}
                   </span>
                 )}
@@ -632,7 +621,7 @@ const ViagemDetailModal = ({
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
               data-testid="button-close-modal"
             >
               <X className="w-5 h-5 text-white" />
@@ -648,10 +637,10 @@ const ViagemDetailModal = ({
                 <Field label="Data/Hora Inicial" value={formatDateTime(viagem.data_hora_inicial)} />
                 <Field label="Data/Hora Final" value={formatDateTime(viagem.data_hora_final)} />
                 <Field label="Status" value={
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                  <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-medium ${
                     viagem.data_hora_final 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800'
+                      : 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'
                   }`}>
                     {viagem.data_hora_final ? 'Concluída' : 'Em Andamento'}
                   </span>
@@ -1153,82 +1142,81 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <button 
+      {/* Cards de estatísticas - Design monocromático */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <SpotlightCard
+          as="button"
+          type="button"
           onClick={() => setStatsModalOpen('total')}
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md transition-all cursor-pointer"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
           data-testid="card-total-viagens"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <Map className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Total Viagens</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.total || 0}</p>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
+            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <Map className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
-        </button>
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.total || 0}</p>
+        </SpotlightCard>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <LayoutDashboard className="w-5 h-5 text-green-600 dark:text-green-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Operações</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{OPERACOES_TABELAS.length}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Operações</span>
+            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <LayoutDashboard className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{OPERACOES_TABELAS.length}</p>
         </div>
 
-        <button 
+        <SpotlightCard 
+          as="button"
+          type="button"
           onClick={() => setStatsModalOpen('hoje')}
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-yellow-300 dark:hover:border-yellow-600 hover:shadow-md transition-all cursor-pointer"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
           data-testid="card-viagens-hoje"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Hoje</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.hoje || 0}</p>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Hoje</span>
+            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
-        </button>
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.hoje || 0}</p>
+        </SpotlightCard>
 
-        <button 
+        <SpotlightCard 
+          as="button"
+          type="button"
           onClick={() => setStatsModalOpen('emAndamento')}
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md transition-all cursor-pointer"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
           data-testid="card-em-andamento"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-              <RefreshCw className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Em Andamento</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.emAndamento || 0}</p>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Em Andamento</span>
+            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
-        </button>
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.emAndamento || 0}</p>
+        </SpotlightCard>
 
-        <button 
+        <SpotlightCard 
+          as="button"
+          type="button"
           onClick={() => setStatsModalOpen('concluidas')}
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-left hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-md transition-all cursor-pointer"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
           data-testid="card-concluidas"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex-shrink-0 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Check className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Concluídas</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{viagensStats?.concluidas || 0}</p>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Concluídas</span>
+            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <Check className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
-        </button>
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.concluidas || 0}</p>
+        </SpotlightCard>
       </div>
 
       {/* Modal de viagens detalhadas */}
@@ -1300,11 +1288,11 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                           <td className="px-3 py-3 text-sm text-gray-900 dark:text-white max-w-[100px] truncate" title={viagem.operacao_dados?.destino}>{viagem.operacao_dados?.destino || '-'}</td>
                           <td className="px-3 py-3 text-sm whitespace-nowrap">
                             {viagem.data_hora_final ? (
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 whitespace-nowrap">
+                              <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800 whitespace-nowrap">
                                 Concluída
                               </span>
                             ) : (
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 whitespace-nowrap">
+                              <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 whitespace-nowrap">
                                 Em Andamento
                               </span>
                             )}
@@ -1320,39 +1308,38 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20">
+      {/* Histograma de viagens - Design monocromático */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
+                <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full" />
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Viagens</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Histórico diário de viagens realizadas</p>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <div className="flex items-center gap-8">
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {viagensHistograma.reduce((acc, d) => acc + d.total, 0)}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Total período</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total período</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {viagensHistograma.length > 0 
                       ? (viagensHistograma.reduce((acc, d) => acc + d.total, 0) / viagensHistograma.length).toFixed(1) 
                       : '0'}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Média/dia</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Média/dia</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {Math.max(...viagensHistograma.map(d => d.total), 0)}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Pico</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Pico</p>
                 </div>
               </div>
             </div>
@@ -1362,7 +1349,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                 onClick={() => setIsPeriodoExpanded(!isPeriodoExpanded)}
                 className={`w-10 h-10 rounded-lg transition-colors flex items-center justify-center ${
                   isPeriodoExpanded 
-                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
+                    ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800' 
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
                 title={isPeriodoExpanded ? 'Fechar seletor de período' : 'Abrir seletor de período'}
@@ -1387,7 +1374,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                       onClick={() => setHistogramaPeriodo(periodo.id)}
                       className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                         histogramaPeriodo === periodo.id
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                       data-testid={`btn-periodo-${periodo.id}`}
@@ -1453,16 +1440,16 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                           <div 
                             className={`w-full max-w-[20px] rounded-t-sm transition-all duration-300 ${
                               isToday 
-                                ? 'bg-gradient-to-t from-blue-600 to-blue-400' 
+                                ? 'bg-blue-700 dark:bg-blue-300' 
                                 : isWeekend 
-                                  ? 'bg-gradient-to-t from-gray-400 to-gray-300 dark:from-gray-600 dark:to-gray-500' 
-                                  : 'bg-gradient-to-t from-blue-500 to-blue-400 dark:from-blue-600 dark:to-blue-500'
-                            } group-hover:opacity-80`}
+                                  ? 'bg-blue-300 dark:bg-blue-700' 
+                                  : 'bg-blue-500 dark:bg-blue-400'
+                            } group-hover:opacity-70`}
                             style={{ height: `${Math.max(heightPercent, dia.total > 0 ? 8 : 2)}%` }}
                           />
                         </div>
                         
-                        <div className="invisible group-hover:visible absolute -top-8 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+                        <div className="invisible group-hover:visible absolute -top-8 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-2 py-1 rounded whitespace-nowrap z-10">
                           {dia.data}: {dia.total} viagens
                         </div>
                       </div>
@@ -1482,15 +1469,15 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                 
                 <div className="flex items-center justify-center gap-6 pt-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-gradient-to-t from-blue-500 to-blue-400" />
+                    <div className="w-3 h-3 rounded-sm bg-blue-500 dark:bg-blue-400" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Dias úteis</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-gradient-to-t from-gray-400 to-gray-300 dark:from-gray-600 dark:to-gray-500" />
+                    <div className="w-3 h-3 rounded-sm bg-blue-300 dark:bg-blue-700" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Fim de semana</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-gradient-to-t from-blue-600 to-blue-400" />
+                    <div className="w-3 h-3 rounded-sm bg-blue-700 dark:bg-blue-300" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Hoje</span>
                   </div>
                 </div>
@@ -1714,9 +1701,14 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SADA</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-yellow-500 dark:bg-yellow-400 rounded-full"></div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SADA</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+          </div>
+        </div>
       </div>
       
       <div className="p-6">
@@ -1726,17 +1718,17 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-yellow-500 dark:bg-yellow-600"
+                color="bg-blue-600 dark:bg-blue-400"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-yellow-500 dark:bg-yellow-600"
+                color="bg-blue-500 dark:bg-blue-500"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-yellow-500 dark:bg-yellow-600"
+                color="bg-blue-400 dark:bg-blue-600"
               />
             </div>
             
@@ -1751,7 +1743,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
                       <div key={index} className="flex flex-col items-center min-w-[60px]">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
                         <div 
-                          className="w-12 bg-yellow-500 dark:bg-yellow-600 rounded-t"
+                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
                           style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
@@ -1766,9 +1758,9 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-yellow-600 dark:text-yellow-400" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-yellow-600 dark:text-yellow-400" />
-            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-yellow-600 dark:text-yellow-400" />
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -1898,9 +1890,14 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">TEGMA</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-orange-500 dark:bg-orange-400 rounded-full"></div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">TEGMA</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+          </div>
+        </div>
       </div>
       
       <div className="p-6">
@@ -1910,17 +1907,17 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-orange-500 dark:bg-orange-600"
+                color="bg-blue-600 dark:bg-blue-400"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-orange-500 dark:bg-orange-600"
+                color="bg-blue-500 dark:bg-blue-500"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-orange-500 dark:bg-orange-600"
+                color="bg-blue-400 dark:bg-blue-600"
               />
             </div>
             
@@ -1935,7 +1932,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
                       <div key={index} className="flex flex-col items-center min-w-[60px]">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
                         <div 
-                          className="w-12 bg-orange-500 dark:bg-orange-600 rounded-t"
+                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
                           style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
@@ -1950,9 +1947,9 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-orange-600 dark:text-orange-400" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-orange-600 dark:text-orange-400" />
-            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-orange-600 dark:text-orange-400" />
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -2076,9 +2073,14 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPER TERMINAIS</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação portuária</p>
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-purple-500 dark:bg-purple-400 rounded-full"></div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPER TERMINAIS</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação portuária</p>
+          </div>
+        </div>
       </div>
       
       <div className="p-6">
@@ -2088,12 +2090,12 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="Containers por Motorista" 
                 data={stats.containersPorMotorista}
-                color="bg-purple-500 dark:bg-purple-600"
+                color="bg-blue-600 dark:bg-blue-400"
               />
               <HorizontalBarChart 
                 title="Containers por Cavalo" 
                 data={stats.containersPorCavalo}
-                color="bg-purple-500 dark:bg-purple-600"
+                color="bg-blue-500 dark:bg-blue-500"
               />
             </div>
             
@@ -2108,7 +2110,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
                       <div key={index} className="flex flex-col items-center min-w-[60px]">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
                         <div 
-                          className="w-12 bg-purple-500 dark:bg-purple-600 rounded-t"
+                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
                           style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
@@ -2123,9 +2125,9 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Volume de Viagens" value={stats.totalViagens} color="text-purple-600 dark:text-purple-400" />
-            <StatCard label="Containers Cheio" value={stats.containersCheio} color="text-purple-600 dark:text-purple-400" />
-            <StatCard label="Containers Vazio" value={stats.containersVazio} color="text-purple-600 dark:text-purple-400" />
+            <StatCard label="Volume de Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Containers Cheio" value={stats.containersCheio} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Containers Vazio" value={stats.containersVazio} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -2247,9 +2249,14 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">CESARI</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-green-500 dark:bg-green-400 rounded-full"></div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">CESARI</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
+          </div>
+        </div>
       </div>
       
       <div className="p-6">
@@ -2259,12 +2266,12 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-green-500 dark:bg-green-600"
+                color="bg-blue-600 dark:bg-blue-400"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-green-500 dark:bg-green-600"
+                color="bg-blue-500 dark:bg-blue-500"
               />
             </div>
             
@@ -2279,7 +2286,7 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
                       <div key={index} className="flex flex-col items-center min-w-[60px]">
                         <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
                         <div 
-                          className="w-12 bg-green-500 dark:bg-green-600 rounded-t"
+                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
                           style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                         />
                         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
@@ -2294,8 +2301,8 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-green-600 dark:text-green-400" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(2)} Mil` : stats.kmTotal} color="text-green-600 dark:text-green-400" />
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(2)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -2502,20 +2509,22 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
   };
 
   const getOperacaoColor = (tipo: string | undefined) => {
+    // Badges de operação coloridos para identificação visual
     const colors: Record<string, string> = {
-      'Autoservice': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-      'Cesari': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-      'Mitsubishi': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-      'Sada': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-      'Superterminais': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-      'Tegma': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+      'Autoservice': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      'Cesari': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      'Mitsubishi': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+      'Sada': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+      'Superterminais': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+      'Tegma': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     };
     return colors[tipo || ''] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
   };
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      {/* Filtros - Design monocromático */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -2524,7 +2533,7 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
               placeholder="Buscar por motorista, placa, origem ou destino..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-400 focus:border-gray-400 focus:bg-white"
               data-testid="input-search-viagens"
             />
           </div>
@@ -2626,11 +2635,12 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      {/* Tabela de viagens - Design monocromático */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         {isLoading ? (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
+              <thead>
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora Inicial</th>
@@ -2667,54 +2677,52 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
-                <tr>
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora Inicial</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data/Hora</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Operação</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ajudante</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destino</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                 {filteredViagens.map((viagem) => (
                   <tr 
                     key={viagem.id} 
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer transition-colors"
                     onClick={() => setSelectedViagem(viagem)}
                     data-testid={`row-viagem-${viagem.id}`}
                   >
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">{viagem.id}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{viagem.id}</td>
+                    <td className="px-4 py-3.5 text-sm text-gray-900 dark:text-white font-medium">
                       {formatDateTime(viagem.data_hora_inicial)}
                     </td>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="px-4 py-3.5 text-sm">
                       {viagem.operacao_tipo ? (
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOperacaoColor(viagem.operacao_tipo)}`}>
+                        <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${getOperacaoColor(viagem.operacao_tipo)}`}>
                           {viagem.operacao_tipo}
                         </span>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.motorista_nome || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.ajudante_nome || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{viagem.veiculo_placa || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                    <td className="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-300">{viagem.motorista_nome || '-'}</td>
+                    <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{viagem.veiculo_placa || '-'}</td>
+                    <td className="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-300">
                       {viagem.operacao_dados?.origem || '-'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                    <td className="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-300">
                       {viagem.operacao_dados?.destino || '-'}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
                         viagem.data_hora_final 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800'
+                          : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                       }`}>
                         {viagem.data_hora_final ? 'Concluída' : 'Em Andamento'}
                       </span>
@@ -2737,6 +2745,1248 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
   );
 };
 
+// Interface para faturamento
+interface FaturamentoSada {
+  id: number;
+  created_at: string;
+  updated_at: string | null;
+  company_id?: number;
+  familia_basica: string | null;
+  compass: string | null;
+  toro: string | null;
+  commander: string | null;
+  jlr: string | null;
+  rampage: string | null;
+  titano: string | null;
+  scudo: string | null;
+  ducato: string | null;
+  caminhoes: string | null;
+  comissao_motorista_prancha: string | null;
+  comissao_motorista_cegonha: string | null;
+}
+
+interface FaturamentoSuperterminais {
+  id: number;
+  valor_viagem: string | null;
+  comissao_motorista: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Componente Financeiro - Lista de viagens com cálculo de faturamento
+const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
+  const { companyId } = useCurrentAccount();
+  const [filtroPeriodo, setFiltroPeriodo] = useState<'15' | '30' | 'custom'>('30');
+  const [isDateFilterExpanded, setIsDateFilterExpanded] = useState(false);
+  const [dataInicio, setDataInicio] = useState('');
+  const [dataFim, setDataFim] = useState('');
+
+  // Função para filtrar viagens por período (usada por todas as operações)
+  const filtrarPorPeriodo = (viagens: any[]) => {
+    const agora = new Date();
+    return viagens.filter((v: any) => {
+      const dataViagem = v.data_viagem ? new Date(v.data_viagem) : null;
+      if (!dataViagem) return false;
+      
+      if (filtroPeriodo === 'custom') {
+        const inicio = dataInicio ? new Date(dataInicio + 'T00:00:00') : null;
+        const fim = dataFim ? new Date(dataFim + 'T23:59:59') : null;
+        if (inicio && dataViagem < inicio) return false;
+        if (fim && dataViagem > fim) return false;
+        return true;
+      }
+      
+      const diasAtras = filtroPeriodo === '15' ? 15 : 30;
+      const dataLimite = new Date(agora.getTime() - diasAtras * 24 * 60 * 60 * 1000);
+      return dataViagem >= dataLimite;
+    });
+  };
+
+  // Query para buscar os preços atuais da SADA
+  const { data: precosSada } = useQuery({
+    queryKey: ['faturamento-sada-precos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('faturamento_sada')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return data?.[0] as FaturamentoSada | null;
+    },
+    enabled: selectedOperacao === 'all' || selectedOperacao === 'Sada',
+  });
+
+  // Query para buscar os preços atuais da SUPERTERMINAIS
+  const { data: precosSuperterminais } = useQuery({
+    queryKey: ['faturamento-superterminais-precos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('faturamento_superterminais')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return data?.[0] as FaturamentoSuperterminais | null;
+    },
+    enabled: selectedOperacao === 'all' || selectedOperacao === 'Superterminais',
+  });
+
+  // Query para buscar viagens SADA com dados de faturamento
+  const { data: viagensSada = [], isLoading: isLoadingSada, isError: isErrorSada } = useQuery({
+    queryKey: ['financeiro-sada-viagens', companyId, selectedOperacao],
+    queryFn: async () => {
+      if (!companyId) return [];
+      
+      // Buscar viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIds = viagensEmpresa.map((v: any) => v.id);
+      
+      // Buscar operações SADA
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_sada')
+        .select('*')
+        .in('id_viagem', viagemIds);
+      
+      if (opError || !opData) return [];
+      
+      // Buscar motoristas
+      const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .in('motorista_id', motoristaIds);
+      
+      const motoristasMap: Record<number, string> = {};
+      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      
+      // Combinar dados
+      return opData.map((op: any) => {
+        const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          data_viagem: viagem?.data_hora_inicial,
+          motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+        };
+      }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
+    },
+    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Sada'),
+  });
+
+  // Query para buscar viagens SUPERTERMINAIS com dados de faturamento
+  const { data: viagensSuperterminais = [], isLoading: isLoadingSuperterminais, isError: isErrorSuperterminais } = useQuery({
+    queryKey: ['financeiro-superterminais-viagens', companyId, selectedOperacao],
+    queryFn: async () => {
+      if (!companyId) return [];
+      
+      // Buscar viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIds = viagensEmpresa.map((v: any) => v.id);
+      
+      // Buscar operações SUPERTERMINAIS
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_superterminais')
+        .select('*')
+        .in('id_viagem', viagemIds);
+      
+      if (opError || !opData) return [];
+      
+      // Buscar motoristas
+      const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .in('motorista_id', motoristaIds);
+      
+      const motoristasMap: Record<number, string> = {};
+      motoristasData?.forEach((m: any) => {
+        motoristasMap[m.motorista_id] = m.nome;
+      });
+      
+      // Combinar dados
+      return opData.map((op: any) => {
+        const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          data_viagem: viagem?.data_hora_inicial,
+          motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+        };
+      }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
+    },
+    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Superterminais'),
+  });
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+
+  // Converte string de preço (formato BR ou US) para número
+  const parsePreco = (valor: string | null): number => {
+    if (!valor) return 0;
+    // Remove espaços e R$
+    let limpo = valor.replace(/[R$\s]/g, '').trim();
+    // Se tem vírgula e ponto, assume formato BR (1.234,56)
+    if (limpo.includes(',') && limpo.includes('.')) {
+      limpo = limpo.replace(/\./g, '').replace(',', '.');
+    } else if (limpo.includes(',')) {
+      // Apenas vírgula, assume formato BR (234,56)
+      limpo = limpo.replace(',', '.');
+    }
+    const num = parseFloat(limpo);
+    return isNaN(num) ? 0 : num;
+  };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  // Mapeamento de modelo para chave do banco
+  const modeloParaChave: Record<string, keyof FaturamentoSada> = {
+    'familia_basica': 'familia_basica',
+    'familia basica': 'familia_basica',
+    'familia básica': 'familia_basica',
+    'familiabasica': 'familia_basica',
+    'familia': 'familia_basica',
+    'basica': 'familia_basica',
+    'compass': 'compass',
+    'toro': 'toro',
+    'commander': 'commander',
+    'jlr': 'jlr',
+    'rampage': 'rampage',
+    'ram rampage': 'rampage',
+    'ram': 'rampage',
+    'titano': 'titano',
+    'scudo': 'scudo',
+    'ducato': 'ducato',
+    'caminhoes': 'caminhoes',
+    'caminhões': 'caminhoes',
+    'caminhao': 'caminhoes',
+    'caminhão': 'caminhoes',
+  };
+
+  // Função para extrair veículos e quantidades do texto do modelo
+  // Ex: "2 compass e 1 toro" → [{modelo: 'compass', qtd: 2}, {modelo: 'toro', qtd: 1}]
+  const parseModeloTexto = (texto: string): { modelo: string; qtd: number }[] => {
+    const resultado: { modelo: string; qtd: number }[] = [];
+    const textoLower = texto.toLowerCase().trim();
+    
+    // Padrão: número seguido de nome do modelo
+    // Exemplos: "2 compass", "1 toro", "3 familia basica"
+    const regex = /(\d+)\s*([a-záàâãéèêíïóôõöúçñ\s]+?)(?=\s*(?:e\s+\d|\+|\,|$))/gi;
+    
+    let match;
+    while ((match = regex.exec(textoLower)) !== null) {
+      const qtd = parseInt(match[1], 10);
+      const modeloTexto = match[2].trim();
+      
+      if (qtd > 0 && modeloTexto) {
+        resultado.push({ modelo: modeloTexto, qtd });
+      }
+    }
+    
+    // Se não encontrou com regex, tenta parsing simples
+    if (resultado.length === 0) {
+      // Tenta encontrar apenas o modelo (sem quantidade explícita)
+      for (const chaveModelo of Object.keys(modeloParaChave)) {
+        if (textoLower.includes(chaveModelo)) {
+          resultado.push({ modelo: chaveModelo, qtd: 1 });
+          break;
+        }
+      }
+    }
+    
+    return resultado;
+  };
+
+  // Calcular valor do frete baseado no texto do modelo (parsing inteligente)
+  const calcularValorFrete = (modelo: string | null, qtdCarrosTotal: number | null): number => {
+    if (!modelo || !precosSada) return 0;
+    
+    const veiculosParsed = parseModeloTexto(modelo);
+    
+    if (veiculosParsed.length === 0) {
+      // Fallback: se não conseguiu parsear, usa modelo direto com qtd_carros
+      const modeloLower = modelo.toLowerCase().trim();
+      const chave = modeloParaChave[modeloLower];
+      if (chave && qtdCarrosTotal) {
+        const precoUnitario = parsePreco(precosSada[chave] as string);
+        return precoUnitario * qtdCarrosTotal;
+      }
+      return 0;
+    }
+    
+    // Soma o valor de cada tipo de veículo encontrado
+    let valorTotal = 0;
+    for (const item of veiculosParsed) {
+      const chave = modeloParaChave[item.modelo];
+      if (chave) {
+        const precoUnitario = parsePreco(precosSada[chave] as string);
+        valorTotal += precoUnitario * item.qtd;
+      }
+    }
+    
+    return valorTotal;
+  };
+
+  // Calcular quantidade total de veículos do texto do modelo
+  const calcularQtdTotal = (modelo: string | null, qtdCarrosFallback: number | null): number => {
+    if (!modelo) return qtdCarrosFallback || 0;
+    
+    const veiculosParsed = parseModeloTexto(modelo);
+    if (veiculosParsed.length > 0) {
+      return veiculosParsed.reduce((sum, item) => sum + item.qtd, 0);
+    }
+    return qtdCarrosFallback || 0;
+  };
+
+  // Calcular comissão do motorista
+  const calcularComissao = (tipoCarreta: number | null, modelo: string | null, qtdCarros: number | null): number => {
+    if (!precosSada) return 0;
+    
+    const qtdTotal = calcularQtdTotal(modelo, qtdCarros);
+    
+    // tipo_carreta: 0 = Prancha (fixo), 1 = Cegonha (por veículo)
+    if (tipoCarreta === 0) {
+      return parsePreco(precosSada.comissao_motorista_prancha);
+    } else if (tipoCarreta === 1) {
+      const valorPorVeiculo = parsePreco(precosSada.comissao_motorista_cegonha);
+      return valorPorVeiculo * qtdTotal;
+    }
+    return 0;
+  };
+
+  const renderSadaFinanceiro = () => {
+    if (isLoadingSada) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando...</span>
+        </div>
+      );
+    }
+
+    if (isErrorSada) {
+      return (
+        <div className="text-center py-12">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar dados de faturamento.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Por favor, tente novamente mais tarde.</p>
+        </div>
+      );
+    }
+
+    if (!precosSada) {
+      return (
+        <div className="text-center py-12">
+          <Settings className="w-12 h-12 mx-auto text-yellow-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Preços não configurados para SADA.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Configure os preços na aba "Preços" para visualizar o faturamento.</p>
+        </div>
+      );
+    }
+
+    if (viagensSada.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma viagem SADA encontrada.</p>
+        </div>
+      );
+    }
+
+    // Filtrar viagens por período
+    const viagensFiltradas = filtrarPorPeriodo(viagensSada);
+
+    // Calcular totais
+    let totalFrete = 0;
+    let totalComissao = 0;
+    viagensFiltradas.forEach((v: any) => {
+      totalFrete += calcularValorFrete(v.modelo, v.qtd_carros);
+      totalComissao += calcularComissao(v.tipo_carreta, v.modelo, v.qtd_carros);
+    });
+
+    return (
+      <div className="space-y-6">
+        {/* Cards de resumo - Design monocromático */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Frete</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalFrete)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Comissões</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalComissao)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{viagensFiltradas.length}</p>
+          </div>
+        </div>
+
+        {/* Tabela de viagens - Layout limpo */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Modelo</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Qtd</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor Frete</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                {viagensFiltradas.map((viagem: any) => {
+                  const valorFrete = calcularValorFrete(viagem.modelo, viagem.qtd_carros);
+                  const comissao = calcularComissao(viagem.tipo_carreta, viagem.modelo, viagem.qtd_carros);
+                  const tipoCarreta = viagem.tipo_carreta === 0 ? 'Prancha' : viagem.tipo_carreta === 1 ? 'Cegonha' : '-';
+                  
+                  return (
+                    <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
+                        {formatDate(viagem.data_viagem)}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {viagem.motorista_nome}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {viagem.modelo || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 text-center">
+                        {viagem.qtd_carros || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm">
+                        <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
+                          viagem.tipo_carreta === 0 
+                            ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                            : 'bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100'
+                        }`}>
+                          {tipoCarreta}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white text-right">
+                        {formatCurrency(valorFrete)}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm font-medium text-gray-600 dark:text-gray-300 text-right">
+                        {formatCurrency(comissao)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Função de renderização para SUPERTERMINAIS
+  const renderSuperterminaisFinanceiro = () => {
+    if (isLoadingSuperterminais) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando viagens...</span>
+        </div>
+      );
+    }
+
+    if (isErrorSuperterminais) {
+      return (
+        <div className="text-center py-12">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar dados de faturamento.</p>
+        </div>
+      );
+    }
+
+    if (!viagensSuperterminais || viagensSuperterminais.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma viagem SUPERTERMINAIS encontrada.</p>
+        </div>
+      );
+    }
+
+    // Filtrar viagens por período
+    const viagensFiltradas = filtrarPorPeriodo(viagensSuperterminais);
+
+    // Valores de preço (usa preço da tabela ou valores padrão)
+    const valorViagem = parsePreco(precosSuperterminais?.valor_viagem || '135,00');
+    const comissaoMotorista = parsePreco(precosSuperterminais?.comissao_motorista || '10,00');
+
+    // Calcular totais (valor fixo por viagem)
+    const totalFrete = viagensFiltradas.length * valorViagem;
+    const totalComissao = viagensFiltradas.length * comissaoMotorista;
+
+    return (
+      <div className="space-y-6">
+        {/* Cards de resumo - Design monocromático */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Recebido</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalFrete)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(valorViagem)} por viagem</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Comissões</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalComissao)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(comissaoMotorista)} por viagem</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{viagensFiltradas.length}</p>
+          </div>
+        </div>
+
+        {/* Tabela de viagens - Layout limpo */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                {viagensFiltradas.map((viagem: any) => (
+                  <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
+                      {formatDate(viagem.data_viagem)}
+                    </td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                      {viagem.motorista_nome}
+                    </td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white text-right">
+                      {formatCurrency(valorViagem)}
+                    </td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm font-medium text-gray-600 dark:text-gray-300 text-right">
+                      {formatCurrency(comissaoMotorista)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Renderização baseada na operação selecionada
+  const renderFinanceiroContent = () => {
+    if (selectedOperacao === 'all') {
+      return (
+        <div className="space-y-10">
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-6 bg-yellow-500 dark:bg-yellow-400 rounded-full" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SADA</h3>
+            </div>
+            {renderSadaFinanceiro()}
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-6 bg-purple-500 dark:bg-purple-400 rounded-full" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPERTERMINAIS</h3>
+            </div>
+            {renderSuperterminaisFinanceiro()}
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Sada') {
+      return (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-yellow-500 dark:bg-yellow-400 rounded-full" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SADA</h3>
+          </div>
+          {renderSadaFinanceiro()}
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Superterminais') {
+      return (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-purple-500 dark:bg-purple-400 rounded-full" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPERTERMINAIS</h3>
+          </div>
+          {renderSuperterminaisFinanceiro()}
+        </div>
+      );
+    }
+
+    return (
+      <div className="text-center py-12">
+        <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+        <p className="text-gray-500 dark:text-gray-400">Faturamento para {selectedOperacao} ainda não está disponível.</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Esta funcionalidade será implementada em breve.</p>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Financeiro</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Registros de comissão e recebimento por operação</p>
+        </div>
+
+        {/* Filtro de período global */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex gap-1">
+            <button
+              onClick={() => { setFiltroPeriodo('15'); setDataInicio(''); setDataFim(''); }}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                filtroPeriodo === '15'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              data-testid="filter-15-days"
+            >
+              15 dias
+            </button>
+            <button
+              onClick={() => { setFiltroPeriodo('30'); setDataInicio(''); setDataFim(''); }}
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                filtroPeriodo === '30'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              data-testid="filter-30-days"
+            >
+              30 dias
+            </button>
+          </div>
+
+          <button
+            onClick={() => setIsDateFilterExpanded(!isDateFilterExpanded)}
+            className={`p-2 border rounded-lg transition-colors ${
+              filtroPeriodo === 'custom'
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+            }`}
+            title="Filtrar por Data Personalizada"
+            data-testid="button-toggle-date-filter-financeiro"
+          >
+            <Calendar className="w-4 h-4" />
+          </button>
+
+          {isDateFilterExpanded && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dataInicio}
+                onChange={(e) => { setDataInicio(e.target.value); setFiltroPeriodo('custom'); }}
+                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                data-testid="input-data-inicio-financeiro"
+              />
+              <span className="text-gray-400 text-sm">até</span>
+              <input
+                type="date"
+                value={dataFim}
+                onChange={(e) => { setDataFim(e.target.value); setFiltroPeriodo('custom'); }}
+                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                data-testid="input-data-fim-financeiro"
+              />
+              {(dataInicio || dataFim) && (
+                <button
+                  onClick={() => { setDataInicio(''); setDataFim(''); setFiltroPeriodo('30'); }}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  title="Limpar filtro de data"
+                  data-testid="button-limpar-data-financeiro"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {renderFinanceiroContent()}
+    </div>
+  );
+};
+
+// Componente Preços - Edição de preços e comissões
+const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => {
+  const { companyId } = useCurrentAccount();
+  const [editingSada, setEditingSada] = useState(false);
+  const [sadaForm, setSadaForm] = useState<Partial<FaturamentoSada>>({});
+  const [editingSuperterminais, setEditingSuperterminais] = useState(false);
+  const [superterminaisForm, setSuperterminaisForm] = useState<Partial<FaturamentoSuperterminais>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Query para buscar último registro de faturamento SADA
+  // NOTA: A tabela atual não tem company_id. Para multi-tenancy, adicionar coluna company_id à tabela.
+  const { data: currentSadaPrices, isLoading: isLoadingSada, isError: isErrorSada, refetch: refetchSada } = useQuery({
+    queryKey: ['faturamento-sada-current', selectedOperacao],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('faturamento_sada')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return (data?.[0] as FaturamentoSada) || null;
+    },
+    enabled: selectedOperacao === 'all' || selectedOperacao === 'Sada',
+  });
+
+  // Query para buscar último registro de faturamento SUPERTERMINAIS
+  const { data: currentSuperterminaisPrices, isLoading: isLoadingSuperterminais, isError: isErrorSuperterminais, refetch: refetchSuperterminais } = useQuery({
+    queryKey: ['faturamento-superterminais-current', selectedOperacao],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('faturamento_superterminais')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return (data?.[0] as FaturamentoSuperterminais) || null;
+    },
+    enabled: selectedOperacao === 'all' || selectedOperacao === 'Superterminais',
+  });
+
+  useEffect(() => {
+    if (currentSadaPrices) {
+      setSadaForm(currentSadaPrices);
+    }
+  }, [currentSadaPrices]);
+
+  useEffect(() => {
+    if (currentSuperterminaisPrices) {
+      setSuperterminaisForm(currentSuperterminaisPrices);
+    }
+  }, [currentSuperterminaisPrices]);
+
+  // Reset editing state when company changes (don't reset form data - let query refetch handle it)
+  useEffect(() => {
+    setEditingSada(false);
+    setEditingSuperterminais(false);
+    setSaveError(null);
+  }, [companyId]);
+
+  const handleSadaChange = (field: string, value: string) => {
+    setSadaForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveSada = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    
+    try {
+      const updateData = {
+        familia_basica: sadaForm.familia_basica || null,
+        compass: sadaForm.compass || null,
+        toro: sadaForm.toro || null,
+        commander: sadaForm.commander || null,
+        jlr: sadaForm.jlr || null,
+        rampage: sadaForm.rampage || null,
+        titano: sadaForm.titano || null,
+        scudo: sadaForm.scudo || null,
+        ducato: sadaForm.ducato || null,
+        caminhoes: sadaForm.caminhoes || null,
+        comissao_motorista_prancha: sadaForm.comissao_motorista_prancha || null,
+        comissao_motorista_cegonha: sadaForm.comissao_motorista_cegonha || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (currentSadaPrices?.id) {
+        // Atualizar registro existente
+        const { error } = await supabase
+          .from('faturamento_sada')
+          .update(updateData)
+          .eq('id', currentSadaPrices.id);
+        
+        if (error) throw error;
+      } else {
+        // Criar novo registro
+        const { error } = await supabase
+          .from('faturamento_sada')
+          .insert([updateData]);
+        
+        if (error) throw error;
+      }
+
+      await refetchSada();
+      setEditingSada(false);
+    } catch (error: any) {
+      console.error('Erro ao salvar preços SADA:', error);
+      setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSuperterminaisChange = (field: string, value: string) => {
+    setSuperterminaisForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveSuperterminais = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    
+    try {
+      const updateData = {
+        valor_viagem: superterminaisForm.valor_viagem || null,
+        comissao_motorista: superterminaisForm.comissao_motorista || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (currentSuperterminaisPrices?.id) {
+        const { error } = await supabase
+          .from('faturamento_superterminais')
+          .update(updateData)
+          .eq('id', currentSuperterminaisPrices.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('faturamento_superterminais')
+          .insert([updateData]);
+        
+        if (error) throw error;
+      }
+
+      await refetchSuperterminais();
+      setEditingSuperterminais(false);
+    } catch (error: any) {
+      console.error('Erro ao salvar preços SUPERTERMINAIS:', error);
+      setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const sadaCampos = [
+    { key: 'familia_basica', label: 'Família Básica', group: 'veiculos' },
+    { key: 'compass', label: 'Compass', group: 'veiculos' },
+    { key: 'toro', label: 'Toro', group: 'veiculos' },
+    { key: 'commander', label: 'Commander', group: 'veiculos' },
+    { key: 'jlr', label: 'JLR', group: 'veiculos' },
+    { key: 'rampage', label: 'RAM Rampage', group: 'veiculos' },
+    { key: 'titano', label: 'Titano', group: 'veiculos' },
+    { key: 'scudo', label: 'Scudo', group: 'veiculos' },
+    { key: 'ducato', label: 'Ducato', group: 'veiculos' },
+    { key: 'caminhoes', label: 'Caminhões', group: 'veiculos' },
+    { key: 'comissao_motorista_cegonha', label: 'Cegonha (por veículo)', group: 'comissao' },
+    { key: 'comissao_motorista_prancha', label: 'Prancha (fixo por viagem)', group: 'comissao' },
+  ];
+
+  const renderSadaPrecos = () => {
+    if (isLoadingSada) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando...</span>
+        </div>
+      );
+    }
+
+    if (isErrorSada) {
+      return (
+        <div className="text-center py-12">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar preços.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Por favor, tente novamente mais tarde.</p>
+        </div>
+      );
+    }
+
+    const veiculosCampos = sadaCampos.filter(c => c.group === 'veiculos');
+    const comissaoCampos = sadaCampos.filter(c => c.group === 'comissao');
+
+    return (
+      <div className="space-y-6">
+        {saveError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center gap-2">
+            <XCircle className="w-5 h-5 text-red-500" />
+            <span className="text-red-700 dark:text-red-400 text-sm">{saveError}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {currentSadaPrices ? 'Última atualização: ' + new Date(currentSadaPrices.updated_at || currentSadaPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
+          </p>
+          {!editingSada ? (
+            <button
+              onClick={() => setEditingSada(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              data-testid="button-edit-sada-prices"
+            >
+              <Edit className="w-4 h-4" />
+              Editar Preços
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setEditingSada(false);
+                  setSadaForm(currentSadaPrices || {});
+                }}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                disabled={isSaving}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveSada}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                data-testid="button-save-sada-prices"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Salvar
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Preços por Veículo */}
+        <div>
+          <h4 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+            <Car className="w-4 h-4" />
+            Preços por Modelo de Veículo (por carro)
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {veiculosCampos.map((campo) => (
+              <div key={campo.key} className="space-y-1">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {campo.label}
+                </label>
+                {editingSada ? (
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
+                    <input
+                      type="text"
+                      value={sadaForm[campo.key as keyof FaturamentoSada] || ''}
+                      onChange={(e) => handleSadaChange(campo.key, e.target.value)}
+                      placeholder="0,00"
+                      className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      data-testid={`input-sada-${campo.key}`}
+                    />
+                  </div>
+                ) : (
+                  <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
+                    <span className="text-gray-500 dark:text-gray-400">R$</span>
+                    {currentSadaPrices?.[campo.key as keyof FaturamentoSada] || '-'}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Comissões */}
+        <div>
+          <h4 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+            <DollarSign className="w-4 h-4" />
+            Comissões do Motorista (por viagem)
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {comissaoCampos.map((campo) => (
+              <div key={campo.key} className="space-y-1">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {campo.label}
+                </label>
+                {editingSada ? (
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
+                    <input
+                      type="text"
+                      value={sadaForm[campo.key as keyof FaturamentoSada] || ''}
+                      onChange={(e) => handleSadaChange(campo.key, e.target.value)}
+                      placeholder="0,00"
+                      className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      data-testid={`input-sada-${campo.key}`}
+                    />
+                  </div>
+                ) : (
+                  <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
+                    <span className="text-gray-500 dark:text-gray-400">R$</span>
+                    {currentSadaPrices?.[campo.key as keyof FaturamentoSada] || '-'}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Função de renderização de preços para SUPERTERMINAIS
+  const renderSuperterminaisPrecos = () => {
+    if (isLoadingSuperterminais) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando...</span>
+        </div>
+      );
+    }
+
+    if (isErrorSuperterminais) {
+      return (
+        <div className="text-center py-12">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar preços.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Por favor, tente novamente mais tarde.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {saveError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center gap-2">
+            <XCircle className="w-5 h-5 text-red-500" />
+            <span className="text-red-700 dark:text-red-400 text-sm">{saveError}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {currentSuperterminaisPrices ? 'Última atualização: ' + new Date(currentSuperterminaisPrices.updated_at || currentSuperterminaisPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
+          </p>
+          {!editingSuperterminais ? (
+            <button
+              onClick={() => setEditingSuperterminais(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              data-testid="button-edit-superterminais-prices"
+            >
+              <Edit className="w-4 h-4" />
+              Editar Preços
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setEditingSuperterminais(false);
+                  setSuperterminaisForm(currentSuperterminaisPrices || {});
+                }}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                disabled={isSaving}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveSuperterminais}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                data-testid="button-save-superterminais-prices"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Salvar
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Valores por Viagem */}
+        <div>
+          <h4 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+            <DollarSign className="w-4 h-4" />
+            Valores por Viagem (valor fixo)
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                Valor por Viagem (Recebido)
+              </label>
+              {editingSuperterminais ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
+                  <input
+                    type="text"
+                    value={superterminaisForm.valor_viagem || ''}
+                    onChange={(e) => handleSuperterminaisChange('valor_viagem', e.target.value)}
+                    placeholder="135,00"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    data-testid="input-superterminais-valor_viagem"
+                  />
+                </div>
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
+                  <span className="text-gray-500 dark:text-gray-400">R$</span>
+                  {currentSuperterminaisPrices?.valor_viagem || '135,00'}
+                </div>
+              )}
+            </div>
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                Comissão do Motorista (por viagem)
+              </label>
+              {editingSuperterminais ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
+                  <input
+                    type="text"
+                    value={superterminaisForm.comissao_motorista || ''}
+                    onChange={(e) => handleSuperterminaisChange('comissao_motorista', e.target.value)}
+                    placeholder="10,00"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    data-testid="input-superterminais-comissao_motorista"
+                  />
+                </div>
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
+                  <span className="text-gray-500 dark:text-gray-400">R$</span>
+                  {currentSuperterminaisPrices?.comissao_motorista || '10,00'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+          <p className="text-sm text-purple-700 dark:text-purple-300">
+            <strong>Modelo de Precificação SUPERTERMINAIS:</strong> Valor fixo por viagem, independente do tipo de carga ou distância.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  const renderPrecosContent = () => {
+    if (selectedOperacao === 'all') {
+      return (
+        <div className="space-y-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">SADA - Configuração de Preços</h3>
+            </div>
+            <div className="p-4">
+              {renderSadaPrecos()}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">SUPERTERMINAIS - Configuração de Preços</h3>
+            </div>
+            <div className="p-4">
+              {renderSuperterminaisPrecos()}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Sada') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">SADA - Configuração de Preços</h3>
+          </div>
+          <div className="p-4">
+            {renderSadaPrecos()}
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Superterminais') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">SUPERTERMINAIS - Configuração de Preços</h3>
+          </div>
+          <div className="p-4">
+            {renderSuperterminaisPrecos()}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="text-center py-12">
+        <Settings className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+        <p className="text-gray-500 dark:text-gray-400">Configuração de preços para {selectedOperacao} ainda não está disponível.</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Esta funcionalidade será implementada em breve.</p>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Preços</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Configure os valores de comissão e recebimento por operação</p>
+        </div>
+      </div>
+
+      {renderPrecosContent()}
+    </div>
+  );
+};
+
 const Operacoes = () => {
   const location = useLocation();
   const currentPath = location.pathname;
@@ -2746,6 +3996,8 @@ const Operacoes = () => {
   const tabs = [
     { path: '/operacoes', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/operacoes/viagens', label: 'Viagens', icon: Map },
+    { path: '/operacoes/financeiro', label: 'Financeiro', icon: Wallet },
+    { path: '/operacoes/precos', label: 'Preços', icon: Settings },
   ];
 
   const isActiveTab = (path: string) => {
@@ -2786,20 +4038,34 @@ const Operacoes = () => {
               >
                 Todas Operações
               </button>
-              {OPERACOES_TABELAS.map((op) => (
-                <button
-                  key={op.nome}
-                  onClick={() => {
-                    setSelectedOperacao(op.nome);
-                    setIsOperacaoDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                    selectedOperacao === op.nome ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
-                  }`}
-                >
-                  {op.nome}
-                </button>
-              ))}
+              {OPERACOES_TABELAS.map((op) => {
+                const getOperacaoColor = (nome: string) => {
+                  switch (nome) {
+                    case 'Autoservice': return 'bg-blue-500 dark:bg-blue-400';
+                    case 'Cesari': return 'bg-green-500 dark:bg-green-400';
+                    case 'Mitsubishi': return 'bg-red-500 dark:bg-red-400';
+                    case 'Sada': return 'bg-yellow-500 dark:bg-yellow-400';
+                    case 'Superterminais': return 'bg-purple-500 dark:bg-purple-400';
+                    case 'Tegma': return 'bg-orange-500 dark:bg-orange-400';
+                    default: return 'bg-gray-500 dark:bg-gray-400';
+                  }
+                };
+                return (
+                  <button
+                    key={op.nome}
+                    onClick={() => {
+                      setSelectedOperacao(op.nome);
+                      setIsOperacaoDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${
+                      selectedOperacao === op.nome ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    <div className={`w-2 h-2 rounded-full ${getOperacaoColor(op.nome)}`} />
+                    {op.nome}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -2828,6 +4094,8 @@ const Operacoes = () => {
       <Routes>
         <Route path="/" element={<OperacoesDashboard selectedOperacao={selectedOperacao} />} />
         <Route path="/viagens" element={<OperacoesViagens selectedOperacao={selectedOperacao} setSelectedOperacao={setSelectedOperacao} />} />
+        <Route path="/financeiro" element={<OperacoesFinanceiro selectedOperacao={selectedOperacao} />} />
+        <Route path="/precos" element={<OperacoesPrecos selectedOperacao={selectedOperacao} />} />
       </Routes>
     </div>
   );
