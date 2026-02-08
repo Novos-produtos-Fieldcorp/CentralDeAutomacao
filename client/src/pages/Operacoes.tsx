@@ -5,6 +5,7 @@ import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Tru
 import { useState as useStateReact } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
+import SpotlightCard from '../components/SpotlightCard';
 
 interface Operacao {
   id: number;
@@ -1143,7 +1144,9 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
     <div className="space-y-6">
       {/* Cards de estatísticas - Design monocromático */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <button 
+        <SpotlightCard
+          as="button"
+          type="button"
           onClick={() => setStatsModalOpen('total')}
           className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
           data-testid="card-total-viagens"
@@ -1155,7 +1158,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.total || 0}</p>
-        </button>
+        </SpotlightCard>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center justify-between mb-3">
@@ -1167,7 +1170,9 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{OPERACOES_TABELAS.length}</p>
         </div>
 
-        <button 
+        <SpotlightCard 
+          as="button"
+          type="button"
           onClick={() => setStatsModalOpen('hoje')}
           className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
           data-testid="card-viagens-hoje"
@@ -1179,9 +1184,11 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.hoje || 0}</p>
-        </button>
+        </SpotlightCard>
 
-        <button 
+        <SpotlightCard 
+          as="button"
+          type="button"
           onClick={() => setStatsModalOpen('emAndamento')}
           className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
           data-testid="card-em-andamento"
@@ -1193,9 +1200,11 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.emAndamento || 0}</p>
-        </button>
+        </SpotlightCard>
 
-        <button 
+        <SpotlightCard 
+          as="button"
+          type="button"
           onClick={() => setStatsModalOpen('concluidas')}
           className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
           data-testid="card-concluidas"
@@ -1207,7 +1216,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.concluidas || 0}</p>
-        </button>
+        </SpotlightCard>
       </div>
 
       {/* Modal de viagens detalhadas */}
