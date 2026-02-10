@@ -2767,10 +2767,9 @@ interface FaturamentoSada {
 
 interface FaturamentoSuperterminais {
   id: number;
-  valor_viagem: string | null;
-  comissao_motorista: string | null;
+  ganho_por_viagem: number | null;
+  comissao_motorista: number | null;
   created_at: string;
-  updated_at: string;
 }
 
 interface FaturamentoMitsubishi {
@@ -3260,8 +3259,8 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     const viagensFiltradas = filtrarPorPeriodo(viagensSuperterminais);
 
     // Valores de preço (usa preço da tabela ou valores padrão)
-    const valorViagem = parsePreco(precosSuperterminais?.valor_viagem || '135,00');
-    const comissaoMotorista = parsePreco(precosSuperterminais?.comissao_motorista || '10,00');
+    const valorViagem = precosSuperterminais?.ganho_por_viagem ?? 135;
+    const comissaoMotorista = precosSuperterminais?.comissao_motorista ?? 10;
 
     // Calcular totais (valor fixo por viagem)
     const totalFrete = viagensFiltradas.length * valorViagem;
@@ -3668,9 +3667,8 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     
     try {
       const updateData = {
-        valor_viagem: superterminaisForm.valor_viagem || null,
-        comissao_motorista: superterminaisForm.comissao_motorista || null,
-        updated_at: new Date().toISOString(),
+        ganho_por_viagem: superterminaisForm.ganho_por_viagem !== null && superterminaisForm.ganho_por_viagem !== undefined ? Number(superterminaisForm.ganho_por_viagem) : null,
+        comissao_motorista: superterminaisForm.comissao_motorista !== null && superterminaisForm.comissao_motorista !== undefined ? Number(superterminaisForm.comissao_motorista) : null,
       };
 
       if (currentSuperterminaisPrices?.id) {
@@ -3886,7 +3884,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         )}
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {currentSuperterminaisPrices ? 'Última atualização: ' + new Date(currentSuperterminaisPrices.updated_at || currentSuperterminaisPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
+            {currentSuperterminaisPrices ? 'Criado em: ' + new Date(currentSuperterminaisPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
           </p>
           {!editingSuperterminais ? (
             <button
@@ -3938,17 +3936,17 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
                   <input
                     type="text"
-                    value={superterminaisForm.valor_viagem || ''}
-                    onChange={(e) => handleSuperterminaisChange('valor_viagem', e.target.value)}
-                    placeholder="135,00"
+                    value={superterminaisForm.ganho_por_viagem ?? ''}
+                    onChange={(e) => handleSuperterminaisChange('ganho_por_viagem', e.target.value)}
+                    placeholder="135"
                     className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                    data-testid="input-superterminais-valor_viagem"
+                    data-testid="input-superterminais-ganho_por_viagem"
                   />
                 </div>
               ) : (
                 <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
                   <span className="text-gray-500 dark:text-gray-400">R$</span>
-                  {currentSuperterminaisPrices?.valor_viagem || '135,00'}
+                  {currentSuperterminaisPrices?.ganho_por_viagem ?? '135'}
                 </div>
               )}
             </div>
@@ -3961,9 +3959,9 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
                   <input
                     type="text"
-                    value={superterminaisForm.comissao_motorista || ''}
+                    value={superterminaisForm.comissao_motorista ?? ''}
                     onChange={(e) => handleSuperterminaisChange('comissao_motorista', e.target.value)}
-                    placeholder="10,00"
+                    placeholder="10"
                     className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                     data-testid="input-superterminais-comissao_motorista"
                   />
@@ -3971,7 +3969,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
               ) : (
                 <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
                   <span className="text-gray-500 dark:text-gray-400">R$</span>
-                  {currentSuperterminaisPrices?.comissao_motorista || '10,00'}
+                  {currentSuperterminaisPrices?.comissao_motorista ?? '10'}
                 </div>
               )}
             </div>
