@@ -2773,6 +2773,15 @@ interface FaturamentoSuperterminais {
   updated_at: string;
 }
 
+interface FaturamentoMitsubishi {
+  id: number;
+  preco_por_veiculo: string | null;
+  comissao_motorista: string | null;
+  comissao_ajudante: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
 // Componente Financeiro - Lista de viagens com cálculo de faturamento
 const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
@@ -3478,6 +3487,8 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const [sadaForm, setSadaForm] = useState<Partial<FaturamentoSada>>({});
   const [editingSuperterminais, setEditingSuperterminais] = useState(false);
   const [superterminaisForm, setSuperterminaisForm] = useState<Partial<FaturamentoSuperterminais>>({});
+  const [editingMitsubishi, setEditingMitsubishi] = useState(false);
+  const [mitsubishiForm, setMitsubishiForm] = useState<Partial<FaturamentoMitsubishi>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -3514,6 +3525,21 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     enabled: selectedOperacao === 'all' || selectedOperacao === 'Superterminais',
   });
 
+  const { data: currentMitsubishiPrices, isLoading: isLoadingMitsubishi, isError: isErrorMitsubishi, refetch: refetchMitsubishi } = useQuery({
+    queryKey: ['faturamento-mitsubishi-current', selectedOperacao],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('faturamento_mitsubishi')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return (data?.[0] as FaturamentoMitsubishi) || null;
+    },
+    enabled: selectedOperacao === 'all' || selectedOperacao === 'Mitsubishi',
+  });
+
   useEffect(() => {
     if (currentSadaPrices) {
       setSadaForm(currentSadaPrices);
@@ -3526,10 +3552,16 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     }
   }, [currentSuperterminaisPrices]);
 
-  // Reset editing state when company changes (don't reset form data - let query refetch handle it)
+  useEffect(() => {
+    if (currentMitsubishiPrices) {
+      setMitsubishiForm(currentMitsubishiPrices);
+    }
+  }, [currentMitsubishiPrices]);
+
   useEffect(() => {
     setEditingSada(false);
     setEditingSuperterminais(false);
+    setEditingMitsubishi(false);
     setSaveError(null);
   }, [companyId]);
 
@@ -3587,6 +3619,47 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
 
   const handleSuperterminaisChange = (field: string, value: string) => {
     setSuperterminaisForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleMitsubishiChange = (field: string, value: string) => {
+    setMitsubishiForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveMitsubishi = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    
+    try {
+      const updateData = {
+        preco_por_veiculo: mitsubishiForm.preco_por_veiculo || null,
+        comissao_motorista: mitsubishiForm.comissao_motorista || null,
+        comissao_ajudante: mitsubishiForm.comissao_ajudante || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (currentMitsubishiPrices?.id) {
+        const { error } = await supabase
+          .from('faturamento_mitsubishi')
+          .update(updateData)
+          .eq('id', currentMitsubishiPrices.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('faturamento_mitsubishi')
+          .insert([updateData]);
+        
+        if (error) throw error;
+      }
+
+      await refetchMitsubishi();
+      setEditingMitsubishi(false);
+    } catch (error: any) {
+      console.error('Erro ao salvar preços MITSUBISHI:', error);
+      setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSaveSuperterminais = async () => {
@@ -3914,6 +3987,159 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     );
   };
 
+  const renderMitsubishiPrecos = () => {
+    if (isLoadingMitsubishi) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando...</span>
+        </div>
+      );
+    }
+
+    if (isErrorMitsubishi) {
+      return (
+        <div className="text-center py-12">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar preços.</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">Por favor, tente novamente mais tarde.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {saveError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center gap-2">
+            <XCircle className="w-5 h-5 text-red-500" />
+            <span className="text-red-700 dark:text-red-400 text-sm">{saveError}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {currentMitsubishiPrices ? 'Última atualização: ' + new Date(currentMitsubishiPrices.updated_at || currentMitsubishiPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
+          </p>
+          {!editingMitsubishi ? (
+            <button
+              onClick={() => setEditingMitsubishi(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              data-testid="button-edit-mitsubishi-prices"
+            >
+              <Edit className="w-4 h-4" />
+              Editar Preços
+            </button>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setEditingMitsubishi(false);
+                  setMitsubishiForm(currentMitsubishiPrices || {});
+                }}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                disabled={isSaving}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveMitsubishi}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                data-testid="button-save-mitsubishi-prices"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Salvar
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <h4 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+            <DollarSign className="w-4 h-4" />
+            Valores e Comissões
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                Preço por Veículo
+              </label>
+              {editingMitsubishi ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
+                  <input
+                    type="text"
+                    value={mitsubishiForm.preco_por_veiculo || ''}
+                    onChange={(e) => handleMitsubishiChange('preco_por_veiculo', e.target.value)}
+                    placeholder="0,00"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    data-testid="input-mitsubishi-preco_por_veiculo"
+                  />
+                </div>
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
+                  <span className="text-gray-500 dark:text-gray-400">R$</span>
+                  {currentMitsubishiPrices?.preco_por_veiculo || '-'}
+                </div>
+              )}
+            </div>
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                Comissão do Motorista
+              </label>
+              {editingMitsubishi ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
+                  <input
+                    type="text"
+                    value={mitsubishiForm.comissao_motorista || ''}
+                    onChange={(e) => handleMitsubishiChange('comissao_motorista', e.target.value)}
+                    placeholder="0,00"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    data-testid="input-mitsubishi-comissao_motorista"
+                  />
+                </div>
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
+                  <span className="text-gray-500 dark:text-gray-400">R$</span>
+                  {currentMitsubishiPrices?.comissao_motorista || '-'}
+                </div>
+              )}
+            </div>
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">
+                Comissão do Ajudante
+              </label>
+              {editingMitsubishi ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm font-medium">R$</span>
+                  <input
+                    type="text"
+                    value={mitsubishiForm.comissao_ajudante || ''}
+                    onChange={(e) => handleMitsubishiChange('comissao_ajudante', e.target.value)}
+                    placeholder="0,00"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    data-testid="input-mitsubishi-comissao_ajudante"
+                  />
+                </div>
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white flex items-center gap-1">
+                  <span className="text-gray-500 dark:text-gray-400">R$</span>
+                  {currentMitsubishiPrices?.comissao_ajudante || '-'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-800">
+          <p className="text-sm text-red-700 dark:text-red-300">
+            <strong>Modelo de Precificação MITSUBISHI:</strong> Valor fixo por veículo transportado, com comissões separadas para motorista e ajudante.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   const renderPrecosContent = () => {
     if (selectedOperacao === 'all') {
       return (
@@ -3932,6 +4158,14 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
             </div>
             <div className="p-4">
               {renderSuperterminaisPrecos()}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">MITSUBISHI - Configuração de Preços</h3>
+            </div>
+            <div className="p-4">
+              {renderMitsubishiPrecos()}
             </div>
           </div>
         </div>
@@ -3959,6 +4193,19 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
           </div>
           <div className="p-4">
             {renderSuperterminaisPrecos()}
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Mitsubishi') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">MITSUBISHI - Configuração de Preços</h3>
+          </div>
+          <div className="p-4">
+            {renderMitsubishiPrecos()}
           </div>
         </div>
       );
