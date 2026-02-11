@@ -700,7 +700,7 @@ const PERIODOS_HISTOGRAMA = [
   { id: 'custom' as HistogramaPeriodo, label: 'Personalizado', dias: 0 },
 ];
 
-type StatsModalType = 'total' | 'hoje' | 'emAndamento' | 'concluidas' | null;
+type StatsModalType = 'total' | 'hoje' | 'emAndamento' | 'concluidas' | 'operacoes' | null;
 
 const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
@@ -995,6 +995,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
       case 'hoje': return 'Viagens de Hoje';
       case 'emAndamento': return 'Viagens Em Andamento';
       case 'concluidas': return 'Viagens Concluídas';
+      case 'operacoes': return 'Operações Ativas';
       default: return 'Viagens';
     }
   };
@@ -1160,7 +1161,13 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.total || 0}</p>
         </SpotlightCard>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <SpotlightCard 
+          as="button"
+          type="button"
+          onClick={() => setStatsModalOpen('operacoes')}
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
+          data-testid="card-operacoes"
+        >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Operações</span>
             <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
@@ -1168,7 +1175,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{OPERACOES_TABELAS.length}</p>
-        </div>
+        </SpotlightCard>
 
         <SpotlightCard 
           as="button"
@@ -1223,7 +1230,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
       {statsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4" onClick={() => setStatsModalOpen(null)}>
           <div 
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden"
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-h-[90vh] overflow-hidden ${statsModalOpen === 'operacoes' ? 'max-w-lg' : 'max-w-6xl'}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
@@ -1238,7 +1245,53 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             </div>
             
             <div className="overflow-auto max-h-[calc(90vh-60px)] overscroll-contain">
-              {isLoadingViagensDetalhadas ? (
+              {statsModalOpen === 'operacoes' ? (
+                <div className="p-4 sm:p-6 space-y-3" data-testid="operacoes-modal-content">
+                  {operacoesStats.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                      <LayoutDashboard className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>Nenhuma operação encontrada</p>
+                    </div>
+                  ) : (
+                    operacoesStats.map((op: any) => {
+                      const colorMap: Record<string, { bg: string; text: string; icon: string }> = {
+                        'Sada': { bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'text-yellow-700 dark:text-yellow-400', icon: 'bg-yellow-100 dark:bg-yellow-800/40' },
+                        'Tegma': { bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-700 dark:text-purple-400', icon: 'bg-purple-100 dark:bg-purple-800/40' },
+                        'Superterminais': { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400', icon: 'bg-blue-100 dark:bg-blue-800/40' },
+                        'Cesari': { bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400', icon: 'bg-green-100 dark:bg-green-800/40' },
+                        'Mitsubishi': { bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-400', icon: 'bg-red-100 dark:bg-red-800/40' },
+                        'Autoservice': { bg: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-700 dark:text-orange-400', icon: 'bg-orange-100 dark:bg-orange-800/40' },
+                      };
+                      const colors = colorMap[op.nome] || { bg: 'bg-gray-50 dark:bg-gray-700/30', text: 'text-gray-700 dark:text-gray-300', icon: 'bg-gray-100 dark:bg-gray-700' };
+                      return (
+                        <div 
+                          key={op.nome} 
+                          className={`flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 p-4 ${colors.bg}`}
+                          data-testid={`operacao-item-${op.nome.toLowerCase()}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-lg ${colors.icon} flex items-center justify-center`}>
+                              <LayoutDashboard className={`w-5 h-5 ${colors.text}`} />
+                            </div>
+                            <div>
+                              <p className={`font-semibold ${colors.text}`}>{op.nome}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {op.total > 0 ? `${op.total} viagens registradas` : 'Nenhuma viagem registrada'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className={`text-2xl font-bold ${colors.text}`}>{op.total}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${op.total > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                              {op.total > 0 ? 'Ativa' : 'Inativa'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              ) : isLoadingViagensDetalhadas ? (
                 <div className="p-6">
                   <div className="animate-pulse space-y-3">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -3732,15 +3785,10 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 
     let totalRecebido = 0;
     let totalComissoes = 0;
-    const isTipoCheia = (tipo: string | null) => {
-      if (!tipo) return false;
-      const t = tipo.toLowerCase();
-      return t === 'casada' || t.includes('cheia') || t === 'boa vista';
-    };
-
     viagensFiltradas.forEach((v: any) => {
       totalRecebido += valorPorTrecho;
-      totalComissoes += isTipoCheia(v.tipo_viagem) ? comissaoCheia : comissaoVazia;
+      const isCheia = v.tipo_viagem?.toLowerCase()?.includes('cheia') || v.capacidade === 1;
+      totalComissoes += isCheia ? comissaoCheia : comissaoVazia;
     });
 
     return (
@@ -3779,16 +3827,16 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {viagensFiltradas.map((viagem: any, index: number) => {
-                  const isCheia = isTipoCheia(viagem.tipo_viagem);
+                  const isCheia = viagem.tipo_viagem?.toLowerCase()?.includes('cheia') || viagem.capacidade === 1;
                   const comissao = isCheia ? comissaoCheia : comissaoVazia;
-                  const dataViagem = viagem.data_viagem || viagem.created_at;
+                  const dataViagem = viagem.p2_data_hora || viagem.data_viagem || viagem.created_at;
                   return (
                     <tr key={viagem.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-700/30" data-testid={`tegma-row-${index}`}>
                       <td className="px-4 py-3 text-gray-900 dark:text-white">
                         {dataViagem ? new Date(dataViagem).toLocaleDateString('pt-BR') : '-'}
                       </td>
                       <td className="px-4 py-3 text-gray-900 dark:text-white">
-                        {viagem.motorista_nome || '-'}
+                        {viagem.motorista || viagem.nome_motorista || '-'}
                       </td>
                       <td className="px-4 py-3 text-gray-900 dark:text-white">
                         {viagem.origem || '-'} → {viagem.destino || '-'}
@@ -3802,7 +3850,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
                             ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                             : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
                         }`} data-testid={`tegma-tipo-${index}`}>
-                          {viagem.tipo_viagem || (isCheia ? 'Cheia' : 'Vazia')}
+                          {isCheia ? 'Cheia' : 'Vazia'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium">
@@ -3913,18 +3961,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       );
     }
 
-    if (selectedOperacao === 'Tegma') {
-      return (
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-1 h-6 bg-orange-500 dark:bg-orange-400 rounded-full" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-tegma-financeiro-title">TEGMA</h3>
-          </div>
-          {renderTegmaFinanceiro()}
-        </div>
-      );
-    }
-
     return (
       <div className="text-center py-12">
         <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
@@ -4030,8 +4066,6 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const [mitsubishiForm, setMitsubishiForm] = useState<Partial<FaturamentoMitsubishi>>({});
   const [editingAutoservice, setEditingAutoservice] = useState(false);
   const [autoserviceForm, setAutoserviceForm] = useState<Partial<FaturamentoAutoservice>>({});
-  const [editingTegma, setEditingTegma] = useState(false);
-  const [tegmaForm, setTegmaForm] = useState<Partial<FaturamentoTegma>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -4091,22 +4125,6 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     },
   });
 
-  const { data: currentTegmaPrices, isLoading: isLoadingTegma, isError: isErrorTegma, refetch: refetchTegma } = useQuery({
-    queryKey: ['faturamento-tegma-current'],
-    queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/tegma');
-      if (!response.ok) throw new Error('Erro ao buscar preços Tegma');
-      const data = await response.json();
-      if (!data) return null;
-      return {
-        ...data,
-        valor_por_trecho: data.valor_por_trecho != null ? Number(data.valor_por_trecho) : null,
-        comissao_motorista_carreta_vazia: data.comissao_motorista_carreta_vazia != null ? Number(data.comissao_motorista_carreta_vazia) : null,
-        comissao_motorista_carreta_cheia: data.comissao_motorista_carreta_cheia != null ? Number(data.comissao_motorista_carreta_cheia) : null,
-      } as FaturamentoTegma;
-    },
-  });
-
   useEffect(() => {
     if (currentSadaPrices) {
       setSadaForm(currentSadaPrices);
@@ -4132,17 +4150,10 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   }, [currentAutoservicePrices]);
 
   useEffect(() => {
-    if (currentTegmaPrices) {
-      setTegmaForm(currentTegmaPrices);
-    }
-  }, [currentTegmaPrices]);
-
-  useEffect(() => {
     setEditingSada(false);
     setEditingSuperterminais(false);
     setEditingMitsubishi(false);
     setEditingAutoservice(false);
-    setEditingTegma(false);
     setSaveError(null);
   }, [companyId]);
 
@@ -4305,42 +4316,6 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
       setEditingAutoservice(false);
     } catch (error: any) {
       console.error('Erro ao salvar preços AUTOSERVICE:', error);
-      setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleTegmaChange = (field: string, value: string) => {
-    setTegmaForm(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSaveTegma = async () => {
-    setIsSaving(true);
-    setSaveError(null);
-    
-    try {
-      const updateData = {
-        valor_por_trecho: tegmaForm.valor_por_trecho !== null && tegmaForm.valor_por_trecho !== undefined ? Number(tegmaForm.valor_por_trecho) : null,
-        comissao_motorista_carreta_vazia: tegmaForm.comissao_motorista_carreta_vazia !== null && tegmaForm.comissao_motorista_carreta_vazia !== undefined ? Number(tegmaForm.comissao_motorista_carreta_vazia) : null,
-        comissao_motorista_carreta_cheia: tegmaForm.comissao_motorista_carreta_cheia !== null && tegmaForm.comissao_motorista_carreta_cheia !== undefined ? Number(tegmaForm.comissao_motorista_carreta_cheia) : null,
-      };
-
-      const response = await fetch('/api/operacoes/faturamento/tegma', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || 'Erro ao salvar preços');
-      }
-
-      await refetchTegma();
-      setEditingTegma(false);
-    } catch (error: any) {
-      console.error('Erro ao salvar preços TEGMA:', error);
       setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
     } finally {
       setIsSaving(false);
@@ -4965,145 +4940,6 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     );
   };
 
-  const renderTegmaPrecos = () => {
-    if (isLoadingTegma) {
-      return (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
-          <span className="ml-2 text-gray-500 dark:text-gray-400" data-testid="text-loading-tegma-precos">Carregando preços...</span>
-        </div>
-      );
-    }
-
-    if (isErrorTegma) {
-      return (
-        <div className="text-center py-8" data-testid="text-error-tegma-precos">
-          <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
-          <p className="text-red-500 dark:text-red-400">Erro ao carregar preços.</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-white" data-testid="text-tegma-precos-title">Valores por Trecho e Comissões</h4>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Configure os valores de faturamento para operação Tegma</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {editingTegma ? (
-              <>
-                <button
-                  onClick={() => {
-                    setEditingTegma(false);
-                    if (currentTegmaPrices) setTegmaForm(currentTegmaPrices);
-                  }}
-                  className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                  data-testid="tegma-button-cancel"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSaveTegma}
-                  disabled={isSaving}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center gap-1"
-                  data-testid="tegma-button-save"
-                >
-                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                  Salvar
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setEditingTegma(true)}
-                className="px-3 py-1.5 text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 rounded-md hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors flex items-center gap-1"
-                data-testid="tegma-button-edit"
-              >
-                <Edit className="w-3 h-3" />
-                Editar
-              </button>
-            )}
-          </div>
-        </div>
-
-        {saveError && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
-            <p className="text-sm text-red-600 dark:text-red-400" data-testid="text-error-save-tegma">{saveError}</p>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor por Trecho (R$)</label>
-              {editingTegma ? (
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
-                  <input
-                    type="text"
-                    value={tegmaForm.valor_por_trecho ?? ''}
-                    onChange={(e) => handleTegmaChange('valor_por_trecho', e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    data-testid="tegma-input-valor-por-trecho"
-                  />
-                </div>
-              ) : (
-                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="tegma-text-valor-por-trecho">
-                  R$ {currentTegmaPrices?.valor_por_trecho ?? '-'}
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Motorista Carreta Vazia (R$)</label>
-              {editingTegma ? (
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
-                  <input
-                    type="text"
-                    value={tegmaForm.comissao_motorista_carreta_vazia ?? ''}
-                    onChange={(e) => handleTegmaChange('comissao_motorista_carreta_vazia', e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    data-testid="tegma-input-comissao-vazia"
-                  />
-                </div>
-              ) : (
-                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="tegma-text-comissao-vazia">
-                  R$ {currentTegmaPrices?.comissao_motorista_carreta_vazia ?? '-'}
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Motorista Carreta Cheia (R$)</label>
-              {editingTegma ? (
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
-                  <input
-                    type="text"
-                    value={tegmaForm.comissao_motorista_carreta_cheia ?? ''}
-                    onChange={(e) => handleTegmaChange('comissao_motorista_carreta_cheia', e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                    data-testid="tegma-input-comissao-cheia"
-                  />
-                </div>
-              ) : (
-                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="tegma-text-comissao-cheia">
-                  R$ {currentTegmaPrices?.comissao_motorista_carreta_cheia ?? '-'}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
-          <p className="text-sm text-orange-700 dark:text-orange-300">
-            <strong>Modelo de Precificação TEGMA:</strong> Valor fixo de R$ 500 por trecho, independente da rota. Comissão do motorista varia conforme o tipo de carreta (vazia ou cheia).
-          </p>
-        </div>
-      </div>
-    );
-  };
-
   const renderPrecosContent = () => {
     if (selectedOperacao === 'all') {
       return (
@@ -5138,14 +4974,6 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
             </div>
             <div className="p-4">
               {renderAutoservicePrecos()}
-            </div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
-              <h3 className="text-lg font-semibold text-white">TEGMA - Configuração de Preços</h3>
-            </div>
-            <div className="p-4">
-              {renderTegmaPrecos()}
             </div>
           </div>
         </div>
@@ -5199,19 +5027,6 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
           </div>
           <div className="p-4">
             {renderAutoservicePrecos()}
-          </div>
-        </div>
-      );
-    }
-
-    if (selectedOperacao === 'Tegma') {
-      return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
-            <h3 className="text-lg font-semibold text-white">TEGMA - Configuração de Preços</h3>
-          </div>
-          <div className="p-4">
-            {renderTegmaPrecos()}
           </div>
         </div>
       );
