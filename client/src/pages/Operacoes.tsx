@@ -2855,14 +2855,10 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   const { data: precosMitsubishi } = useQuery({
     queryKey: ['faturamento-mitsubishi-precos'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('faturamento_mitsubishi')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (error) throw error;
-      return (data?.[0] as FaturamentoMitsubishi) || null;
+      const response = await fetch('/api/operacoes/faturamento/mitsubishi');
+      if (!response.ok) throw new Error('Erro ao buscar preços Mitsubishi');
+      const data = await response.json();
+      return (data as FaturamentoMitsubishi) || null;
     },
     enabled: !!companyId,
   });
@@ -2870,19 +2866,15 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   const { data: precosAutoservice } = useQuery({
     queryKey: ['faturamento-autoservice-precos'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('faturamento_autoservice')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      if (error) throw error;
-      if (!data || data.length === 0) return null;
-      const row = data[0];
+      const response = await fetch('/api/operacoes/faturamento/autoservice');
+      if (!response.ok) throw new Error('Erro ao buscar preços Autoservice');
+      const data = await response.json();
+      if (!data) return null;
       return {
-        ...row,
-        valor_por_veiculo: row.valor_por_veiculo != null ? Number(row.valor_por_veiculo) : null,
-        comissao_motorista: row.comissao_motorista != null ? Number(row.comissao_motorista) : null,
-        comissao_ajudante: row.comissao_ajudante != null ? Number(row.comissao_ajudante) : null,
+        ...data,
+        valor_por_veiculo: data.valor_por_veiculo != null ? Number(data.valor_por_veiculo) : null,
+        comissao_motorista: data.comissao_motorista != null ? Number(data.comissao_motorista) : null,
+        comissao_ajudante: data.comissao_ajudante != null ? Number(data.comissao_ajudante) : null,
       } as FaturamentoAutoservice;
     },
     enabled: !!companyId,
@@ -2980,40 +2972,9 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     queryKey: ['financeiro-mitsubishi-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      
-      const { data: viagensEmpresa } = await supabase
-        .from('acompanhamento_viagem')
-        .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado')
-        .eq('company_id', companyId);
-      
-      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
-      
-      const viagemIds = viagensEmpresa.map((v: any) => v.id);
-      
-      const { data: opData, error: opError } = await supabase
-        .from('operacao_mitsubishi')
-        .select('*')
-        .in('id_viagem', viagemIds);
-      
-      if (opError || !opData) return [];
-      
-      const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
-      const { data: motoristasData } = await supabase
-        .from('motorista')
-        .select('motorista_id, nome')
-        .in('motorista_id', motoristaIds);
-      
-      const motoristasMap: Record<number, string> = {};
-      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
-      
-      return opData.map((op: any) => {
-        const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
-        return {
-          ...op,
-          data_viagem: viagem?.data_hora_inicial,
-          motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
-        };
-      }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
+      const response = await fetch(`/api/operacoes/financeiro/mitsubishi/${companyId}`);
+      if (!response.ok) throw new Error('Erro ao buscar viagens Mitsubishi');
+      return response.json();
     },
     enabled: !!companyId,
   });
@@ -3022,40 +2983,9 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     queryKey: ['financeiro-autoservice-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      
-      const { data: viagensEmpresa } = await supabase
-        .from('acompanhamento_viagem')
-        .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado')
-        .eq('company_id', companyId);
-      
-      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
-      
-      const viagemIds = viagensEmpresa.map((v: any) => v.id);
-      
-      const { data: opData, error: opError } = await supabase
-        .from('operacao_autoservice')
-        .select('*')
-        .in('id_viagem', viagemIds);
-      
-      if (opError || !opData) return [];
-      
-      const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
-      const { data: motoristasData } = await supabase
-        .from('motorista')
-        .select('motorista_id, nome')
-        .in('motorista_id', motoristaIds);
-      
-      const motoristasMap: Record<number, string> = {};
-      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
-      
-      return opData.map((op: any) => {
-        const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
-        return {
-          ...op,
-          data_viagem: viagem?.data_hora_inicial,
-          motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
-        };
-      }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
+      const response = await fetch(`/api/operacoes/financeiro/autoservice/${companyId}`);
+      if (!response.ok) throw new Error('Erro ao buscar viagens Autoservice');
+      return response.json();
     },
     enabled: !!companyId,
   });
@@ -3961,34 +3891,25 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const { data: currentMitsubishiPrices, isLoading: isLoadingMitsubishi, isError: isErrorMitsubishi, refetch: refetchMitsubishi } = useQuery({
     queryKey: ['faturamento-mitsubishi-current'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('faturamento_mitsubishi')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (error) throw error;
-      return (data?.[0] as FaturamentoMitsubishi) || null;
+      const response = await fetch('/api/operacoes/faturamento/mitsubishi');
+      if (!response.ok) throw new Error('Erro ao buscar preços Mitsubishi');
+      const data = await response.json();
+      return (data as FaturamentoMitsubishi) || null;
     },
   });
 
   const { data: currentAutoservicePrices, isLoading: isLoadingAutoservice, isError: isErrorAutoservice, refetch: refetchAutoservice } = useQuery({
     queryKey: ['faturamento-autoservice-current'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('faturamento_autoservice')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (error) throw error;
-      if (!data || data.length === 0) return null;
-      const row = data[0];
+      const response = await fetch('/api/operacoes/faturamento/autoservice');
+      if (!response.ok) throw new Error('Erro ao buscar preços Autoservice');
+      const data = await response.json();
+      if (!data) return null;
       return {
-        ...row,
-        valor_por_veiculo: row.valor_por_veiculo != null ? Number(row.valor_por_veiculo) : null,
-        comissao_motorista: row.comissao_motorista != null ? Number(row.comissao_motorista) : null,
-        comissao_ajudante: row.comissao_ajudante != null ? Number(row.comissao_ajudante) : null,
+        ...data,
+        valor_por_veiculo: data.valor_por_veiculo != null ? Number(data.valor_por_veiculo) : null,
+        comissao_motorista: data.comissao_motorista != null ? Number(data.comissao_motorista) : null,
+        comissao_ajudante: data.comissao_ajudante != null ? Number(data.comissao_ajudante) : null,
       } as FaturamentoAutoservice;
     },
   });

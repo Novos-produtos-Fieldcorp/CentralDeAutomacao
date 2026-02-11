@@ -5428,6 +5428,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/operacoes/financeiro/:operacao/:companyId", async (req, res) => {
+    try {
+      const { operacao, companyId } = req.params;
+      const companyIdNum = parseInt(companyId);
+      if (isNaN(companyIdNum)) {
+        return res.status(400).json({ error: "Invalid companyId" });
+      }
+
+      const validOperacoes: Record<string, string> = {
+        mitsubishi: "operacao_mitsubishi",
+        autoservice: "operacao_autoservice",
+      };
+
+      const tableName = validOperacoes[operacao.toLowerCase()];
+      if (!tableName) {
+        return res.status(400).json({ error: "Invalid operacao" });
+      }
+
+      const { data: viagensEmpresa, error: viagensError } = await supabaseBackend
+        .from("acompanhamento_viagem")
+        .select("id, motorista_id, veiculo_id, data_hora_inicial, km_rodado")
+        .eq("company_id", companyIdNum);
+
+      if (viagensError) {
+        return res.status(500).json({ error: viagensError.message });
+      }
+
+      if (!viagensEmpresa || viagensEmpresa.length === 0) {
+        return res.json([]);
+      }
+
+      const viagemIds = viagensEmpresa.map((v: any) => v.id);
+
+      const { data: opData, error: opError } = await supabaseBackend
+        .from(tableName)
+        .select("*")
+        .in("id_viagem", viagemIds);
+
+      if (opError) {
+        return res.status(500).json({ error: opError.message });
+      }
+
+      if (!opData || opData.length === 0) {
+        return res.json([]);
+      }
+
+      const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
+      let motoristasMap: Record<number, string> = {};
+      if (motoristaIds.length > 0) {
+        const { data: motoristasData } = await supabaseBackend
+          .from("motorista")
+          .select("motorista_id, nome")
+          .in("motorista_id", motoristaIds);
+        (motoristasData || []).forEach((m: any) => {
+          motoristasMap[m.motorista_id] = m.nome;
+        });
+      }
+
+      const result = opData.map((op: any) => {
+        const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          data_viagem: viagem?.data_hora_inicial,
+          motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || "Desconhecido" : "Desconhecido",
+        };
+      }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error fetching operacao financeiro:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/operacoes/faturamento/:operacao", async (req, res) => {
+    try {
+      const { operacao } = req.params;
+
+      const validTables: Record<string, string> = {
+        mitsubishi: "faturamento_mitsubishi",
+        autoservice: "faturamento_autoservice",
+      };
+
+      const tableName = validTables[operacao.toLowerCase()];
+      if (!tableName) {
+        return res.status(400).json({ error: "Invalid operacao" });
+      }
+
+      const { data, error } = await supabaseBackend
+        .from(tableName)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+      res.json(data?.[0] || null);
+    } catch (error: any) {
+      console.error("Error fetching faturamento:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   startGroupSummaryCron();
