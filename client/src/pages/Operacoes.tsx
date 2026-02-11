@@ -4753,38 +4753,40 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {currentSadaPrices ? 'Última atualização: ' + new Date(currentSadaPrices.updated_at || currentSadaPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
           </p>
-          {!editingSada ? (
-            <button
-              onClick={() => setEditingSada(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              data-testid="button-edit-sada-prices"
-            >
-              <Edit className="w-4 h-4" />
-              Editar Preços
-            </button>
-          ) : (
-            <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            {editingSada ? (
+              <>
+                <button
+                  onClick={() => {
+                    setEditingSada(false);
+                    setSadaForm(currentSadaPrices || {});
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  data-testid="button-cancel-sada"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveSada}
+                  disabled={isSaving}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  data-testid="button-save-sada-prices"
+                >
+                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                  Salvar
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => {
-                  setEditingSada(false);
-                  setSadaForm(currentSadaPrices || {});
-                }}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                disabled={isSaving}
+                onClick={() => setEditingSada(true)}
+                className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                data-testid="button-edit-sada-prices"
               >
-                Cancelar
+                <Edit className="w-3 h-3" />
+                Editar
               </button>
-              <button
-                onClick={handleSaveSada}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                data-testid="button-save-sada-prices"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Salvar
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Preços por Veículo */}
@@ -4893,38 +4895,40 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {currentSuperterminaisPrices ? 'Criado em: ' + new Date(currentSuperterminaisPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
           </p>
-          {!editingSuperterminais ? (
-            <button
-              onClick={() => setEditingSuperterminais(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              data-testid="button-edit-superterminais-prices"
-            >
-              <Edit className="w-4 h-4" />
-              Editar Preços
-            </button>
-          ) : (
-            <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            {editingSuperterminais ? (
+              <>
+                <button
+                  onClick={() => {
+                    setEditingSuperterminais(false);
+                    setSuperterminaisForm(currentSuperterminaisPrices || {});
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  data-testid="button-cancel-superterminais"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveSuperterminais}
+                  disabled={isSaving}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  data-testid="button-save-superterminais-prices"
+                >
+                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                  Salvar
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => {
-                  setEditingSuperterminais(false);
-                  setSuperterminaisForm(currentSuperterminaisPrices || {});
-                }}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                disabled={isSaving}
+                onClick={() => setEditingSuperterminais(true)}
+                className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                data-testid="button-edit-superterminais-prices"
               >
-                Cancelar
+                <Edit className="w-3 h-3" />
+                Editar
               </button>
-              <button
-                onClick={handleSaveSuperterminais}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                data-testid="button-save-superterminais-prices"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Salvar
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Valores por Viagem */}
@@ -5024,38 +5028,40 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {currentMitsubishiPrices ? 'Última atualização: ' + new Date(currentMitsubishiPrices.updated_at || currentMitsubishiPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
           </p>
-          {!editingMitsubishi ? (
-            <button
-              onClick={() => setEditingMitsubishi(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              data-testid="button-edit-mitsubishi-prices"
-            >
-              <Edit className="w-4 h-4" />
-              Editar Preços
-            </button>
-          ) : (
-            <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            {editingMitsubishi ? (
+              <>
+                <button
+                  onClick={() => {
+                    setEditingMitsubishi(false);
+                    setMitsubishiForm(currentMitsubishiPrices || {});
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  data-testid="button-cancel-mitsubishi"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveMitsubishi}
+                  disabled={isSaving}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  data-testid="button-save-mitsubishi-prices"
+                >
+                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                  Salvar
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => {
-                  setEditingMitsubishi(false);
-                  setMitsubishiForm(currentMitsubishiPrices || {});
-                }}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                disabled={isSaving}
+                onClick={() => setEditingMitsubishi(true)}
+                className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                data-testid="button-edit-mitsubishi-prices"
               >
-                Cancelar
+                <Edit className="w-3 h-3" />
+                Editar
               </button>
-              <button
-                onClick={handleSaveMitsubishi}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                data-testid="button-save-mitsubishi-prices"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Salvar
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <div>
