@@ -4695,7 +4695,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
                 className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
                 data-testid="button-edit-autoservice"
               >
-                <Edit2 className="w-3 h-3" />
+                <Edit className="w-3 h-3" />
                 Editar
               </button>
             )}
