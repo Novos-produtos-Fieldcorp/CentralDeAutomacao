@@ -1230,7 +1230,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
       {statsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4" onClick={() => setStatsModalOpen(null)}>
           <div 
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-h-[90vh] overflow-hidden ${statsModalOpen === 'operacoes' ? 'max-w-lg' : 'max-w-6xl'}`}
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-h-[90vh] overflow-hidden ${statsModalOpen === 'operacoes' ? 'max-w-sm' : 'max-w-6xl'}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
@@ -1246,49 +1246,31 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             
             <div className="overflow-auto max-h-[calc(90vh-60px)] overscroll-contain">
               {statsModalOpen === 'operacoes' ? (
-                <div className="p-4 sm:p-6 space-y-3" data-testid="operacoes-modal-content">
+                <div data-testid="operacoes-modal-content">
                   {operacoesStats.length === 0 ? (
                     <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                       <LayoutDashboard className="w-12 h-12 mx-auto mb-3 opacity-50" />
                       <p>Nenhuma operação encontrada</p>
                     </div>
                   ) : (
-                    operacoesStats.map((op: any) => {
-                      const colorMap: Record<string, { bg: string; text: string; icon: string }> = {
-                        'Sada': { bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'text-yellow-700 dark:text-yellow-400', icon: 'bg-yellow-100 dark:bg-yellow-800/40' },
-                        'Tegma': { bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-700 dark:text-purple-400', icon: 'bg-purple-100 dark:bg-purple-800/40' },
-                        'Superterminais': { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400', icon: 'bg-blue-100 dark:bg-blue-800/40' },
-                        'Cesari': { bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400', icon: 'bg-green-100 dark:bg-green-800/40' },
-                        'Mitsubishi': { bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-400', icon: 'bg-red-100 dark:bg-red-800/40' },
-                        'Autoservice': { bg: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-700 dark:text-orange-400', icon: 'bg-orange-100 dark:bg-orange-800/40' },
-                      };
-                      const colors = colorMap[op.nome] || { bg: 'bg-gray-50 dark:bg-gray-700/30', text: 'text-gray-700 dark:text-gray-300', icon: 'bg-gray-100 dark:bg-gray-700' };
-                      return (
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                      {operacoesStats.map((op: any) => (
                         <div 
                           key={op.nome} 
-                          className={`flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 p-4 ${colors.bg}`}
+                          className="flex items-center justify-between px-5 py-3.5"
                           data-testid={`operacao-item-${op.nome.toLowerCase()}`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-lg ${colors.icon} flex items-center justify-center`}>
-                              <LayoutDashboard className={`w-5 h-5 ${colors.text}`} />
-                            </div>
-                            <div>
-                              <p className={`font-semibold ${colors.text}`}>{op.nome}</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {op.total > 0 ? `${op.total} viagens registradas` : 'Nenhuma viagem registrada'}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className={`text-2xl font-bold ${colors.text}`}>{op.total}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${op.total > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
-                              {op.total > 0 ? 'Ativa' : 'Inativa'}
+                            <span className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap ${getOperacaoColor(op.nome)}`}>
+                              {op.nome}
                             </span>
                           </div>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white tabular-nums">
+                            {op.total} {op.total === 1 ? 'viagem' : 'viagens'}
+                          </span>
                         </div>
-                      );
-                    })
+                      ))}
+                    </div>
                   )}
                 </div>
               ) : isLoadingViagensDetalhadas ? (
