@@ -2842,6 +2842,21 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     enabled: selectedOperacao === 'all' || selectedOperacao === 'Superterminais',
   });
 
+  const { data: precosMitsubishi } = useQuery({
+    queryKey: ['faturamento-mitsubishi-precos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('faturamento_mitsubishi')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return data?.[0] as FaturamentoMitsubishi | null;
+    },
+    enabled: selectedOperacao === 'all' || selectedOperacao === 'Mitsubishi',
+  });
+
   // Query para buscar viagens SADA com dados de faturamento
   const { data: viagensSada = [], isLoading: isLoadingSada, isError: isErrorSada } = useQuery({
     queryKey: ['financeiro-sada-viagens', companyId, selectedOperacao],
@@ -2936,6 +2951,48 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
     enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Superterminais'),
+  });
+
+  const { data: viagensMitsubishi = [], isLoading: isLoadingMitsubishiViagens, isError: isErrorMitsubishiViagens } = useQuery({
+    queryKey: ['financeiro-mitsubishi-viagens', companyId, selectedOperacao],
+    queryFn: async () => {
+      if (!companyId) return [];
+      
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIds = viagensEmpresa.map((v: any) => v.id);
+      
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_mitsubishi')
+        .select('*')
+        .in('id_viagem', viagemIds);
+      
+      if (opError || !opData) return [];
+      
+      const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .in('motorista_id', motoristaIds);
+      
+      const motoristasMap: Record<number, string> = {};
+      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      
+      return opData.map((op: any) => {
+        const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          data_viagem: viagem?.data_hora_inicial,
+          motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+        };
+      }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
+    },
+    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Mitsubishi'),
   });
 
   const formatCurrency = (value: number) => {
@@ -3338,7 +3395,143 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     );
   };
 
-  // Renderização baseada na operação selecionada
+  const renderMitsubishiFinanceiro = () => {
+    if (isLoadingMitsubishiViagens) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400" data-testid="text-loading-mitsubishi">Carregando viagens...</span>
+        </div>
+      );
+    }
+
+    if (isErrorMitsubishiViagens) {
+      return (
+        <div className="text-center py-12" data-testid="text-error-mitsubishi">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar dados de faturamento.</p>
+        </div>
+      );
+    }
+
+    if (!viagensMitsubishi || viagensMitsubishi.length === 0) {
+      return (
+        <div className="text-center py-12" data-testid="text-empty-mitsubishi">
+          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma viagem MITSUBISHI encontrada.</p>
+        </div>
+      );
+    }
+
+    const viagensFiltradas = filtrarPorPeriodo(viagensMitsubishi);
+
+    const precoPorVeiculo = parsePreco(precosMitsubishi?.preco_por_veiculo || '0');
+    const comissaoMotorista = parsePreco(precosMitsubishi?.comissao_motorista || '0');
+    const comissaoAjudante = parsePreco(precosMitsubishi?.comissao_ajudante || '0');
+
+    let totalRecebido = 0;
+    viagensFiltradas.forEach((v: any) => {
+      totalRecebido += precoPorVeiculo * (v.qtd_carro || 0);
+    });
+    const totalComissaoMotorista = viagensFiltradas.length * comissaoMotorista;
+    const totalComissaoAjudante = viagensFiltradas.length * comissaoAjudante;
+
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-mitsubishi-total-recebido">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Recebido</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-mitsubishi-total-recebido">{formatCurrency(totalRecebido)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(precoPorVeiculo)} por veículo</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-mitsubishi-comissao-motorista">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Comissões Motorista</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-mitsubishi-comissao-motorista">{formatCurrency(totalComissaoMotorista)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(comissaoMotorista)} por viagem</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-mitsubishi-comissao-ajudante">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Comissões Ajudante</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-mitsubishi-comissao-ajudante">{formatCurrency(totalComissaoAjudante)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(comissaoAjudante)} por viagem</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-mitsubishi-total-viagens">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-mitsubishi-total-viagens">{viagensFiltradas.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-full" data-testid="table-mitsubishi-financeiro">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem → Destino</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Qtd Veículos</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Modelo</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão Mot.</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                {viagensFiltradas.map((viagem: any) => {
+                  const valorViagem = precoPorVeiculo * (viagem.qtd_carro || 0);
+                  
+                  return (
+                    <tr key={viagem.id_operacao} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" data-testid={`row-mitsubishi-${viagem.id_operacao}`}>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
+                        {formatDate(viagem.data_viagem)}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {viagem.motorista_nome}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {viagem.origem || '-'} → {viagem.destino || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 text-center">
+                        {viagem.qtd_carro || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {viagem.modelo_carro || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white text-right">
+                        {formatCurrency(valorViagem)}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm font-medium text-gray-600 dark:text-gray-300 text-right">
+                        {formatCurrency(comissaoMotorista)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderFinanceiroContent = () => {
     if (selectedOperacao === 'all') {
       return (
@@ -3356,6 +3549,13 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPERTERMINAIS</h3>
             </div>
             {renderSuperterminaisFinanceiro()}
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-6 bg-red-500 dark:bg-red-400 rounded-full" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-mitsubishi-section-title">MITSUBISHI</h3>
+            </div>
+            {renderMitsubishiFinanceiro()}
           </div>
         </div>
       );
@@ -3381,6 +3581,18 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPERTERMINAIS</h3>
           </div>
           {renderSuperterminaisFinanceiro()}
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Mitsubishi') {
+      return (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-red-500 dark:bg-red-400 rounded-full" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-mitsubishi-financeiro-title">MITSUBISHI</h3>
+          </div>
+          {renderMitsubishiFinanceiro()}
         </div>
       );
     }
