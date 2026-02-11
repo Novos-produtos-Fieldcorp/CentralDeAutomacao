@@ -2877,7 +2877,14 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         .order('created_at', { ascending: false })
         .limit(1);
       if (error) throw error;
-      return (data?.[0] as FaturamentoAutoservice) || null;
+      if (!data || data.length === 0) return null;
+      const row = data[0];
+      return {
+        ...row,
+        valor_por_veiculo: row.valor_por_veiculo != null ? Number(row.valor_por_veiculo) : null,
+        comissao_motorista: row.comissao_motorista != null ? Number(row.comissao_motorista) : null,
+        comissao_ajudante: row.comissao_ajudante != null ? Number(row.comissao_ajudante) : null,
+      } as FaturamentoAutoservice;
     },
     enabled: selectedOperacao === 'all' || selectedOperacao === 'Autoservice',
   });
@@ -3986,7 +3993,14 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         .limit(1);
       
       if (error) throw error;
-      return (data?.[0] as FaturamentoAutoservice) || null;
+      if (!data || data.length === 0) return null;
+      const row = data[0];
+      return {
+        ...row,
+        valor_por_veiculo: row.valor_por_veiculo != null ? Number(row.valor_por_veiculo) : null,
+        comissao_motorista: row.comissao_motorista != null ? Number(row.comissao_motorista) : null,
+        comissao_ajudante: row.comissao_ajudante != null ? Number(row.comissao_ajudante) : null,
+      } as FaturamentoAutoservice;
     },
     enabled: selectedOperacao === 'all' || selectedOperacao === 'Autoservice',
   });
@@ -4173,11 +4187,21 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         updated_at: new Date().toISOString(),
       };
 
-      if (currentAutoservicePrices?.id) {
+      const { data: existingRows, error: fetchError } = await supabase
+        .from('faturamento_autoservice')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (fetchError) throw fetchError;
+
+      const existingId = existingRows?.[0]?.id || currentAutoservicePrices?.id;
+
+      if (existingId) {
         const { error } = await supabase
           .from('faturamento_autoservice')
           .update(updateData)
-          .eq('id', currentAutoservicePrices.id);
+          .eq('id', existingId);
         
         if (error) throw error;
       } else {
