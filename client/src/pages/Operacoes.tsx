@@ -2821,7 +2821,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         .limit(1);
       
       if (error) throw error;
-      return data?.[0] as FaturamentoSada | null;
+      return (data?.[0] as FaturamentoSada) || null;
     },
     enabled: selectedOperacao === 'all' || selectedOperacao === 'Sada',
   });
@@ -2837,7 +2837,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         .limit(1);
       
       if (error) throw error;
-      return data?.[0] as FaturamentoSuperterminais | null;
+      return (data?.[0] as FaturamentoSuperterminais) || null;
     },
     enabled: selectedOperacao === 'all' || selectedOperacao === 'Superterminais',
   });
@@ -2852,7 +2852,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         .limit(1);
       
       if (error) throw error;
-      return data?.[0] as FaturamentoMitsubishi | null;
+      return (data?.[0] as FaturamentoMitsubishi) || null;
     },
     enabled: selectedOperacao === 'all' || selectedOperacao === 'Mitsubishi',
   });
