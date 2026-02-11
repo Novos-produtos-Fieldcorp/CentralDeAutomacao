@@ -5428,6 +5428,199 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/operacoes/faturamento/cesari", async (req, res) => {
+    try {
+      const { data, error } = await supabaseBackend
+        .from("faturamento_cesari")
+        .select("*")
+        .eq("ativo", true)
+        .order("local", { ascending: true })
+        .order("sentido", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching faturamento cesari:", error);
+        return res.status(500).json({ error: error.message });
+      }
+
+      res.json(data || []);
+    } catch (error: any) {
+      console.error("Error fetching faturamento cesari:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/operacoes/faturamento/cesari", async (req, res) => {
+    try {
+      const body = req.body;
+      console.log("[POST faturamento cesari] Creating new row:", body);
+
+      const { data, error } = await supabaseBackend
+        .from("faturamento_cesari")
+        .insert([{
+          local: body.local,
+          tipo_carga: body.tipo_carga,
+          sentido: body.sentido,
+          destino_especial: body.destino_especial || null,
+          valor_frete: body.valor_frete,
+          valor_pernoite: body.valor_pernoite,
+          comissao_motorista: body.comissao_motorista,
+          comissao_pernoite_feriado_motorista: body.comissao_pernoite_feriado_motorista,
+          observacoes: body.observacoes || null,
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("[POST faturamento cesari] Insert error:", error);
+        return res.status(500).json({ error: error.message });
+      }
+
+      console.log("[POST faturamento cesari] Created row id=", data.id);
+      res.json(data);
+    } catch (error: any) {
+      console.error("Error creating faturamento cesari:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/operacoes/faturamento/cesari/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const body = req.body;
+      console.log(`[PUT faturamento cesari] Updating id=${id}:`, body);
+
+      const updateData: any = { updated_at: new Date().toISOString() };
+      if (body.local !== undefined) updateData.local = body.local;
+      if (body.tipo_carga !== undefined) updateData.tipo_carga = body.tipo_carga;
+      if (body.sentido !== undefined) updateData.sentido = body.sentido;
+      if (body.destino_especial !== undefined) updateData.destino_especial = body.destino_especial;
+      if (body.valor_frete !== undefined) updateData.valor_frete = body.valor_frete;
+      if (body.valor_pernoite !== undefined) updateData.valor_pernoite = body.valor_pernoite;
+      if (body.comissao_motorista !== undefined) updateData.comissao_motorista = body.comissao_motorista;
+      if (body.comissao_pernoite_feriado_motorista !== undefined) updateData.comissao_pernoite_feriado_motorista = body.comissao_pernoite_feriado_motorista;
+      if (body.observacoes !== undefined) updateData.observacoes = body.observacoes;
+      if (body.ativo !== undefined) updateData.ativo = body.ativo;
+
+      const { data, error } = await supabaseBackend
+        .from("faturamento_cesari")
+        .update(updateData)
+        .eq("id", parseInt(id))
+        .select()
+        .single();
+
+      if (error) {
+        console.error(`[PUT faturamento cesari] Update error:`, error);
+        return res.status(500).json({ error: error.message });
+      }
+
+      console.log(`[PUT faturamento cesari] Updated id=${id}`);
+      res.json(data);
+    } catch (error: any) {
+      console.error("Error updating faturamento cesari:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/operacoes/faturamento/cesari/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      console.log(`[DELETE faturamento cesari] Soft-deleting id=${id}`);
+
+      const { error } = await supabaseBackend
+        .from("faturamento_cesari")
+        .update({ ativo: false, updated_at: new Date().toISOString() })
+        .eq("id", parseInt(id));
+
+      if (error) {
+        console.error(`[DELETE faturamento cesari] Error:`, error);
+        return res.status(500).json({ error: error.message });
+      }
+
+      console.log(`[DELETE faturamento cesari] Soft-deleted id=${id}`);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting faturamento cesari:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/operacoes/financeiro/cesari/:companyId", async (req, res) => {
+    try {
+      const { companyId } = req.params;
+      const companyIdNum = parseInt(companyId);
+      if (isNaN(companyIdNum)) {
+        return res.status(400).json({ error: "Invalid companyId" });
+      }
+
+      const { data: opData, error: opError } = await supabaseBackend
+        .from("operacao_cesari")
+        .select("*");
+
+      if (opError) {
+        console.error("Error fetching operacao cesari data:", opError);
+        return res.status(500).json({ error: opError.message });
+      }
+
+      if (!opData || opData.length === 0) {
+        return res.json([]);
+      }
+
+      const viagemIds = [...new Set(opData.map((op: any) => op.id_viagem).filter(Boolean))];
+
+      const { data: viagensEmpresa, error: viagensError } = await supabaseBackend
+        .from("acompanhamento_viagem")
+        .select("id, motorista_id, veiculo_id, data_hora_inicial, km_rodado, company_id")
+        .in("id", viagemIds);
+
+      if (viagensError) {
+        console.error("Error fetching viagens:", viagensError);
+        return res.status(500).json({ error: viagensError.message });
+      }
+
+      const viagensFiltered = (viagensEmpresa || []).filter((v: any) =>
+        v.company_id === companyIdNum || v.company_id === null
+      );
+
+      if (viagensFiltered.length === 0) {
+        return res.json([]);
+      }
+
+      const filteredViagemIds = new Set(viagensFiltered.map((v: any) => v.id));
+
+      const filteredOpData = opData.filter((op: any) => filteredViagemIds.has(op.id_viagem));
+
+      if (filteredOpData.length === 0) {
+        return res.json([]);
+      }
+
+      const motoristaIds = [...new Set(viagensFiltered.map((v: any) => v.motorista_id).filter(Boolean))];
+      let motoristasMap: Record<number, string> = {};
+      if (motoristaIds.length > 0) {
+        const { data: motoristasData } = await supabaseBackend
+          .from("motorista")
+          .select("motorista_id, nome")
+          .in("motorista_id", motoristaIds);
+        (motoristasData || []).forEach((m: any) => {
+          motoristasMap[m.motorista_id] = m.nome;
+        });
+      }
+
+      const result = filteredOpData.map((op: any) => {
+        const viagem = viagensFiltered.find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          data_viagem: viagem?.data_hora_inicial,
+          motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || "Desconhecido" : "Desconhecido",
+        };
+      }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
+
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error fetching operacao financeiro cesari:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/operacoes/financeiro/:operacao/:companyId", async (req, res) => {
     try {
       const { operacao, companyId } = req.params;

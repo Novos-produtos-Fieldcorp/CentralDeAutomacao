@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2 } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useState as useStateReact } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
@@ -2836,6 +2836,22 @@ interface FaturamentoTegma {
   updated_at: string | null;
 }
 
+interface FaturamentoCesari {
+  id: number;
+  local: string;
+  tipo_carga: string;
+  sentido: string;
+  destino_especial: string | null;
+  valor_frete: number;
+  valor_pernoite: number;
+  comissao_motorista: number;
+  comissao_pernoite_feriado_motorista: number;
+  ativo: boolean;
+  observacoes: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
 // Componente Financeiro - Lista de viagens com cálculo de faturamento
 const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
@@ -3053,6 +3069,26 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       return response.json();
     },
     enabled: !!companyId,
+  });
+
+  const { data: viagensCesari = [], isLoading: isLoadingCesariViagens, isError: isErrorCesariViagens } = useQuery({
+    queryKey: ['financeiro-cesari-viagens', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const response = await fetch(`/api/operacoes/financeiro/cesari/${companyId}`);
+      if (!response.ok) throw new Error('Erro ao buscar viagens Cesari');
+      return response.json();
+    },
+    enabled: !!companyId,
+  });
+
+  const { data: precosCesari = [] } = useQuery({
+    queryKey: ['faturamento-cesari-financeiro'],
+    queryFn: async () => {
+      const response = await fetch('/api/operacoes/faturamento/cesari');
+      if (!response.ok) return [];
+      return response.json() as Promise<FaturamentoCesari[]>;
+    },
   });
 
   const formatCurrency = (value: number) => {
@@ -3852,6 +3888,218 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     );
   };
 
+  const renderCesariFinanceiro = () => {
+    if (isLoadingCesariViagens) {
+      return (
+        <div className="flex items-center justify-center py-12" data-testid="cesari-loading">
+          <Loader2 className="w-8 h-8 animate-spin text-green-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando viagens CESARI...</span>
+        </div>
+      );
+    }
+
+    if (isErrorCesariViagens) {
+      return (
+        <div className="text-center py-12" data-testid="cesari-error">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar viagens CESARI.</p>
+        </div>
+      );
+    }
+
+    if (!viagensCesari || viagensCesari.length === 0) {
+      return (
+        <div className="text-center py-12" data-testid="text-empty-cesari">
+          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma viagem CESARI encontrada.</p>
+        </div>
+      );
+    }
+
+    const viagensFiltradas = filtrarPorPeriodo(viagensCesari);
+
+    const findPrecoMatch = (local: string, tipoCarga: string, sentido: string, destinoEspecial: string | null): FaturamentoCesari | null => {
+      return precosCesari.find((p: FaturamentoCesari) => {
+        if (p.local.toLowerCase() !== local.toLowerCase()) return false;
+        if (p.tipo_carga.toLowerCase() !== tipoCarga.toLowerCase()) return false;
+        if (p.sentido.toLowerCase() !== sentido.toLowerCase()) return false;
+        const pDest = (p.destino_especial || '').toLowerCase();
+        const qDest = (destinoEspecial || '').toLowerCase();
+        if (qDest && !pDest.includes(qDest)) return false;
+        if (!qDest && pDest) return false;
+        return true;
+      }) || null;
+    };
+
+    const inferLeg = (origem: string, destino: string) => {
+      const o = (origem || '').toLowerCase();
+      const d = (destino || '').toLowerCase();
+      const isTaboca = o.includes('taboca') || d.includes('taboca');
+      const local = isTaboca ? 'Taboca' : 'Porto';
+      const destinoEspecial = isTaboca ? 'Taboca' : null;
+      const sentidoIda = d.includes('taboca') || d.includes('porto') ? 'Volta' : 'Ida';
+      const actualSentido = o.includes('taboca') ? 'Volta' : (d.includes('taboca') ? 'Ida' : sentidoIda);
+      return { local, destinoEspecial, sentido: actualSentido };
+    };
+
+    let totalFrete = 0;
+    let totalComissoes = 0;
+    let totalPernoites = 0;
+
+    const viagensComPreco = viagensFiltradas.map((viagem: any) => {
+      const tipoViagem = (viagem.tipo_viagem || '').toLowerCase();
+      const isSolteira = tipoViagem.includes('solteira');
+
+      let valorFrete = 0;
+      let comissao = 0;
+      let pernoiteValor = 0;
+      let precoV1: FaturamentoCesari | null = null;
+      let precoV2: FaturamentoCesari | null = null;
+      let v2Frete = 0;
+      let v2Comissao = 0;
+
+      if (isSolteira) {
+        const leg = inferLeg(viagem.origem || '', viagem.destino || '');
+        precoV1 = findPrecoMatch(leg.local, 'Vazia', 'Ida/Volta', leg.destinoEspecial);
+        valorFrete = precoV1 ? Number(precoV1.valor_frete) : 0;
+        comissao = 250;
+      } else {
+        const leg1 = inferLeg(viagem.origem || '', viagem.destino || '');
+        precoV1 = findPrecoMatch(leg1.local, 'Cheia', leg1.sentido, leg1.destinoEspecial)
+          || findPrecoMatch(leg1.local, 'Vazia', leg1.sentido, leg1.destinoEspecial);
+        valorFrete = precoV1 ? Number(precoV1.valor_frete) : 0;
+        comissao = 300;
+
+        if (viagem.v2_origem || viagem.v2_destino) {
+          const leg2 = inferLeg(viagem.v2_origem || '', viagem.v2_destino || '');
+          precoV2 = findPrecoMatch(leg2.local, 'Vazia', leg2.sentido, leg2.destinoEspecial)
+            || findPrecoMatch(leg2.local, 'Cheia', leg2.sentido, leg2.destinoEspecial);
+          v2Frete = precoV2 ? Number(precoV2.valor_frete) : 0;
+          v2Comissao = 300;
+          valorFrete += v2Frete;
+          comissao += v2Comissao;
+        }
+      }
+
+      if (viagem.pernoite) {
+        const pernoitePreco = precoV1 ? Number(precoV1.valor_pernoite) : 450;
+        const comissaoPernoite = precoV1 ? Number(precoV1.comissao_pernoite_feriado_motorista) : 100;
+        valorFrete += pernoitePreco;
+        comissao += comissaoPernoite;
+        pernoiteValor = pernoitePreco;
+      }
+
+      if (viagem.dia_nao_util) {
+        const comissaoFeriado = precoV1 ? Number(precoV1.comissao_pernoite_feriado_motorista) : 100;
+        comissao += comissaoFeriado;
+      }
+
+      totalFrete += valorFrete;
+      totalComissoes += comissao;
+      totalPernoites += pernoiteValor;
+
+      return { ...viagem, valorFrete, comissao, preco: precoV1, precoV2, pernoiteValor, v2Frete, v2Comissao, hasV2: !!(viagem.v2_origem || viagem.v2_destino) };
+    });
+
+    return (
+      <div className="space-y-6" data-testid="cesari-financeiro-content">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid="cesari-card-total-frete">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Frete</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalFrete)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{viagensFiltradas.length} viagens</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid="cesari-card-total-comissoes">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Comissões</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalComissoes)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid="cesari-card-total-pernoites">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Pernoites</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalPernoites)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid="cesari-card-total-viagens">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Viagens</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{viagensFiltradas.length}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">no período selecionado</p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-testid="cesari-financeiro-table">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-700/50">
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Data</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Motorista</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Origem → Destino</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tipo</th>
+                  <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Pernoite</th>
+                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Valor Frete</th>
+                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Comissão</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {viagensComPreco.map((viagem: any, index: number) => {
+                  const dataViagem = viagem.data_viagem || viagem.created_at;
+                  return (
+                    <tr key={viagem.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-700/30" data-testid={`cesari-row-${index}`}>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {dataViagem ? new Date(dataViagem).toLocaleDateString('pt-BR') : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {viagem.motorista_nome || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        <div>{viagem.origem || '-'} → {viagem.destino || '-'}</div>
+                        {viagem.hasV2 && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {viagem.v2_origem || '-'} → {viagem.v2_destino || '-'}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          viagem.tipo_viagem?.toLowerCase()?.includes('casada')
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                        }`} data-testid={`cesari-tipo-${index}`}>
+                          {viagem.tipo_viagem || '-'}
+                        </span>
+                        {viagem.hasV2 && (
+                          <span className="ml-1 text-xs text-gray-400">(2 trechos)</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {viagem.pernoite ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300" data-testid={`cesari-pernoite-${index}`}>
+                            <Moon className="w-3 h-3 mr-1" />
+                            Sim
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium">
+                        {viagem.preco ? formatCurrency(viagem.valorFrete) : (
+                          <span className="text-xs text-orange-500">Sem preço</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium">
+                        {viagem.preco ? formatCurrency(viagem.comissao) : (
+                          <span className="text-xs text-orange-500">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderFinanceiroContent = () => {
     if (selectedOperacao === 'all') {
       return (
@@ -3890,6 +4138,13 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-tegma-section-title">TEGMA</h3>
             </div>
             {renderTegmaFinanceiro()}
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-6 bg-green-500 dark:bg-green-400 rounded-full" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-cesari-section-title">CESARI</h3>
+            </div>
+            {renderCesariFinanceiro()}
           </div>
         </div>
       );
@@ -3939,6 +4194,30 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-autoservice-financeiro-title">AUTOSERVICE</h3>
           </div>
           {renderAutoserviceFinanceiro()}
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Cesari') {
+      return (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-green-500 dark:bg-green-400 rounded-full" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-cesari-financeiro-title">CESARI</h3>
+          </div>
+          {renderCesariFinanceiro()}
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Tegma') {
+      return (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-orange-500 dark:bg-orange-400 rounded-full" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-tegma-financeiro-title">TEGMA</h3>
+          </div>
+          {renderTegmaFinanceiro()}
         </div>
       );
     }
@@ -4040,6 +4319,11 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 // Componente Preços - Edição de preços e comissões
 const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+
   const [editingSada, setEditingSada] = useState(false);
   const [sadaForm, setSadaForm] = useState<Partial<FaturamentoSada>>({});
   const [editingSuperterminais, setEditingSuperterminais] = useState(false);
@@ -4131,11 +4415,41 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     }
   }, [currentAutoservicePrices]);
 
+  const [cesariModalOpen, setCesariModalOpen] = useState(false);
+  const [editingCesariItem, setEditingCesariItem] = useState<FaturamentoCesari | null>(null);
+  const [cesariForm, setCesariForm] = useState({
+    local: '', tipo_carga: '', sentido: '', destino_especial: '',
+    valor_frete: '', valor_pernoite: '450', comissao_motorista: '',
+    comissao_pernoite_feriado_motorista: '100', observacoes: ''
+  });
+  const [isSavingCesari, setIsSavingCesari] = useState(false);
+
+  const { data: cesariPrices = [], isLoading: isLoadingCesari, isError: isErrorCesari, refetch: refetchCesari } = useQuery({
+    queryKey: ['faturamento-cesari-all'],
+    queryFn: async () => {
+      const response = await fetch('/api/operacoes/faturamento/cesari');
+      if (!response.ok) throw new Error('Erro ao buscar preços Cesari');
+      return response.json() as Promise<FaturamentoCesari[]>;
+    },
+  });
+
+  const { data: currentTegmaPrices, isLoading: isLoadingTegma, isError: isErrorTegma } = useQuery({
+    queryKey: ['faturamento-tegma-current'],
+    queryFn: async () => {
+      const response = await fetch('/api/operacoes/faturamento/tegma');
+      if (!response.ok) throw new Error('Erro ao buscar preços Tegma');
+      const data = await response.json();
+      return data as FaturamentoTegma;
+    },
+  });
+
   useEffect(() => {
     setEditingSada(false);
     setEditingSuperterminais(false);
     setEditingMitsubishi(false);
     setEditingAutoservice(false);
+    setCesariModalOpen(false);
+    setEditingCesariItem(null);
     setSaveError(null);
   }, [companyId]);
 
@@ -4301,6 +4615,91 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
       setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleOpenCesariModal = (item?: FaturamentoCesari) => {
+    if (item) {
+      setEditingCesariItem(item);
+      setCesariForm({
+        local: item.local || '',
+        tipo_carga: item.tipo_carga || '',
+        sentido: item.sentido || '',
+        destino_especial: item.destino_especial || '',
+        valor_frete: String(item.valor_frete || ''),
+        valor_pernoite: String(item.valor_pernoite || '450'),
+        comissao_motorista: String(item.comissao_motorista || ''),
+        comissao_pernoite_feriado_motorista: String(item.comissao_pernoite_feriado_motorista || '100'),
+        observacoes: item.observacoes || '',
+      });
+    } else {
+      setEditingCesariItem(null);
+      setCesariForm({
+        local: '', tipo_carga: '', sentido: '', destino_especial: '',
+        valor_frete: '', valor_pernoite: '450', comissao_motorista: '',
+        comissao_pernoite_feriado_motorista: '100', observacoes: ''
+      });
+    }
+    setCesariModalOpen(true);
+  };
+
+  const handleSaveCesari = async () => {
+    setIsSavingCesari(true);
+    setSaveError(null);
+    try {
+      const payload = {
+        local: cesariForm.local,
+        tipo_carga: cesariForm.tipo_carga,
+        sentido: cesariForm.sentido,
+        destino_especial: cesariForm.destino_especial || null,
+        valor_frete: Number(cesariForm.valor_frete),
+        valor_pernoite: Number(cesariForm.valor_pernoite),
+        comissao_motorista: Number(cesariForm.comissao_motorista),
+        comissao_pernoite_feriado_motorista: Number(cesariForm.comissao_pernoite_feriado_motorista),
+        observacoes: cesariForm.observacoes || null,
+      };
+
+      const url = editingCesariItem
+        ? `/api/operacoes/faturamento/cesari/${editingCesariItem.id}`
+        : '/api/operacoes/faturamento/cesari';
+      const method = editingCesariItem ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erro ao salvar preço Cesari');
+      }
+
+      await refetchCesari();
+      setCesariModalOpen(false);
+      setEditingCesariItem(null);
+    } catch (error: any) {
+      console.error('Erro ao salvar preço CESARI:', error);
+      setSaveError(error?.message || 'Erro ao salvar preço. Tente novamente.');
+    } finally {
+      setIsSavingCesari(false);
+    }
+  };
+
+  const handleDeleteCesari = async (id: number) => {
+    if (!confirm('Tem certeza que deseja excluir este preço?')) return;
+    try {
+      const response = await fetch(`/api/operacoes/faturamento/cesari/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erro ao excluir preço');
+      }
+      await refetchCesari();
+    } catch (error: any) {
+      console.error('Erro ao excluir preço CESARI:', error);
+      setSaveError(error?.message || 'Erro ao excluir. Tente novamente.');
     }
   };
 
@@ -4922,6 +5321,331 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     );
   };
 
+  const renderTegmaPrecos = () => {
+    if (isLoadingTegma) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+          <span className="ml-2 text-gray-500 dark:text-gray-400" data-testid="text-loading-tegma-precos">Carregando preços...</span>
+        </div>
+      );
+    }
+
+    if (isErrorTegma) {
+      return (
+        <div className="text-center py-8" data-testid="text-error-tegma-precos">
+          <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar preços.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <h4 className="text-sm font-semibold text-gray-900 dark:text-white" data-testid="text-tegma-precos-title">Valores por Trecho e Comissões</h4>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Configuração de valores de faturamento para operação Tegma</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor por Trecho</label>
+            <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-tegma-valor-por-trecho">
+              {currentTegmaPrices?.valor_por_trecho != null ? formatCurrency(Number(currentTegmaPrices.valor_por_trecho)) : '-'}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Carreta Vazia</label>
+            <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-tegma-comissao-vazia">
+              {currentTegmaPrices?.comissao_motorista_carreta_vazia != null ? formatCurrency(Number(currentTegmaPrices.comissao_motorista_carreta_vazia)) : '-'}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Carreta Cheia</label>
+            <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-tegma-comissao-cheia">
+              {currentTegmaPrices?.comissao_motorista_carreta_cheia != null ? formatCurrency(Number(currentTegmaPrices.comissao_motorista_carreta_cheia)) : '-'}
+            </div>
+          </div>
+        </div>
+        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
+          <p className="text-sm text-orange-700 dark:text-orange-300">
+            <strong>Modelo de Precificação TEGMA:</strong> Valor fixo por trecho, com comissões diferenciadas para carretas vazias e cheias.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCesariPrecos = () => {
+    if (isLoadingCesari) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-green-500" />
+          <span className="ml-2 text-gray-500 dark:text-gray-400" data-testid="text-loading-cesari-precos">Carregando preços...</span>
+        </div>
+      );
+    }
+
+    if (isErrorCesari) {
+      return (
+        <div className="text-center py-8" data-testid="text-error-cesari-precos">
+          <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar preços.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white" data-testid="text-cesari-precos-title">Configuração de Preços por Rota</h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Gerencie os valores de frete e comissões por local, tipo de carga e sentido</p>
+          </div>
+          <button
+            onClick={() => handleOpenCesariModal()}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors flex items-center gap-1"
+            data-testid="button-add-cesari-preco"
+          >
+            <Plus className="w-3 h-3" />
+            Adicionar
+          </button>
+        </div>
+
+        {saveError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+            <p className="text-sm text-red-600 dark:text-red-400" data-testid="text-error-save-cesari">{saveError}</p>
+          </div>
+        )}
+
+        {cesariPrices.length === 0 ? (
+          <div className="text-center py-8" data-testid="text-empty-cesari-precos">
+            <Settings className="w-10 h-10 mx-auto text-gray-400 mb-3" />
+            <p className="text-gray-500 dark:text-gray-400">Nenhum preço configurado.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Clique em "Adicionar" para criar a primeira configuração de preço.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-testid="cesari-precos-table">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-700/50">
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Local</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tipo Carga</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Sentido</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Dest. Especial</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Valor Frete</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Pernoite</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Comissão</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Com. Pernoite</th>
+                  <th className="text-center px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {cesariPrices.map((item: FaturamentoCesari, index: number) => (
+                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30" data-testid={`cesari-preco-row-${index}`}>
+                    <td className="px-3 py-2 text-gray-900 dark:text-white font-medium">{item.local}</td>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        item.tipo_carga.toLowerCase() === 'cheia'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                          : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                      }`}>
+                        {item.tipo_carga}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{item.sentido}</td>
+                    <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{item.destino_especial || '-'}</td>
+                    <td className="px-3 py-2 text-right text-gray-900 dark:text-white font-medium">{formatCurrency(Number(item.valor_frete))}</td>
+                    <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300">{formatCurrency(Number(item.valor_pernoite))}</td>
+                    <td className="px-3 py-2 text-right text-gray-900 dark:text-white font-medium">{formatCurrency(Number(item.comissao_motorista))}</td>
+                    <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300">{formatCurrency(Number(item.comissao_pernoite_feriado_motorista))}</td>
+                    <td className="px-3 py-2 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleOpenCesariModal(item)}
+                          className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                          data-testid={`button-edit-cesari-preco-${index}`}
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCesari(item.id)}
+                          className="p-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                          data-testid={`button-delete-cesari-preco-${index}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+          <p className="text-sm text-green-700 dark:text-green-300">
+            <strong>Modelo de Precificação CESARI:</strong> Cada rota possui valores específicos por local, tipo de carga (Cheia/Vazia) e sentido (Ida/Volta/Ida e Volta). Pernoites adicionam R$450 ao frete e R$100 à comissão. Feriados/dias não úteis adicionam R$100 à comissão.
+          </p>
+        </div>
+
+        {cesariModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" data-testid="cesari-modal-overlay">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-cesari-modal-title">
+                  {editingCesariItem ? 'Editar Preço' : 'Adicionar Preço'}
+                </h3>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Local *</label>
+                    <select
+                      value={cesariForm.local}
+                      onChange={(e) => setCesariForm(prev => ({ ...prev, local: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      data-testid="select-cesari-local"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="Porto">Porto</option>
+                      <option value="Taboca">Taboca</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tipo Carga *</label>
+                    <select
+                      value={cesariForm.tipo_carga}
+                      onChange={(e) => setCesariForm(prev => ({ ...prev, tipo_carga: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      data-testid="select-cesari-tipo-carga"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="Cheia">Cheia</option>
+                      <option value="Vazia">Vazia</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Sentido *</label>
+                    <select
+                      value={cesariForm.sentido}
+                      onChange={(e) => setCesariForm(prev => ({ ...prev, sentido: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      data-testid="select-cesari-sentido"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="Ida">Ida</option>
+                      <option value="Volta">Volta</option>
+                      <option value="Ida/Volta">Ida/Volta</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Destino Especial</label>
+                    <input
+                      type="text"
+                      value={cesariForm.destino_especial}
+                      onChange={(e) => setCesariForm(prev => ({ ...prev, destino_especial: e.target.value }))}
+                      placeholder="Ex: Taboca (opcional)"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      data-testid="input-cesari-destino-especial"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor Frete *</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                      <input
+                        type="text"
+                        value={cesariForm.valor_frete}
+                        onChange={(e) => setCesariForm(prev => ({ ...prev, valor_frete: e.target.value }))}
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        data-testid="input-cesari-valor-frete"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor Pernoite</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                      <input
+                        type="text"
+                        value={cesariForm.valor_pernoite}
+                        onChange={(e) => setCesariForm(prev => ({ ...prev, valor_pernoite: e.target.value }))}
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        data-testid="input-cesari-valor-pernoite"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Motorista *</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                      <input
+                        type="text"
+                        value={cesariForm.comissao_motorista}
+                        onChange={(e) => setCesariForm(prev => ({ ...prev, comissao_motorista: e.target.value }))}
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        data-testid="input-cesari-comissao-motorista"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Pernoite/Feriado</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                      <input
+                        type="text"
+                        value={cesariForm.comissao_pernoite_feriado_motorista}
+                        onChange={(e) => setCesariForm(prev => ({ ...prev, comissao_pernoite_feriado_motorista: e.target.value }))}
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        data-testid="input-cesari-comissao-pernoite"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Observações</label>
+                  <input
+                    type="text"
+                    value={cesariForm.observacoes}
+                    onChange={(e) => setCesariForm(prev => ({ ...prev, observacoes: e.target.value }))}
+                    placeholder="Observações (opcional)"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    data-testid="input-cesari-observacoes"
+                  />
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => { setCesariModalOpen(false); setEditingCesariItem(null); setSaveError(null); }}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  data-testid="button-cancel-cesari-modal"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveCesari}
+                  disabled={isSavingCesari || !cesariForm.local || !cesariForm.tipo_carga || !cesariForm.sentido || !cesariForm.valor_frete || !cesariForm.comissao_motorista}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  data-testid="button-save-cesari-modal"
+                >
+                  {isSavingCesari ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {editingCesariItem ? 'Atualizar' : 'Salvar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderPrecosContent = () => {
     if (selectedOperacao === 'all') {
       return (
@@ -4956,6 +5680,22 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
             </div>
             <div className="p-4">
               {renderAutoservicePrecos()}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">TEGMA - Configuração de Preços</h3>
+            </div>
+            <div className="p-4">
+              {renderTegmaPrecos()}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">CESARI - Configuração de Preços</h3>
+            </div>
+            <div className="p-4">
+              {renderCesariPrecos()}
             </div>
           </div>
         </div>
@@ -5009,6 +5749,32 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
           </div>
           <div className="p-4">
             {renderAutoservicePrecos()}
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Tegma') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">TEGMA - Configuração de Preços</h3>
+          </div>
+          <div className="p-4">
+            {renderTegmaPrecos()}
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Cesari') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">CESARI - Configuração de Preços</h3>
+          </div>
+          <div className="p-4">
+            {renderCesariPrecos()}
           </div>
         </div>
       );
