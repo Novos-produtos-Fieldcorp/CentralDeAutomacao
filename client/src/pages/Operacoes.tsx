@@ -2834,10 +2834,9 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       if (error) throw error;
       return (data?.[0] as FaturamentoSada) || null;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Sada',
+    enabled: !!companyId,
   });
 
-  // Query para buscar os preços atuais da SUPERTERMINAIS
   const { data: precosSuperterminais } = useQuery({
     queryKey: ['faturamento-superterminais-precos'],
     queryFn: async () => {
@@ -2850,7 +2849,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       if (error) throw error;
       return (data?.[0] as FaturamentoSuperterminais) || null;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Superterminais',
+    enabled: !!companyId,
   });
 
   const { data: precosMitsubishi } = useQuery({
@@ -2865,7 +2864,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       if (error) throw error;
       return (data?.[0] as FaturamentoMitsubishi) || null;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Mitsubishi',
+    enabled: !!companyId,
   });
 
   const { data: precosAutoservice } = useQuery({
@@ -2886,16 +2885,15 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         comissao_ajudante: row.comissao_ajudante != null ? Number(row.comissao_ajudante) : null,
       } as FaturamentoAutoservice;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Autoservice',
+    enabled: !!companyId,
   });
 
   // Query para buscar viagens SADA com dados de faturamento
   const { data: viagensSada = [], isLoading: isLoadingSada, isError: isErrorSada } = useQuery({
-    queryKey: ['financeiro-sada-viagens', companyId, selectedOperacao],
+    queryKey: ['financeiro-sada-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
       
-      // Buscar viagens da empresa
       const { data: viagensEmpresa } = await supabase
         .from('acompanhamento_viagem')
         .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado')
@@ -2905,7 +2903,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       
       const viagemIds = viagensEmpresa.map((v: any) => v.id);
       
-      // Buscar operações SADA
       const { data: opData, error: opError } = await supabase
         .from('operacao_sada')
         .select('*')
@@ -2913,7 +2910,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       
       if (opError || !opData) return [];
       
-      // Buscar motoristas
       const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
       const { data: motoristasData } = await supabase
         .from('motorista')
@@ -2923,7 +2919,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       const motoristasMap: Record<number, string> = {};
       (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
       
-      // Combinar dados
       return opData.map((op: any) => {
         const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
         return {
@@ -2933,16 +2928,15 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
-    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Sada'),
+    enabled: !!companyId,
   });
 
   // Query para buscar viagens SUPERTERMINAIS com dados de faturamento
   const { data: viagensSuperterminais = [], isLoading: isLoadingSuperterminais, isError: isErrorSuperterminais } = useQuery({
-    queryKey: ['financeiro-superterminais-viagens', companyId, selectedOperacao],
+    queryKey: ['financeiro-superterminais-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
       
-      // Buscar viagens da empresa
       const { data: viagensEmpresa } = await supabase
         .from('acompanhamento_viagem')
         .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado')
@@ -2952,7 +2946,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       
       const viagemIds = viagensEmpresa.map((v: any) => v.id);
       
-      // Buscar operações SUPERTERMINAIS
       const { data: opData, error: opError } = await supabase
         .from('operacao_superterminais')
         .select('*')
@@ -2960,7 +2953,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       
       if (opError || !opData) return [];
       
-      // Buscar motoristas
       const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
       const { data: motoristasData } = await supabase
         .from('motorista')
@@ -2972,7 +2964,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         motoristasMap[m.motorista_id] = m.nome;
       });
       
-      // Combinar dados
       return opData.map((op: any) => {
         const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
         return {
@@ -2982,11 +2973,11 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
-    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Superterminais'),
+    enabled: !!companyId,
   });
 
   const { data: viagensMitsubishi = [], isLoading: isLoadingMitsubishiViagens, isError: isErrorMitsubishiViagens } = useQuery({
-    queryKey: ['financeiro-mitsubishi-viagens', companyId, selectedOperacao],
+    queryKey: ['financeiro-mitsubishi-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
       
@@ -3024,11 +3015,11 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
-    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Mitsubishi'),
+    enabled: !!companyId,
   });
 
   const { data: viagensAutoservice = [], isLoading: isLoadingAutoserviceViagens, isError: isErrorAutoserviceViagens } = useQuery({
-    queryKey: ['financeiro-autoservice-viagens', companyId, selectedOperacao],
+    queryKey: ['financeiro-autoservice-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
       
@@ -3066,7 +3057,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
-    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Autoservice'),
+    enabled: !!companyId,
   });
 
   const formatCurrency = (value: number) => {
@@ -3642,7 +3633,8 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 
     let totalRecebido = 0;
     viagensFiltradas.forEach((v: any) => {
-      totalRecebido += valorPorVeiculo * (v.qtd_carro || 0);
+      const frete = v.valor_frete ? parseFloat(v.valor_frete) : valorPorVeiculo;
+      totalRecebido += isNaN(frete) ? valorPorVeiculo : frete;
     });
     const totalComissaoMotorista = viagensFiltradas.length * comissaoMotorista;
     const totalComissaoAjudante = viagensFiltradas.length * comissaoAjudante;
@@ -3658,7 +3650,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
               </div>
             </div>
             <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-autoservice-total-recebido">{formatCurrency(totalRecebido)}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(valorPorVeiculo)} por veículo</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(valorPorVeiculo)} por viagem</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-autoservice-comissao-motorista">
             <div className="flex items-center justify-between mb-3">
@@ -3699,18 +3691,19 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem → Destino</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Qtd Veículos</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Modelo</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão Mot.</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                 {viagensFiltradas.map((viagem: any) => {
-                  const valorViagem = valorPorVeiculo * (viagem.qtd_carro || 0);
+                  const freteViagem = viagem.valor_frete ? parseFloat(viagem.valor_frete) : valorPorVeiculo;
+                  const valorViagem = isNaN(freteViagem) ? valorPorVeiculo : freteViagem;
                   
                   return (
-                    <tr key={viagem.id_operacao} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" data-testid={`row-autoservice-${viagem.id_operacao}`}>
+                    <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" data-testid={`row-autoservice-${viagem.id}`}>
                       <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
                         {formatDate(viagem.data_viagem)}
                       </td>
@@ -3721,10 +3714,10 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
                         {viagem.origem || '-'} → {viagem.destino || '-'}
                       </td>
                       <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 text-center">
-                        {viagem.qtd_carro || '-'}
+                        {viagem.placa_veiculo || '-'}
                       </td>
                       <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {viagem.modelo_carro || '-'}
+                        {viagem.nome_cliente || '-'}
                       </td>
                       <td className="px-4 py-3.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white text-right">
                         {formatCurrency(valorViagem)}
@@ -3938,7 +3931,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   // Query para buscar último registro de faturamento SADA
   // NOTA: A tabela atual não tem company_id. Para multi-tenancy, adicionar coluna company_id à tabela.
   const { data: currentSadaPrices, isLoading: isLoadingSada, isError: isErrorSada, refetch: refetchSada } = useQuery({
-    queryKey: ['faturamento-sada-current', selectedOperacao],
+    queryKey: ['faturamento-sada-current'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('faturamento_sada')
@@ -3949,12 +3942,10 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
       if (error) throw error;
       return (data?.[0] as FaturamentoSada) || null;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Sada',
   });
 
-  // Query para buscar último registro de faturamento SUPERTERMINAIS
   const { data: currentSuperterminaisPrices, isLoading: isLoadingSuperterminais, isError: isErrorSuperterminais, refetch: refetchSuperterminais } = useQuery({
-    queryKey: ['faturamento-superterminais-current', selectedOperacao],
+    queryKey: ['faturamento-superterminais-current'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('faturamento_superterminais')
@@ -3965,11 +3956,10 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
       if (error) throw error;
       return (data?.[0] as FaturamentoSuperterminais) || null;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Superterminais',
   });
 
   const { data: currentMitsubishiPrices, isLoading: isLoadingMitsubishi, isError: isErrorMitsubishi, refetch: refetchMitsubishi } = useQuery({
-    queryKey: ['faturamento-mitsubishi-current', selectedOperacao],
+    queryKey: ['faturamento-mitsubishi-current'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('faturamento_mitsubishi')
@@ -3980,11 +3970,10 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
       if (error) throw error;
       return (data?.[0] as FaturamentoMitsubishi) || null;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Mitsubishi',
   });
 
   const { data: currentAutoservicePrices, isLoading: isLoadingAutoservice, isError: isErrorAutoservice, refetch: refetchAutoservice } = useQuery({
-    queryKey: ['faturamento-autoservice-current', selectedOperacao],
+    queryKey: ['faturamento-autoservice-current'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('faturamento_autoservice')
@@ -4002,7 +3991,6 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         comissao_ajudante: row.comissao_ajudante != null ? Number(row.comissao_ajudante) : null,
       } as FaturamentoAutoservice;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Autoservice',
   });
 
   useEffect(() => {
