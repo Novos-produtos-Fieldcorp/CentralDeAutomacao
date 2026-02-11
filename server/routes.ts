@@ -5439,6 +5439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validOperacoes: Record<string, string> = {
         mitsubishi: "operacao_mitsubishi",
         autoservice: "operacao_autoservice",
+        tegma: "operacao_tegma",
       };
 
       const tableName = validOperacoes[operacao.toLowerCase()];
@@ -5523,6 +5524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validTables: Record<string, string> = {
         mitsubishi: "faturamento_mitsubishi",
         autoservice: "faturamento_autoservice",
+        tegma: "faturamento_tegma",
       };
 
       const tableName = validTables[operacao.toLowerCase()];
@@ -5588,6 +5590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validTables: Record<string, string> = {
         mitsubishi: "faturamento_mitsubishi",
         autoservice: "faturamento_autoservice",
+        tegma: "faturamento_tegma",
       };
 
       const tableName = validTables[operacao.toLowerCase()];
