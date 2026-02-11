@@ -5446,27 +5446,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid operacao" });
       }
 
-      const { data: viagensEmpresa, error: viagensError } = await supabaseBackend
-        .from("acompanhamento_viagem")
-        .select("id, motorista_id, veiculo_id, data_hora_inicial, km_rodado")
-        .eq("company_id", companyIdNum);
-
-      if (viagensError) {
-        return res.status(500).json({ error: viagensError.message });
-      }
-
-      if (!viagensEmpresa || viagensEmpresa.length === 0) {
-        return res.json([]);
-      }
-
-      const viagemIds = viagensEmpresa.map((v: any) => v.id);
-
       const { data: opData, error: opError } = await supabaseBackend
         .from(tableName)
-        .select("*")
-        .in("id_viagem", viagemIds);
+        .select("*");
 
       if (opError) {
+        console.error("Error fetching operacao data:", opError);
         return res.status(500).json({ error: opError.message });
       }
 
@@ -5474,7 +5459,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
 
-      const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
+      const viagemIds = [...new Set(opData.map((op: any) => op.id_viagem).filter(Boolean))];
+
+      const { data: viagensEmpresa, error: viagensError } = await supabaseBackend
+        .from("acompanhamento_viagem")
+        .select("id, motorista_id, veiculo_id, data_hora_inicial, km_rodado, company_id")
+        .in("id", viagemIds);
+
+      if (viagensError) {
+        console.error("Error fetching viagens:", viagensError);
+        return res.status(500).json({ error: viagensError.message });
+      }
+
+      const viagensFiltered = (viagensEmpresa || []).filter((v: any) =>
+        v.company_id === companyIdNum || v.company_id === null
+      );
+
+      if (viagensFiltered.length === 0) {
+        return res.json([]);
+      }
+
+      const filteredViagemIds = new Set(viagensFiltered.map((v: any) => v.id));
+
+      const filteredOpData = opData.filter((op: any) => filteredViagemIds.has(op.id_viagem));
+
+      if (filteredOpData.length === 0) {
+        return res.json([]);
+      }
+
+      const motoristaIds = [...new Set(viagensFiltered.map((v: any) => v.motorista_id).filter(Boolean))];
       let motoristasMap: Record<number, string> = {};
       if (motoristaIds.length > 0) {
         const { data: motoristasData } = await supabaseBackend
@@ -5486,8 +5499,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const result = opData.map((op: any) => {
-        const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
+      const result = filteredOpData.map((op: any) => {
+        const viagem = viagensFiltered.find((v: any) => v.id === op.id_viagem);
         return {
           ...op,
           data_viagem: viagem?.data_hora_inicial,
@@ -5498,6 +5511,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error: any) {
       console.error("Error fetching operacao financeiro:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/operacoes/faturamento/:operacao", async (req, res) => {
+    try {
+      const { operacao } = req.params;
+      const body = req.body;
+
+      const validTables: Record<string, string> = {
+        mitsubishi: "faturamento_mitsubishi",
+        autoservice: "faturamento_autoservice",
+      };
+
+      const tableName = validTables[operacao.toLowerCase()];
+      if (!tableName) {
+        return res.status(400).json({ error: "Invalid operacao" });
+      }
+
+      console.log(`[POST faturamento] Saving to ${tableName}:`, body);
+
+      const { data: existing, error: fetchError } = await supabaseBackend
+        .from(tableName)
+        .select("id")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (fetchError) {
+        console.error(`[POST faturamento] Error checking existing:`, fetchError);
+        return res.status(500).json({ error: fetchError.message });
+      }
+
+      const existingId = existing?.[0]?.id;
+
+      if (existingId) {
+        const { data, error } = await supabaseBackend
+          .from(tableName)
+          .update({ ...body, updated_at: new Date().toISOString() })
+          .eq("id", existingId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error(`[POST faturamento] Update error:`, error);
+          return res.status(500).json({ error: error.message });
+        }
+
+        console.log(`[POST faturamento] Updated ${tableName} id=${existingId}`);
+        return res.json(data);
+      } else {
+        const { data, error } = await supabaseBackend
+          .from(tableName)
+          .insert([body])
+          .select()
+          .single();
+
+        if (error) {
+          console.error(`[POST faturamento] Insert error:`, error);
+          return res.status(500).json({ error: error.message });
+        }
+
+        console.log(`[POST faturamento] Inserted new row into ${tableName}`);
+        return res.json(data);
+      }
+    } catch (error: any) {
+      console.error("Error saving faturamento:", error);
       res.status(500).json({ error: error.message });
     }
   });

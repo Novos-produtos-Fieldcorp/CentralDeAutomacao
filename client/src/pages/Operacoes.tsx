@@ -4019,22 +4019,17 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         preco_por_veiculo: mitsubishiForm.preco_por_veiculo || null,
         comissao_motorista: mitsubishiForm.comissao_motorista || null,
         comissao_ajudante: mitsubishiForm.comissao_ajudante || null,
-        updated_at: new Date().toISOString(),
       };
 
-      if (currentMitsubishiPrices?.id) {
-        const { error } = await supabase
-          .from('faturamento_mitsubishi')
-          .update(updateData)
-          .eq('id', currentMitsubishiPrices.id);
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('faturamento_mitsubishi')
-          .insert([updateData]);
-        
-        if (error) throw error;
+      const response = await fetch('/api/operacoes/faturamento/mitsubishi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erro ao salvar preços');
       }
 
       await refetchMitsubishi();
@@ -4093,32 +4088,17 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         comissao_ajudante: autoserviceForm.comissao_ajudante !== null && autoserviceForm.comissao_ajudante !== undefined ? Number(autoserviceForm.comissao_ajudante) : null,
         forma_pagamento_motorista: autoserviceForm.forma_pagamento_motorista || null,
         forma_pagamento_ajudante: autoserviceForm.forma_pagamento_ajudante || null,
-        updated_at: new Date().toISOString(),
       };
 
-      const { data: existingRows, error: fetchError } = await supabase
-        .from('faturamento_autoservice')
-        .select('id')
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const response = await fetch('/api/operacoes/faturamento/autoservice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
 
-      if (fetchError) throw fetchError;
-
-      const existingId = existingRows?.[0]?.id || currentAutoservicePrices?.id;
-
-      if (existingId) {
-        const { error } = await supabase
-          .from('faturamento_autoservice')
-          .update(updateData)
-          .eq('id', existingId);
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('faturamento_autoservice')
-          .insert([updateData]);
-        
-        if (error) throw error;
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erro ao salvar preços');
       }
 
       await refetchAutoservice();
