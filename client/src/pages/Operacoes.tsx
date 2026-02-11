@@ -2781,6 +2781,17 @@ interface FaturamentoMitsubishi {
   updated_at: string | null;
 }
 
+interface FaturamentoAutoservice {
+  id: number;
+  valor_por_veiculo: number | null;
+  comissao_motorista: number | null;
+  comissao_ajudante: number | null;
+  forma_pagamento_motorista: string | null;
+  forma_pagamento_ajudante: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
 // Componente Financeiro - Lista de viagens com cálculo de faturamento
 const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
@@ -2855,6 +2866,20 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       return (data?.[0] as FaturamentoMitsubishi) || null;
     },
     enabled: selectedOperacao === 'all' || selectedOperacao === 'Mitsubishi',
+  });
+
+  const { data: precosAutoservice } = useQuery({
+    queryKey: ['faturamento-autoservice-precos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('faturamento_autoservice')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      return (data?.[0] as FaturamentoAutoservice) || null;
+    },
+    enabled: selectedOperacao === 'all' || selectedOperacao === 'Autoservice',
   });
 
   // Query para buscar viagens SADA com dados de faturamento
@@ -2993,6 +3018,48 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
     enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Mitsubishi'),
+  });
+
+  const { data: viagensAutoservice = [], isLoading: isLoadingAutoserviceViagens, isError: isErrorAutoserviceViagens } = useQuery({
+    queryKey: ['financeiro-autoservice-viagens', companyId, selectedOperacao],
+    queryFn: async () => {
+      if (!companyId) return [];
+      
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIds = viagensEmpresa.map((v: any) => v.id);
+      
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_autoservice')
+        .select('*')
+        .in('id_viagem', viagemIds);
+      
+      if (opError || !opData) return [];
+      
+      const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .in('motorista_id', motoristaIds);
+      
+      const motoristasMap: Record<number, string> = {};
+      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      
+      return opData.map((op: any) => {
+        const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          data_viagem: viagem?.data_hora_inicial,
+          motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+        };
+      }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
+    },
+    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Autoservice'),
   });
 
   const formatCurrency = (value: number) => {
@@ -3532,6 +3599,143 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     );
   };
 
+  const renderAutoserviceFinanceiro = () => {
+    if (isLoadingAutoserviceViagens) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400" data-testid="text-loading-autoservice">Carregando viagens...</span>
+        </div>
+      );
+    }
+
+    if (isErrorAutoserviceViagens) {
+      return (
+        <div className="text-center py-12" data-testid="text-error-autoservice">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar dados de faturamento.</p>
+        </div>
+      );
+    }
+
+    if (!viagensAutoservice || viagensAutoservice.length === 0) {
+      return (
+        <div className="text-center py-12" data-testid="text-empty-autoservice">
+          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma viagem AUTOSERVICE encontrada.</p>
+        </div>
+      );
+    }
+
+    const viagensFiltradas = filtrarPorPeriodo(viagensAutoservice);
+
+    const valorPorVeiculo = precosAutoservice?.valor_por_veiculo ?? 0;
+    const comissaoMotorista = precosAutoservice?.comissao_motorista ?? 0;
+    const comissaoAjudante = precosAutoservice?.comissao_ajudante ?? 0;
+
+    let totalRecebido = 0;
+    viagensFiltradas.forEach((v: any) => {
+      totalRecebido += valorPorVeiculo * (v.qtd_carro || 0);
+    });
+    const totalComissaoMotorista = viagensFiltradas.length * comissaoMotorista;
+    const totalComissaoAjudante = viagensFiltradas.length * comissaoAjudante;
+
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-autoservice-total-recebido">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Recebido</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-autoservice-total-recebido">{formatCurrency(totalRecebido)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(valorPorVeiculo)} por veículo</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-autoservice-comissao-motorista">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Comissões Motorista</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-autoservice-comissao-motorista">{formatCurrency(totalComissaoMotorista)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(comissaoMotorista)} por viagem</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-autoservice-comissao-ajudante">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Comissões Ajudante</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-autoservice-comissao-ajudante">{formatCurrency(totalComissaoAjudante)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(comissaoAjudante)} por viagem</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-autoservice-total-viagens">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-autoservice-total-viagens">{viagensFiltradas.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-full" data-testid="table-autoservice-financeiro">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem → Destino</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Qtd Veículos</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Modelo</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão Mot.</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                {viagensFiltradas.map((viagem: any) => {
+                  const valorViagem = valorPorVeiculo * (viagem.qtd_carro || 0);
+                  
+                  return (
+                    <tr key={viagem.id_operacao} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" data-testid={`row-autoservice-${viagem.id_operacao}`}>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
+                        {formatDate(viagem.data_viagem)}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {viagem.motorista_nome}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {viagem.origem || '-'} → {viagem.destino || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 text-center">
+                        {viagem.qtd_carro || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {viagem.modelo_carro || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white text-right">
+                        {formatCurrency(valorViagem)}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm font-medium text-gray-600 dark:text-gray-300 text-right">
+                        {formatCurrency(comissaoMotorista)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderFinanceiroContent = () => {
     if (selectedOperacao === 'all') {
       return (
@@ -3556,6 +3760,13 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-mitsubishi-section-title">MITSUBISHI</h3>
             </div>
             {renderMitsubishiFinanceiro()}
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-6 bg-blue-500 dark:bg-blue-400 rounded-full" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-autoservice-section-title">AUTOSERVICE</h3>
+            </div>
+            {renderAutoserviceFinanceiro()}
           </div>
         </div>
       );
@@ -3593,6 +3804,18 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-mitsubishi-financeiro-title">MITSUBISHI</h3>
           </div>
           {renderMitsubishiFinanceiro()}
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Autoservice') {
+      return (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-blue-500 dark:bg-blue-400 rounded-full" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-autoservice-financeiro-title">AUTOSERVICE</h3>
+          </div>
+          {renderAutoserviceFinanceiro()}
         </div>
       );
     }
@@ -3700,6 +3923,8 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const [superterminaisForm, setSuperterminaisForm] = useState<Partial<FaturamentoSuperterminais>>({});
   const [editingMitsubishi, setEditingMitsubishi] = useState(false);
   const [mitsubishiForm, setMitsubishiForm] = useState<Partial<FaturamentoMitsubishi>>({});
+  const [editingAutoservice, setEditingAutoservice] = useState(false);
+  const [autoserviceForm, setAutoserviceForm] = useState<Partial<FaturamentoAutoservice>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -3751,6 +3976,21 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     enabled: selectedOperacao === 'all' || selectedOperacao === 'Mitsubishi',
   });
 
+  const { data: currentAutoservicePrices, isLoading: isLoadingAutoservice, isError: isErrorAutoservice, refetch: refetchAutoservice } = useQuery({
+    queryKey: ['faturamento-autoservice-current', selectedOperacao],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('faturamento_autoservice')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      return (data?.[0] as FaturamentoAutoservice) || null;
+    },
+    enabled: selectedOperacao === 'all' || selectedOperacao === 'Autoservice',
+  });
+
   useEffect(() => {
     if (currentSadaPrices) {
       setSadaForm(currentSadaPrices);
@@ -3770,9 +4010,16 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   }, [currentMitsubishiPrices]);
 
   useEffect(() => {
+    if (currentAutoservicePrices) {
+      setAutoserviceForm(currentAutoservicePrices);
+    }
+  }, [currentAutoservicePrices]);
+
+  useEffect(() => {
     setEditingSada(false);
     setEditingSuperterminais(false);
     setEditingMitsubishi(false);
+    setEditingAutoservice(false);
     setSaveError(null);
   }, [companyId]);
 
@@ -3834,6 +4081,10 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
 
   const handleMitsubishiChange = (field: string, value: string) => {
     setMitsubishiForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAutoserviceChange = (field: string, value: string) => {
+    setAutoserviceForm(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSaveMitsubishi = async () => {
@@ -3902,6 +4153,45 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
       setEditingSuperterminais(false);
     } catch (error: any) {
       console.error('Erro ao salvar preços SUPERTERMINAIS:', error);
+      setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveAutoservice = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    
+    try {
+      const updateData = {
+        valor_por_veiculo: autoserviceForm.valor_por_veiculo !== null && autoserviceForm.valor_por_veiculo !== undefined ? Number(autoserviceForm.valor_por_veiculo) : null,
+        comissao_motorista: autoserviceForm.comissao_motorista !== null && autoserviceForm.comissao_motorista !== undefined ? Number(autoserviceForm.comissao_motorista) : null,
+        comissao_ajudante: autoserviceForm.comissao_ajudante !== null && autoserviceForm.comissao_ajudante !== undefined ? Number(autoserviceForm.comissao_ajudante) : null,
+        forma_pagamento_motorista: autoserviceForm.forma_pagamento_motorista || null,
+        forma_pagamento_ajudante: autoserviceForm.forma_pagamento_ajudante || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (currentAutoservicePrices?.id) {
+        const { error } = await supabase
+          .from('faturamento_autoservice')
+          .update(updateData)
+          .eq('id', currentAutoservicePrices.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('faturamento_autoservice')
+          .insert([updateData]);
+        
+        if (error) throw error;
+      }
+
+      await refetchAutoservice();
+      setEditingAutoservice(false);
+    } catch (error: any) {
+      console.error('Erro ao salvar preços AUTOSERVICE:', error);
       setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
     } finally {
       setIsSaving(false);
@@ -4350,6 +4640,182 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     );
   };
 
+  const renderAutoservicePrecos = () => {
+    if (isLoadingAutoservice) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-500 dark:text-gray-400" data-testid="text-loading-autoservice-precos">Carregando preços...</span>
+        </div>
+      );
+    }
+
+    if (isErrorAutoservice) {
+      return (
+        <div className="text-center py-8" data-testid="text-error-autoservice-precos">
+          <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar preços.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white" data-testid="text-autoservice-precos-title">Valores por Veículo e Comissões</h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Configure os valores de faturamento para operação Autoservice</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {editingAutoservice ? (
+              <>
+                <button
+                  onClick={() => {
+                    setEditingAutoservice(false);
+                    if (currentAutoservicePrices) setAutoserviceForm(currentAutoservicePrices);
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  data-testid="button-cancel-autoservice"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveAutoservice}
+                  disabled={isSaving}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  data-testid="button-save-autoservice"
+                >
+                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                  Salvar
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setEditingAutoservice(true)}
+                className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                data-testid="button-edit-autoservice"
+              >
+                <Edit2 className="w-3 h-3" />
+                Editar
+              </button>
+            )}
+          </div>
+        </div>
+
+        {saveError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+            <p className="text-sm text-red-600 dark:text-red-400" data-testid="text-error-save-autoservice">{saveError}</p>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor por Veículo</label>
+              {editingAutoservice ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                  <input
+                    type="text"
+                    value={autoserviceForm.valor_por_veiculo ?? ''}
+                    onChange={(e) => handleAutoserviceChange('valor_por_veiculo', e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    data-testid="input-autoservice-valor-por-veiculo"
+                  />
+                </div>
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-autoservice-valor-por-veiculo">
+                  R$ {currentAutoservicePrices?.valor_por_veiculo ?? '-'}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Motorista</label>
+              {editingAutoservice ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                  <input
+                    type="text"
+                    value={autoserviceForm.comissao_motorista ?? ''}
+                    onChange={(e) => handleAutoserviceChange('comissao_motorista', e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    data-testid="input-autoservice-comissao-motorista"
+                  />
+                </div>
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-autoservice-comissao-motorista">
+                  R$ {currentAutoservicePrices?.comissao_motorista ?? '-'}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Ajudante</label>
+              {editingAutoservice ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                  <input
+                    type="text"
+                    value={autoserviceForm.comissao_ajudante ?? ''}
+                    onChange={(e) => handleAutoserviceChange('comissao_ajudante', e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    data-testid="input-autoservice-comissao-ajudante"
+                  />
+                </div>
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-autoservice-comissao-ajudante">
+                  R$ {currentAutoservicePrices?.comissao_ajudante ?? '-'}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Forma de Pagamento Motorista</label>
+              {editingAutoservice ? (
+                <input
+                  type="text"
+                  value={autoserviceForm.forma_pagamento_motorista ?? ''}
+                  onChange={(e) => handleAutoserviceChange('forma_pagamento_motorista', e.target.value)}
+                  placeholder="Ex: PIX, Transferência"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  data-testid="input-autoservice-forma-pagamento-motorista"
+                />
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-autoservice-forma-pagamento-motorista">
+                  {currentAutoservicePrices?.forma_pagamento_motorista || '-'}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Forma de Pagamento Ajudante</label>
+              {editingAutoservice ? (
+                <input
+                  type="text"
+                  value={autoserviceForm.forma_pagamento_ajudante ?? ''}
+                  onChange={(e) => handleAutoserviceChange('forma_pagamento_ajudante', e.target.value)}
+                  placeholder="Ex: PIX, Transferência"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  data-testid="input-autoservice-forma-pagamento-ajudante"
+                />
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-autoservice-forma-pagamento-ajudante">
+                  {currentAutoservicePrices?.forma_pagamento_ajudante || '-'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            <strong>Modelo de Precificação AUTOSERVICE:</strong> Valor fixo por veículo transportado, com comissões separadas para motorista e ajudante.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   const renderPrecosContent = () => {
     if (selectedOperacao === 'all') {
       return (
@@ -4376,6 +4842,14 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
             </div>
             <div className="p-4">
               {renderMitsubishiPrecos()}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">AUTOSERVICE - Configuração de Preços</h3>
+            </div>
+            <div className="p-4">
+              {renderAutoservicePrecos()}
             </div>
           </div>
         </div>
@@ -4416,6 +4890,19 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
           </div>
           <div className="p-4">
             {renderMitsubishiPrecos()}
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Autoservice') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">AUTOSERVICE - Configuração de Preços</h3>
+          </div>
+          <div className="p-4">
+            {renderAutoservicePrecos()}
           </div>
         </div>
       );

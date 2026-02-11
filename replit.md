@@ -49,7 +49,9 @@ The application utilizes React 18 with TypeScript, Vite, Tailwind CSS, Radix UI,
     - `faturamento_sada`: Stores pricing per vehicle model (familia_basica, compass, toro, commander, jlr, rampage, titano, scudo, ducato, caminhoes) and driver commissions (comissao_motorista_prancha, comissao_motorista_cegonha).
     - `faturamento_superterminais`: Stores flat pricing (ganho_por_viagem, comissao_motorista) as integers with default values 135 and 10. No updated_at column.
     - `faturamento_mitsubishi`: Stores pricing per vehicle (preco_por_veiculo), driver commission (comissao_motorista), and helper commission (comissao_ajudante) as text strings.
+    - `faturamento_autoservice`: Stores pricing as bigint integers (valor_por_veiculo, comissao_motorista, comissao_ajudante) plus text fields (forma_pagamento_motorista, forma_pagamento_ajudante). Has updated_at column.
   - **MITSUBISHI Operation**: Per-vehicle pricing model. Revenue = preco_por_veiculo * qtd_carro per trip. Separate commissions for driver and helper. Table: `operacao_mitsubishi` (id_operacao, id_viagem FK, origem, destino, frota, tipo_carreta, qtd_carro, modelo_carro, km_chegada_porto, data_hora_chegada_porto, nr_viagem). Financeiro tab has dashboard with 4 summary cards + trip list table.
+  - **AUTOSERVICE Operation**: Per-vehicle pricing model (same as Mitsubishi). Revenue = valor_por_veiculo * qtd_carro per trip. Separate commissions for driver and helper + payment method fields. Table: `operacao_autoservice`. Financeiro tab has dashboard with 4 summary cards + trip list table. Preços tab has 5-field form (3 monetary + 2 payment method).
 - **Database Schema Notes**: The `cliente` table uses `st_cliente` (not `ativo`) for active status. City data (`nome_cidade`) should be fetched from views like `vw_agregados_completo` or `vw_motoristas_completo`, not directly from `end_motorista` table.
 - **Deployment**: Configured for Replit with Vite dev server and Express backend.
 
