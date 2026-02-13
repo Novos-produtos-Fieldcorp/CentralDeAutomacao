@@ -196,6 +196,9 @@ const HodometrosDashboard = () => {
       fetchTodayReadings();
       fetchInconsistencies();
       
+      // Always fetch driver hodometro/bomba readings for the chart
+      fetchDriverHodometroBomba();
+      
       // Fetch minutas stats if user has access
       if (moduleAccess.minuta || moduleAccess.bomba) {
         if (moduleAccess.minuta) {
@@ -203,7 +206,6 @@ const HodometrosDashboard = () => {
           fetchFilialMinutas();
           fetchDriverMinutas();
         }
-        fetchDriverHodometroBomba();
       }
       
       // Fetch bomba stats if user has access
