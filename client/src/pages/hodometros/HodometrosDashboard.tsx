@@ -196,6 +196,9 @@ const HodometrosDashboard = () => {
       fetchTodayReadings();
       fetchInconsistencies();
       
+      // Always fetch driver hodometro/bomba readings for the chart
+      fetchDriverHodometroBomba();
+      
       // Fetch minutas stats if user has access
       if (moduleAccess.minuta || moduleAccess.bomba) {
         if (moduleAccess.minuta) {
@@ -203,7 +206,6 @@ const HodometrosDashboard = () => {
           fetchFilialMinutas();
           fetchDriverMinutas();
         }
-        fetchDriverHodometroBomba();
       }
       
       // Fetch bomba stats if user has access
@@ -765,7 +767,7 @@ const HodometrosDashboard = () => {
       setVehicleMileage(vehicleMileageArray);
       setDriverReadings(driverReadingsArray);
       setOperationMileage(operationMileageArray);
-      //setTotalKm(totalKilometers);
+      setTotalKm(totalKilometers);
       setAverageKmPerDay(avgKmPerDay);
       setTotalReadings(data?.length || 0);
       
@@ -1348,11 +1350,6 @@ const HodometrosDashboard = () => {
           mediaKmPorLitro: litrosConsumidos > 0 ? stats.totalKm / litrosConsumidos : 0
         };
       });
-            // alterei aqui tbm Calculate total kilometers from all vehicles in vehicleStats
-      const totalKmFromAllVehicles = vehicleStats.reduce((sum, stats) => sum + stats.totalKm, 0);
-
-      // Update totalKm state with the sum from all vehicles
-      setTotalKm(totalKmFromAllVehicles);
       // Convert km vs price map to array, filtering out invalid plates
       const kmVsPrice = Array.from(kmVsPriceMap.entries())
         .filter(([placa]) => placa && placa !== 'DESCONHECIDA' && placa.length >= 7)

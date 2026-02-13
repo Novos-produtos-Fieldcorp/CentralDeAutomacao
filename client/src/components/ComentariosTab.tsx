@@ -37,12 +37,15 @@ const ComentariosTab: React.FC<ComentariosTabProps> = ({
     }
   }, [error]);
 
-  // Call onUpdateSuccess when data changes (for parent component updates)
+  const comentariosLength = comentarios?.length ?? 0;
+  const prevLengthRef = React.useRef(comentariosLength);
+
   React.useEffect(() => {
-    if (comentarios && onUpdateSuccess) {
-      onUpdateSuccess();
+    if (comentariosLength !== prevLengthRef.current) {
+      prevLengthRef.current = comentariosLength;
+      onUpdateSuccess?.();
     }
-  }, [comentarios, onUpdateSuccess]);
+  }, [comentariosLength]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
