@@ -1615,6 +1615,20 @@ const StatCard = ({
 
 // Dashboard SADA
 const SadaDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: sadaPricing } = useQuery({
+    queryKey: ['faturamento-sada', companyId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('faturamento_sada')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      return data?.[0] || null;
+    },
+    enabled: !!companyId,
+  });
+
   const { data: sadaData = [], isLoading } = useQuery({
     queryKey: ['sada-dashboard', companyId],
     queryFn: async () => {
@@ -1678,6 +1692,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
     const totalViagens = sadaData.length;
     let kmTotal = 0;
     let volumeJantas = 0;
+    let comissaoTotal = 0;
     const kmPorMotorista: Record<string, number> = {};
     const carrosPorMotorista: Record<string, number> = {};
     const kmPorCavalo: Record<string, number> = {};
@@ -1690,6 +1705,16 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
       const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
       if (viagem.janta) volumeJantas++;
+
+      if (sadaPricing) {
+        if (item.tipo_carreta === 1) {
+          const comCegonha = parseFloat(sadaPricing.comissao_motorista_cegonha) || 0;
+          comissaoTotal += comCegonha * (item.qtd_carros || 0);
+        } else {
+          const comPrancha = parseFloat(sadaPricing.comissao_motorista_prancha) || 0;
+          comissaoTotal += comPrancha;
+        }
+      }
 
       const motoristaNome = viagem.motorista_nome || 'Desconhecido';
       const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
@@ -1708,6 +1733,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
       totalViagens,
       kmTotal,
       volumeJantas,
+      comissaoTotal,
       kmPorMotorista: Object.entries(kmPorMotorista)
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => b.value - a.value),
@@ -1721,7 +1747,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     };
-  }, [sadaData]);
+  }, [sadaData, sadaPricing]);
 
   if (isLoading) {
     return (
@@ -1796,6 +1822,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
             <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Comissão - SADA" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -1805,6 +1832,20 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
 
 // Dashboard TEGMA
 const TegmaDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: tegmaPricing } = useQuery({
+    queryKey: ['faturamento-tegma', companyId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('faturamento_tegma')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      return data?.[0] || null;
+    },
+    enabled: !!companyId,
+  });
+
   const { data: tegmaData = [], isLoading } = useQuery({
     queryKey: ['tegma-dashboard', companyId],
     queryFn: async () => {
@@ -1867,6 +1908,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
     const totalViagens = tegmaData.length;
     let kmTotal = 0;
     let volumeJantas = 0;
+    let comissaoTotal = 0;
     const kmPorMotorista: Record<string, number> = {};
     const carrosPorMotorista: Record<string, number> = {};
     const kmPorCavalo: Record<string, number> = {};
@@ -1879,6 +1921,15 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
       const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
       if (viagem.janta) volumeJantas++;
+
+      if (tegmaPricing) {
+        const tipoViagem = (item.tipo_viagem || '').toString().toLowerCase();
+        if (tipoViagem.includes('vazi')) {
+          comissaoTotal += parseFloat(tegmaPricing.comissao_motorista_carreta_vazia) || 0;
+        } else {
+          comissaoTotal += parseFloat(tegmaPricing.comissao_motorista_carreta_cheia) || 0;
+        }
+      }
 
       const motoristaNome = viagem.motorista_nome || 'Desconhecido';
       const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
@@ -1897,6 +1948,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
       totalViagens,
       kmTotal,
       volumeJantas,
+      comissaoTotal,
       kmPorMotorista: Object.entries(kmPorMotorista)
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => b.value - a.value),
@@ -1910,7 +1962,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     };
-  }, [tegmaData]);
+  }, [tegmaData, tegmaPricing]);
 
   if (isLoading) {
     return (
@@ -1985,6 +2037,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
             <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Comissão - TEGMA" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -1994,6 +2047,20 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
 
 // Dashboard SUPERTERMINAIS
 const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: superPricing } = useQuery({
+    queryKey: ['faturamento-superterminais', companyId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('faturamento_superterminais')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      return data?.[0] || null;
+    },
+    enabled: !!companyId,
+  });
+
   const { data: superData = [], isLoading } = useQuery({
     queryKey: ['superterminais-dashboard', companyId],
     queryFn: async () => {
@@ -2056,6 +2123,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
     const totalViagens = superData.length;
     let containersCheio = 0;
     let containersVazio = 0;
+    const comissaoMotorista = superPricing ? (parseFloat(superPricing.comissao_motorista) || 0) : 0;
     const containersPorMotorista: Record<string, number> = {};
     const containersPorCavalo: Record<string, number> = {};
     const viagensPorMes: Record<string, number> = {};
@@ -2083,6 +2151,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
       totalViagens,
       containersCheio,
       containersVazio,
+      comissaoTotal: totalViagens * comissaoMotorista,
       containersPorMotorista: Object.entries(containersPorMotorista)
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => b.value - a.value),
@@ -2093,7 +2162,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     };
-  }, [superData]);
+  }, [superData, superPricing]);
 
   if (isLoading) {
     return (
@@ -2163,6 +2232,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
             <StatCard label="Volume de Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="Containers Cheio" value={stats.containersCheio} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="Containers Vazio" value={stats.containersVazio} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Comissão - Super Terminais" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -2233,6 +2303,7 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
   const stats = useMemo(() => {
     const totalViagens = cesariData.length;
     let kmTotal = 0;
+    let comissaoTotal = 0;
     const kmPorMotorista: Record<string, number> = {};
     const kmPorCavalo: Record<string, number> = {};
     const viagensPorMes: Record<string, number> = {};
@@ -2243,6 +2314,18 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
 
       const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
+
+      const tipoViagem = (item.tipo_viagem || '').toString().toLowerCase();
+      if (tipoViagem.includes('solteira')) {
+        comissaoTotal += 250;
+      } else {
+        comissaoTotal += 300;
+        if (item.v2_origem || item.v2_destino) {
+          comissaoTotal += 300;
+        }
+      }
+      if (item.pernoite) comissaoTotal += 100;
+      if (item.dia_nao_util) comissaoTotal += 100;
 
       const motoristaNome = viagem.motorista_nome || 'Desconhecido';
       const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
@@ -2259,6 +2342,7 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
     return {
       totalViagens,
       kmTotal,
+      comissaoTotal,
       kmPorMotorista: Object.entries(kmPorMotorista)
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => b.value - a.value),
@@ -2338,6 +2422,7 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
           <div className="space-y-4">
             <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(2)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Comissão - CESARI" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
