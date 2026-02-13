@@ -6004,7 +6004,7 @@ const Operacoes = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Operações</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Acompanhamento de Viagem</h1>
         
         <div className="relative">
           <button
