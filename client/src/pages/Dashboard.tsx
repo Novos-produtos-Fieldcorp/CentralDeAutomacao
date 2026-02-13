@@ -1161,7 +1161,7 @@ const OperacoesHeroCard = ({ hasAccess = true, companyId }: { hasAccess?: boolea
           </div>
           <div>
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
-              Operações
+              Acompanhamento de Viagem
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Viagens e transporte
