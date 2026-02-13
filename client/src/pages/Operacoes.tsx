@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2 } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useState as useStateReact } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
@@ -700,7 +700,7 @@ const PERIODOS_HISTOGRAMA = [
   { id: 'custom' as HistogramaPeriodo, label: 'Personalizado', dias: 0 },
 ];
 
-type StatsModalType = 'total' | 'hoje' | 'emAndamento' | 'concluidas' | null;
+type StatsModalType = 'total' | 'hoje' | 'emAndamento' | 'concluidas' | 'operacoes' | null;
 
 const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
@@ -995,6 +995,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
       case 'hoje': return 'Viagens de Hoje';
       case 'emAndamento': return 'Viagens Em Andamento';
       case 'concluidas': return 'Viagens Concluídas';
+      case 'operacoes': return 'Operações Ativas';
       default: return 'Viagens';
     }
   };
@@ -1160,7 +1161,13 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.total || 0}</p>
         </SpotlightCard>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <SpotlightCard 
+          as="button"
+          type="button"
+          onClick={() => setStatsModalOpen('operacoes')}
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-left hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
+          data-testid="card-operacoes"
+        >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Operações</span>
             <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
@@ -1168,7 +1175,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{OPERACOES_TABELAS.length}</p>
-        </div>
+        </SpotlightCard>
 
         <SpotlightCard 
           as="button"
@@ -1223,7 +1230,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
       {statsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4" onClick={() => setStatsModalOpen(null)}>
           <div 
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden"
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-h-[90vh] overflow-hidden ${statsModalOpen === 'operacoes' ? 'max-w-sm' : 'max-w-6xl'}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700">
@@ -1238,7 +1245,35 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             </div>
             
             <div className="overflow-auto max-h-[calc(90vh-60px)] overscroll-contain">
-              {isLoadingViagensDetalhadas ? (
+              {statsModalOpen === 'operacoes' ? (
+                <div data-testid="operacoes-modal-content">
+                  {operacoesStats.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                      <LayoutDashboard className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>Nenhuma operação encontrada</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                      {operacoesStats.map((op: any) => (
+                        <div 
+                          key={op.nome} 
+                          className="flex items-center justify-between px-5 py-3.5"
+                          data-testid={`operacao-item-${op.nome.toLowerCase()}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap ${getOperacaoColor(op.nome)}`}>
+                              {op.nome}
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white tabular-nums">
+                            {op.total} {op.total === 1 ? 'viagem' : 'viagens'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : isLoadingViagensDetalhadas ? (
                 <div className="p-6">
                   <div className="animate-pulse space-y-3">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -1440,10 +1475,10 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                           <div 
                             className={`w-full max-w-[20px] rounded-t-sm transition-all duration-300 ${
                               isToday 
-                                ? 'bg-blue-700 dark:bg-blue-300' 
+                                ? 'bg-amber-500 dark:bg-amber-400' 
                                 : isWeekend 
-                                  ? 'bg-blue-300 dark:bg-blue-700' 
-                                  : 'bg-blue-500 dark:bg-blue-400'
+                                  ? 'bg-rose-400 dark:bg-rose-500' 
+                                  : 'bg-teal-500 dark:bg-teal-400'
                             } group-hover:opacity-70`}
                             style={{ height: `${Math.max(heightPercent, dia.total > 0 ? 8 : 2)}%` }}
                           />
@@ -1469,15 +1504,15 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                 
                 <div className="flex items-center justify-center gap-6 pt-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-blue-500 dark:bg-blue-400" />
+                    <div className="w-3 h-3 rounded-sm bg-teal-500 dark:bg-teal-400" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Dias úteis</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-blue-300 dark:bg-blue-700" />
+                    <div className="w-3 h-3 rounded-sm bg-rose-400 dark:bg-rose-500" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Fim de semana</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-blue-700 dark:bg-blue-300" />
+                    <div className="w-3 h-3 rounded-sm bg-amber-500 dark:bg-amber-400" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Hoje</span>
                   </div>
                 </div>
@@ -1512,7 +1547,7 @@ const HorizontalBarChart = ({
   data, 
   valueKey = 'value',
   labelKey = 'label',
-  color = 'bg-primary'
+  color = 'bg-teal-500'
 }: { 
   title: string; 
   data: Array<{ label: string; value: number }>; 
@@ -1542,9 +1577,9 @@ const HorizontalBarChart = ({
             <div className="w-24 text-xs text-gray-600 dark:text-gray-400 truncate" title={item.label}>
               {item.label}
             </div>
-            <div className="flex-1 h-6 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
+            <div className="flex-1 h-6 bg-gray-50 dark:bg-gray-700/50 rounded overflow-hidden">
               <div 
-                className={`h-full ${color} transition-all duration-300`}
+                className={`h-full ${color} rounded-md transition-all duration-300`}
                 style={{ width: `${(item.value / maxValue) * 100}%` }}
               />
             </div>
@@ -1580,6 +1615,20 @@ const StatCard = ({
 
 // Dashboard SADA
 const SadaDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: sadaPricing } = useQuery({
+    queryKey: ['faturamento-sada', companyId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('faturamento_sada')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      return data?.[0] || null;
+    },
+    enabled: !!companyId,
+  });
+
   const { data: sadaData = [], isLoading } = useQuery({
     queryKey: ['sada-dashboard', companyId],
     queryFn: async () => {
@@ -1643,6 +1692,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
     const totalViagens = sadaData.length;
     let kmTotal = 0;
     let volumeJantas = 0;
+    let comissaoTotal = 0;
     const kmPorMotorista: Record<string, number> = {};
     const carrosPorMotorista: Record<string, number> = {};
     const kmPorCavalo: Record<string, number> = {};
@@ -1655,6 +1705,16 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
       const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
       if (viagem.janta) volumeJantas++;
+
+      if (sadaPricing) {
+        if (item.tipo_carreta === 1) {
+          const comCegonha = parseFloat(sadaPricing.comissao_motorista_cegonha) || 0;
+          comissaoTotal += comCegonha * (item.qtd_carros || 0);
+        } else {
+          const comPrancha = parseFloat(sadaPricing.comissao_motorista_prancha) || 0;
+          comissaoTotal += comPrancha;
+        }
+      }
 
       const motoristaNome = viagem.motorista_nome || 'Desconhecido';
       const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
@@ -1673,6 +1733,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
       totalViagens,
       kmTotal,
       volumeJantas,
+      comissaoTotal,
       kmPorMotorista: Object.entries(kmPorMotorista)
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => b.value - a.value),
@@ -1686,7 +1747,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     };
-  }, [sadaData]);
+  }, [sadaData, sadaPricing]);
 
   if (isLoading) {
     return (
@@ -1718,38 +1779,40 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-blue-600 dark:bg-blue-400"
+                color="bg-teal-500 dark:bg-teal-400"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-blue-500 dark:bg-blue-500"
+                color="bg-teal-500 dark:bg-teal-400"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-blue-400 dark:bg-blue-600"
+                color="bg-teal-500 dark:bg-teal-400"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="flex items-end gap-2 h-32 overflow-x-auto pb-2">
-                  {stats.viagensPorMes.map((item, index) => {
-                    const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                    const heightPercent = (item.value / maxVal) * 100;
-                    return (
-                      <div key={index} className="flex flex-col items-center min-w-[60px]">
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
-                        <div 
-                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
-                          style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                        />
-                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                      </div>
-                    );
-                  })}
+                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+                    {stats.viagensPorMes.map((item, index) => {
+                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                      const heightPercent = (item.value / maxVal) * 100;
+                      return (
+                        <div key={index} className="flex flex-col items-center min-w-[60px]">
+                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                          <div 
+                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
+                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
@@ -1761,6 +1824,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
             <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Comissão - SADA" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -1770,6 +1834,20 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
 
 // Dashboard TEGMA
 const TegmaDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: tegmaPricing } = useQuery({
+    queryKey: ['faturamento-tegma', companyId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('faturamento_tegma')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      return data?.[0] || null;
+    },
+    enabled: !!companyId,
+  });
+
   const { data: tegmaData = [], isLoading } = useQuery({
     queryKey: ['tegma-dashboard', companyId],
     queryFn: async () => {
@@ -1832,6 +1910,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
     const totalViagens = tegmaData.length;
     let kmTotal = 0;
     let volumeJantas = 0;
+    let comissaoTotal = 0;
     const kmPorMotorista: Record<string, number> = {};
     const carrosPorMotorista: Record<string, number> = {};
     const kmPorCavalo: Record<string, number> = {};
@@ -1844,6 +1923,15 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
       const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
       if (viagem.janta) volumeJantas++;
+
+      if (tegmaPricing) {
+        const tipoViagem = (item.tipo_viagem || '').toString().toLowerCase();
+        if (tipoViagem.includes('vazi')) {
+          comissaoTotal += parseFloat(tegmaPricing.comissao_motorista_carreta_vazia) || 0;
+        } else {
+          comissaoTotal += parseFloat(tegmaPricing.comissao_motorista_carreta_cheia) || 0;
+        }
+      }
 
       const motoristaNome = viagem.motorista_nome || 'Desconhecido';
       const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
@@ -1862,6 +1950,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
       totalViagens,
       kmTotal,
       volumeJantas,
+      comissaoTotal,
       kmPorMotorista: Object.entries(kmPorMotorista)
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => b.value - a.value),
@@ -1875,7 +1964,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     };
-  }, [tegmaData]);
+  }, [tegmaData, tegmaPricing]);
 
   if (isLoading) {
     return (
@@ -1907,38 +1996,40 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-blue-600 dark:bg-blue-400"
+                color="bg-teal-500 dark:bg-teal-400"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-blue-500 dark:bg-blue-500"
+                color="bg-teal-500 dark:bg-teal-400"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-blue-400 dark:bg-blue-600"
+                color="bg-teal-500 dark:bg-teal-400"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="flex items-end gap-2 h-32 overflow-x-auto pb-2">
-                  {stats.viagensPorMes.map((item, index) => {
-                    const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                    const heightPercent = (item.value / maxVal) * 100;
-                    return (
-                      <div key={index} className="flex flex-col items-center min-w-[60px]">
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
-                        <div 
-                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
-                          style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                        />
-                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                      </div>
-                    );
-                  })}
+                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+                    {stats.viagensPorMes.map((item, index) => {
+                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                      const heightPercent = (item.value / maxVal) * 100;
+                      return (
+                        <div key={index} className="flex flex-col items-center min-w-[60px]">
+                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                          <div 
+                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
+                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
@@ -1950,6 +2041,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
             <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Comissão - TEGMA" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -1959,6 +2051,20 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
 
 // Dashboard SUPERTERMINAIS
 const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: superPricing } = useQuery({
+    queryKey: ['faturamento-superterminais', companyId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('faturamento_superterminais')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      return data?.[0] || null;
+    },
+    enabled: !!companyId,
+  });
+
   const { data: superData = [], isLoading } = useQuery({
     queryKey: ['superterminais-dashboard', companyId],
     queryFn: async () => {
@@ -2021,6 +2127,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
     const totalViagens = superData.length;
     let containersCheio = 0;
     let containersVazio = 0;
+    const comissaoMotorista = superPricing ? (parseFloat(superPricing.comissao_motorista) || 0) : 0;
     const containersPorMotorista: Record<string, number> = {};
     const containersPorCavalo: Record<string, number> = {};
     const viagensPorMes: Record<string, number> = {};
@@ -2048,6 +2155,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
       totalViagens,
       containersCheio,
       containersVazio,
+      comissaoTotal: totalViagens * comissaoMotorista,
       containersPorMotorista: Object.entries(containersPorMotorista)
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => b.value - a.value),
@@ -2058,7 +2166,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     };
-  }, [superData]);
+  }, [superData, superPricing]);
 
   if (isLoading) {
     return (
@@ -2090,33 +2198,35 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="Containers por Motorista" 
                 data={stats.containersPorMotorista}
-                color="bg-blue-600 dark:bg-blue-400"
+                color="bg-teal-500 dark:bg-teal-400"
               />
               <HorizontalBarChart 
                 title="Containers por Cavalo" 
                 data={stats.containersPorCavalo}
-                color="bg-blue-500 dark:bg-blue-500"
+                color="bg-teal-500 dark:bg-teal-400"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Volume de Viagens - Super Terminais por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="flex items-end gap-2 h-32 overflow-x-auto pb-2">
-                  {stats.viagensPorMes.map((item, index) => {
-                    const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                    const heightPercent = (item.value / maxVal) * 100;
-                    return (
-                      <div key={index} className="flex flex-col items-center min-w-[60px]">
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
-                        <div 
-                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
-                          style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                        />
-                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                      </div>
-                    );
-                  })}
+                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+                    {stats.viagensPorMes.map((item, index) => {
+                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                      const heightPercent = (item.value / maxVal) * 100;
+                      return (
+                        <div key={index} className="flex flex-col items-center min-w-[60px]">
+                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                          <div 
+                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
+                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
@@ -2128,6 +2238,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
             <StatCard label="Volume de Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="Containers Cheio" value={stats.containersCheio} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="Containers Vazio" value={stats.containersVazio} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Comissão - Super Terminais" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -2198,9 +2309,13 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
   const stats = useMemo(() => {
     const totalViagens = cesariData.length;
     let kmTotal = 0;
+    let comissaoTotal = 0;
     const kmPorMotorista: Record<string, number> = {};
     const kmPorCavalo: Record<string, number> = {};
     const viagensPorMes: Record<string, number> = {};
+    const comissaoPorMotorista: Record<string, number> = {};
+    const datasUnicas = new Set<string>();
+    const viagensPorData: Record<string, number> = {};
 
     cesariData.forEach((item: any) => {
       const viagem = item.viagem;
@@ -2209,8 +2324,24 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
       const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
 
+      let comissaoItem = 0;
+      const tipoViagem = (item.tipo_viagem || '').toString().toLowerCase();
+      if (tipoViagem.includes('solteira')) {
+        comissaoItem += 250;
+      } else {
+        comissaoItem += 300;
+        if (item.v2_origem || item.v2_destino) {
+          comissaoItem += 300;
+        }
+      }
+      if (item.pernoite) comissaoItem += 100;
+      if (item.dia_nao_util) comissaoItem += 100;
+      comissaoTotal += comissaoItem;
+
       const motoristaNome = viagem.motorista_nome || 'Desconhecido';
       const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
+
+      comissaoPorMotorista[motoristaNome] = (comissaoPorMotorista[motoristaNome] || 0) + comissaoItem;
 
       kmPorMotorista[motoristaNome] = (kmPorMotorista[motoristaNome] || 0) + (km > 0 ? km : 0);
       kmPorCavalo[veiculoPlaca] = (kmPorCavalo[veiculoPlaca] || 0) + (km > 0 ? km : 0);
@@ -2218,12 +2349,18 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
       if (viagem.data_hora_inicial) {
         const mes = viagem.data_hora_inicial.substring(0, 7);
         viagensPorMes[mes] = (viagensPorMes[mes] || 0) + 1;
+        const dataStr = viagem.data_hora_inicial.substring(0, 10);
+        datasUnicas.add(dataStr);
+        viagensPorData[dataStr] = (viagensPorData[dataStr] || 0) + 1;
       }
     });
+
+    const diasTrabalhados = datasUnicas.size;
 
     return {
       totalViagens,
       kmTotal,
+      comissaoTotal,
       kmPorMotorista: Object.entries(kmPorMotorista)
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => b.value - a.value),
@@ -2231,6 +2368,13 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => b.value - a.value),
       viagensPorMes: Object.entries(viagensPorMes)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+      comissaoPorMotorista: Object.entries(comissaoPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      diasTrabalhados,
+      viagensPorData: Object.entries(viagensPorData)
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     };
@@ -2266,30 +2410,92 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-blue-600 dark:bg-blue-400"
+                color="bg-teal-500 dark:bg-teal-400"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-blue-500 dark:bg-blue-500"
+                color="bg-teal-500 dark:bg-teal-400"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens - CESARI por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="flex items-end gap-2 h-32 overflow-x-auto pb-2">
-                  {stats.viagensPorMes.map((item, index) => {
-                    const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+                    {stats.viagensPorMes.map((item, index) => {
+                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                      const heightPercent = (item.value / maxVal) * 100;
+                      return (
+                        <div key={index} className="flex flex-col items-center min-w-[60px]">
+                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                          <div 
+                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
+                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+              )}
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Comissão Cesari por Ano, Mês e EMPRESA</h4>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Dias trabalhados: {stats.diasTrabalhados}</span>
+              </div>
+              {stats.comissaoPorMotorista.length > 0 ? (
+                <div className="flex items-end gap-3 h-48 overflow-x-auto pb-2">
+                  {stats.comissaoPorMotorista.map((item, index) => {
+                    const maxVal = Math.max(...stats.comissaoPorMotorista.map(v => v.value), 1);
                     const heightPercent = (item.value / maxVal) * 100;
                     return (
-                      <div key={index} className="flex flex-col items-center min-w-[60px]">
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
+                      <div key={index} className="flex flex-col items-center min-w-[80px]">
+                        <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1 whitespace-nowrap">
+                          R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        </span>
                         <div 
-                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
-                          style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          className="w-14 bg-teal-500 dark:bg-teal-400 rounded-t transition-all duration-300"
+                          style={{ height: `${Math.max(heightPercent, 5)}%`, minHeight: '8px' }}
                         />
-                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        <span className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center leading-tight max-w-[80px] truncate" title={item.label}>
+                          {item.label.split(' ')[0]}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+              )}
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Contagem de TIPO DE VIAGEM por Ano, Mês e DATA</h4>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Dias trabalhados: {stats.diasTrabalhados}</span>
+              </div>
+              {stats.viagensPorData.length > 0 ? (
+                <div className="flex items-end gap-2 h-40 overflow-x-auto pb-2">
+                  {stats.viagensPorData.map((item, index) => {
+                    const maxVal = Math.max(...stats.viagensPorData.map(v => v.value), 1);
+                    const heightPercent = (item.value / maxVal) * 100;
+                    const parts = item.label.split('-');
+                    const dateLabel = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    return (
+                      <div key={index} className="flex flex-col items-center min-w-[55px]">
+                        <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                        <div 
+                          className="w-10 bg-teal-500 dark:bg-teal-400 rounded-t transition-all duration-300"
+                          style={{ height: `${Math.max(heightPercent, 5)}%`, minHeight: '8px' }}
+                        />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-nowrap">{dateLabel}</span>
                       </div>
                     );
                   })}
@@ -2303,6 +2509,7 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
           <div className="space-y-4">
             <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
             <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(2)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Comissão - CESARI" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
       </div>
@@ -2781,6 +2988,42 @@ interface FaturamentoMitsubishi {
   updated_at: string | null;
 }
 
+interface FaturamentoAutoservice {
+  id: number;
+  valor_por_veiculo: number | null;
+  comissao_motorista: number | null;
+  comissao_ajudante: number | null;
+  forma_pagamento_motorista: string | null;
+  forma_pagamento_ajudante: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+interface FaturamentoTegma {
+  id: number;
+  valor_por_trecho: number | null;
+  comissao_motorista_carreta_vazia: number | null;
+  comissao_motorista_carreta_cheia: number | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+interface FaturamentoCesari {
+  id: number;
+  local: string;
+  tipo_carga: string;
+  sentido: string;
+  destino_especial: string | null;
+  valor_frete: number;
+  valor_pernoite: number;
+  comissao_motorista: number;
+  comissao_pernoite_feriado_motorista: number;
+  ativo: boolean;
+  observacoes: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
 // Componente Financeiro - Lista de viagens com cálculo de faturamento
 const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
@@ -2821,12 +3064,11 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         .limit(1);
       
       if (error) throw error;
-      return data?.[0] as FaturamentoSada | null;
+      return (data?.[0] as FaturamentoSada) || null;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Sada',
+    enabled: !!companyId,
   });
 
-  // Query para buscar os preços atuais da SUPERTERMINAIS
   const { data: precosSuperterminais } = useQuery({
     queryKey: ['faturamento-superterminais-precos'],
     queryFn: async () => {
@@ -2837,18 +3079,45 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         .limit(1);
       
       if (error) throw error;
-      return data?.[0] as FaturamentoSuperterminais | null;
+      return (data?.[0] as FaturamentoSuperterminais) || null;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Superterminais',
+    enabled: !!companyId,
+  });
+
+  const { data: precosMitsubishi } = useQuery({
+    queryKey: ['faturamento-mitsubishi-precos'],
+    queryFn: async () => {
+      const response = await fetch('/api/operacoes/faturamento/mitsubishi');
+      if (!response.ok) throw new Error('Erro ao buscar preços Mitsubishi');
+      const data = await response.json();
+      return (data as FaturamentoMitsubishi) || null;
+    },
+    enabled: !!companyId,
+  });
+
+  const { data: precosAutoservice } = useQuery({
+    queryKey: ['faturamento-autoservice-precos'],
+    queryFn: async () => {
+      const response = await fetch('/api/operacoes/faturamento/autoservice');
+      if (!response.ok) throw new Error('Erro ao buscar preços Autoservice');
+      const data = await response.json();
+      if (!data) return null;
+      return {
+        ...data,
+        valor_por_veiculo: data.valor_por_veiculo != null ? Number(data.valor_por_veiculo) : null,
+        comissao_motorista: data.comissao_motorista != null ? Number(data.comissao_motorista) : null,
+        comissao_ajudante: data.comissao_ajudante != null ? Number(data.comissao_ajudante) : null,
+      } as FaturamentoAutoservice;
+    },
+    enabled: !!companyId,
   });
 
   // Query para buscar viagens SADA com dados de faturamento
   const { data: viagensSada = [], isLoading: isLoadingSada, isError: isErrorSada } = useQuery({
-    queryKey: ['financeiro-sada-viagens', companyId, selectedOperacao],
+    queryKey: ['financeiro-sada-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
       
-      // Buscar viagens da empresa
       const { data: viagensEmpresa } = await supabase
         .from('acompanhamento_viagem')
         .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado')
@@ -2858,7 +3127,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       
       const viagemIds = viagensEmpresa.map((v: any) => v.id);
       
-      // Buscar operações SADA
       const { data: opData, error: opError } = await supabase
         .from('operacao_sada')
         .select('*')
@@ -2866,7 +3134,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       
       if (opError || !opData) return [];
       
-      // Buscar motoristas
       const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
       const { data: motoristasData } = await supabase
         .from('motorista')
@@ -2876,7 +3143,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       const motoristasMap: Record<number, string> = {};
       (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
       
-      // Combinar dados
       return opData.map((op: any) => {
         const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
         return {
@@ -2886,16 +3152,15 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
-    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Sada'),
+    enabled: !!companyId,
   });
 
   // Query para buscar viagens SUPERTERMINAIS com dados de faturamento
   const { data: viagensSuperterminais = [], isLoading: isLoadingSuperterminais, isError: isErrorSuperterminais } = useQuery({
-    queryKey: ['financeiro-superterminais-viagens', companyId, selectedOperacao],
+    queryKey: ['financeiro-superterminais-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
       
-      // Buscar viagens da empresa
       const { data: viagensEmpresa } = await supabase
         .from('acompanhamento_viagem')
         .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado')
@@ -2905,7 +3170,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       
       const viagemIds = viagensEmpresa.map((v: any) => v.id);
       
-      // Buscar operações SUPERTERMINAIS
       const { data: opData, error: opError } = await supabase
         .from('operacao_superterminais')
         .select('*')
@@ -2913,7 +3177,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       
       if (opError || !opData) return [];
       
-      // Buscar motoristas
       const motoristaIds = [...new Set(viagensEmpresa.map((v: any) => v.motorista_id).filter(Boolean))];
       const { data: motoristasData } = await supabase
         .from('motorista')
@@ -2925,7 +3188,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         motoristasMap[m.motorista_id] = m.nome;
       });
       
-      // Combinar dados
       return opData.map((op: any) => {
         const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
         return {
@@ -2935,7 +3197,70 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
-    enabled: !!companyId && (selectedOperacao === 'all' || selectedOperacao === 'Superterminais'),
+    enabled: !!companyId,
+  });
+
+  const { data: viagensMitsubishi = [], isLoading: isLoadingMitsubishiViagens, isError: isErrorMitsubishiViagens } = useQuery({
+    queryKey: ['financeiro-mitsubishi-viagens', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const response = await fetch(`/api/operacoes/financeiro/mitsubishi/${companyId}`);
+      if (!response.ok) throw new Error('Erro ao buscar viagens Mitsubishi');
+      return response.json();
+    },
+    enabled: !!companyId,
+  });
+
+  const { data: viagensAutoservice = [], isLoading: isLoadingAutoserviceViagens, isError: isErrorAutoserviceViagens } = useQuery({
+    queryKey: ['financeiro-autoservice-viagens', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const response = await fetch(`/api/operacoes/financeiro/autoservice/${companyId}`);
+      if (!response.ok) throw new Error('Erro ao buscar viagens Autoservice');
+      return response.json();
+    },
+    enabled: !!companyId,
+  });
+
+  const { data: precosTegma } = useQuery({
+    queryKey: ['faturamento-tegma-precos'],
+    queryFn: async () => {
+      const response = await fetch('/api/operacoes/faturamento/tegma');
+      if (!response.ok) throw new Error('Erro ao buscar preços Tegma');
+      const data = await response.json();
+      return data as FaturamentoTegma;
+    },
+  });
+
+  const { data: viagensTegma = [], isLoading: isLoadingTegmaViagens, isError: isErrorTegmaViagens } = useQuery({
+    queryKey: ['financeiro-tegma-viagens', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const response = await fetch(`/api/operacoes/financeiro/tegma/${companyId}`);
+      if (!response.ok) throw new Error('Erro ao buscar viagens Tegma');
+      return response.json();
+    },
+    enabled: !!companyId,
+  });
+
+  const { data: viagensCesari = [], isLoading: isLoadingCesariViagens, isError: isErrorCesariViagens } = useQuery({
+    queryKey: ['financeiro-cesari-viagens', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const response = await fetch(`/api/operacoes/financeiro/cesari/${companyId}`);
+      if (!response.ok) throw new Error('Erro ao buscar viagens Cesari');
+      return response.json();
+    },
+    enabled: !!companyId,
+  });
+
+  const { data: precosCesari = [] } = useQuery({
+    queryKey: ['faturamento-cesari-financeiro'],
+    queryFn: async () => {
+      const response = await fetch('/api/operacoes/faturamento/cesari');
+      if (!response.ok) return [];
+      return response.json() as Promise<FaturamentoCesari[]>;
+    },
   });
 
   const formatCurrency = (value: number) => {
@@ -3338,7 +3663,615 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     );
   };
 
-  // Renderização baseada na operação selecionada
+  const renderMitsubishiFinanceiro = () => {
+    if (isLoadingMitsubishiViagens) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400" data-testid="text-loading-mitsubishi">Carregando viagens...</span>
+        </div>
+      );
+    }
+
+    if (isErrorMitsubishiViagens) {
+      return (
+        <div className="text-center py-12" data-testid="text-error-mitsubishi">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar dados de faturamento.</p>
+        </div>
+      );
+    }
+
+    if (!viagensMitsubishi || viagensMitsubishi.length === 0) {
+      return (
+        <div className="text-center py-12" data-testid="text-empty-mitsubishi">
+          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma viagem MITSUBISHI encontrada.</p>
+        </div>
+      );
+    }
+
+    const viagensFiltradas = filtrarPorPeriodo(viagensMitsubishi);
+
+    const precoPorVeiculo = parsePreco(precosMitsubishi?.preco_por_veiculo || '0');
+    const comissaoMotorista = parsePreco(precosMitsubishi?.comissao_motorista || '0');
+    const comissaoAjudante = parsePreco(precosMitsubishi?.comissao_ajudante || '0');
+
+    let totalRecebido = 0;
+    viagensFiltradas.forEach((v: any) => {
+      totalRecebido += precoPorVeiculo * (v.qtd_carro || 0);
+    });
+    const totalComissaoMotorista = viagensFiltradas.length * comissaoMotorista;
+    const totalComissaoAjudante = viagensFiltradas.length * comissaoAjudante;
+
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-mitsubishi-total-recebido">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Recebido</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-mitsubishi-total-recebido">{formatCurrency(totalRecebido)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(precoPorVeiculo)} por veículo</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-mitsubishi-comissao-motorista">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Comissões Motorista</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-mitsubishi-comissao-motorista">{formatCurrency(totalComissaoMotorista)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(comissaoMotorista)} por viagem</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-mitsubishi-comissao-ajudante">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Comissões Ajudante</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-mitsubishi-comissao-ajudante">{formatCurrency(totalComissaoAjudante)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(comissaoAjudante)} por viagem</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-mitsubishi-total-viagens">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-mitsubishi-total-viagens">{viagensFiltradas.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-full" data-testid="table-mitsubishi-financeiro">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem → Destino</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Qtd Veículos</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Modelo</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão Mot.</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                {viagensFiltradas.map((viagem: any) => {
+                  const valorViagem = precoPorVeiculo * (viagem.qtd_carro || 0);
+                  
+                  return (
+                    <tr key={viagem.id_operacao} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" data-testid={`row-mitsubishi-${viagem.id_operacao}`}>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
+                        {formatDate(viagem.data_viagem)}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {viagem.motorista_nome}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {viagem.origem || '-'} → {viagem.destino || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 text-center">
+                        {viagem.qtd_carro || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {viagem.modelo_carro || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white text-right">
+                        {formatCurrency(valorViagem)}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm font-medium text-gray-600 dark:text-gray-300 text-right">
+                        {formatCurrency(comissaoMotorista)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAutoserviceFinanceiro = () => {
+    if (isLoadingAutoserviceViagens) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400" data-testid="text-loading-autoservice">Carregando viagens...</span>
+        </div>
+      );
+    }
+
+    if (isErrorAutoserviceViagens) {
+      return (
+        <div className="text-center py-12" data-testid="text-error-autoservice">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar dados de faturamento.</p>
+        </div>
+      );
+    }
+
+    if (!viagensAutoservice || viagensAutoservice.length === 0) {
+      return (
+        <div className="text-center py-12" data-testid="text-empty-autoservice">
+          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma viagem AUTOSERVICE encontrada.</p>
+        </div>
+      );
+    }
+
+    const viagensFiltradas = filtrarPorPeriodo(viagensAutoservice);
+
+    const valorPorVeiculo = precosAutoservice?.valor_por_veiculo ?? 0;
+    const comissaoMotorista = precosAutoservice?.comissao_motorista ?? 0;
+    const comissaoAjudante = precosAutoservice?.comissao_ajudante ?? 0;
+
+    let totalRecebido = 0;
+    viagensFiltradas.forEach((v: any) => {
+      const frete = v.valor_frete ? parseFloat(v.valor_frete) : valorPorVeiculo;
+      totalRecebido += isNaN(frete) ? valorPorVeiculo : frete;
+    });
+    const totalComissaoMotorista = viagensFiltradas.length * comissaoMotorista;
+    const totalComissaoAjudante = viagensFiltradas.length * comissaoAjudante;
+
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-autoservice-total-recebido">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Recebido</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-autoservice-total-recebido">{formatCurrency(totalRecebido)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(valorPorVeiculo)} por viagem</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-autoservice-comissao-motorista">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Comissões Motorista</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-autoservice-comissao-motorista">{formatCurrency(totalComissaoMotorista)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(comissaoMotorista)} por viagem</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-autoservice-comissao-ajudante">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Comissões Ajudante</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <DollarSign className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-autoservice-comissao-ajudante">{formatCurrency(totalComissaoAjudante)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(comissaoAjudante)} por viagem</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm" data-testid="card-autoservice-total-viagens">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white" data-testid="text-autoservice-total-viagens">{viagensFiltradas.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-full" data-testid="table-autoservice-financeiro">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Motorista</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem → Destino</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Placa</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cliente</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comissão Mot.</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
+                {viagensFiltradas.map((viagem: any) => {
+                  const freteViagem = viagem.valor_frete ? parseFloat(viagem.valor_frete) : valorPorVeiculo;
+                  const valorViagem = isNaN(freteViagem) ? valorPorVeiculo : freteViagem;
+                  
+                  return (
+                    <tr key={viagem.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" data-testid={`row-autoservice-${viagem.id}`}>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
+                        {formatDate(viagem.data_viagem)}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                        {viagem.motorista_nome}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {viagem.origem || '-'} → {viagem.destino || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 text-center">
+                        {viagem.placa_veiculo || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {viagem.nome_cliente || '-'}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white text-right">
+                        {formatCurrency(valorViagem)}
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm font-medium text-gray-600 dark:text-gray-300 text-right">
+                        {formatCurrency(comissaoMotorista)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTegmaFinanceiro = () => {
+    if (isLoadingTegmaViagens) {
+      return (
+        <div className="flex items-center justify-center py-12" data-testid="tegma-loading">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando viagens TEGMA...</span>
+        </div>
+      );
+    }
+
+    if (isErrorTegmaViagens) {
+      return (
+        <div className="text-center py-12" data-testid="tegma-error">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar viagens TEGMA.</p>
+        </div>
+      );
+    }
+
+    if (!viagensTegma || viagensTegma.length === 0) {
+      return (
+        <div className="text-center py-12" data-testid="text-empty-tegma">
+          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma viagem TEGMA encontrada.</p>
+        </div>
+      );
+    }
+
+    const viagensFiltradas = filtrarPorPeriodo(viagensTegma);
+
+    const valorPorTrecho = precosTegma?.valor_por_trecho ?? 500;
+    const comissaoVazia = precosTegma?.comissao_motorista_carreta_vazia ?? 15;
+    const comissaoCheia = precosTegma?.comissao_motorista_carreta_cheia ?? 20;
+
+    let totalRecebido = 0;
+    let totalComissoes = 0;
+    viagensFiltradas.forEach((v: any) => {
+      totalRecebido += valorPorTrecho;
+      const isCheia = v.tipo_viagem?.toLowerCase()?.includes('cheia') || v.capacidade === 1;
+      totalComissoes += isCheia ? comissaoCheia : comissaoVazia;
+    });
+
+    return (
+      <div className="space-y-6" data-testid="tegma-financeiro-content">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid="tegma-card-total-recebido">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Recebido</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalRecebido)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{viagensFiltradas.length} viagens × {formatCurrency(valorPorTrecho)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid="tegma-card-total-comissoes">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Comissões Motorista</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalComissoes)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Vazia: {formatCurrency(comissaoVazia)} / Cheia: {formatCurrency(comissaoCheia)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid="tegma-card-total-viagens">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Viagens</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{viagensFiltradas.length}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">no período selecionado</p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-testid="tegma-financeiro-table">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-700/50">
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Data</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Motorista</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Origem → Destino</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Placa Carreta</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tipo</th>
+                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Valor</th>
+                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Comissão</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {viagensFiltradas.map((viagem: any, index: number) => {
+                  const isCheia = viagem.tipo_viagem?.toLowerCase()?.includes('cheia') || viagem.capacidade === 1;
+                  const comissao = isCheia ? comissaoCheia : comissaoVazia;
+                  const dataViagem = viagem.p2_data_hora || viagem.data_viagem || viagem.created_at;
+                  return (
+                    <tr key={viagem.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-700/30" data-testid={`tegma-row-${index}`}>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {dataViagem ? new Date(dataViagem).toLocaleDateString('pt-BR') : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {viagem.motorista || viagem.nome_motorista || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {viagem.origem || '-'} → {viagem.destino || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {viagem.placa_carreta || '-'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          isCheia
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                        }`} data-testid={`tegma-tipo-${index}`}>
+                          {isCheia ? 'Cheia' : 'Vazia'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium">
+                        {formatCurrency(valorPorTrecho)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium">
+                        {formatCurrency(comissao)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCesariFinanceiro = () => {
+    if (isLoadingCesariViagens) {
+      return (
+        <div className="flex items-center justify-center py-12" data-testid="cesari-loading">
+          <Loader2 className="w-8 h-8 animate-spin text-green-500" />
+          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando viagens CESARI...</span>
+        </div>
+      );
+    }
+
+    if (isErrorCesariViagens) {
+      return (
+        <div className="text-center py-12" data-testid="cesari-error">
+          <XCircle className="w-12 h-12 mx-auto text-red-400 mb-4" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar viagens CESARI.</p>
+        </div>
+      );
+    }
+
+    if (!viagensCesari || viagensCesari.length === 0) {
+      return (
+        <div className="text-center py-12" data-testid="text-empty-cesari">
+          <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Nenhuma viagem CESARI encontrada.</p>
+        </div>
+      );
+    }
+
+    const viagensFiltradas = filtrarPorPeriodo(viagensCesari);
+
+    const findPrecoMatch = (local: string, tipoCarga: string, sentido: string, destinoEspecial: string | null): FaturamentoCesari | null => {
+      return precosCesari.find((p: FaturamentoCesari) => {
+        if (p.local.toLowerCase() !== local.toLowerCase()) return false;
+        if (p.tipo_carga.toLowerCase() !== tipoCarga.toLowerCase()) return false;
+        if (p.sentido.toLowerCase() !== sentido.toLowerCase()) return false;
+        const pDest = (p.destino_especial || '').toLowerCase();
+        const qDest = (destinoEspecial || '').toLowerCase();
+        if (qDest && !pDest.includes(qDest)) return false;
+        if (!qDest && pDest) return false;
+        return true;
+      }) || null;
+    };
+
+    const inferLeg = (origem: string, destino: string) => {
+      const o = (origem || '').toLowerCase();
+      const d = (destino || '').toLowerCase();
+      const isTaboca = o.includes('taboca') || d.includes('taboca');
+      const local = isTaboca ? 'Taboca' : 'Porto';
+      const destinoEspecial = isTaboca ? 'Taboca' : null;
+      const sentidoIda = d.includes('taboca') || d.includes('porto') ? 'Volta' : 'Ida';
+      const actualSentido = o.includes('taboca') ? 'Volta' : (d.includes('taboca') ? 'Ida' : sentidoIda);
+      return { local, destinoEspecial, sentido: actualSentido };
+    };
+
+    let totalFrete = 0;
+    let totalComissoes = 0;
+    let totalPernoites = 0;
+
+    const viagensComPreco = viagensFiltradas.map((viagem: any) => {
+      const tipoViagem = (viagem.tipo_viagem || '').toLowerCase();
+      const isSolteira = tipoViagem.includes('solteira');
+
+      let valorFrete = 0;
+      let comissao = 0;
+      let pernoiteValor = 0;
+      let precoV1: FaturamentoCesari | null = null;
+      let precoV2: FaturamentoCesari | null = null;
+      let v2Frete = 0;
+      let v2Comissao = 0;
+
+      if (isSolteira) {
+        const leg = inferLeg(viagem.origem || '', viagem.destino || '');
+        precoV1 = findPrecoMatch(leg.local, 'Vazia', 'Ida/Volta', leg.destinoEspecial);
+        valorFrete = precoV1 ? Number(precoV1.valor_frete) : 0;
+        comissao = 250;
+      } else {
+        const leg1 = inferLeg(viagem.origem || '', viagem.destino || '');
+        precoV1 = findPrecoMatch(leg1.local, 'Cheia', leg1.sentido, leg1.destinoEspecial)
+          || findPrecoMatch(leg1.local, 'Vazia', leg1.sentido, leg1.destinoEspecial);
+        valorFrete = precoV1 ? Number(precoV1.valor_frete) : 0;
+        comissao = 300;
+
+        if (viagem.v2_origem || viagem.v2_destino) {
+          const leg2 = inferLeg(viagem.v2_origem || '', viagem.v2_destino || '');
+          precoV2 = findPrecoMatch(leg2.local, 'Vazia', leg2.sentido, leg2.destinoEspecial)
+            || findPrecoMatch(leg2.local, 'Cheia', leg2.sentido, leg2.destinoEspecial);
+          v2Frete = precoV2 ? Number(precoV2.valor_frete) : 0;
+          v2Comissao = 300;
+          valorFrete += v2Frete;
+          comissao += v2Comissao;
+        }
+      }
+
+      if (viagem.pernoite) {
+        const pernoitePreco = precoV1 ? Number(precoV1.valor_pernoite) : 450;
+        const comissaoPernoite = precoV1 ? Number(precoV1.comissao_pernoite_feriado_motorista) : 100;
+        valorFrete += pernoitePreco;
+        comissao += comissaoPernoite;
+        pernoiteValor = pernoitePreco;
+      }
+
+      if (viagem.dia_nao_util) {
+        const comissaoFeriado = precoV1 ? Number(precoV1.comissao_pernoite_feriado_motorista) : 100;
+        comissao += comissaoFeriado;
+      }
+
+      totalFrete += valorFrete;
+      totalComissoes += comissao;
+      totalPernoites += pernoiteValor;
+
+      return { ...viagem, valorFrete, comissao, preco: precoV1, precoV2, pernoiteValor, v2Frete, v2Comissao, hasV2: !!(viagem.v2_origem || viagem.v2_destino) };
+    });
+
+    return (
+      <div className="space-y-6" data-testid="cesari-financeiro-content">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid="cesari-card-total-frete">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Frete</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalFrete)}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{viagensFiltradas.length} viagens</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid="cesari-card-total-comissoes">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Comissões</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalComissoes)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid="cesari-card-total-pernoites">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Pernoites</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalPernoites)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid="cesari-card-total-viagens">
+            <p className="text-sm text-gray-500 dark:text-gray-400">Total Viagens</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{viagensFiltradas.length}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">no período selecionado</p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-testid="cesari-financeiro-table">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-700/50">
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Data</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Motorista</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Origem → Destino</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tipo</th>
+                  <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Pernoite</th>
+                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Valor Frete</th>
+                  <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Comissão</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {viagensComPreco.map((viagem: any, index: number) => {
+                  const dataViagem = viagem.data_viagem || viagem.created_at;
+                  return (
+                    <tr key={viagem.id || index} className="hover:bg-gray-50 dark:hover:bg-gray-700/30" data-testid={`cesari-row-${index}`}>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {dataViagem ? new Date(dataViagem).toLocaleDateString('pt-BR') : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {viagem.motorista_nome || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        <div>{viagem.origem || '-'} → {viagem.destino || '-'}</div>
+                        {viagem.hasV2 && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {viagem.v2_origem || '-'} → {viagem.v2_destino || '-'}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          viagem.tipo_viagem?.toLowerCase()?.includes('casada')
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                        }`} data-testid={`cesari-tipo-${index}`}>
+                          {viagem.tipo_viagem || '-'}
+                        </span>
+                        {viagem.hasV2 && (
+                          <span className="ml-1 text-xs text-gray-400">(2 trechos)</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {viagem.pernoite ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300" data-testid={`cesari-pernoite-${index}`}>
+                            <Moon className="w-3 h-3 mr-1" />
+                            Sim
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium">
+                        {viagem.preco ? formatCurrency(viagem.valorFrete) : (
+                          <span className="text-xs text-orange-500">Sem preço</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium">
+                        {viagem.preco ? formatCurrency(viagem.comissao) : (
+                          <span className="text-xs text-orange-500">-</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderFinanceiroContent = () => {
     if (selectedOperacao === 'all') {
       return (
@@ -3356,6 +4289,34 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPERTERMINAIS</h3>
             </div>
             {renderSuperterminaisFinanceiro()}
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-6 bg-red-500 dark:bg-red-400 rounded-full" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-mitsubishi-section-title">MITSUBISHI</h3>
+            </div>
+            {renderMitsubishiFinanceiro()}
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-6 bg-blue-500 dark:bg-blue-400 rounded-full" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-autoservice-section-title">AUTOSERVICE</h3>
+            </div>
+            {renderAutoserviceFinanceiro()}
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-6 bg-orange-500 dark:bg-orange-400 rounded-full" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-tegma-section-title">TEGMA</h3>
+            </div>
+            {renderTegmaFinanceiro()}
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-6 bg-green-500 dark:bg-green-400 rounded-full" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-cesari-section-title">CESARI</h3>
+            </div>
+            {renderCesariFinanceiro()}
           </div>
         </div>
       );
@@ -3381,6 +4342,54 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">SUPERTERMINAIS</h3>
           </div>
           {renderSuperterminaisFinanceiro()}
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Mitsubishi') {
+      return (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-red-500 dark:bg-red-400 rounded-full" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-mitsubishi-financeiro-title">MITSUBISHI</h3>
+          </div>
+          {renderMitsubishiFinanceiro()}
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Autoservice') {
+      return (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-blue-500 dark:bg-blue-400 rounded-full" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-autoservice-financeiro-title">AUTOSERVICE</h3>
+          </div>
+          {renderAutoserviceFinanceiro()}
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Cesari') {
+      return (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-green-500 dark:bg-green-400 rounded-full" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-cesari-financeiro-title">CESARI</h3>
+          </div>
+          {renderCesariFinanceiro()}
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Tegma') {
+      return (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 bg-orange-500 dark:bg-orange-400 rounded-full" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-tegma-financeiro-title">TEGMA</h3>
+          </div>
+          {renderTegmaFinanceiro()}
         </div>
       );
     }
@@ -3482,19 +4491,26 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 // Componente Preços - Edição de preços e comissões
 const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+
   const [editingSada, setEditingSada] = useState(false);
   const [sadaForm, setSadaForm] = useState<Partial<FaturamentoSada>>({});
   const [editingSuperterminais, setEditingSuperterminais] = useState(false);
   const [superterminaisForm, setSuperterminaisForm] = useState<Partial<FaturamentoSuperterminais>>({});
   const [editingMitsubishi, setEditingMitsubishi] = useState(false);
   const [mitsubishiForm, setMitsubishiForm] = useState<Partial<FaturamentoMitsubishi>>({});
+  const [editingAutoservice, setEditingAutoservice] = useState(false);
+  const [autoserviceForm, setAutoserviceForm] = useState<Partial<FaturamentoAutoservice>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // Query para buscar último registro de faturamento SADA
   // NOTA: A tabela atual não tem company_id. Para multi-tenancy, adicionar coluna company_id à tabela.
   const { data: currentSadaPrices, isLoading: isLoadingSada, isError: isErrorSada, refetch: refetchSada } = useQuery({
-    queryKey: ['faturamento-sada-current', selectedOperacao],
+    queryKey: ['faturamento-sada-current'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('faturamento_sada')
@@ -3505,12 +4521,10 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
       if (error) throw error;
       return (data?.[0] as FaturamentoSada) || null;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Sada',
   });
 
-  // Query para buscar último registro de faturamento SUPERTERMINAIS
   const { data: currentSuperterminaisPrices, isLoading: isLoadingSuperterminais, isError: isErrorSuperterminais, refetch: refetchSuperterminais } = useQuery({
-    queryKey: ['faturamento-superterminais-current', selectedOperacao],
+    queryKey: ['faturamento-superterminais-current'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('faturamento_superterminais')
@@ -3521,22 +4535,32 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
       if (error) throw error;
       return (data?.[0] as FaturamentoSuperterminais) || null;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Superterminais',
   });
 
   const { data: currentMitsubishiPrices, isLoading: isLoadingMitsubishi, isError: isErrorMitsubishi, refetch: refetchMitsubishi } = useQuery({
-    queryKey: ['faturamento-mitsubishi-current', selectedOperacao],
+    queryKey: ['faturamento-mitsubishi-current'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('faturamento_mitsubishi')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (error) throw error;
-      return (data?.[0] as FaturamentoMitsubishi) || null;
+      const response = await fetch('/api/operacoes/faturamento/mitsubishi');
+      if (!response.ok) throw new Error('Erro ao buscar preços Mitsubishi');
+      const data = await response.json();
+      return (data as FaturamentoMitsubishi) || null;
     },
-    enabled: selectedOperacao === 'all' || selectedOperacao === 'Mitsubishi',
+  });
+
+  const { data: currentAutoservicePrices, isLoading: isLoadingAutoservice, isError: isErrorAutoservice, refetch: refetchAutoservice } = useQuery({
+    queryKey: ['faturamento-autoservice-current'],
+    queryFn: async () => {
+      const response = await fetch('/api/operacoes/faturamento/autoservice');
+      if (!response.ok) throw new Error('Erro ao buscar preços Autoservice');
+      const data = await response.json();
+      if (!data) return null;
+      return {
+        ...data,
+        valor_por_veiculo: data.valor_por_veiculo != null ? Number(data.valor_por_veiculo) : null,
+        comissao_motorista: data.comissao_motorista != null ? Number(data.comissao_motorista) : null,
+        comissao_ajudante: data.comissao_ajudante != null ? Number(data.comissao_ajudante) : null,
+      } as FaturamentoAutoservice;
+    },
   });
 
   useEffect(() => {
@@ -3558,9 +4582,46 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   }, [currentMitsubishiPrices]);
 
   useEffect(() => {
+    if (currentAutoservicePrices) {
+      setAutoserviceForm(currentAutoservicePrices);
+    }
+  }, [currentAutoservicePrices]);
+
+  const [cesariModalOpen, setCesariModalOpen] = useState(false);
+  const [editingCesariItem, setEditingCesariItem] = useState<FaturamentoCesari | null>(null);
+  const [cesariForm, setCesariForm] = useState({
+    local: '', tipo_carga: '', sentido: '', destino_especial: '',
+    valor_frete: '', valor_pernoite: '450', comissao_motorista: '',
+    comissao_pernoite_feriado_motorista: '100', observacoes: ''
+  });
+  const [isSavingCesari, setIsSavingCesari] = useState(false);
+
+  const { data: cesariPrices = [], isLoading: isLoadingCesari, isError: isErrorCesari, refetch: refetchCesari } = useQuery({
+    queryKey: ['faturamento-cesari-all'],
+    queryFn: async () => {
+      const response = await fetch('/api/operacoes/faturamento/cesari');
+      if (!response.ok) throw new Error('Erro ao buscar preços Cesari');
+      return response.json() as Promise<FaturamentoCesari[]>;
+    },
+  });
+
+  const { data: currentTegmaPrices, isLoading: isLoadingTegma, isError: isErrorTegma } = useQuery({
+    queryKey: ['faturamento-tegma-current'],
+    queryFn: async () => {
+      const response = await fetch('/api/operacoes/faturamento/tegma');
+      if (!response.ok) throw new Error('Erro ao buscar preços Tegma');
+      const data = await response.json();
+      return data as FaturamentoTegma;
+    },
+  });
+
+  useEffect(() => {
     setEditingSada(false);
     setEditingSuperterminais(false);
     setEditingMitsubishi(false);
+    setEditingAutoservice(false);
+    setCesariModalOpen(false);
+    setEditingCesariItem(null);
     setSaveError(null);
   }, [companyId]);
 
@@ -3624,6 +4685,10 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     setMitsubishiForm(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleAutoserviceChange = (field: string, value: string) => {
+    setAutoserviceForm(prev => ({ ...prev, [field]: value }));
+  };
+
   const handleSaveMitsubishi = async () => {
     setIsSaving(true);
     setSaveError(null);
@@ -3633,22 +4698,17 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         preco_por_veiculo: mitsubishiForm.preco_por_veiculo || null,
         comissao_motorista: mitsubishiForm.comissao_motorista || null,
         comissao_ajudante: mitsubishiForm.comissao_ajudante || null,
-        updated_at: new Date().toISOString(),
       };
 
-      if (currentMitsubishiPrices?.id) {
-        const { error } = await supabase
-          .from('faturamento_mitsubishi')
-          .update(updateData)
-          .eq('id', currentMitsubishiPrices.id);
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('faturamento_mitsubishi')
-          .insert([updateData]);
-        
-        if (error) throw error;
+      const response = await fetch('/api/operacoes/faturamento/mitsubishi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erro ao salvar preços');
       }
 
       await refetchMitsubishi();
@@ -3693,6 +4753,125 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
       setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveAutoservice = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    
+    try {
+      const updateData = {
+        valor_por_veiculo: autoserviceForm.valor_por_veiculo !== null && autoserviceForm.valor_por_veiculo !== undefined ? Number(autoserviceForm.valor_por_veiculo) : null,
+        comissao_motorista: autoserviceForm.comissao_motorista !== null && autoserviceForm.comissao_motorista !== undefined ? Number(autoserviceForm.comissao_motorista) : null,
+        comissao_ajudante: autoserviceForm.comissao_ajudante !== null && autoserviceForm.comissao_ajudante !== undefined ? Number(autoserviceForm.comissao_ajudante) : null,
+        forma_pagamento_motorista: autoserviceForm.forma_pagamento_motorista || null,
+        forma_pagamento_ajudante: autoserviceForm.forma_pagamento_ajudante || null,
+      };
+
+      const response = await fetch('/api/operacoes/faturamento/autoservice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erro ao salvar preços');
+      }
+
+      await refetchAutoservice();
+      setEditingAutoservice(false);
+    } catch (error: any) {
+      console.error('Erro ao salvar preços AUTOSERVICE:', error);
+      setSaveError(error?.message || 'Erro ao salvar preços. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleOpenCesariModal = (item?: FaturamentoCesari) => {
+    if (item) {
+      setEditingCesariItem(item);
+      setCesariForm({
+        local: item.local || '',
+        tipo_carga: item.tipo_carga || '',
+        sentido: item.sentido || '',
+        destino_especial: item.destino_especial || '',
+        valor_frete: String(item.valor_frete || ''),
+        valor_pernoite: String(item.valor_pernoite || '450'),
+        comissao_motorista: String(item.comissao_motorista || ''),
+        comissao_pernoite_feriado_motorista: String(item.comissao_pernoite_feriado_motorista || '100'),
+        observacoes: item.observacoes || '',
+      });
+    } else {
+      setEditingCesariItem(null);
+      setCesariForm({
+        local: '', tipo_carga: '', sentido: '', destino_especial: '',
+        valor_frete: '', valor_pernoite: '450', comissao_motorista: '',
+        comissao_pernoite_feriado_motorista: '100', observacoes: ''
+      });
+    }
+    setCesariModalOpen(true);
+  };
+
+  const handleSaveCesari = async () => {
+    setIsSavingCesari(true);
+    setSaveError(null);
+    try {
+      const payload = {
+        local: cesariForm.local,
+        tipo_carga: cesariForm.tipo_carga,
+        sentido: cesariForm.sentido,
+        destino_especial: cesariForm.destino_especial || null,
+        valor_frete: Number(cesariForm.valor_frete),
+        valor_pernoite: Number(cesariForm.valor_pernoite),
+        comissao_motorista: Number(cesariForm.comissao_motorista),
+        comissao_pernoite_feriado_motorista: Number(cesariForm.comissao_pernoite_feriado_motorista),
+        observacoes: cesariForm.observacoes || null,
+      };
+
+      const url = editingCesariItem
+        ? `/api/operacoes/faturamento/cesari/${editingCesariItem.id}`
+        : '/api/operacoes/faturamento/cesari';
+      const method = editingCesariItem ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erro ao salvar preço Cesari');
+      }
+
+      await refetchCesari();
+      setCesariModalOpen(false);
+      setEditingCesariItem(null);
+    } catch (error: any) {
+      console.error('Erro ao salvar preço CESARI:', error);
+      setSaveError(error?.message || 'Erro ao salvar preço. Tente novamente.');
+    } finally {
+      setIsSavingCesari(false);
+    }
+  };
+
+  const handleDeleteCesari = async (id: number) => {
+    if (!confirm('Tem certeza que deseja excluir este preço?')) return;
+    try {
+      const response = await fetch(`/api/operacoes/faturamento/cesari/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erro ao excluir preço');
+      }
+      await refetchCesari();
+    } catch (error: any) {
+      console.error('Erro ao excluir preço CESARI:', error);
+      setSaveError(error?.message || 'Erro ao excluir. Tente novamente.');
     }
   };
 
@@ -3746,38 +4925,40 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {currentSadaPrices ? 'Última atualização: ' + new Date(currentSadaPrices.updated_at || currentSadaPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
           </p>
-          {!editingSada ? (
-            <button
-              onClick={() => setEditingSada(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              data-testid="button-edit-sada-prices"
-            >
-              <Edit className="w-4 h-4" />
-              Editar Preços
-            </button>
-          ) : (
-            <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            {editingSada ? (
+              <>
+                <button
+                  onClick={() => {
+                    setEditingSada(false);
+                    setSadaForm(currentSadaPrices || {});
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  data-testid="button-cancel-sada"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveSada}
+                  disabled={isSaving}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  data-testid="button-save-sada-prices"
+                >
+                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                  Salvar
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => {
-                  setEditingSada(false);
-                  setSadaForm(currentSadaPrices || {});
-                }}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                disabled={isSaving}
+                onClick={() => setEditingSada(true)}
+                className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                data-testid="button-edit-sada-prices"
               >
-                Cancelar
+                <Edit className="w-3 h-3" />
+                Editar
               </button>
-              <button
-                onClick={handleSaveSada}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                data-testid="button-save-sada-prices"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Salvar
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Preços por Veículo */}
@@ -3886,38 +5067,40 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {currentSuperterminaisPrices ? 'Criado em: ' + new Date(currentSuperterminaisPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
           </p>
-          {!editingSuperterminais ? (
-            <button
-              onClick={() => setEditingSuperterminais(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              data-testid="button-edit-superterminais-prices"
-            >
-              <Edit className="w-4 h-4" />
-              Editar Preços
-            </button>
-          ) : (
-            <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            {editingSuperterminais ? (
+              <>
+                <button
+                  onClick={() => {
+                    setEditingSuperterminais(false);
+                    setSuperterminaisForm(currentSuperterminaisPrices || {});
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  data-testid="button-cancel-superterminais"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveSuperterminais}
+                  disabled={isSaving}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  data-testid="button-save-superterminais-prices"
+                >
+                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                  Salvar
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => {
-                  setEditingSuperterminais(false);
-                  setSuperterminaisForm(currentSuperterminaisPrices || {});
-                }}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                disabled={isSaving}
+                onClick={() => setEditingSuperterminais(true)}
+                className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                data-testid="button-edit-superterminais-prices"
               >
-                Cancelar
+                <Edit className="w-3 h-3" />
+                Editar
               </button>
-              <button
-                onClick={handleSaveSuperterminais}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                data-testid="button-save-superterminais-prices"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Salvar
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Valores por Viagem */}
@@ -4017,38 +5200,40 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {currentMitsubishiPrices ? 'Última atualização: ' + new Date(currentMitsubishiPrices.updated_at || currentMitsubishiPrices.created_at).toLocaleDateString('pt-BR') : 'Nenhum preço configurado'}
           </p>
-          {!editingMitsubishi ? (
-            <button
-              onClick={() => setEditingMitsubishi(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              data-testid="button-edit-mitsubishi-prices"
-            >
-              <Edit className="w-4 h-4" />
-              Editar Preços
-            </button>
-          ) : (
-            <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            {editingMitsubishi ? (
+              <>
+                <button
+                  onClick={() => {
+                    setEditingMitsubishi(false);
+                    setMitsubishiForm(currentMitsubishiPrices || {});
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  data-testid="button-cancel-mitsubishi"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveMitsubishi}
+                  disabled={isSaving}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  data-testid="button-save-mitsubishi-prices"
+                >
+                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                  Salvar
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => {
-                  setEditingMitsubishi(false);
-                  setMitsubishiForm(currentMitsubishiPrices || {});
-                }}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                disabled={isSaving}
+                onClick={() => setEditingMitsubishi(true)}
+                className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                data-testid="button-edit-mitsubishi-prices"
               >
-                Cancelar
+                <Edit className="w-3 h-3" />
+                Editar
               </button>
-              <button
-                onClick={handleSaveMitsubishi}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                data-testid="button-save-mitsubishi-prices"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Salvar
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         <div>
@@ -4138,6 +5323,507 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     );
   };
 
+  const renderAutoservicePrecos = () => {
+    if (isLoadingAutoservice) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+          <span className="ml-2 text-gray-500 dark:text-gray-400" data-testid="text-loading-autoservice-precos">Carregando preços...</span>
+        </div>
+      );
+    }
+
+    if (isErrorAutoservice) {
+      return (
+        <div className="text-center py-8" data-testid="text-error-autoservice-precos">
+          <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar preços.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white" data-testid="text-autoservice-precos-title">Valores por Veículo e Comissões</h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Configure os valores de faturamento para operação Autoservice</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {editingAutoservice ? (
+              <>
+                <button
+                  onClick={() => {
+                    setEditingAutoservice(false);
+                    if (currentAutoservicePrices) setAutoserviceForm(currentAutoservicePrices);
+                  }}
+                  className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  data-testid="button-cancel-autoservice"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveAutoservice}
+                  disabled={isSaving}
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  data-testid="button-save-autoservice"
+                >
+                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                  Salvar
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setEditingAutoservice(true)}
+                className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                data-testid="button-edit-autoservice"
+              >
+                <Edit className="w-3 h-3" />
+                Editar
+              </button>
+            )}
+          </div>
+        </div>
+
+        {saveError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+            <p className="text-sm text-red-600 dark:text-red-400" data-testid="text-error-save-autoservice">{saveError}</p>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor por Veículo</label>
+              {editingAutoservice ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                  <input
+                    type="text"
+                    value={autoserviceForm.valor_por_veiculo ?? ''}
+                    onChange={(e) => handleAutoserviceChange('valor_por_veiculo', e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    data-testid="input-autoservice-valor-por-veiculo"
+                  />
+                </div>
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-autoservice-valor-por-veiculo">
+                  R$ {currentAutoservicePrices?.valor_por_veiculo ?? '-'}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Motorista</label>
+              {editingAutoservice ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                  <input
+                    type="text"
+                    value={autoserviceForm.comissao_motorista ?? ''}
+                    onChange={(e) => handleAutoserviceChange('comissao_motorista', e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    data-testid="input-autoservice-comissao-motorista"
+                  />
+                </div>
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-autoservice-comissao-motorista">
+                  R$ {currentAutoservicePrices?.comissao_motorista ?? '-'}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Ajudante</label>
+              {editingAutoservice ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                  <input
+                    type="text"
+                    value={autoserviceForm.comissao_ajudante ?? ''}
+                    onChange={(e) => handleAutoserviceChange('comissao_ajudante', e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    data-testid="input-autoservice-comissao-ajudante"
+                  />
+                </div>
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-autoservice-comissao-ajudante">
+                  R$ {currentAutoservicePrices?.comissao_ajudante ?? '-'}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Forma de Pagamento Motorista</label>
+              {editingAutoservice ? (
+                <input
+                  type="text"
+                  value={autoserviceForm.forma_pagamento_motorista ?? ''}
+                  onChange={(e) => handleAutoserviceChange('forma_pagamento_motorista', e.target.value)}
+                  placeholder="Ex: PIX, Transferência"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  data-testid="input-autoservice-forma-pagamento-motorista"
+                />
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-autoservice-forma-pagamento-motorista">
+                  {currentAutoservicePrices?.forma_pagamento_motorista || '-'}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Forma de Pagamento Ajudante</label>
+              {editingAutoservice ? (
+                <input
+                  type="text"
+                  value={autoserviceForm.forma_pagamento_ajudante ?? ''}
+                  onChange={(e) => handleAutoserviceChange('forma_pagamento_ajudante', e.target.value)}
+                  placeholder="Ex: PIX, Transferência"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  data-testid="input-autoservice-forma-pagamento-ajudante"
+                />
+              ) : (
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-autoservice-forma-pagamento-ajudante">
+                  {currentAutoservicePrices?.forma_pagamento_ajudante || '-'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            <strong>Modelo de Precificação AUTOSERVICE:</strong> Valor fixo por veículo transportado, com comissões separadas para motorista e ajudante.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTegmaPrecos = () => {
+    if (isLoadingTegma) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+          <span className="ml-2 text-gray-500 dark:text-gray-400" data-testid="text-loading-tegma-precos">Carregando preços...</span>
+        </div>
+      );
+    }
+
+    if (isErrorTegma) {
+      return (
+        <div className="text-center py-8" data-testid="text-error-tegma-precos">
+          <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar preços.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <h4 className="text-sm font-semibold text-gray-900 dark:text-white" data-testid="text-tegma-precos-title">Valores por Trecho e Comissões</h4>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Configuração de valores de faturamento para operação Tegma</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor por Trecho</label>
+            <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-tegma-valor-por-trecho">
+              {currentTegmaPrices?.valor_por_trecho != null ? formatCurrency(Number(currentTegmaPrices.valor_por_trecho)) : '-'}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Carreta Vazia</label>
+            <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-tegma-comissao-vazia">
+              {currentTegmaPrices?.comissao_motorista_carreta_vazia != null ? formatCurrency(Number(currentTegmaPrices.comissao_motorista_carreta_vazia)) : '-'}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Carreta Cheia</label>
+            <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm font-medium text-gray-900 dark:text-white" data-testid="text-tegma-comissao-cheia">
+              {currentTegmaPrices?.comissao_motorista_carreta_cheia != null ? formatCurrency(Number(currentTegmaPrices.comissao_motorista_carreta_cheia)) : '-'}
+            </div>
+          </div>
+        </div>
+        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
+          <p className="text-sm text-orange-700 dark:text-orange-300">
+            <strong>Modelo de Precificação TEGMA:</strong> Valor fixo por trecho, com comissões diferenciadas para carretas vazias e cheias.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCesariPrecos = () => {
+    if (isLoadingCesari) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-green-500" />
+          <span className="ml-2 text-gray-500 dark:text-gray-400" data-testid="text-loading-cesari-precos">Carregando preços...</span>
+        </div>
+      );
+    }
+
+    if (isErrorCesari) {
+      return (
+        <div className="text-center py-8" data-testid="text-error-cesari-precos">
+          <XCircle className="w-10 h-10 mx-auto text-red-400 mb-3" />
+          <p className="text-red-500 dark:text-red-400">Erro ao carregar preços.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white" data-testid="text-cesari-precos-title">Configuração de Preços por Rota</h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Gerencie os valores de frete e comissões por local, tipo de carga e sentido</p>
+          </div>
+          <button
+            onClick={() => handleOpenCesariModal()}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors flex items-center gap-1"
+            data-testid="button-add-cesari-preco"
+          >
+            <Plus className="w-3 h-3" />
+            Adicionar
+          </button>
+        </div>
+
+        {saveError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+            <p className="text-sm text-red-600 dark:text-red-400" data-testid="text-error-save-cesari">{saveError}</p>
+          </div>
+        )}
+
+        {cesariPrices.length === 0 ? (
+          <div className="text-center py-8" data-testid="text-empty-cesari-precos">
+            <Settings className="w-10 h-10 mx-auto text-gray-400 mb-3" />
+            <p className="text-gray-500 dark:text-gray-400">Nenhum preço configurado.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Clique em "Adicionar" para criar a primeira configuração de preço.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-testid="cesari-precos-table">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-700/50">
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Local</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Tipo Carga</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Sentido</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Dest. Especial</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Valor Frete</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Pernoite</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Comissão</th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Com. Pernoite</th>
+                  <th className="text-center px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {cesariPrices.map((item: FaturamentoCesari, index: number) => (
+                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30" data-testid={`cesari-preco-row-${index}`}>
+                    <td className="px-3 py-2 text-gray-900 dark:text-white font-medium">{item.local}</td>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        item.tipo_carga.toLowerCase() === 'cheia'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                          : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                      }`}>
+                        {item.tipo_carga}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{item.sentido}</td>
+                    <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{item.destino_especial || '-'}</td>
+                    <td className="px-3 py-2 text-right text-gray-900 dark:text-white font-medium">{formatCurrency(Number(item.valor_frete))}</td>
+                    <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300">{formatCurrency(Number(item.valor_pernoite))}</td>
+                    <td className="px-3 py-2 text-right text-gray-900 dark:text-white font-medium">{formatCurrency(Number(item.comissao_motorista))}</td>
+                    <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300">{formatCurrency(Number(item.comissao_pernoite_feriado_motorista))}</td>
+                    <td className="px-3 py-2 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleOpenCesariModal(item)}
+                          className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                          data-testid={`button-edit-cesari-preco-${index}`}
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCesari(item.id)}
+                          className="p-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                          data-testid={`button-delete-cesari-preco-${index}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+          <p className="text-sm text-green-700 dark:text-green-300">
+            <strong>Modelo de Precificação CESARI:</strong> Cada rota possui valores específicos por local, tipo de carga (Cheia/Vazia) e sentido (Ida/Volta/Ida e Volta). Pernoites adicionam R$450 ao frete e R$100 à comissão. Feriados/dias não úteis adicionam R$100 à comissão.
+          </p>
+        </div>
+
+        {cesariModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" data-testid="cesari-modal-overlay">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-cesari-modal-title">
+                  {editingCesariItem ? 'Editar Preço' : 'Adicionar Preço'}
+                </h3>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Local *</label>
+                    <select
+                      value={cesariForm.local}
+                      onChange={(e) => setCesariForm(prev => ({ ...prev, local: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      data-testid="select-cesari-local"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="Porto">Porto</option>
+                      <option value="Taboca">Taboca</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Tipo Carga *</label>
+                    <select
+                      value={cesariForm.tipo_carga}
+                      onChange={(e) => setCesariForm(prev => ({ ...prev, tipo_carga: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      data-testid="select-cesari-tipo-carga"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="Cheia">Cheia</option>
+                      <option value="Vazia">Vazia</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Sentido *</label>
+                    <select
+                      value={cesariForm.sentido}
+                      onChange={(e) => setCesariForm(prev => ({ ...prev, sentido: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      data-testid="select-cesari-sentido"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="Ida">Ida</option>
+                      <option value="Volta">Volta</option>
+                      <option value="Ida/Volta">Ida/Volta</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Destino Especial</label>
+                    <input
+                      type="text"
+                      value={cesariForm.destino_especial}
+                      onChange={(e) => setCesariForm(prev => ({ ...prev, destino_especial: e.target.value }))}
+                      placeholder="Ex: Taboca (opcional)"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      data-testid="input-cesari-destino-especial"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor Frete *</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                      <input
+                        type="text"
+                        value={cesariForm.valor_frete}
+                        onChange={(e) => setCesariForm(prev => ({ ...prev, valor_frete: e.target.value }))}
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        data-testid="input-cesari-valor-frete"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Valor Pernoite</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                      <input
+                        type="text"
+                        value={cesariForm.valor_pernoite}
+                        onChange={(e) => setCesariForm(prev => ({ ...prev, valor_pernoite: e.target.value }))}
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        data-testid="input-cesari-valor-pernoite"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Motorista *</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                      <input
+                        type="text"
+                        value={cesariForm.comissao_motorista}
+                        onChange={(e) => setCesariForm(prev => ({ ...prev, comissao_motorista: e.target.value }))}
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        data-testid="input-cesari-comissao-motorista"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Comissão Pernoite/Feriado</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">R$</span>
+                      <input
+                        type="text"
+                        value={cesariForm.comissao_pernoite_feriado_motorista}
+                        onChange={(e) => setCesariForm(prev => ({ ...prev, comissao_pernoite_feriado_motorista: e.target.value }))}
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        data-testid="input-cesari-comissao-pernoite"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Observações</label>
+                  <input
+                    type="text"
+                    value={cesariForm.observacoes}
+                    onChange={(e) => setCesariForm(prev => ({ ...prev, observacoes: e.target.value }))}
+                    placeholder="Observações (opcional)"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    data-testid="input-cesari-observacoes"
+                  />
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => { setCesariModalOpen(false); setEditingCesariItem(null); setSaveError(null); }}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  data-testid="button-cancel-cesari-modal"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveCesari}
+                  disabled={isSavingCesari || !cesariForm.local || !cesariForm.tipo_carga || !cesariForm.sentido || !cesariForm.valor_frete || !cesariForm.comissao_motorista}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                  data-testid="button-save-cesari-modal"
+                >
+                  {isSavingCesari ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {editingCesariItem ? 'Atualizar' : 'Salvar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderPrecosContent = () => {
     if (selectedOperacao === 'all') {
       return (
@@ -4164,6 +5850,30 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
             </div>
             <div className="p-4">
               {renderMitsubishiPrecos()}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">AUTOSERVICE - Configuração de Preços</h3>
+            </div>
+            <div className="p-4">
+              {renderAutoservicePrecos()}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">TEGMA - Configuração de Preços</h3>
+            </div>
+            <div className="p-4">
+              {renderTegmaPrecos()}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+              <h3 className="text-lg font-semibold text-white">CESARI - Configuração de Preços</h3>
+            </div>
+            <div className="p-4">
+              {renderCesariPrecos()}
             </div>
           </div>
         </div>
@@ -4204,6 +5914,45 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
           </div>
           <div className="p-4">
             {renderMitsubishiPrecos()}
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Autoservice') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">AUTOSERVICE - Configuração de Preços</h3>
+          </div>
+          <div className="p-4">
+            {renderAutoservicePrecos()}
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Tegma') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">TEGMA - Configuração de Preços</h3>
+          </div>
+          <div className="p-4">
+            {renderTegmaPrecos()}
+          </div>
+        </div>
+      );
+    }
+
+    if (selectedOperacao === 'Cesari') {
+      return (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gray-900 dark:bg-gray-900 px-4 py-3">
+            <h3 className="text-lg font-semibold text-white">CESARI - Configuração de Preços</h3>
+          </div>
+          <div className="p-4">
+            {renderCesariPrecos()}
           </div>
         </div>
       );
@@ -4255,7 +6004,7 @@ const Operacoes = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Operações</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Acompanhamento de Viagem</h1>
         
         <div className="relative">
           <button

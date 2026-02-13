@@ -1,0 +1,175 @@
+📋 DOCUMENTAÇÃO DA OPERAÇÃO CESARI
+Pitinga ↔ Taboca
+🚛 TIPOS DE VIAGEM
+1. VIAGEM CASADA
+Operação realizada em dois trechos separados:
+
+IDA: Carreta sai carregada (cheia) ou vazia do Porto
+
+VOLTA: Carreta retorna geralmente vazia
+
+Características:
+
+Duas viagens distintas (ida + volta)
+
+Comissão do motorista: R$ 300,00 por trecho
+
+Valor do frete varia conforme carga e sentido
+
+Exemplo:
+
+text
+Ida:   Porto → Destino (CHEIA)  = R$ 460,00 + R$ 300,00 comissão
+Volta: Destino → Porto (VAZIA)  = R$ 287,49 + R$ 300,00 comissão
+Total: R$ 747,49 + R$ 600,00 comissão = R$ 1.347,49
+2. VIAGEM SOLTEIRA
+Operação realizada em um único trecho (ida e volta no mesmo dia):
+
+Carreta sai e volta vazia no mesmo dia
+
+Apenas para rotas específicas (Porto)
+
+Características:
+
+Ida e volta no mesmo dia
+
+Sempre vazia nos dois sentidos
+
+Comissão do motorista: R$ 250,00 por viagem completa
+
+Valor fixo
+
+Exemplo:
+
+text
+Ida e Volta: Porto ↔ Destino (VAZIA) = R$ 370,00 + R$ 250,00 comissão
+Total: R$ 620,00
+📍 LOCAIS E VALORES
+PORTO (Origem ou Destino)
+Viagem Casada:
+Sentido	Carga	Valor Frete	Comissão Motorista
+Ida	CHEIA	R$ 460,00	R$ 300,00
+Volta	VAZIA	R$ 287,49	R$ 300,00
+Viagem Solteira:
+Sentido	Carga	Valor Frete	Comissão Motorista
+Ida/Volta	VAZIA	R$ 370,00	R$ 250,00
+TABOCA (Destino Especial)
+Quando o destino final for Taboca, os valores são diferenciados:
+
+Ida para Taboca:
+Carga	Valor Frete	Comissão Motorista
+VAZIA	R$ 4.019,40	R$ 300,00
+CARREGADA	R$ 4.019,40	R$ 300,00
+Volta de Taboca (saindo de Taboca para qualquer lugar):
+Carga	Valor Frete	Comissão Motorista
+VAZIA	R$ 2.411,64	R$ 300,00
+CHEIA	R$ 2.411,64	R$ 300,00
+💰 ADICIONAIS
+PERNOITE
+Quando a viagem exige pernoite do motorista:
+
+Valor adicional ao frete: R$ 450,00
+
+Comissão adicional por dia: R$ 100,00
+
+Exemplo com pernoite:
+
+text
+Taboca ida CHEIA     = R$ 4.019,40
+Comissão motorista   = R$ 300,00
+Pernoite (1 dia)     = R$ 450,00
+Comissão pernoite    = R$ 100,00
+─────────────────────────────────
+Total                = R$ 4.869,40
+FERIADOS
+Em feriados, aplica-se adicional de comissão:
+
+R$ 100,00 por dia de feriado (adicional à comissão normal)
+
+🔄 FLUXO DE OPERAÇÃO
+Exemplo 1: Viagem Casada Porto
+text
+DIA 1 - IDA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Porto → Cliente (CHEIA)
+Frete:     R$ 460,00
+Comissão:  R$ 300,00
+Total:     R$ 760,00
+
+DIA 2 - VOLTA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Cliente → Porto (VAZIA)
+Frete:     R$ 287,49
+Comissão:  R$ 300,00
+Total:     R$ 587,49
+
+TOTAL GERAL: R$ 1.347,49
+Exemplo 2: Viagem Solteira Porto
+text
+MESMO DIA - IDA E VOLTA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Porto ↔ Cliente (VAZIA - ida e volta)
+Frete:     R$ 370,00
+Comissão:  R$ 250,00
+Total:     R$ 620,00
+Exemplo 3: Viagem Taboca com Pernoite
+text
+DIA 1 - IDA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pitinga → Taboca (CARREGADA)
+Frete:              R$ 4.019,40
+Comissão:           R$ 300,00
+Pernoite:           R$ 450,00
+Comissão pernoite:  R$ 100,00
+Subtotal:           R$ 4.869,40
+
+DIA 3 - VOLTA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Taboca → Pitinga (VAZIA)
+Frete:     R$ 2.411,64
+Comissão:  R$ 300,00
+Subtotal:  R$ 2.711,64
+
+TOTAL GERAL: R$ 7.581,04
+📊 RESUMO DOS VALORES
+Comissões dos Motoristas:
+Viagem Casada: R$ 300,00 por trecho
+
+Viagem Solteira: R$ 250,00 por viagem
+
+Pernoite/Feriado: R$ 100,00 adicional por dia
+
+Valores de Frete Porto:
+Ida cheia: R$ 460,00
+
+Volta vazia: R$ 287,49
+
+Solteira (ida/volta): R$ 370,00
+
+Valores de Frete Taboca:
+Ida (cheia ou vazia): R$ 4.019,40
+
+Volta (cheia ou vazia): R$ 2.411,64
+
+Adicionais:
+Pernoite: R$ 450,00
+
+Comissão pernoite/feriado: R$ 100,00/dia
+
+🎯 REGRAS IMPORTANTES
+Solteira só é vazia: Viagens solteiras sempre saem e voltam vazias
+
+Taboca tem preço único: Ida para Taboca tem o mesmo valor seja cheia ou vazia
+
+Volta de Taboca: Qualquer viagem saindo de Taboca usa o valor de "volta"
+
+Casada = 2 cobranças: Ida e volta são faturadas separadamente
+
+Pernoite: Adiciona R$ 450,00 ao frete + R$ 100,00 à comissão por dia
+
+📞 PITINGA → TABOCA
+Origem: Pitinga
+Destino Especial: Taboca
+Ponto Intermediário: Porto
+
+Essa documentação explica toda a operação de forma clara! Quer que eu adicione ou ajuste alguma coisa? 🚛

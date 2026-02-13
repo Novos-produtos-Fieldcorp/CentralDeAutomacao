@@ -16,7 +16,7 @@ const SpotlightCard = React.forwardRef(
       as,
       children,
       className = '',
-      spotlightColor = 'rgba(255, 255, 255, 0.25)',
+      spotlightColor,
       ...rest
     }: SpotlightCardProps<T>,
     ref: React.ForwardedRef<HTMLElement>
@@ -41,7 +41,9 @@ const SpotlightCard = React.forwardRef(
 
       el.style.setProperty('--mouse-x', `${x}px`);
       el.style.setProperty('--mouse-y', `${y}px`);
-      el.style.setProperty('--spotlight-color', spotlightColor);
+      if (spotlightColor) {
+        el.style.setProperty('--spotlight-color', spotlightColor);
+      }
     };
 
     return (

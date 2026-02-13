@@ -122,7 +122,7 @@ const Navbar = ({ onToggle }: NavbarProps) => {
     { path: '/comprovantes', icon: FileText, label: 'Comprovantes', needsAccess: true, enabled: moduleAccess.comprovantes },
     { path: '/resumos-grupo', icon: MessagesSquare, label: 'Resumos em Grupo', needsAccess: true, enabled: moduleAccess.resumos },
     { path: '/tags-admin', icon: Tags, label: 'Marcadores', needsAccess: true, enabled: moduleAccess.tags },
-    { path: '/operacoes', icon: Route, label: 'Operações', needsAccess: true, enabled: moduleAccess.operacoes },
+    { path: '/operacoes', icon: Route, label: 'Acompanhamento de Viagem', needsAccess: true, enabled: moduleAccess.operacoes },
   ];
 
   // Filter menu items to only show enabled ones
