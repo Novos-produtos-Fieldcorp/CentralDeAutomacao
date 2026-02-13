@@ -5808,6 +5808,279 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/viagens/import", async (req, res) => {
+    try {
+      const { operacao, companyId, rows } = req.body;
+
+      if (!operacao || !companyId || !Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({ error: "operacao, companyId e rows são obrigatórios" });
+      }
+
+      const validTables: Record<string, string> = {
+        autoservice: "operacao_autoservice",
+        cesari: "operacao_cesari",
+        mitsubishi: "operacao_mitsubishi",
+        sada: "operacao_sada",
+        superterminais: "operacao_superterminais",
+        tegma: "operacao_tegma",
+      };
+
+      const tableName = validTables[operacao.toLowerCase()];
+      if (!tableName) {
+        return res.status(400).json({ error: `Operação inválida: ${operacao}` });
+      }
+
+      function parseBool(val: any): boolean | null {
+        if (val === undefined || val === null || val === "") return null;
+        if (typeof val === "boolean") return val;
+        if (typeof val === "number") return val !== 0;
+        const s = String(val).trim().toLowerCase();
+        if (s === "sim" || s === "true" || s === "1") return true;
+        if (s === "não" || s === "nao" || s === "false" || s === "0") return false;
+        return null;
+      }
+
+      function parseIntVal(val: any): number | null {
+        if (val === undefined || val === null || val === "") return null;
+        const n = Number(val);
+        return isNaN(n) ? null : Math.round(n);
+      }
+
+      function parseTipoCarreta(val: any): number | null {
+        if (val === undefined || val === null || val === "") return null;
+        const s = String(val).trim().toLowerCase();
+        if (s === "prancha" || s === "0") return 0;
+        if (s === "cegonha" || s === "1") return 1;
+        const n = Number(val);
+        return isNaN(n) ? null : Math.round(n);
+      }
+
+      function parseEmbarqueDesembarque(val: any): number | null {
+        if (val === undefined || val === null || val === "") return null;
+        const s = String(val).trim().toLowerCase();
+        if (s === "embarque" || s === "0") return 0;
+        if (s === "desembarque" || s === "1") return 1;
+        const n = Number(val);
+        return isNaN(n) ? null : Math.round(n);
+      }
+
+      function parseCapacidade(val: any): number | null {
+        if (val === undefined || val === null || val === "") return null;
+        const s = String(val).trim().toLowerCase();
+        if (s === "vazio" || s === "0") return 0;
+        if (s === "cheio" || s === "1") return 1;
+        const n = Number(val);
+        return isNaN(n) ? null : Math.round(n);
+      }
+
+      function strVal(val: any): string | null {
+        if (val === undefined || val === null || val === "") return null;
+        return String(val).trim();
+      }
+
+      function numVal(val: any): number | null {
+        if (val === undefined || val === null || val === "") return null;
+        const n = Number(val);
+        return isNaN(n) ? null : n;
+      }
+
+      const { data: motoristas } = await supabaseBackend
+        .from("motorista")
+        .select("motorista_id, nome")
+        .eq("company_id", companyId);
+
+      const { data: veiculos } = await supabaseBackend
+        .from("veiculo")
+        .select("veiculo_id, placa")
+        .eq("company_id", companyId);
+
+      const { data: clientes } = await supabaseBackend
+        .from("cliente")
+        .select("cliente_id, nome")
+        .eq("company_id", companyId);
+
+      const motoristaMap = new Map<string, number>();
+      motoristas?.forEach((m: any) => {
+        if (m.nome) motoristaMap.set(m.nome.trim().toLowerCase(), m.motorista_id);
+      });
+
+      const veiculoMap = new Map<string, number>();
+      veiculos?.forEach((v: any) => {
+        if (v.placa) veiculoMap.set(v.placa.trim().toLowerCase(), v.veiculo_id);
+      });
+
+      const clienteMap = new Map<string, number>();
+      clientes?.forEach((c: any) => {
+        if (c.nome) clienteMap.set(c.nome.trim().toLowerCase(), c.cliente_id);
+      });
+
+      let successCount = 0;
+      let failedCount = 0;
+      const errors: Array<{ row: number; message: string }> = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        try {
+          const motoristaNome = strVal(row["Motorista"]);
+          if (!motoristaNome) {
+            throw new Error("Campo 'Motorista' é obrigatório");
+          }
+          const motorista_id = motoristaMap.get(motoristaNome.toLowerCase());
+          if (!motorista_id) {
+            throw new Error(`Motorista não encontrado: ${motoristaNome}`);
+          }
+
+          const dataHoraInicial = strVal(row["Data/Hora Inicial"]);
+          if (!dataHoraInicial) {
+            throw new Error("Campo 'Data/Hora Inicial' é obrigatório");
+          }
+
+          const veiculoPlaca = strVal(row["Veiculo Placa"]);
+          const veiculo_id = veiculoPlaca ? veiculoMap.get(veiculoPlaca.toLowerCase()) || null : null;
+
+          const ajudanteNome = strVal(row["Ajudante"]);
+          const ajudante_id = ajudanteNome ? motoristaMap.get(ajudanteNome.toLowerCase()) || null : null;
+
+          const clienteNome = strVal(row["Cliente"]);
+          const cliente_id = clienteNome ? clienteMap.get(clienteNome.toLowerCase()) || null : null;
+
+          const viagemRecord: Record<string, any> = {
+            data_hora_inicial: dataHoraInicial,
+            motorista_id,
+            company_id: companyId,
+          };
+
+          const kmInicial = numVal(row["KM Inicial"]);
+          if (kmInicial !== null) viagemRecord.km_inicial = kmInicial;
+
+          if (veiculo_id !== null) viagemRecord.veiculo_id = veiculo_id;
+          if (ajudante_id !== null) viagemRecord.ajudante_id = ajudante_id;
+          if (cliente_id !== null) viagemRecord.cliente_id = cliente_id;
+
+          const kmFinal = numVal(row["KM Final"]);
+          if (kmFinal !== null) viagemRecord.km_final = kmFinal;
+
+          const dataHoraFinal = strVal(row["Data/Hora Final"]);
+          if (dataHoraFinal) viagemRecord.data_hora_final = dataHoraFinal;
+
+          const janta = parseBool(row["Janta"]);
+          if (janta !== null) viagemRecord.janta = janta;
+
+          const horaJanta = strVal(row["Hora Janta"]);
+          if (horaJanta) viagemRecord.hora_janta = horaJanta;
+
+          const { data: viagemData, error: viagemError } = await supabaseBackend
+            .from("acompanhamento_viagem")
+            .insert([viagemRecord])
+            .select()
+            .single();
+
+          if (viagemError) {
+            throw new Error(`Erro ao inserir viagem: ${viagemError.message}`);
+          }
+
+          const idViagem = viagemData.id;
+          let opRecord: Record<string, any> = { id_viagem: idViagem };
+
+          const opKey = operacao.toLowerCase();
+
+          if (opKey === "autoservice") {
+            opRecord.origem = strVal(row["Origem"]);
+            opRecord.destino = strVal(row["Destino"]);
+            opRecord.placa_veiculo = strVal(row["Placa Veiculo"]);
+            opRecord.embarque = strVal(row["Embarque"]);
+            opRecord.nome_cliente = strVal(row["Nome Cliente"]);
+            opRecord.tel_cliente = strVal(row["Tel Cliente"]);
+            opRecord.valor_frete = numVal(row["Valor Frete"]);
+            opRecord.destino_final = strVal(row["Destino Final"]);
+          } else if (opKey === "cesari") {
+            opRecord.origem = strVal(row["Origem"]);
+            opRecord.destino = strVal(row["Destino"]);
+            opRecord.nr_manifesto = strVal(row["Nr Manifesto"]);
+            opRecord.tipo_viagem = strVal(row["Tipo Viagem"]);
+            opRecord.pernoite = parseBool(row["Pernoite"]);
+            opRecord.dia_nao_util = parseBool(row["Dia Nao Util"]);
+            opRecord.v2_dt_hora = strVal(row["V2 Data/Hora"]);
+            opRecord.v2_origem = strVal(row["V2 Origem"]);
+            opRecord.v2_destino = strVal(row["V2 Destino"]);
+            opRecord.v2_capacidade = parseIntVal(row["V2 Capacidade"]);
+            opRecord.v2_nr_manifesto = strVal(row["V2 Nr Manifesto"]);
+          } else if (opKey === "mitsubishi") {
+            opRecord.origem = strVal(row["Origem"]);
+            opRecord.destino = strVal(row["Destino"]);
+            opRecord.frota = strVal(row["Frota"]);
+            opRecord.tipo_carreta = parseTipoCarreta(row["Tipo Carreta"]);
+            opRecord.qtd_carro = parseIntVal(row["Qtd Carro"]);
+            opRecord.modelo_carro = strVal(row["Modelo Carro"]);
+            opRecord.km_chegada_porto = numVal(row["KM Chegada Porto"]);
+            opRecord.data_hora_chegada_porto = strVal(row["Data/Hora Chegada Porto"]);
+          } else if (opKey === "sada") {
+            opRecord.origem = strVal(row["Origem"]);
+            opRecord.destino = strVal(row["Destino"]);
+            opRecord.destino2 = strVal(row["Destino 2"]);
+            opRecord.tipo_carreta = parseTipoCarreta(row["Tipo Carreta"]);
+            opRecord.tipo_carga = strVal(row["Tipo Carga"]);
+            opRecord.frota = strVal(row["Frota"]);
+            opRecord.nr_viagem = strVal(row["Nr Viagem"]);
+            opRecord.qtd_carros = parseIntVal(row["Qtd Carros"]);
+            opRecord.modelo = strVal(row["Modelo"]);
+          } else if (opKey === "superterminais") {
+            opRecord.embarque_desembarque = parseEmbarqueDesembarque(row["Embarque/Desembarque"]);
+            opRecord.nome_navio = strVal(row["Nome Navio"]);
+            opRecord.capacidade = parseCapacidade(row["Capacidade"]);
+            opRecord.nr_container = strVal(row["Nr Container"]);
+            opRecord.fim_de_semana = parseBool(row["Fim de Semana"]);
+          } else if (opKey === "tegma") {
+            opRecord.tipo_viagem = strVal(row["Tipo Viagem"]);
+            opRecord.origem = strVal(row["Origem"]);
+            opRecord.destino = strVal(row["Destino"]);
+            opRecord.placa_carreta = strVal(row["Placa Carreta"]);
+            opRecord.nr_cautela = strVal(row["Nr Cautela"]);
+            opRecord.nr_viagem = strVal(row["Nr Viagem"]);
+            opRecord.empresa = strVal(row["Empresa"]);
+            opRecord.qtd_carros = parseIntVal(row["Qtd Carros"]);
+            opRecord.veiculo_transportado = strVal(row["Veiculo Transportado"]);
+            opRecord.placa_veiculo_transportado = strVal(row["Placa Veiculo Transportado"]);
+            opRecord.retorno = parseBool(row["Retorno"]);
+            opRecord.p2_origem = strVal(row["P2 Origem"]);
+            opRecord.p2_destino = strVal(row["P2 Destino"]);
+            opRecord.p2_placa_veiculo = strVal(row["P2 Placa Veiculo"]);
+            opRecord.p2_nr_cautela = strVal(row["P2 Nr Cautela"]);
+            opRecord.p2_data_hora = strVal(row["P2 Data/Hora"]);
+          }
+
+          Object.keys(opRecord).forEach((key) => {
+            if (key !== "id_viagem" && opRecord[key] === null) {
+              delete opRecord[key];
+            }
+          });
+
+          const { error: opError } = await supabaseBackend
+            .from(tableName)
+            .insert([opRecord]);
+
+          if (opError) {
+            await supabaseBackend
+              .from("acompanhamento_viagem")
+              .delete()
+              .eq("id", idViagem);
+            throw new Error(`Erro ao inserir ${tableName}: ${opError.message}`);
+          }
+
+          successCount++;
+        } catch (err: any) {
+          failedCount++;
+          errors.push({ row: i + 1, message: err.message || "Erro desconhecido" });
+        }
+      }
+
+      res.json({ successCount, failedCount, errors });
+    } catch (error: any) {
+      console.error("Error in viagens import:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   startGroupSummaryCron();

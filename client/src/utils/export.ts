@@ -35,6 +35,45 @@ export const downloadExcelTemplate = (type: 'motoristas' | 'clientes' | 'veiculo
   XLSX.writeFile(wb, `${fileName}.xlsx`);
 };
 
+const VIAGEM_BASE_HEADERS = [
+  'Data/Hora Inicial', 'KM Inicial', 'Motorista', 'Veiculo Placa',
+  'Ajudante', 'Cliente', 'KM Final', 'Data/Hora Final', 'Janta', 'Hora Janta'
+];
+
+const VIAGEM_OPERATION_HEADERS: Record<string, string[]> = {
+  autoservice: ['Origem', 'Destino', 'Placa Veiculo', 'Embarque', 'Nome Cliente', 'Tel Cliente', 'Valor Frete', 'Destino Final'],
+  cesari: ['Origem', 'Destino', 'Nr Manifesto', 'Tipo Viagem', 'Pernoite', 'Dia Nao Util', 'V2 Data/Hora', 'V2 Origem', 'V2 Destino', 'V2 Capacidade', 'V2 Nr Manifesto'],
+  mitsubishi: ['Origem', 'Destino', 'Frota', 'Tipo Carreta', 'Qtd Carro', 'Modelo Carro', 'KM Chegada Porto', 'Data/Hora Chegada Porto'],
+  sada: ['Origem', 'Destino', 'Destino 2', 'Tipo Carreta', 'Tipo Carga', 'Frota', 'Nr Viagem', 'Qtd Carros', 'Modelo'],
+  superterminais: ['Embarque/Desembarque', 'Nome Navio', 'Capacidade', 'Nr Container', 'Fim de Semana'],
+  tegma: ['Tipo Viagem', 'Origem', 'Destino', 'Placa Carreta', 'Nr Cautela', 'Nr Viagem', 'Empresa', 'Qtd Carros', 'Veiculo Transportado', 'Placa Veiculo Transportado', 'Retorno', 'P2 Origem', 'P2 Destino', 'P2 Placa Veiculo', 'P2 Nr Cautela', 'P2 Data/Hora'],
+};
+
+export const getViagemHeaders = (operacao: string): string[] => {
+  return [...VIAGEM_BASE_HEADERS, ...(VIAGEM_OPERATION_HEADERS[operacao.toLowerCase()] || [])];
+};
+
+export const getViagemRequiredColumns = (operacao: string): string[] => {
+  const base = ['Data/Hora Inicial', 'Motorista'];
+  const opRequired: Record<string, string[]> = {
+    autoservice: ['Origem', 'Destino'],
+    cesari: ['Origem', 'Destino', 'Tipo Viagem'],
+    mitsubishi: ['Origem', 'Destino'],
+    sada: ['Origem', 'Destino'],
+    superterminais: ['Embarque/Desembarque'],
+    tegma: ['Tipo Viagem', 'Origem', 'Destino'],
+  };
+  return [...base, ...(opRequired[operacao.toLowerCase()] || [])];
+};
+
+export const downloadViagemTemplate = (operacao: string, fileName: string) => {
+  const headers = getViagemHeaders(operacao);
+  const ws = XLSX.utils.aoa_to_sheet([headers]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template');
+  XLSX.writeFile(wb, `${fileName}.xlsx`);
+};
+
 export const exportToExcel = (data: any[], fileName: string) => {
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();

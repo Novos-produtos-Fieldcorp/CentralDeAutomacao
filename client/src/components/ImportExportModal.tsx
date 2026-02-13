@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import ImportPreviewModal from './ImportPreviewModal';
 import { useCompanyData } from '../hooks/useCompanyData';
-import { downloadExcelTemplate } from '../utils/export';
+import { downloadExcelTemplate, downloadViagemTemplate, getViagemHeaders, getViagemRequiredColumns } from '../utils/export';
 import Pagination from './Pagination';
 import { usePagination } from '../hooks/usePagination';
 import { supabase } from '../lib/supabase';
@@ -59,7 +59,7 @@ interface ImportExportModalProps {
   onClose: () => void;
 }
 
-type DataType = 'motoristas' | 'clientes' | 'veiculos';
+type DataType = 'motoristas' | 'clientes' | 'veiculos' | 'viagens';
 
 interface ImportData {
   row: number;
@@ -74,9 +74,19 @@ interface ImportSummary {
   data?: ImportData[];
 }
 
+const OPERACAO_OPTIONS = [
+  { value: 'autoservice', label: 'Autoservice' },
+  { value: 'cesari', label: 'Cesari' },
+  { value: 'mitsubishi', label: 'Mitsubishi' },
+  { value: 'sada', label: 'Sada' },
+  { value: 'superterminais', label: 'Superterminais' },
+  { value: 'tegma', label: 'Tegma' },
+];
+
 const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('import');
   const [dataType, setDataType] = useState<DataType>('motoristas');
+  const [selectedOperacao, setSelectedOperacao] = useState<string>('sada');
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
@@ -177,6 +187,21 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
       if (!row.Tipologia) {
         errors.push({ row: index + 2, message: 'Tipologia é obrigatória' });
       }
+    });
+
+    return { valid: errors.length === 0, errors };
+  };
+
+  const validateViagens = (data: any[]): { valid: boolean; errors: Array<{ row: number; message: string }> } => {
+    const errors: Array<{ row: number; message: string }> = [];
+    const requiredCols = getViagemRequiredColumns(selectedOperacao);
+    
+    data.forEach((row, index) => {
+      requiredCols.forEach(col => {
+        if (!row[col] && row[col] !== 0) {
+          errors.push({ row: index + 2, message: `"${col}" é obrigatório` });
+        }
+      });
     });
 
     return { valid: errors.length === 0, errors };
@@ -318,6 +343,9 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
           break;
         case 'veiculos':
           result = await importVeiculos(data);
+          break;
+        case 'viagens':
+          result = await importViagens(data);
           break;
       }
       
@@ -666,6 +694,55 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
     return { successCount, failedCount, errors };
   };
 
+  const importViagens = async (data: any[]) => {
+    let successCount = 0;
+    let failedCount = 0;
+    const errors: Array<{ row: number; message: string }> = [];
+
+    try {
+      const response = await fetch('/api/viagens/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operacao: selectedOperacao,
+          companyId: companyId,
+          rows: data.map(row => {
+            const cleanRow: Record<string, any> = {};
+            Object.keys(row).forEach(key => {
+              if (key !== 'row') cleanRow[key] = row[key];
+            });
+            return cleanRow;
+          }),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao importar viagens');
+      }
+
+      const result = await response.json();
+      successCount = result.successCount;
+      failedCount = result.failedCount;
+      if (result.errors) {
+        errors.push(...result.errors);
+      }
+    } catch (error) {
+      failedCount = data.length;
+      errors.push({ row: 0, message: error instanceof Error ? error.message : 'Erro desconhecido' });
+    }
+
+    setImportSummary({
+      total: data.length,
+      success: successCount,
+      failed: failedCount,
+      errors,
+      data: []
+    });
+
+    return { successCount, failedCount, errors };
+  };
+
   const handleExport = async () => {
     setIsProcessing(true);
 
@@ -938,8 +1015,33 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
               <option value="motoristas">Motoristas</option>
               <option value="clientes">Clientes</option>
               <option value="veiculos">Veículos da Empresa</option>
+              <option value="viagens">Viagens (por Operação)</option>
             </select>
           </div>
+
+          {dataType === 'viagens' && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Tipo de Operação
+              </label>
+              <select
+                value={selectedOperacao}
+                onChange={(e) => {
+                  setSelectedOperacao(e.target.value);
+                  setImportSummary(null);
+                  setFile(null);
+                  setPreviewData([]);
+                  setImportStep('upload');
+                }}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                data-testid="select-operacao-type"
+              >
+                {OPERACAO_OPTIONS.map(op => (
+                  <option key={op.value} value={op.value}>{op.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             {importStep === 'upload' && (
@@ -955,7 +1057,13 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
                         </p>
                       </div>
                       <button
-                        onClick={() => downloadExcelTemplate(dataType, `template-${dataType}`)}
+                        onClick={() => {
+                          if (dataType === 'viagens') {
+                            downloadViagemTemplate(selectedOperacao, `template-viagens-${selectedOperacao}`);
+                          } else {
+                            downloadExcelTemplate(dataType as 'motoristas' | 'clientes' | 'veiculos', `template-${dataType}`);
+                          }
+                        }}
                         className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center gap-1"
                       >
                         <Download size={16} />
@@ -983,6 +1091,7 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
                               {dataType === 'motoristas' && 'Nome*, CPF*, Email, Telefone, Data Nascimento, Gênero, Função*, Logradouro*, Numero, Complemento, CEP, Bairro*, Cidade*, Estado*, Placa*, Marca, Modelo, Tipologia*, Ano, Combustível, Peso, Cubagem, Cor, Possui Rastreador, Marca Rastreador'}
                               {dataType === 'clientes' && 'Nome*, CNPJ*, Email, Telefone'}
                               {dataType === 'veiculos' && 'Placa*, Marca, Modelo, Tipologia*, Ano, Combustível, Peso, Cubagem, Cor, Possui Rastreador, Marca Rastreador (Apenas veículos da própria empresa)'}
+                              {dataType === 'viagens' && `${getViagemRequiredColumns(selectedOperacao).join('*, ')}* (e mais colunas opcionais - baixe o template)`}
                             </p>
                             <p className="text-xs mt-1">* Campos obrigatórios</p>
                             <p className="text-xs mt-1">Estado deve ser a sigla (ex: SP, RJ)</p>
@@ -1092,7 +1201,7 @@ const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }
         onImport={async (data: any[]) => {
           await handleImportFromPreview(data);
         }}
-        fileType={dataType}
+        fileType={dataType as 'motoristas' | 'clientes' | 'veiculos'}
       />
     </div>
   );
