@@ -1547,7 +1547,7 @@ const HorizontalBarChart = ({
   data, 
   valueKey = 'value',
   labelKey = 'label',
-  color = 'bg-primary'
+  color = 'bg-teal-500'
 }: { 
   title: string; 
   data: Array<{ label: string; value: number }>; 
@@ -1577,9 +1577,9 @@ const HorizontalBarChart = ({
             <div className="w-24 text-xs text-gray-600 dark:text-gray-400 truncate" title={item.label}>
               {item.label}
             </div>
-            <div className="flex-1 h-6 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
+            <div className="flex-1 h-6 bg-gray-50 dark:bg-gray-700/50 rounded overflow-hidden">
               <div 
-                className={`h-full ${color} transition-all duration-300`}
+                className={`h-full ${color} rounded-md transition-all duration-300`}
                 style={{ width: `${(item.value / maxValue) * 100}%` }}
               />
             </div>
@@ -1779,38 +1779,40 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-blue-600 dark:bg-blue-400"
+                color="bg-teal-500 dark:bg-teal-400"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-blue-500 dark:bg-blue-500"
+                color="bg-teal-500 dark:bg-teal-400"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-blue-400 dark:bg-blue-600"
+                color="bg-teal-500 dark:bg-teal-400"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="flex items-end gap-2 h-32 overflow-x-auto pb-2">
-                  {stats.viagensPorMes.map((item, index) => {
-                    const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                    const heightPercent = (item.value / maxVal) * 100;
-                    return (
-                      <div key={index} className="flex flex-col items-center min-w-[60px]">
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
-                        <div 
-                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
-                          style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                        />
-                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                      </div>
-                    );
-                  })}
+                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+                    {stats.viagensPorMes.map((item, index) => {
+                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                      const heightPercent = (item.value / maxVal) * 100;
+                      return (
+                        <div key={index} className="flex flex-col items-center min-w-[60px]">
+                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                          <div 
+                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
+                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
@@ -1994,38 +1996,40 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-blue-600 dark:bg-blue-400"
+                color="bg-teal-500 dark:bg-teal-400"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-blue-500 dark:bg-blue-500"
+                color="bg-teal-500 dark:bg-teal-400"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-blue-400 dark:bg-blue-600"
+                color="bg-teal-500 dark:bg-teal-400"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="flex items-end gap-2 h-32 overflow-x-auto pb-2">
-                  {stats.viagensPorMes.map((item, index) => {
-                    const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                    const heightPercent = (item.value / maxVal) * 100;
-                    return (
-                      <div key={index} className="flex flex-col items-center min-w-[60px]">
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
-                        <div 
-                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
-                          style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                        />
-                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                      </div>
-                    );
-                  })}
+                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+                    {stats.viagensPorMes.map((item, index) => {
+                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                      const heightPercent = (item.value / maxVal) * 100;
+                      return (
+                        <div key={index} className="flex flex-col items-center min-w-[60px]">
+                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                          <div 
+                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
+                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
@@ -2194,33 +2198,35 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="Containers por Motorista" 
                 data={stats.containersPorMotorista}
-                color="bg-blue-600 dark:bg-blue-400"
+                color="bg-teal-500 dark:bg-teal-400"
               />
               <HorizontalBarChart 
                 title="Containers por Cavalo" 
                 data={stats.containersPorCavalo}
-                color="bg-blue-500 dark:bg-blue-500"
+                color="bg-teal-500 dark:bg-teal-400"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Volume de Viagens - Super Terminais por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="flex items-end gap-2 h-32 overflow-x-auto pb-2">
-                  {stats.viagensPorMes.map((item, index) => {
-                    const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                    const heightPercent = (item.value / maxVal) * 100;
-                    return (
-                      <div key={index} className="flex flex-col items-center min-w-[60px]">
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
-                        <div 
-                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
-                          style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                        />
-                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                      </div>
-                    );
-                  })}
+                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+                    {stats.viagensPorMes.map((item, index) => {
+                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                      const heightPercent = (item.value / maxVal) * 100;
+                      return (
+                        <div key={index} className="flex flex-col items-center min-w-[60px]">
+                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                          <div 
+                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
+                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
@@ -2307,6 +2313,9 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
     const kmPorMotorista: Record<string, number> = {};
     const kmPorCavalo: Record<string, number> = {};
     const viagensPorMes: Record<string, number> = {};
+    const comissaoPorMotorista: Record<string, number> = {};
+    const datasUnicas = new Set<string>();
+    const viagensPorData: Record<string, number> = {};
 
     cesariData.forEach((item: any) => {
       const viagem = item.viagem;
@@ -2315,20 +2324,24 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
       const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
 
+      let comissaoItem = 0;
       const tipoViagem = (item.tipo_viagem || '').toString().toLowerCase();
       if (tipoViagem.includes('solteira')) {
-        comissaoTotal += 250;
+        comissaoItem += 250;
       } else {
-        comissaoTotal += 300;
+        comissaoItem += 300;
         if (item.v2_origem || item.v2_destino) {
-          comissaoTotal += 300;
+          comissaoItem += 300;
         }
       }
-      if (item.pernoite) comissaoTotal += 100;
-      if (item.dia_nao_util) comissaoTotal += 100;
+      if (item.pernoite) comissaoItem += 100;
+      if (item.dia_nao_util) comissaoItem += 100;
+      comissaoTotal += comissaoItem;
 
       const motoristaNome = viagem.motorista_nome || 'Desconhecido';
       const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
+
+      comissaoPorMotorista[motoristaNome] = (comissaoPorMotorista[motoristaNome] || 0) + comissaoItem;
 
       kmPorMotorista[motoristaNome] = (kmPorMotorista[motoristaNome] || 0) + (km > 0 ? km : 0);
       kmPorCavalo[veiculoPlaca] = (kmPorCavalo[veiculoPlaca] || 0) + (km > 0 ? km : 0);
@@ -2336,8 +2349,13 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
       if (viagem.data_hora_inicial) {
         const mes = viagem.data_hora_inicial.substring(0, 7);
         viagensPorMes[mes] = (viagensPorMes[mes] || 0) + 1;
+        const dataStr = viagem.data_hora_inicial.substring(0, 10);
+        datasUnicas.add(dataStr);
+        viagensPorData[dataStr] = (viagensPorData[dataStr] || 0) + 1;
       }
     });
+
+    const diasTrabalhados = datasUnicas.size;
 
     return {
       totalViagens,
@@ -2350,6 +2368,13 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => b.value - a.value),
       viagensPorMes: Object.entries(viagensPorMes)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+      comissaoPorMotorista: Object.entries(comissaoPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      diasTrabalhados,
+      viagensPorData: Object.entries(viagensPorData)
         .map(([label, value]) => ({ label, value }))
         .sort((a, b) => a.label.localeCompare(b.label)),
     };
@@ -2385,30 +2410,92 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-blue-600 dark:bg-blue-400"
+                color="bg-teal-500 dark:bg-teal-400"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-blue-500 dark:bg-blue-500"
+                color="bg-teal-500 dark:bg-teal-400"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens - CESARI por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="flex items-end gap-2 h-32 overflow-x-auto pb-2">
-                  {stats.viagensPorMes.map((item, index) => {
-                    const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+                    {stats.viagensPorMes.map((item, index) => {
+                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                      const heightPercent = (item.value / maxVal) * 100;
+                      return (
+                        <div key={index} className="flex flex-col items-center min-w-[60px]">
+                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                          <div 
+                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
+                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+              )}
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Comissão Cesari por Ano, Mês e EMPRESA</h4>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Dias trabalhados: {stats.diasTrabalhados}</span>
+              </div>
+              {stats.comissaoPorMotorista.length > 0 ? (
+                <div className="flex items-end gap-3 h-48 overflow-x-auto pb-2">
+                  {stats.comissaoPorMotorista.map((item, index) => {
+                    const maxVal = Math.max(...stats.comissaoPorMotorista.map(v => v.value), 1);
                     const heightPercent = (item.value / maxVal) * 100;
                     return (
-                      <div key={index} className="flex flex-col items-center min-w-[60px]">
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{item.value}</span>
+                      <div key={index} className="flex flex-col items-center min-w-[80px]">
+                        <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1 whitespace-nowrap">
+                          R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        </span>
                         <div 
-                          className="w-12 bg-blue-500 dark:bg-blue-400 rounded-t"
-                          style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          className="w-14 bg-teal-500 dark:bg-teal-400 rounded-t transition-all duration-300"
+                          style={{ height: `${Math.max(heightPercent, 5)}%`, minHeight: '8px' }}
                         />
-                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        <span className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center leading-tight max-w-[80px] truncate" title={item.label}>
+                          {item.label.split(' ')[0]}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+              )}
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Contagem de TIPO DE VIAGEM por Ano, Mês e DATA</h4>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Dias trabalhados: {stats.diasTrabalhados}</span>
+              </div>
+              {stats.viagensPorData.length > 0 ? (
+                <div className="flex items-end gap-2 h-40 overflow-x-auto pb-2">
+                  {stats.viagensPorData.map((item, index) => {
+                    const maxVal = Math.max(...stats.viagensPorData.map(v => v.value), 1);
+                    const heightPercent = (item.value / maxVal) * 100;
+                    const parts = item.label.split('-');
+                    const dateLabel = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    return (
+                      <div key={index} className="flex flex-col items-center min-w-[55px]">
+                        <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                        <div 
+                          className="w-10 bg-teal-500 dark:bg-teal-400 rounded-t transition-all duration-300"
+                          style={{ height: `${Math.max(heightPercent, 5)}%`, minHeight: '8px' }}
+                        />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-nowrap">{dateLabel}</span>
                       </div>
                     );
                   })}
