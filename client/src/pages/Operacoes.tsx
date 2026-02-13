@@ -1475,10 +1475,10 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                           <div 
                             className={`w-full max-w-[20px] rounded-t-sm transition-all duration-300 ${
                               isToday 
-                                ? 'bg-blue-700 dark:bg-blue-300' 
+                                ? 'bg-amber-500 dark:bg-amber-400' 
                                 : isWeekend 
-                                  ? 'bg-blue-300 dark:bg-blue-700' 
-                                  : 'bg-blue-500 dark:bg-blue-400'
+                                  ? 'bg-rose-400 dark:bg-rose-500' 
+                                  : 'bg-teal-500 dark:bg-teal-400'
                             } group-hover:opacity-70`}
                             style={{ height: `${Math.max(heightPercent, dia.total > 0 ? 8 : 2)}%` }}
                           />
@@ -1504,15 +1504,15 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                 
                 <div className="flex items-center justify-center gap-6 pt-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-blue-500 dark:bg-blue-400" />
+                    <div className="w-3 h-3 rounded-sm bg-teal-500 dark:bg-teal-400" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Dias úteis</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-blue-300 dark:bg-blue-700" />
+                    <div className="w-3 h-3 rounded-sm bg-rose-400 dark:bg-rose-500" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Fim de semana</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-blue-700 dark:bg-blue-300" />
+                    <div className="w-3 h-3 rounded-sm bg-amber-500 dark:bg-amber-400" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Hoje</span>
                   </div>
                 </div>
