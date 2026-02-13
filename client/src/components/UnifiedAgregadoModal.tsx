@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Truck, User, FileText, ExternalLink, Edit2, Users, ShieldAlert, MessageSquare, Tag } from 'lucide-react';
 import type {
   DocumentoMotorista,
@@ -47,17 +47,31 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [comentarioCount, setComentarioCount] = useState(0);
   const [isEditVeiculoModalOpen, setIsEditVeiculoModalOpen] = useState(false);
   const [proprietarioVeiculo, setProprietarioVeiculo] = useState<any>(null);
+  const [gestaoRiscoData, setGestaoRiscoData] = useState<any>(null);
+  const fetchingRef = useRef(false);
 
   useEffect(() => {
     if (isOpen && motorista) {
-      console.log('UnifiedAgregadoModal aberto para:', motorista.nome);
+      setVeiculo(null);
+      setDocumento(null);
+      setEndereco(null);
+      setAjudantes([]);
+      setDocumentCount(0);
+      setAjudantesCount(0);
+      setGestaoRiscoCount(0);
+      setComentarioCount(0);
+      setGestaoRiscoData(null);
+      setProprietarioVeiculo(null);
+      setActiveTab('details');
+
       fetchAgregadoDetails();
       fetchProprietarioVeiculo();
     }
-  }, [isOpen, motorista]);
+  }, [isOpen, motorista?.motorista_id]);
 
   const fetchAgregadoDetails = async () => {
-    if (!motorista) return;
+    if (!motorista || fetchingRef.current) return;
+    fetchingRef.current = true;
 
     try {
       // Fetch veiculo
@@ -93,23 +107,15 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
           throw grError;
         }
 
-        console.log('Dados de gestão de risco encontrados:', grData);
-
-        // Atualiza o objeto motorista com os dados de gestão de risco
         if (grData) {
-          motorista.gr_motorista_id = grData.id;
-          motorista.gr_motorista_motivo = grData.motivo || null;
-          motorista.empresa_motorista = grData.empresa?.nome || null;
-          motorista.status_motorista = grData.status?.status || null;
-
-          console.log('Dados de gestão de risco atualizados no motorista:', {
-            gr_motorista_id: motorista.gr_motorista_id,
-            motivo: motorista.gr_motorista_motivo,
-            empresa: motorista.empresa_motorista,
-            status: motorista.status_motorista
+          setGestaoRiscoData({
+            gr_motorista_id: grData.id,
+            gr_motorista_motivo: grData.motivo || null,
+            empresa_motorista: grData.empresa?.nome || null,
+            status_motorista: grData.status?.status || null
           });
         } else {
-          console.log('Nenhum dado de gestão de risco encontrado para o motorista:', motorista.motorista_id);
+          setGestaoRiscoData(null);
         }
       } catch (error) {
         console.error('Erro ao processar dados de gestão de risco:', error);
@@ -214,6 +220,8 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
     } catch (error) {
       console.error('Error fetching agregado details:', error);
       toast.error('Erro ao carregar detalhes do agregado');
+    } finally {
+      fetchingRef.current = false;
     }
   };
 
@@ -1342,10 +1350,10 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
               ) : activeTab === 'gestao-risco' ? (
                 <GestaoRiscoTab
                   motorista_id={motorista.motorista_id}
-                  gr_motorista_id={motorista.gr_motorista_id}
-                  gr_motorista_motivo={motorista.gr_motorista_motivo}
-                  empresa_motorista={motorista.empresa_motorista}
-                  status_motorista={motorista.status_motorista}
+                  gr_motorista_id={gestaoRiscoData?.gr_motorista_id || motorista.gr_motorista_id}
+                  gr_motorista_motivo={gestaoRiscoData?.gr_motorista_motivo || motorista.gr_motorista_motivo}
+                  empresa_motorista={gestaoRiscoData?.empresa_motorista || motorista.empresa_motorista}
+                  status_motorista={gestaoRiscoData?.status_motorista || motorista.status_motorista}
                   onUpdateSuccess={() => {
                     fetchAgregadoDetails();
                     onSuccess?.();
