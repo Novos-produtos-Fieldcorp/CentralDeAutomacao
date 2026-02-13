@@ -4533,6 +4533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`Found ${comentariosWithNames.length} comments for motorista ${motoristaId}`);
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.json(comentariosWithNames);
     } catch (error) {
       console.error("Error fetching comments:", error);

@@ -31,7 +31,9 @@ export function useComentarios(motoristaId?: number) {
 
       console.log('Fetching comments for motorista:', motoristaId);
 
-      const response = await apiRequest(`comentarios/${motoristaId}`);
+      const response = await apiRequest(`comentarios/${motoristaId}`, {
+        cache: 'no-store',
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
