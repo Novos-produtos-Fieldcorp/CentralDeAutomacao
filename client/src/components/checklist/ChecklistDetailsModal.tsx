@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Camera, Loader2, AlertCircle, Edit2, Save, ArrowLeft, Upload, Trash2 } from 'lucide-react';
+import { X, Download, Camera, Loader2, AlertCircle, Edit2, Save, ArrowLeft, Upload, Trash2, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { exportChecklistToPDF } from '../../utils/export';
 import { getStatusInfo } from '../../utils/checklistStatus';
@@ -26,6 +26,14 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
   const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null);
+  const [photoUploadState, setPhotoUploadState] = useState<Record<string, { status: 'idle' | 'preparing' | 'uploading' | 'done' | 'error'; progress: number; error?: string }>>({});
+  const activeUploadsRef = useRef(0);
+  const uploadQueueRef = useRef<Array<() => Promise<void>>>([]);
+
+  const [motoristas, setMotoristas] = useState<Array<{ motorista_id: number; nome: string | null; cpf: number | null }>>([]);
+  const [motoristaSearch, setMotoristaSearch] = useState('');
+  const [motoristaDropdownOpen, setMotoristaDropdownOpen] = useState(false);
+  const [loadingMotoristas, setLoadingMotoristas] = useState(false);
   
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -62,8 +70,28 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
     if (isOpen && checklist) {
       fetchChecklistDetails();
       setIsEditing(false);
+      fetchMotoristas();
     }
   }, [isOpen, checklist]);
+
+  const fetchMotoristas = async () => {
+    try {
+      setLoadingMotoristas(true);
+      const { data, error } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome, cpf')
+        .eq('funcao', 'Motorista')
+        .order('nome')
+        .limit(500);
+
+      if (error) throw error;
+      setMotoristas(data || []);
+    } catch (error) {
+      console.error('Error fetching motoristas:', error);
+    } finally {
+      setLoadingMotoristas(false);
+    }
+  };
 
   useEffect(() => {
     if (checklistDetails) {
@@ -90,6 +118,30 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       setEditPhotos(checklistDetails.fotos || {});
     }
   }, [checklistDetails]);
+
+  useEffect(() => {
+    if (isEditing && formData.motorista_id && motoristas.length > 0) {
+      const selected = motoristas.find(m => String(m.motorista_id) === formData.motorista_id);
+      if (selected) {
+        setMotoristaSearch(selected.nome || String(selected.cpf || selected.motorista_id));
+      }
+    }
+  }, [isEditing, formData.motorista_id, motoristas]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.motorista-dropdown-wrapper')) {
+        setMotoristaDropdownOpen(false);
+      }
+    };
+
+    if (motoristaDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [motoristaDropdownOpen]);
 
   const fetchStatusItems = async (retryCount = 0) => {
     try {
@@ -184,7 +236,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   };
 
   const handleComponentChange = (section: string, field: string, value: any) => {
-    setEditComponents(prev => ({
+    setEditComponents((prev: any) => ({
       ...prev,
       [section]: {
         ...prev[section],
@@ -193,42 +245,131 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
     }));
   };
 
+  const setPhotoState = (photoField: string, next: { status: 'idle' | 'preparing' | 'uploading' | 'done' | 'error'; progress: number; error?: string }) => {
+    setPhotoUploadState(prev => ({
+      ...prev,
+      [photoField]: next
+    }));
+  };
+
+  const runUploadQueue = () => {
+    const MAX_CONCURRENT_UPLOADS = 3;
+    while (activeUploadsRef.current < MAX_CONCURRENT_UPLOADS && uploadQueueRef.current.length > 0) {
+      const job = uploadQueueRef.current.shift();
+      if (!job) return;
+      activeUploadsRef.current += 1;
+      job()
+        .catch(() => {
+          // handled in job
+        })
+        .finally(() => {
+          activeUploadsRef.current -= 1;
+          runUploadQueue();
+        });
+    }
+  };
+
+  const compressImageIfNeeded = async (file: File): Promise<File> => {
+    try {
+      if (!file.type.startsWith('image/')) return file;
+
+      // Skip very small files
+      if (file.size <= 300 * 1024) return file;
+
+      const bitmap = await createImageBitmap(file);
+      const MAX_W = 1600;
+      const scale = Math.min(1, MAX_W / bitmap.width);
+      const targetW = Math.max(1, Math.round(bitmap.width * scale));
+      const targetH = Math.max(1, Math.round(bitmap.height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return file;
+
+      ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+      bitmap.close();
+
+      // Use jpeg for speed/size; keeps original name extension stable for storage key.
+      const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.75));
+      if (!blob) return file;
+
+      return new File([blob], file.name.replace(/\.(png|webp|jpg|jpeg)$/i, '.jpg'), { type: 'image/jpeg' });
+    } catch {
+      return file;
+    }
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, photoField: string) => {
     const file = e.target.files?.[0];
     if (!file || !checklist) return;
+
+    // allow selecting the same file again
+    e.target.value = '';
+
+    const enqueue = (fn: () => Promise<void>) => {
+      uploadQueueRef.current.push(fn);
+      runUploadQueue();
+    };
     
-    try {
-      setUploadingPhoto(photoField);
-      
-      // Create a unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${checklist.checklist_id}_${photoField}_${Date.now()}.${fileExt}`;
-      
-      // Upload file to storage
-      const { error: uploadError, data } = await supabase.storage
-        .from('imagensdocs')
-        .upload(fileName, file);
-        
-      if (uploadError) throw uploadError;
-      
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('imagensdocs')
-        .getPublicUrl(fileName);
-        
-      // Update the photo in state
-      setEditPhotos(prev => ({
-        ...prev,
-        [photoField]: publicUrl
-      }));
-      
-      toast.success('Foto enviada com sucesso');
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      toast.error('Erro ao enviar foto');
-    } finally {
-      setUploadingPhoto(null);
-    }
+    setPhotoState(photoField, { status: 'preparing', progress: 5 });
+
+    enqueue(async () => {
+      try {
+        setPhotoState(photoField, { status: 'preparing', progress: 10 });
+
+        const processedFile = await compressImageIfNeeded(file);
+
+        // Create a unique file name
+        const fileExt = processedFile.name.split('.').pop();
+        const fileName = `${checklist.checklist_id}_${photoField}_${Date.now()}.${fileExt}`;
+
+        setPhotoState(photoField, { status: 'uploading', progress: 25 });
+
+        const { error: uploadError } = await supabase.storage
+          .from('imagensdocs')
+          .upload(fileName, processedFile, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: processedFile.type
+          });
+
+        if (uploadError) throw uploadError;
+
+        setPhotoState(photoField, { status: 'uploading', progress: 85 });
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('imagensdocs')
+          .getPublicUrl(fileName);
+
+        // Update the photo in state
+        setEditPhotos((prev: any) => ({
+          ...prev,
+          [photoField]: publicUrl
+        }));
+
+        setPhotoState(photoField, { status: 'done', progress: 100 });
+        toast.success('Foto enviada com sucesso');
+
+        window.setTimeout(() => {
+          setPhotoUploadState(prev => {
+            const copy = { ...prev };
+            delete copy[photoField];
+            return copy;
+          });
+        }, 1500);
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+        setPhotoState(photoField, {
+          status: 'error',
+          progress: 0,
+          error: error instanceof Error ? error.message : 'Erro ao enviar foto'
+        });
+        toast.error('Erro ao enviar foto');
+      }
+    });
   };
 
   const handleRemovePhoto = async (photoField: string) => {
@@ -258,7 +399,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       }
       
       // Update state to remove the photo
-      setEditPhotos(prev => ({
+      setEditPhotos((prev: any) => ({
         ...prev,
         [photoField]: null
       }));
@@ -286,7 +427,8 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
           hora: formData.hora,
           quilometragem: parseFloat(formData.quilometragem),
           observacoes: formData.observacoes,
-          status: formData.status
+          status: formData.status,
+          motorista_id: formData.motorista_id ? parseInt(formData.motorista_id) : null
         })
         .eq('checklist_id', checklist.checklist_id);
         
@@ -496,8 +638,36 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                               border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
                               hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
                   >
-                    {uploadingPhoto === key ? (
-                      <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+                    {photoUploadState[key]?.status === 'preparing' || photoUploadState[key]?.status === 'uploading' ? (
+                      <div className="w-full px-6">
+                        <div className="flex items-center justify-center mb-3">
+                          <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+                        </div>
+                        <div className="text-center text-sm text-gray-600 dark:text-gray-300 mb-3">
+                          {photoUploadState[key]?.status === 'preparing' ? 'Preparando...' : 'Enviando...'}
+                        </div>
+                        <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-2 bg-blue-600 rounded-full transition-all"
+                            style={{ width: `${photoUploadState[key]?.progress ?? 0}%` }}
+                          />
+                        </div>
+                        <div className="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">
+                          {Math.round(photoUploadState[key]?.progress ?? 0)}%
+                        </div>
+                      </div>
+                    ) : photoUploadState[key]?.status === 'error' ? (
+                      <div className="w-full px-6">
+                        <div className="flex items-center justify-center mb-2">
+                          <AlertCircle className="w-8 h-8 text-red-500" />
+                        </div>
+                        <div className="text-center text-sm text-red-600 dark:text-red-400 mb-2">
+                          Falha no upload
+                        </div>
+                        <div className="text-center text-xs text-gray-500 dark:text-gray-400">
+                          Clique para tentar novamente
+                        </div>
+                      </div>
                     ) : (
                       <>
                         <Camera className="w-8 h-8 text-gray-400 mb-2" />
@@ -727,6 +897,75 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                   
                   {isEditing ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="md:col-span-2 relative motorista-dropdown-wrapper">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Motorista
+                        </label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                          <input
+                            type="text"
+                            value={motoristaSearch}
+                            onChange={(e) => {
+                              setMotoristaSearch(e.target.value);
+                              setMotoristaDropdownOpen(true);
+                            }}
+                            onFocus={() => setMotoristaDropdownOpen(true)}
+                            placeholder={loadingMotoristas ? 'Carregando motoristas...' : 'Pesquise por nome ou CPF'}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            autoComplete="off"
+                            disabled={loadingMotoristas}
+                          />
+                        </div>
+
+                        {motoristaDropdownOpen && (
+                          <div
+                            className="absolute z-20 mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-64 overflow-auto"
+                            onMouseDown={(e) => e.preventDefault()}
+                          >
+                            {(motoristas
+                              .filter(m => {
+                                const q = motoristaSearch.trim().toLowerCase();
+                                if (!q) return true;
+                                const nome = (m.nome || '').toLowerCase();
+                                const cpf = m.cpf ? String(m.cpf) : '';
+                                return nome.includes(q) || cpf.includes(q);
+                              })
+                              .slice(0, 50)
+                            ).map(m => (
+                              <button
+                                key={m.motorista_id}
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, motorista_id: String(m.motorista_id) }));
+                                  setMotoristaSearch(m.nome || String(m.cpf || m.motorista_id));
+                                  setMotoristaDropdownOpen(false);
+                                }}
+                                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <div className="text-sm text-gray-900 dark:text-white font-medium">
+                                  {m.nome || 'Sem nome'}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  CPF: {m.cpf ? String(m.cpf) : 'Não informado'}
+                                </div>
+                              </button>
+                            ))}
+                            {motoristas.length > 0 && motoristas.filter(m => {
+                              const q = motoristaSearch.trim().toLowerCase();
+                              if (!q) return true;
+                              const nome = (m.nome || '').toLowerCase();
+                              const cpf = m.cpf ? String(m.cpf) : '';
+                              return nome.includes(q) || cpf.includes(q);
+                            }).length === 0 && (
+                              <div className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                                Nenhum motorista encontrado
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Data
