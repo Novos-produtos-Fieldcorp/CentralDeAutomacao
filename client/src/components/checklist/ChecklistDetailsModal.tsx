@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Camera, Loader2, AlertCircle, Edit2, Save, ArrowLeft, Upload, Trash2, Search } from 'lucide-react';
+import { X, Download, Camera, Loader2, AlertCircle, Edit2, Save, ArrowLeft, Upload, Trash2, Search, ChevronDown } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { exportChecklistToPDF } from '../../utils/export';
 import { getStatusInfo } from '../../utils/checklistStatus';
@@ -29,11 +29,16 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   const [photoUploadState, setPhotoUploadState] = useState<Record<string, { status: 'idle' | 'preparing' | 'uploading' | 'done' | 'error'; progress: number; error?: string }>>({});
   const activeUploadsRef = useRef(0);
   const uploadQueueRef = useRef<Array<() => Promise<void>>>([]);
-
-  const [motoristas, setMotoristas] = useState<Array<{ motorista_id: number; nome: string | null; cpf: number | null }>>([]);
-  const [motoristaSearch, setMotoristaSearch] = useState('');
-  const [motoristaDropdownOpen, setMotoristaDropdownOpen] = useState(false);
+  const [motoristas, setMotoristas] = useState<Array<{ motorista_id: number; nome: string }>>([]);
+  const [veiculos, setVeiculos] = useState<Array<{ veiculo_id: number; placa: string }>>([]);
   const [loadingMotoristas, setLoadingMotoristas] = useState(false);
+  const [loadingVeiculos, setLoadingVeiculos] = useState(false);
+  const [motoristaSearchTerm, setMotoristaSearchTerm] = useState('');
+  const [veiculoSearchTerm, setVeiculoSearchTerm] = useState('');
+  const [isMotoristaDropdownOpen, setIsMotoristaDropdownOpen] = useState(false);
+  const [isVeiculoDropdownOpen, setIsVeiculoDropdownOpen] = useState(false);
+  const motoristaDropdownRef = useRef<HTMLDivElement>(null);
+  const veiculoDropdownRef = useRef<HTMLDivElement>(null);
   
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -59,6 +64,8 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
 
   useEffect(() => {
     fetchStatusItems();
+    fetchMotoristas();
+    fetchVeiculos();
     return () => {
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
@@ -67,31 +74,82 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   }, []);
 
   useEffect(() => {
-    if (isOpen && checklist) {
-      fetchChecklistDetails();
-      setIsEditing(false);
-      fetchMotoristas();
-    }
-  }, [isOpen, checklist]);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (motoristaDropdownRef.current && !motoristaDropdownRef.current.contains(event.target as Node)) {
+        setIsMotoristaDropdownOpen(false);
+      }
+      if (veiculoDropdownRef.current && !veiculoDropdownRef.current.contains(event.target as Node)) {
+        setIsVeiculoDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchMotoristas = async () => {
     try {
       setLoadingMotoristas(true);
       const { data, error } = await supabase
         .from('motorista')
-        .select('motorista_id, nome, cpf')
-        .eq('funcao', 'Motorista')
-        .order('nome')
-        .limit(500);
-
+        .select('motorista_id, nome')
+        .eq('ativo', true)
+        .not('nome', 'is', null)
+        .not('nome', 'eq', '')
+        .order('nome');
       if (error) throw error;
       setMotoristas(data || []);
-    } catch (error) {
-      console.error('Error fetching motoristas:', error);
+    } catch (err) {
+      console.error('Error fetching motoristas:', err);
+      toast.error('Erro ao carregar motoristas');
     } finally {
       setLoadingMotoristas(false);
     }
   };
+
+  const fetchVeiculos = async () => {
+    try {
+      setLoadingVeiculos(true);
+      const { data, error } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .eq('status_veiculo', true)
+        .not('placa', 'is', null)
+        .not('placa', 'eq', '')
+        .order('placa');
+      if (error) throw error;
+      setVeiculos(data || []);
+    } catch (err) {
+      console.error('Error fetching veiculos:', err);
+      toast.error('Erro ao carregar veículos');
+    } finally {
+      setLoadingVeiculos(false);
+    }
+  };
+
+  const getSelectedMotoristaName = () => {
+    const motorista = motoristas.find(m => m.motorista_id.toString() === formData.motorista_id);
+    return motorista ? motorista.nome : 'Selecione um motorista';
+  };
+
+  const getSelectedVeiculoName = () => {
+    const veiculo = veiculos.find(v => v.veiculo_id.toString() === formData.veiculo_id);
+    return veiculo ? veiculo.placa : 'Selecione um veículo';
+  };
+
+  const filteredMotoristas = motoristas.filter(m =>
+    m.nome && m.nome.trim() !== '' && (m.nome || '').toLowerCase().includes((motoristaSearchTerm || '').toLowerCase())
+  );
+
+  const filteredVeiculos = veiculos.filter(v =>
+    v.placa && v.placa.trim() !== '' && (v.placa || '').toLowerCase().includes((veiculoSearchTerm || '').toLowerCase())
+  );
+
+  useEffect(() => {
+    if (isOpen && checklist) {
+      fetchChecklistDetails();
+      setIsEditing(false);
+    }
+  }, [isOpen, checklist]);
 
   useEffect(() => {
     if (checklistDetails) {
@@ -118,30 +176,6 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       setEditPhotos(checklistDetails.fotos || {});
     }
   }, [checklistDetails]);
-
-  useEffect(() => {
-    if (isEditing && formData.motorista_id && motoristas.length > 0) {
-      const selected = motoristas.find(m => String(m.motorista_id) === formData.motorista_id);
-      if (selected) {
-        setMotoristaSearch(selected.nome || String(selected.cpf || selected.motorista_id));
-      }
-    }
-  }, [isEditing, formData.motorista_id, motoristas]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.motorista-dropdown-wrapper')) {
-        setMotoristaDropdownOpen(false);
-      }
-    };
-
-    if (motoristaDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [motoristaDropdownOpen]);
 
   const fetchStatusItems = async (retryCount = 0) => {
     try {
@@ -428,7 +462,8 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
           quilometragem: parseFloat(formData.quilometragem),
           observacoes: formData.observacoes,
           status: formData.status,
-          motorista_id: formData.motorista_id ? parseInt(formData.motorista_id) : null
+          motorista_id: formData.motorista_id ? Number(formData.motorista_id) : null,
+          veiculo_id: formData.veiculo_id ? Number(formData.veiculo_id) : null
         })
         .eq('checklist_id', checklist.checklist_id);
         
@@ -897,75 +932,6 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                   
                   {isEditing ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="md:col-span-2 relative motorista-dropdown-wrapper">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Motorista
-                        </label>
-                        <div className="relative">
-                          <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-                          <input
-                            type="text"
-                            value={motoristaSearch}
-                            onChange={(e) => {
-                              setMotoristaSearch(e.target.value);
-                              setMotoristaDropdownOpen(true);
-                            }}
-                            onFocus={() => setMotoristaDropdownOpen(true)}
-                            placeholder={loadingMotoristas ? 'Carregando motoristas...' : 'Pesquise por nome ou CPF'}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                            autoComplete="off"
-                            disabled={loadingMotoristas}
-                          />
-                        </div>
-
-                        {motoristaDropdownOpen && (
-                          <div
-                            className="absolute z-20 mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-64 overflow-auto"
-                            onMouseDown={(e) => e.preventDefault()}
-                          >
-                            {(motoristas
-                              .filter(m => {
-                                const q = motoristaSearch.trim().toLowerCase();
-                                if (!q) return true;
-                                const nome = (m.nome || '').toLowerCase();
-                                const cpf = m.cpf ? String(m.cpf) : '';
-                                return nome.includes(q) || cpf.includes(q);
-                              })
-                              .slice(0, 50)
-                            ).map(m => (
-                              <button
-                                key={m.motorista_id}
-                                type="button"
-                                onClick={() => {
-                                  setFormData(prev => ({ ...prev, motorista_id: String(m.motorista_id) }));
-                                  setMotoristaSearch(m.nome || String(m.cpf || m.motorista_id));
-                                  setMotoristaDropdownOpen(false);
-                                }}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                              >
-                                <div className="text-sm text-gray-900 dark:text-white font-medium">
-                                  {m.nome || 'Sem nome'}
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  CPF: {m.cpf ? String(m.cpf) : 'Não informado'}
-                                </div>
-                              </button>
-                            ))}
-                            {motoristas.length > 0 && motoristas.filter(m => {
-                              const q = motoristaSearch.trim().toLowerCase();
-                              if (!q) return true;
-                              const nome = (m.nome || '').toLowerCase();
-                              const cpf = m.cpf ? String(m.cpf) : '';
-                              return nome.includes(q) || cpf.includes(q);
-                            }).length === 0 && (
-                              <div className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                                Nenhum motorista encontrado
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Data
@@ -978,6 +944,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
                       </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Hora
@@ -990,6 +957,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
                       </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Quilometragem
@@ -999,11 +967,130 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                           name="quilometragem"
                           value={formData.quilometragem}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                           step="0.1"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
                       </div>
-                      <div>
+
+                      <div ref={motoristaDropdownRef} className="relative">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Motorista
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setIsMotoristaDropdownOpen(!isMotoristaDropdownOpen)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 flex items-center justify-between"
+                          disabled={loadingMotoristas}
+                        >
+                          <span className="truncate">
+                            {getSelectedMotoristaName()}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 transition-transform ${isMotoristaDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isMotoristaDropdownOpen && (
+                          <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                  type="text"
+                                  placeholder="Pesquisar motorista..."
+                                  value={motoristaSearchTerm}
+                                  onChange={(e) => setMotoristaSearchTerm(e.target.value)}
+                                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, motorista_id: '' }));
+                                setIsMotoristaDropdownOpen(false);
+                                setMotoristaSearchTerm('');
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm"
+                            >
+                              Limpar seleção
+                            </button>
+                            {filteredMotoristas.map((m) => (
+                              <button
+                                key={m.motorista_id}
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, motorista_id: m.motorista_id.toString() }));
+                                  setIsMotoristaDropdownOpen(false);
+                                  setMotoristaSearchTerm('');
+                                }}
+                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                  formData.motorista_id === m.motorista_id.toString() ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                                }`}
+                              >
+                                {m.nome}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div ref={veiculoDropdownRef} className="relative">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Veículo
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setIsVeiculoDropdownOpen(!isVeiculoDropdownOpen)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 flex items-center justify-between"
+                          disabled={loadingVeiculos}
+                        >
+                          <span className="truncate">
+                            {getSelectedVeiculoName()}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 transition-transform ${isVeiculoDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isVeiculoDropdownOpen && (
+                          <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                  type="text"
+                                  placeholder="Pesquisar veículo..."
+                                  value={veiculoSearchTerm}
+                                  onChange={(e) => setVeiculoSearchTerm(e.target.value)}
+                                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, veiculo_id: '' }));
+                                setIsVeiculoDropdownOpen(false);
+                                setVeiculoSearchTerm('');
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm"
+                            >
+                              Limpar seleção
+                            </button>
+                            {filteredVeiculos.map((v) => (
+                              <button
+                                key={v.veiculo_id}
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, veiculo_id: v.veiculo_id.toString() }));
+                                  setIsVeiculoDropdownOpen(false);
+                                  setVeiculoSearchTerm('');
+                                }}
+                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                  formData.veiculo_id === v.veiculo_id.toString() ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                                }`}
+                              >
+                                {v.placa}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Status
                         </label>
@@ -1020,6 +1107,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                           </span>
                         </div>
                       </div>
+
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Observações
