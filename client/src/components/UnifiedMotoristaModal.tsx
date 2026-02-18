@@ -46,6 +46,7 @@ const UnifiedMotoristaModal = ({
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [endereco, setEndereco] = useState<any>(null);
+  const [motoristaDetails, setMotoristaDetails] = useState<Motorista | null>(null);
   const [isAjudanteModalOpen, setIsAjudanteModalOpen] = useState(false);
   const [ajudanteModalMode, setAjudanteModalMode] = useState<'add' | 'edit'>('add');
   const [documentoMotorista, setDocumentoMotorista] = useState<DocumentoMotorista | null>(null);
@@ -72,12 +73,14 @@ const UnifiedMotoristaModal = ({
   useEffect(() => {
     if (isOpen && motorista) {
       const motoristaId = motorista.motorista_id;
+      setMotoristaDetails(motorista);
       
       // Só inicializar se for um motorista diferente ou primeira vez
       if (!isInitializedRef.current || currentMotoristaIdRef.current !== motoristaId) {
         currentMotoristaIdRef.current = motoristaId;
         setInitializedRef(true);
         
+        fetchMotoristaDetails();
         fetchEndereco();
         fetchDocumentCount();
         fetchDocumentoMotorista();
@@ -90,8 +93,28 @@ const UnifiedMotoristaModal = ({
       setInitializedRef(false);
       currentMotoristaIdRef.current = null;
       setActiveTab('details');
+      setMotoristaDetails(null);
     }
   }, [isOpen, motorista?.motorista_id]);
+
+  const fetchMotoristaDetails = async () => {
+    if (!motorista) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('motorista')
+        .select('*')
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data) {
+        setMotoristaDetails(data as any);
+      }
+    } catch (error) {
+      console.error('Error fetching motorista details:', error);
+    }
+  };
   
 
 
@@ -361,8 +384,9 @@ const UnifiedMotoristaModal = ({
   if (!isOpen || !motorista) return null;
 
   // Ensure we have the motorista data
-  const nome = motorista.nome || '';
-  const cpf = motorista.cpf || '';
+  const motoristaForDisplay = motoristaDetails || motorista;
+  const nome = motoristaForDisplay.nome || '';
+  const cpf = motoristaForDisplay.cpf || '';
 
   const openDocumentInNewTab = (url: string | null) => {
     if (url) {
@@ -644,7 +668,7 @@ const UnifiedMotoristaModal = ({
                             Telefone
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.telefone ? formatPhone(motorista.telefone.toString()) : 'Não informado'}
+                            {motoristaForDisplay.telefone ? formatPhone(motoristaForDisplay.telefone.toString()) : 'Não informado'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -652,7 +676,7 @@ const UnifiedMotoristaModal = ({
                             E-mail
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.email || 'Não informado'}
+                            {motoristaForDisplay.email || 'Não informado'}
                           </dd>
                         </div>
                       </dl>
@@ -1171,7 +1195,7 @@ const UnifiedMotoristaModal = ({
                               </div>
 
                               {/* Endereço */}
-                              {(ajudante.logradouro_ajudante || ajudante.nr_cep_ajudante || ajudante.nome_cidade_ajudante) && (
+                              {(ajudante.logradouro_ajudante || ajudante.cep_ajudante || ajudante.cidade_ajudante || ajudante.nr_cep_ajudante || ajudante.nome_cidade_ajudante) && (
                                 <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                                   <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
                                     Endereço
@@ -1198,25 +1222,25 @@ const UnifiedMotoristaModal = ({
                                     <div>
                                       <span className="text-xs text-gray-500 dark:text-gray-400 block">CEP</span>
                                       <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nr_cep_ajudante || 'Não informado'}
+                                        {ajudante.cep_ajudante || ajudante.nr_cep_ajudante || 'Não informado'}
                                       </span>
                                     </div>
                                     <div>
                                       <span className="text-xs text-gray-500 dark:text-gray-400 block">Bairro</span>
                                       <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nome_bairro_ajudante || 'Não informado'}
+                                        {ajudante.bairro_ajudante || ajudante.nome_bairro_ajudante || 'Não informado'}
                                       </span>
                                     </div>
                                     <div>
                                       <span className="text-xs text-gray-500 dark:text-gray-400 block">Cidade</span>
                                       <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nome_cidade_ajudante || 'Não informado'}
+                                        {ajudante.cidade_ajudante || ajudante.nome_cidade_ajudante || 'Não informado'}
                                       </span>
                                     </div>
                                     <div>
                                       <span className="text-xs text-gray-500 dark:text-gray-400 block">Estado</span>
                                       <span className="text-sm text-gray-900 dark:text-white">
-                                        {ajudante.nome_estado_ajudante || 'Não informado'}
+                                        {ajudante.estado_ajudante || ajudante.nome_estado_ajudante || 'Não informado'}
                                       </span>
                                     </div>
                                   </div>
@@ -1233,7 +1257,7 @@ const UnifiedMotoristaModal = ({
                                     {/* RG */}
                                     {(ajudante.foto_rg || ajudante.rg_ajudante?.[0]?.foto_rg) && (
                                       <button
-                                        onClick={() => setActiveDocument(ajudante.foto_rg || ajudante.rg_ajudante?.[0]?.foto_rg)}
+                                        onClick={() => setActiveDocument((ajudante.foto_rg || ajudante.rg_ajudante?.[0]?.foto_rg) ?? null)}
                                         className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                       >
                                         <FileText className="w-4 h-4 mr-2" />
@@ -1244,7 +1268,7 @@ const UnifiedMotoristaModal = ({
                                     {/* CNH */}
                                     {ajudante.cnh_ajudante?.[0]?.foto_cnh && (
                                       <button
-                                        onClick={() => setActiveDocument(ajudante.cnh_ajudante[0].foto_cnh)}
+                                        onClick={() => setActiveDocument(ajudante.cnh_ajudante?.[0]?.foto_cnh ?? null)}
                                         className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                       >
                                         <FileText className="w-4 h-4 mr-2" />
@@ -1255,7 +1279,7 @@ const UnifiedMotoristaModal = ({
                                     {/* Comprovante de Residência */}
                                     {ajudante.comprovante_residencia && (
                                       <button
-                                        onClick={() => setActiveDocument(ajudante.comprovante_residencia)}
+                                        onClick={() => setActiveDocument(ajudante.comprovante_residencia ?? null)}
                                         className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                       >
                                         <FileText className="w-4 h-4 mr-2" />
@@ -1330,9 +1354,10 @@ const UnifiedMotoristaModal = ({
         <EditMotoristaModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          motorista={motorista}
+          motorista={motoristaForDisplay as any}
           onUpdate={() => {
             setIsEditModalOpen(false);
+            fetchMotoristaDetails();
             onSuccess?.();
           }}
         />

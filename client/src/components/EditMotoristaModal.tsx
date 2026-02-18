@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Motorista, MotoristaWithAddress, Veiculo } from '../types/database';
@@ -31,6 +31,22 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
   const [addressWarnings, setAddressWarnings] = useState<string[]>([]);
   const { companyId } = useCurrentAccount();
   const { lookupCep } = useCepLookup();
+  const [isDirty, setIsDirty] = useState(false);
+  const isDirtyRef = useRef(false);
+  const hasInitializedRef = useRef(false);
+
+  const markDirty = () => {
+    if (!isDirtyRef.current) {
+      isDirtyRef.current = true;
+      setIsDirty(true);
+    }
+  };
+
+  const resetDirty = () => {
+    isDirtyRef.current = false;
+    setIsDirty(false);
+  };
+
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
@@ -56,17 +72,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     motorista_id: 0
   });
 
-  interface EnderecoFormData {
-    cep: string;
-    estado: string;
-    cidade: string;
-    bairro: string;
-    logradouro: string;
-    numero: string;
-    complemento: string;
-  }
-
-  const [enderecoData, setEnderecoData] = useState<EnderecoFormData>({
+  const [enderecoData, setEnderecoData] = useState<AddressFormData>({
     cep: '',
     estado: '',
     cidade: '',
@@ -107,30 +113,42 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
   }, [isOpen]);
 
   useEffect(() => {
-    if (motorista && motorista.motorista_id) {
-      // Use nome_motorista if available (from the view), otherwise fall back to nome
-      setFormData({
-        nome: motorista.nome || '',
-        cpf: motorista.cpf || '',
-        email: motorista.email || '',
-        telefone: motorista.telefone?.toString() || '',
-        dt_nascimento: motorista.dt_nascimento ? new Date(motorista.dt_nascimento).toISOString().split('T')[0] : '',
-        genero: motorista.genero || '',
-        st_cadastro: motorista.st_cadastro || 'cadastrado'
-      });
-
-      // Fetch vehicle data if it's an agregado
-      if (motorista.funcao === 'Agregado') {
-        fetchVeiculo(motorista.motorista_id);
-      }
-
-      // Fetch address data
-      fetchEndereco();
-      
-      // Fetch CNH data
-      fetchCnhData();
+    if (!isOpen) {
+      hasInitializedRef.current = false;
+      return;
     }
-  }, [motorista]);
+
+    if (!motorista?.motorista_id) return;
+
+    // Only (re)initialize when opening or switching motorista_id.
+    // Avoid overwriting fields while the user is typing (common when parent refetches motorista).
+    hasInitializedRef.current = false;
+    resetDirty();
+
+    // Use nome_motorista if available (from the view), otherwise fall back to nome
+    setFormData({
+      nome: motorista.nome || '',
+      cpf: motorista.cpf || '',
+      email: motorista.email || '',
+      telefone: motorista.telefone?.toString() || '',
+      dt_nascimento: motorista.dt_nascimento ? new Date(motorista.dt_nascimento).toISOString().split('T')[0] : '',
+      genero: motorista.genero || '',
+      st_cadastro: motorista.st_cadastro || 'cadastrado'
+    });
+
+    // Fetch vehicle data if it's an agregado
+    if (motorista.funcao === 'Agregado') {
+      fetchVeiculo(motorista.motorista_id);
+    }
+
+    // Fetch address data
+    fetchEndereco();
+    
+    // Fetch CNH data
+    fetchCnhData();
+
+    hasInitializedRef.current = true;
+  }, [isOpen, motorista?.motorista_id]);
 
   const fetchEstados = async () => {
     try {
@@ -161,7 +179,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
         throw error;
       }
 
-      if (data) {
+      if (data && !isDirtyRef.current) {
         setVeiculo(data);
         setVeiculoData({
           placa: data.placa || '',
@@ -199,7 +217,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
         return;
       }
 
-      if (data) {
+      if (data && !isDirtyRef.current) {
         setCnhData({
           nr_registro_cnh: data.nr_registro_cnh || '',
           categoria_cnh: data.categoria_cnh || '',
@@ -245,7 +263,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
         throw error;
       }
 
-      if (data) {
+      if (data && !isDirtyRef.current) {
         // Extrai os dados aninhados, lidando com arrays ou objetos
         const logradouroData = data.logradouro ? 
           (Array.isArray(data.logradouro) ? data.logradouro[0] : data.logradouro) : 
@@ -305,7 +323,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
     });
     
     const success = await lookupCep(cep, estados, (data) => {
-      setEnderecoData(prev => ({
+      setEnderecoData((prev: AddressFormData) => ({
         ...prev,
         cep: data.cep || prev.cep,
         estado: data.estado || prev.estado,
@@ -627,11 +645,13 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    markDirty();
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleVeiculoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    markDirty();
     
     // Define os campos que devem ser tratados como números
     const numericFields = ['ano', 'peso', 'cubagem'];
@@ -657,7 +677,8 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
 
   const handleEnderecoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setEnderecoData(prev => ({ ...prev, [name]: value }));
+    markDirty();
+    setEnderecoData((prev: AddressFormData) => ({ ...prev, [name]: value }));
     
     // If CEP is being changed and has 8 digits, trigger CEP lookup
     if (name === 'cep' && value.length === 8) {
@@ -955,6 +976,7 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
                     value={cnhData.nr_registro_cnh}
                     onChange={(e) => {
                       const value = formatCnhInput(e.target.value);
+                      markDirty();
                       setCnhData(prev => ({ ...prev, nr_registro_cnh: value }));
                     }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -971,7 +993,10 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
                   <select
                     name="categoria_cnh"
                     value={cnhData.categoria_cnh}
-                    onChange={(e) => setCnhData(prev => ({ ...prev, categoria_cnh: e.target.value }))}
+                    onChange={(e) => {
+                      markDirty();
+                      setCnhData(prev => ({ ...prev, categoria_cnh: e.target.value }));
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     data-testid="select-cnh-categoria"
                   >
@@ -992,7 +1017,10 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
                     type="date"
                     name="validade_cnh"
                     value={cnhData.validade_cnh}
-                    onChange={(e) => setCnhData(prev => ({ ...prev, validade_cnh: e.target.value }))}
+                    onChange={(e) => {
+                      markDirty();
+                      setCnhData(prev => ({ ...prev, validade_cnh: e.target.value }));
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     data-testid="input-cnh-validade"
                   />
@@ -1005,7 +1033,10 @@ const EditMotoristaModal = ({ isOpen, onClose, motorista, onUpdate }: EditMotori
                   <select
                     name="uf_cnh"
                     value={cnhData.uf_cnh}
-                    onChange={(e) => setCnhData(prev => ({ ...prev, uf_cnh: e.target.value }))}
+                    onChange={(e) => {
+                      markDirty();
+                      setCnhData(prev => ({ ...prev, uf_cnh: e.target.value }));
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     data-testid="select-cnh-uf"
                   >
