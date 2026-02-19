@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2 } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef } from 'lucide-react';
 import { useState as useStateReact } from 'react';
 import { supabase } from '../lib/supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
@@ -107,8 +107,6 @@ const OPERACOES_CONFIG: Record<string, { tabela: string; campos: { key: string; 
   'Superterminais': {
     tabela: 'operacao_superterminais',
     campos: [
-      { key: 'embarque_desembarque', label: 'Embarque/Desembarque' },
-      { key: 'nome_navio', label: 'Nome Navio' },
       { key: 'capacidade', label: 'Capacidade' },
       { key: 'nr_container', label: 'Nº Container' },
       { key: 'ft_tablet', label: 'Foto Tablet' },
@@ -137,6 +135,15 @@ const OPERACOES_CONFIG: Record<string, { tabela: string; campos: { key: string; 
       { key: 'p2_nr_cautela', label: 'P2 Nº Cautela' },
       { key: 'p2_ft_cautela', label: 'P2 Foto Cautela' },
       { key: 'p2_data_hora', label: 'P2 Data/Hora' },
+    ]
+  },
+  'Vammo': {
+    tabela: 'operacao_vammo',
+    campos: [
+      { key: 'origem', label: 'Origem' },
+      { key: 'qtd_motos', label: 'Qtd Motos' },
+      { key: 'destino', label: 'Destino' },
+      { key: 'nr_cte', label: 'Nº CTE' },
     ]
   },
 };
@@ -573,6 +580,24 @@ const ViagemDetailModal = ({
     </div>
   );
 
+  const renderVammo = () => (
+    <div className="space-y-4">
+      <Section title="Rota" icon={Navigation}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Field label="Origem" value={dados.origem} />
+          <Field label="Destino" value={dados.destino} />
+          <Field label="Qtd Motos" value={dados.qtd_motos} />
+        </div>
+      </Section>
+      
+      <Section title="Documentos" icon={FileText}>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Field label="Nº CTE" value={dados.nr_cte} />
+        </div>
+      </Section>
+    </div>
+  );
+
   const renderOperacaoContent = () => {
     if (!viagem.operacao_tipo || !viagem.operacao_dados) {
       return (
@@ -591,6 +616,7 @@ const ViagemDetailModal = ({
       case 'Sada': return renderSada();
       case 'Superterminais': return renderSuperterminais();
       case 'Tegma': return renderTegma();
+      case 'Vammo': return renderVammo();
       default: return null;
     }
   };
@@ -2527,6 +2553,19 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
   const [selectedViagem, setSelectedViagem] = useState<ViagemEnriquecida | null>(null);
   const [isDateFilterExpanded, setIsDateFilterExpanded] = useState(false);
 
+  // Fechar dropdowns quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('[data-testid="motorista-dropdown-container"]')) {
+        setIsMotoristaDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const { data: motoristas = [] } = useQuery<Motorista[]>({
     queryKey: ['motoristas-operacoes', companyId],
     queryFn: async () => {
@@ -2579,7 +2618,7 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
   });
 
   const { data: viagens = [], isLoading } = useQuery<ViagemBase[]>({
-    queryKey: ['viagens', companyId, selectedMotorista, dataInicio, dataFim],
+    queryKey: ['viagens', companyId, dataInicio, dataFim],
     queryFn: async () => {
       let query = supabase
         .from('acompanhamento_viagem')
@@ -2588,16 +2627,12 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
         .order('data_hora_inicial', { ascending: false })
         .limit(500);
 
-      if (selectedMotorista !== 'all') {
-        query = query.eq('motorista_id', parseInt(selectedMotorista));
-      }
-      
       if (dataInicio) {
-        query = query.gte('data_hora_inicial', `${dataInicio}T00:00:00`);
+        query = query.gte('data_hora_inicial', new Date(dataInicio).toISOString());
       }
       
       if (dataFim) {
-        query = query.lte('data_hora_inicial', `${dataFim}T23:59:59`);
+        query = query.lte('data_hora_inicial', new Date(dataFim + 'T23:59:59').toISOString());
       }
       
       const { data, error } = await query;
@@ -2606,6 +2641,7 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
         console.warn('Erro ao buscar viagens:', error);
         return [];
       }
+      
       return data || [];
     },
     enabled: !!companyId,
@@ -2669,6 +2705,10 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
         return false;
       }
       
+      if (selectedMotorista !== 'all' && viagem.motorista_id?.toString() !== selectedMotorista) {
+        return false;
+      }
+      
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
         
@@ -2692,7 +2732,13 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
       
       return true;
     });
-  }, [viagensEnriquecidas, selectedOperacao, searchTerm]);
+  }, [viagensEnriquecidas, selectedOperacao, selectedMotorista, searchTerm]);
+
+  // Motoristas que possuem viagens na lista atual (sem filtro de motorista)
+  const motoristasComViagem = useMemo(() => {
+    const motoristaIdsPresentes = [...new Set(viagensEnriquecidas.map(v => v.motorista_id).filter(Boolean))];
+    return motoristas.filter(m => motoristaIdsPresentes.includes(m.motorista_id));
+  }, [viagensEnriquecidas, motoristas]);
 
   const getMotoristaName = (id: string) => {
     if (id === 'all') return 'Todos os Motoristas';
@@ -2724,6 +2770,7 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
       'Sada': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
       'Superterminais': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
       'Tegma': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+      'Vammo': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
     };
     return colors[tipo || ''] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400';
   };
@@ -2761,11 +2808,10 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
             </button>
 
             {isMotoristaDropdownOpen && (
-              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto" data-testid="motorista-dropdown-container">
                 <button
                   onClick={() => {
                     setSelectedMotorista('all');
-                    setIsMotoristaDropdownOpen(false);
                   }}
                   className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
                     selectedMotorista === 'all' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
@@ -2773,12 +2819,11 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
                 >
                   Todos os Motoristas
                 </button>
-                {motoristas.map((motorista) => (
+                {motoristasComViagem.map((motorista) => (
                   <button
                     key={motorista.motorista_id}
                     onClick={() => {
                       setSelectedMotorista(motorista.motorista_id.toString());
-                      setIsMotoristaDropdownOpen(false);
                     }}
                     className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
                       selectedMotorista === motorista.motorista_id.toString() ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
@@ -2857,6 +2902,7 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destino</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Janta</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
@@ -2871,6 +2917,7 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
                     <td className="px-4 py-3"><div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded" /></td>
                     <td className="px-4 py-3"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" /></td>
                     <td className="px-4 py-3"><div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" /></td>
+                    <td className="px-4 py-3"><div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded" /></td>
                     <td className="px-4 py-3"><div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" /></td>
                   </tr>
                 ))}
@@ -2893,6 +2940,7 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Veículo</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origem</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destino</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Janta</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
@@ -2924,6 +2972,19 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
                     </td>
                     <td className="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-300">
                       {viagem.operacao_dados?.destino || '-'}
+                    </td>
+                    <td className="px-4 py-3.5 text-sm">
+                      {viagem.janta !== null && viagem.janta !== undefined ? (
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-md ${
+                          viagem.janta 
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        }`}>
+                          <Beef className="w-4 h-4" />
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${
