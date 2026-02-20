@@ -2671,15 +2671,15 @@ const MitsubishiDashboard = ({ companyId }: { companyId: number }) => {
       {mitsubishiData.length > 0 ? (
         <div className="p-6">
           <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="text-center">
+            <div className="text-center border-r border-gray-200 dark:border-gray-700">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalViagens}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total</p>
             </div>
-            <div className="text-center">
+            <div className="text-center border-r border-gray-200 dark:border-gray-700">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">KM Total</p>
             </div>
-            <div className="text-center">
+            <div className="text-center border-r border-gray-200 dark:border-gray-700">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.volumeJantas}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jantas</p>
             </div>
@@ -2689,7 +2689,7 @@ const MitsubishiDashboard = ({ companyId }: { companyId: number }) => {
             </div>
           </div>
           
-          <div className="mt-6">
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Viagens por Data</h4>
             <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
               {stats.kmPorData.map((item, index) => {
@@ -2837,15 +2837,15 @@ const AutoserviceDashboard = ({ companyId }: { companyId: number }) => {
       {autoserviceData.length > 0 ? (
         <div className="p-6">
           <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="text-center">
+            <div className="text-center border-r border-gray-200 dark:border-gray-700">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalViagens}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total</p>
             </div>
-            <div className="text-center">
+            <div className="text-center border-r border-gray-200 dark:border-gray-700">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">KM Total</p>
             </div>
-            <div className="text-center">
+            <div className="text-center border-r border-gray-200 dark:border-gray-700">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.volumeJantas}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jantas</p>
             </div>
@@ -2855,7 +2855,7 @@ const AutoserviceDashboard = ({ companyId }: { companyId: number }) => {
             </div>
           </div>
           
-          <div className="mt-6">
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Viagens por Data</h4>
             <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
               {stats.kmPorData.map((item, index) => {
@@ -3012,15 +3012,15 @@ const VammoDashboard = ({ companyId }: { companyId: number }) => {
       {vammoData.length > 0 ? (
         <div className="p-6">
           <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="text-center">
+            <div className="text-center border-r border-gray-200 dark:border-gray-700">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalViagens}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total</p>
             </div>
-            <div className="text-center">
+            <div className="text-center border-r border-gray-200 dark:border-gray-700">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">KM Total</p>
             </div>
-            <div className="text-center">
+            <div className="text-center border-r border-gray-200 dark:border-gray-700">
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.volumeJantas}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jantas</p>
             </div>
@@ -3030,18 +3030,20 @@ const VammoDashboard = ({ companyId }: { companyId: number }) => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.rotas}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Rotas</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorData.length}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Datas</p>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-2">
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="text-center border-r border-gray-200 dark:border-gray-700">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.rotas}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Rotas</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorData.length}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Datas</p>
+              </div>
             </div>
           </div>
           
-          <div className="mt-6">
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-2">
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Viagens por Data</h4>
             <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
               {stats.kmPorData.map((item, index) => {
