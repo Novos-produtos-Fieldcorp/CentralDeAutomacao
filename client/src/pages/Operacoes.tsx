@@ -2631,10 +2631,11 @@ const MitsubishiDashboard = ({ companyId }: { companyId: number }) => {
       totalViagens,
       kmTotal,
       volumeJantas,
-      kmPorMotorista: Object.entries(
+      kmPorData: Object.entries(
         mitsubishiData.reduce((acc: Record<string, number>, item: any) => {
-          if (item.viagem?.motorista_nome) {
-            acc[item.viagem.motorista_nome] = (acc[item.viagem.motorista_nome] || 0) + 1;
+          if (item.viagem?.data_hora_inicial) {
+            const date = new Date(item.viagem.data_hora_inicial).toLocaleDateString('pt-BR');
+            acc[date] = (acc[date] || 0) + 1;
           }
           return acc;
         }, {})
@@ -2646,12 +2647,9 @@ const MitsubishiDashboard = ({ companyId }: { companyId: number }) => {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full animate-pulse"></div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Mitsubishi</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Carregando dados...</p>
-            </div>
+          <div className="animate-pulse space-y-4">
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32" />
+            <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded" />
           </div>
         </div>
       </div>
@@ -2686,27 +2684,27 @@ const MitsubishiDashboard = ({ companyId }: { companyId: number }) => {
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jantas</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorMotorista.length}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Motoristas</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorData.length}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Datas</p>
             </div>
           </div>
           
           <div className="mt-6">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">KM por Motorista</h4>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Viagens por Data</h4>
             <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-              {stats.kmPorMotorista.map((item, index) => {
-                const maxVal = Math.max(...stats.kmPorMotorista.map(v => v.value), 1);
+              {stats.kmPorData.map((item, index) => {
+                const maxVal = Math.max(...stats.kmPorData.map(v => v.value), 1);
                 const heightPercent = (item.value / maxVal) * 100;
                 return (
                   <div key={index} className="flex flex-col items-center min-w-[80px]">
                     <span className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1 whitespace-nowrap">
-                      {item.label.split(' ')[0]}
+                      {item.value}
                     </span>
                     <div 
                       className="w-14 bg-red-500 dark:bg-red-400 rounded-t transition-all duration-300"
                       style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                     />
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label}</span>
                   </div>
                 );
               })}
@@ -2799,10 +2797,11 @@ const AutoserviceDashboard = ({ companyId }: { companyId: number }) => {
       totalViagens,
       kmTotal,
       volumeJantas,
-      kmPorMotorista: Object.entries(
+      kmPorData: Object.entries(
         autoserviceData.reduce((acc: Record<string, number>, item: any) => {
-          if (item.viagem?.motorista_nome) {
-            acc[item.viagem.motorista_nome] = (acc[item.viagem.motorista_nome] || 0) + 1;
+          if (item.viagem?.data_hora_inicial) {
+            const date = new Date(item.viagem.data_hora_inicial).toLocaleDateString('pt-BR');
+            acc[date] = (acc[date] || 0) + 1;
           }
           return acc;
         }, {})
@@ -2814,12 +2813,9 @@ const AutoserviceDashboard = ({ companyId }: { companyId: number }) => {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full animate-pulse"></div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Autoservice</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Carregando dados...</p>
-            </div>
+          <div className="animate-pulse space-y-4">
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32" />
+            <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded" />
           </div>
         </div>
       </div>
@@ -2854,27 +2850,27 @@ const AutoserviceDashboard = ({ companyId }: { companyId: number }) => {
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jantas</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorMotorista.length}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Motoristas</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorData.length}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Datas</p>
             </div>
           </div>
           
           <div className="mt-6">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">KM por Motorista</h4>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Viagens por Data</h4>
             <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-              {stats.kmPorMotorista.map((item, index) => {
-                const maxVal = Math.max(...stats.kmPorMotorista.map(v => v.value), 1);
+              {stats.kmPorData.map((item, index) => {
+                const maxVal = Math.max(...stats.kmPorData.map(v => v.value), 1);
                 const heightPercent = (item.value / maxVal) * 100;
                 return (
                   <div key={index} className="flex flex-col items-center min-w-[80px]">
                     <span className="text-xs font-semibold text-orange-600 dark:text-orange-400 mb-1 whitespace-nowrap">
-                      {item.label.split(' ')[0]}
+                      {item.value}
                     </span>
                     <div 
                       className="w-14 bg-orange-500 dark:bg-orange-400 rounded-t transition-all duration-300"
                       style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                     />
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label}</span>
                   </div>
                 );
               })}
@@ -2976,10 +2972,11 @@ const VammoDashboard = ({ companyId }: { companyId: number }) => {
       volumeJantas,
       totalMotos,
       rotas: rotas.length,
-      kmPorMotorista: Object.entries(
+      kmPorData: Object.entries(
         vammoData.reduce((acc: Record<string, number>, item: any) => {
-          if (item.viagem?.motorista_nome) {
-            acc[item.viagem.motorista_nome] = (acc[item.viagem.motorista_nome] || 0) + 1;
+          if (item.viagem?.data_hora_inicial) {
+            const date = new Date(item.viagem.data_hora_inicial).toLocaleDateString('pt-BR');
+            acc[date] = (acc[date] || 0) + 1;
           }
           return acc;
         }, {})
@@ -2991,12 +2988,9 @@ const VammoDashboard = ({ companyId }: { companyId: number }) => {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full animate-pulse"></div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Vammo</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Carregando dados...</p>
-            </div>
+          <div className="animate-pulse space-y-4">
+            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32" />
+            <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded" />
           </div>
         </div>
       </div>
@@ -3042,27 +3036,27 @@ const VammoDashboard = ({ companyId }: { companyId: number }) => {
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Rotas</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorMotorista.length}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Motoristas</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorData.length}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Datas</p>
             </div>
           </div>
           
           <div className="mt-6">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">KM por Motorista</h4>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Viagens por Data</h4>
             <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-              {stats.kmPorMotorista.map((item, index) => {
-                const maxVal = Math.max(...stats.kmPorMotorista.map(v => v.value), 1);
+              {stats.kmPorData.map((item, index) => {
+                const maxVal = Math.max(...stats.kmPorData.map(v => v.value), 1);
                 const heightPercent = (item.value / maxVal) * 100;
                 return (
                   <div key={index} className="flex flex-col items-center min-w-[80px]">
                     <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1 whitespace-nowrap">
-                      {item.label.split(' ')[0]}
+                      {item.value}
                     </span>
                     <div 
                       className="w-14 bg-indigo-500 dark:bg-indigo-400 rounded-t transition-all duration-300"
                       style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
                     />
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label}</span>
                   </div>
                 );
               })}
