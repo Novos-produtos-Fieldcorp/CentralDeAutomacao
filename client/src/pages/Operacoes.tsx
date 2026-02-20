@@ -2617,29 +2617,51 @@ const MitsubishiDashboard = ({ companyId }: { companyId: number }) => {
     const totalViagens = mitsubishiData.length;
     let kmTotal = 0;
     let volumeJantas = 0;
-    
+    let totalCarros = 0;
+    const kmPorMotorista: Record<string, number> = {};
+    const carrosPorMotorista: Record<string, number> = {};
+    const kmPorCavalo: Record<string, number> = {};
+    const viagensPorMes: Record<string, number> = {};
+
     mitsubishiData.forEach((item: any) => {
       const viagem = item.viagem;
       if (!viagem) return;
-      
+
       const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
       if (viagem.janta) volumeJantas++;
+      totalCarros += (item.qtd_carro || 0);
+
+      const motoristaNome = viagem.motorista_nome || 'Desconhecido';
+      const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
+
+      kmPorMotorista[motoristaNome] = (kmPorMotorista[motoristaNome] || 0) + (km > 0 ? km : 0);
+      carrosPorMotorista[motoristaNome] = (carrosPorMotorista[motoristaNome] || 0) + (item.qtd_carro || 0);
+      kmPorCavalo[veiculoPlaca] = (kmPorCavalo[veiculoPlaca] || 0) + (km > 0 ? km : 0);
+
+      if (viagem.data_hora_inicial) {
+        const mes = viagem.data_hora_inicial.substring(0, 7);
+        viagensPorMes[mes] = (viagensPorMes[mes] || 0) + 1;
+      }
     });
-    
+
     return {
       totalViagens,
       kmTotal,
       volumeJantas,
-      kmPorData: Object.entries(
-        mitsubishiData.reduce((acc: Record<string, number>, item: any) => {
-          if (item.viagem?.data_hora_inicial) {
-            const date = new Date(item.viagem.data_hora_inicial).toLocaleDateString('pt-BR');
-            acc[date] = (acc[date] || 0) + 1;
-          }
-          return acc;
-        }, {})
-      ).map(([label, value]) => ({ label, value }))
+      totalCarros,
+      kmPorMotorista: Object.entries(kmPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      carrosPorMotorista: Object.entries(carrosPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      kmPorCavalo: Object.entries(kmPorCavalo)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      viagensPorMes: Object.entries(viagensPorMes)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
     };
   }, [mitsubishiData]);
 
@@ -2657,63 +2679,73 @@ const MitsubishiDashboard = ({ companyId }: { companyId: number }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-      <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-6 bg-red-600 rounded-full"></div>
+          <div className="w-1 h-8 bg-red-600 rounded-full"></div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Mitsubishi</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Operações de transporte Mitsubishi</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
           </div>
         </div>
       </div>
       
-      {mitsubishiData.length > 0 ? (
-        <div className="p-6">
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="text-center border-r border-gray-200 dark:border-gray-700">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalViagens}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total</p>
+      <div className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <HorizontalBarChart 
+                title="KM por Motorista" 
+                data={stats.kmPorMotorista}
+                color="bg-teal-500 dark:bg-teal-400"
+              />
+              <HorizontalBarChart 
+                title="Carros por Motorista" 
+                data={stats.carrosPorMotorista}
+                color="bg-teal-500 dark:bg-teal-400"
+              />
+              <HorizontalBarChart 
+                title="KM por Cavalo" 
+                data={stats.kmPorCavalo}
+                color="bg-teal-500 dark:bg-teal-400"
+              />
             </div>
-            <div className="text-center border-r border-gray-200 dark:border-gray-700">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">KM Total</p>
-            </div>
-            <div className="text-center border-r border-gray-200 dark:border-gray-700">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.volumeJantas}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jantas</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorData.length}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Datas</p>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
+              {stats.viagensPorMes.length > 0 ? (
+                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+                    {stats.viagensPorMes.map((item, index) => {
+                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                      const heightPercent = (item.value / maxVal) * 100;
+                      return (
+                        <div key={index} className="flex flex-col items-center min-w-[60px]">
+                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                          <div 
+                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
+                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+              )}
             </div>
           </div>
           
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Viagens por Data</h4>
-            <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-              {stats.kmPorData.map((item, index) => {
-                const maxVal = Math.max(...stats.kmPorData.map(v => v.value), 1);
-                const heightPercent = (item.value / maxVal) * 100;
-                return (
-                  <div key={index} className="flex flex-col items-center min-w-[80px]">
-                    <span className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1 whitespace-nowrap">
-                      {item.value}
-                    </span>
-                    <div 
-                      className="w-14 bg-red-500 dark:bg-red-400 rounded-t transition-all duration-300"
-                      style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                    />
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label}</span>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="space-y-4">
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Total Carros" value={stats.totalCarros} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
-      ) : (
-        <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
-      )}
+      </div>
     </div>
   );
 };
@@ -2783,29 +2815,51 @@ const AutoserviceDashboard = ({ companyId }: { companyId: number }) => {
     const totalViagens = autoserviceData.length;
     let kmTotal = 0;
     let volumeJantas = 0;
-    
+    let totalCarros = 0;
+    const kmPorMotorista: Record<string, number> = {};
+    const carrosPorMotorista: Record<string, number> = {};
+    const kmPorCavalo: Record<string, number> = {};
+    const viagensPorMes: Record<string, number> = {};
+
     autoserviceData.forEach((item: any) => {
       const viagem = item.viagem;
       if (!viagem) return;
-      
+
       const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
       if (viagem.janta) volumeJantas++;
+      totalCarros += (item.qtd_carros || 0);
+
+      const motoristaNome = viagem.motorista_nome || 'Desconhecido';
+      const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
+
+      kmPorMotorista[motoristaNome] = (kmPorMotorista[motoristaNome] || 0) + (km > 0 ? km : 0);
+      carrosPorMotorista[motoristaNome] = (carrosPorMotorista[motoristaNome] || 0) + (item.qtd_carros || 0);
+      kmPorCavalo[veiculoPlaca] = (kmPorCavalo[veiculoPlaca] || 0) + (km > 0 ? km : 0);
+
+      if (viagem.data_hora_inicial) {
+        const mes = viagem.data_hora_inicial.substring(0, 7);
+        viagensPorMes[mes] = (viagensPorMes[mes] || 0) + 1;
+      }
     });
-    
+
     return {
       totalViagens,
       kmTotal,
       volumeJantas,
-      kmPorData: Object.entries(
-        autoserviceData.reduce((acc: Record<string, number>, item: any) => {
-          if (item.viagem?.data_hora_inicial) {
-            const date = new Date(item.viagem.data_hora_inicial).toLocaleDateString('pt-BR');
-            acc[date] = (acc[date] || 0) + 1;
-          }
-          return acc;
-        }, {})
-      ).map(([label, value]) => ({ label, value }))
+      totalCarros,
+      kmPorMotorista: Object.entries(kmPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      carrosPorMotorista: Object.entries(carrosPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      kmPorCavalo: Object.entries(kmPorCavalo)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      viagensPorMes: Object.entries(viagensPorMes)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
     };
   }, [autoserviceData]);
 
@@ -2823,63 +2877,73 @@ const AutoserviceDashboard = ({ companyId }: { companyId: number }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-      <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-6 bg-orange-600 rounded-full"></div>
+          <div className="w-1 h-8 bg-orange-600 rounded-full"></div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Autoservice</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Operações de serviço automotivo</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
           </div>
         </div>
       </div>
       
-      {autoserviceData.length > 0 ? (
-        <div className="p-6">
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="text-center border-r border-gray-200 dark:border-gray-700">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalViagens}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total</p>
+      <div className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <HorizontalBarChart 
+                title="KM por Motorista" 
+                data={stats.kmPorMotorista}
+                color="bg-teal-500 dark:bg-teal-400"
+              />
+              <HorizontalBarChart 
+                title="Carros por Motorista" 
+                data={stats.carrosPorMotorista}
+                color="bg-teal-500 dark:bg-teal-400"
+              />
+              <HorizontalBarChart 
+                title="KM por Cavalo" 
+                data={stats.kmPorCavalo}
+                color="bg-teal-500 dark:bg-teal-400"
+              />
             </div>
-            <div className="text-center border-r border-gray-200 dark:border-gray-700">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">KM Total</p>
-            </div>
-            <div className="text-center border-r border-gray-200 dark:border-gray-700">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.volumeJantas}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jantas</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorData.length}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Datas</p>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
+              {stats.viagensPorMes.length > 0 ? (
+                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+                    {stats.viagensPorMes.map((item, index) => {
+                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                      const heightPercent = (item.value / maxVal) * 100;
+                      return (
+                        <div key={index} className="flex flex-col items-center min-w-[60px]">
+                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                          <div 
+                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
+                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+              )}
             </div>
           </div>
           
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Viagens por Data</h4>
-            <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-              {stats.kmPorData.map((item, index) => {
-                const maxVal = Math.max(...stats.kmPorData.map(v => v.value), 1);
-                const heightPercent = (item.value / maxVal) * 100;
-                return (
-                  <div key={index} className="flex flex-col items-center min-w-[80px]">
-                    <span className="text-xs font-semibold text-orange-600 dark:text-orange-400 mb-1 whitespace-nowrap">
-                      {item.value}
-                    </span>
-                    <div 
-                      className="w-14 bg-orange-500 dark:bg-orange-400 rounded-t transition-all duration-300"
-                      style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                    />
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label}</span>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="space-y-4">
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Total Carros" value={stats.totalCarros} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
-      ) : (
-        <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
-      )}
+      </div>
     </div>
   );
 };
@@ -2949,38 +3013,56 @@ const VammoDashboard = ({ companyId }: { companyId: number }) => {
     const totalViagens = vammoData.length;
     let kmTotal = 0;
     let volumeJantas = 0;
-    
+    const kmPorMotorista: Record<string, number> = {};
+    const motosPorMotorista: Record<string, number> = {};
+    const kmPorCavalo: Record<string, number> = {};
+    const viagensPorMes: Record<string, number> = {};
+
     vammoData.forEach((item: any) => {
       const viagem = item.viagem;
       if (!viagem) return;
-      
+
       const km = parseFloat(viagem.km_rodado) || 0;
       if (km > 0) kmTotal += km;
       if (viagem.janta) volumeJantas++;
+
+      const motoristaNome = viagem.motorista_nome || 'Desconhecido';
+      const veiculoPlaca = viagem.veiculo_placa || 'Desconhecido';
+
+      kmPorMotorista[motoristaNome] = (kmPorMotorista[motoristaNome] || 0) + (km > 0 ? km : 0);
+      motosPorMotorista[motoristaNome] = (motosPorMotorista[motoristaNome] || 0) + (parseInt(item.qtd_motos) || 0);
+      kmPorCavalo[veiculoPlaca] = (kmPorCavalo[veiculoPlaca] || 0) + (km > 0 ? km : 0);
+
+      if (viagem.data_hora_inicial) {
+        const mes = viagem.data_hora_inicial.substring(0, 7);
+        viagensPorMes[mes] = (viagensPorMes[mes] || 0) + 1;
+      }
     });
-    
-    // Estatísticas específicas do Vammo
+
     const totalMotos = vammoData.reduce((acc: number, item: any) => {
       return acc + (parseInt(item.qtd_motos) || 0);
     }, 0);
-    
+
     const rotas = [...new Set(vammoData.map((item: any) => `${item.origem}-${item.destino}`))];
-    
+
     return {
       totalViagens,
       kmTotal,
       volumeJantas,
       totalMotos,
       rotas: rotas.length,
-      kmPorData: Object.entries(
-        vammoData.reduce((acc: Record<string, number>, item: any) => {
-          if (item.viagem?.data_hora_inicial) {
-            const date = new Date(item.viagem.data_hora_inicial).toLocaleDateString('pt-BR');
-            acc[date] = (acc[date] || 0) + 1;
-          }
-          return acc;
-        }, {})
-      ).map(([label, value]) => ({ label, value }))
+      kmPorMotorista: Object.entries(kmPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      motosPorMotorista: Object.entries(motosPorMotorista)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      kmPorCavalo: Object.entries(kmPorCavalo)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value),
+      viagensPorMes: Object.entries(viagensPorMes)
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
     };
   }, [vammoData]);
 
@@ -2998,76 +3080,74 @@ const VammoDashboard = ({ companyId }: { companyId: number }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-      <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-6 bg-indigo-600 rounded-full"></div>
+          <div className="w-1 h-8 bg-indigo-600 rounded-full"></div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Vammo</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Operações de transporte de motos</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
           </div>
         </div>
       </div>
       
-      {vammoData.length > 0 ? (
-        <div className="p-6">
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <div className="text-center border-r border-gray-200 dark:border-gray-700">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalViagens}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total</p>
+      <div className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <HorizontalBarChart 
+                title="KM por Motorista" 
+                data={stats.kmPorMotorista}
+                color="bg-teal-500 dark:bg-teal-400"
+              />
+              <HorizontalBarChart 
+                title="Motos por Motorista" 
+                data={stats.motosPorMotorista}
+                color="bg-teal-500 dark:bg-teal-400"
+              />
+              <HorizontalBarChart 
+                title="KM por Cavalo" 
+                data={stats.kmPorCavalo}
+                color="bg-teal-500 dark:bg-teal-400"
+              />
             </div>
-            <div className="text-center border-r border-gray-200 dark:border-gray-700">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">KM Total</p>
-            </div>
-            <div className="text-center border-r border-gray-200 dark:border-gray-700">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.volumeJantas}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jantas</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalMotos}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Motos</p>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-2">
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="text-center border-r border-gray-200 dark:border-gray-700">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.rotas}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Rotas</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorData.length}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Datas</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mt-2">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Viagens por Data</h4>
-            <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-              {stats.kmPorData.map((item, index) => {
-                const maxVal = Math.max(...stats.kmPorData.map(v => v.value), 1);
-                const heightPercent = (item.value / maxVal) * 100;
-                return (
-                  <div key={index} className="flex flex-col items-center min-w-[80px]">
-                    <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1 whitespace-nowrap">
-                      {item.value}
-                    </span>
-                    <div 
-                      className="w-14 bg-indigo-500 dark:bg-indigo-400 rounded-t transition-all duration-300"
-                      style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                    />
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label}</span>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
+              {stats.viagensPorMes.length > 0 ? (
+                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+                    {stats.viagensPorMes.map((item, index) => {
+                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
+                      const heightPercent = (item.value / maxVal) * 100;
+                      return (
+                        <div key={index} className="flex flex-col items-center min-w-[60px]">
+                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
+                          <div 
+                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
+                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                          />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+              )}
             </div>
+          </div>
+          
+          <div className="space-y-4">
+            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Total Motos" value={stats.totalMotos} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Rotas" value={stats.rotas} color="text-blue-600 dark:text-blue-400" />
           </div>
         </div>
-      ) : (
-        <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
-      )}
+      </div>
     </div>
   );
 };
