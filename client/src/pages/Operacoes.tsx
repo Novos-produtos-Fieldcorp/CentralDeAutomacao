@@ -1562,6 +1562,15 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
         {(selectedOperacao === 'all' || selectedOperacao === 'Cesari') && (
           <CesariDashboard companyId={companyId!} />
         )}
+        {(selectedOperacao === 'all' || selectedOperacao === 'Mitsubishi') && (
+          <MitsubishiDashboard companyId={companyId!} />
+        )}
+        {(selectedOperacao === 'all' || selectedOperacao === 'Autoservice') && (
+          <AutoserviceDashboard companyId={companyId!} />
+        )}
+        {(selectedOperacao === 'all' || selectedOperacao === 'Vammo') && (
+          <VammoDashboard companyId={companyId!} />
+        )}
       </div>
     </div>
   );
@@ -2539,6 +2548,530 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+// Dashboard MITSUBISHI
+const MitsubishiDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: mitsubishiData = [], isLoading } = useQuery({
+    queryKey: ['mitsubishi-dashboard', companyId],
+    queryFn: async () => {
+      // Primeiro buscar viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, km_rodado, janta, data_hora_inicial')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIdsEmpresa = viagensEmpresa.map((v: any) => v.id);
+      
+      // Buscar operações MITSUBISHI que pertencem às viagens da empresa
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_mitsubishi')
+        .select('*')
+        .in('id_viagem', viagemIdsEmpresa);
+      
+      if (opError || !opData || opData.length === 0) return [];
+      
+      const viagensData = viagensEmpresa;
+      
+      // Buscar motoristas
+      const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .in('motorista_id', motoristaIds);
+      
+      const motoristasMap: Record<number, string> = {};
+      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      
+      // Buscar veículos
+      const veiculoIds = [...new Set((viagensData || []).map((v: any) => v.veiculo_id).filter(Boolean))];
+      const { data: veiculosData } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .in('veiculo_id', veiculoIds);
+      
+      const veiculosMap: Record<number, string> = {};
+      (veiculosData || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
+      
+      // Combinar dados
+      return opData.map((op: any) => {
+        const viagem = (viagensData || []).find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          viagem: viagem ? {
+            ...viagem,
+            motorista_nome: motoristasMap[viagem.motorista_id] || 'Desconhecido',
+            veiculo_placa: veiculosMap[viagem.veiculo_id] || 'Desconhecido'
+          } : null
+        };
+      });
+    },
+    enabled: !!companyId,
+  });
+
+  const stats = useMemo(() => {
+    const totalViagens = mitsubishiData.length;
+    let kmTotal = 0;
+    let volumeJantas = 0;
+    
+    mitsubishiData.forEach((item: any) => {
+      const viagem = item.viagem;
+      if (!viagem) return;
+      
+      const km = parseFloat(viagem.km_rodado) || 0;
+      if (km > 0) kmTotal += km;
+      if (viagem.janta) volumeJantas++;
+    });
+    
+    return {
+      totalViagens,
+      kmTotal,
+      volumeJantas,
+      kmPorMotorista: Object.entries(
+        mitsubishiData.reduce((acc: Record<string, number>, item: any) => {
+          if (item.viagem?.motorista_nome) {
+            acc[item.viagem.motorista_nome] = (acc[item.viagem.motorista_nome] || 0) + 1;
+          }
+          return acc;
+        }, {})
+      ).map(([label, value]) => ({ label, value }))
+    };
+  }, [mitsubishiData]);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full animate-pulse"></div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Mitsubishi</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Carregando dados...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+      <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-6 bg-red-600 rounded-full"></div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Mitsubishi</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Operações de transporte Mitsubishi</p>
+          </div>
+        </div>
+      </div>
+      
+      {mitsubishiData.length > 0 ? (
+        <div className="p-6">
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalViagens}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">KM Total</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.volumeJantas}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jantas</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorMotorista.length}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Motoristas</p>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">KM por Motorista</h4>
+            <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+              {stats.kmPorMotorista.map((item, index) => {
+                const maxVal = Math.max(...stats.kmPorMotorista.map(v => v.value), 1);
+                const heightPercent = (item.value / maxVal) * 100;
+                return (
+                  <div key={index} className="flex flex-col items-center min-w-[80px]">
+                    <span className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1 whitespace-nowrap">
+                      {item.label.split(' ')[0]}
+                    </span>
+                    <div 
+                      className="w-14 bg-red-500 dark:bg-red-400 rounded-t transition-all duration-300"
+                      style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                    />
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+      )}
+    </div>
+  );
+};
+
+// Dashboard AUTOSERVICE
+const AutoserviceDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: autoserviceData = [], isLoading } = useQuery({
+    queryKey: ['autoservice-dashboard', companyId],
+    queryFn: async () => {
+      // Primeiro buscar viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, km_rodado, janta, data_hora_inicial')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIdsEmpresa = viagensEmpresa.map((v: any) => v.id);
+      
+      // Buscar operações AUTOSERVICE que pertencem às viagens da empresa
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_autoservice')
+        .select('*')
+        .in('id_viagem', viagemIdsEmpresa);
+      
+      if (opError || !opData || opData.length === 0) return [];
+      
+      const viagensData = viagensEmpresa;
+      
+      // Buscar motoristas
+      const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .in('motorista_id', motoristaIds);
+      
+      const motoristasMap: Record<number, string> = {};
+      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      
+      // Buscar veículos
+      const veiculoIds = [...new Set((viagensData || []).map((v: any) => v.veiculo_id).filter(Boolean))];
+      const { data: veiculosData } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .in('veiculo_id', veiculoIds);
+      
+      const veiculosMap: Record<number, string> = {};
+      (veiculosData || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
+      
+      // Combinar dados
+      return opData.map((op: any) => {
+        const viagem = (viagensData || []).find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          viagem: viagem ? {
+            ...viagem,
+            motorista_nome: motoristasMap[viagem.motorista_id] || 'Desconhecido',
+            veiculo_placa: veiculosMap[viagem.veiculo_id] || 'Desconhecido'
+          } : null
+        };
+      });
+    },
+    enabled: !!companyId,
+  });
+
+  const stats = useMemo(() => {
+    const totalViagens = autoserviceData.length;
+    let kmTotal = 0;
+    let volumeJantas = 0;
+    
+    autoserviceData.forEach((item: any) => {
+      const viagem = item.viagem;
+      if (!viagem) return;
+      
+      const km = parseFloat(viagem.km_rodado) || 0;
+      if (km > 0) kmTotal += km;
+      if (viagem.janta) volumeJantas++;
+    });
+    
+    return {
+      totalViagens,
+      kmTotal,
+      volumeJantas,
+      kmPorMotorista: Object.entries(
+        autoserviceData.reduce((acc: Record<string, number>, item: any) => {
+          if (item.viagem?.motorista_nome) {
+            acc[item.viagem.motorista_nome] = (acc[item.viagem.motorista_nome] || 0) + 1;
+          }
+          return acc;
+        }, {})
+      ).map(([label, value]) => ({ label, value }))
+    };
+  }, [autoserviceData]);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full animate-pulse"></div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Autoservice</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Carregando dados...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+      <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-6 bg-orange-600 rounded-full"></div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Autoservice</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Operações de serviço automotivo</p>
+          </div>
+        </div>
+      </div>
+      
+      {autoserviceData.length > 0 ? (
+        <div className="p-6">
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalViagens}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">KM Total</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.volumeJantas}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jantas</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorMotorista.length}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Motoristas</p>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">KM por Motorista</h4>
+            <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+              {stats.kmPorMotorista.map((item, index) => {
+                const maxVal = Math.max(...stats.kmPorMotorista.map(v => v.value), 1);
+                const heightPercent = (item.value / maxVal) * 100;
+                return (
+                  <div key={index} className="flex flex-col items-center min-w-[80px]">
+                    <span className="text-xs font-semibold text-orange-600 dark:text-orange-400 mb-1 whitespace-nowrap">
+                      {item.label.split(' ')[0]}
+                    </span>
+                    <div 
+                      className="w-14 bg-orange-500 dark:bg-orange-400 rounded-t transition-all duration-300"
+                      style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                    />
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+      )}
+    </div>
+  );
+};
+
+// Dashboard VAMMO
+const VammoDashboard = ({ companyId }: { companyId: number }) => {
+  const { data: vammoData = [], isLoading } = useQuery({
+    queryKey: ['vammo-dashboard', companyId],
+    queryFn: async () => {
+      // Primeiro buscar viagens da empresa
+      const { data: viagensEmpresa } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, km_rodado, janta, data_hora_inicial')
+        .eq('company_id', companyId);
+      
+      if (!viagensEmpresa || viagensEmpresa.length === 0) return [];
+      
+      const viagemIdsEmpresa = viagensEmpresa.map((v: any) => v.id);
+      
+      // Buscar operações VAMMO que pertencem às viagens da empresa
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_vammo')
+        .select('*')
+        .in('id_viagem', viagemIdsEmpresa);
+      
+      if (opError || !opData || opData.length === 0) return [];
+      
+      const viagensData = viagensEmpresa;
+      
+      // Buscar motoristas
+      const motoristaIds = [...new Set((viagensData || []).map((v: any) => v.motorista_id).filter(Boolean))];
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .in('motorista_id', motoristaIds);
+      
+      const motoristasMap: Record<number, string> = {};
+      (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
+      
+      // Buscar veículos
+      const veiculoIds = [...new Set((viagensData || []).map((v: any) => v.veiculo_id).filter(Boolean))];
+      const { data: veiculosData } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .in('veiculo_id', veiculoIds);
+      
+      const veiculosMap: Record<number, string> = {};
+      (veiculosData || []).forEach((v: any) => { veiculosMap[v.veiculo_id] = v.placa; });
+      
+      // Combinar dados
+      return opData.map((op: any) => {
+        const viagem = (viagensData || []).find((v: any) => v.id === op.id_viagem);
+        return {
+          ...op,
+          viagem: viagem ? {
+            ...viagem,
+            motorista_nome: motoristasMap[viagem.motorista_id] || 'Desconhecido',
+            veiculo_placa: veiculosMap[viagem.veiculo_id] || 'Desconhecido'
+          } : null
+        };
+      });
+    },
+    enabled: !!companyId,
+  });
+
+  const stats = useMemo(() => {
+    const totalViagens = vammoData.length;
+    let kmTotal = 0;
+    let volumeJantas = 0;
+    
+    vammoData.forEach((item: any) => {
+      const viagem = item.viagem;
+      if (!viagem) return;
+      
+      const km = parseFloat(viagem.km_rodado) || 0;
+      if (km > 0) kmTotal += km;
+      if (viagem.janta) volumeJantas++;
+    });
+    
+    // Estatísticas específicas do Vammo
+    const totalMotos = vammoData.reduce((acc: number, item: any) => {
+      return acc + (parseInt(item.qtd_motos) || 0);
+    }, 0);
+    
+    const rotas = [...new Set(vammoData.map((item: any) => `${item.origem}-${item.destino}`))];
+    
+    return {
+      totalViagens,
+      kmTotal,
+      volumeJantas,
+      totalMotos,
+      rotas: rotas.length,
+      kmPorMotorista: Object.entries(
+        vammoData.reduce((acc: Record<string, number>, item: any) => {
+          if (item.viagem?.motorista_nome) {
+            acc[item.viagem.motorista_nome] = (acc[item.viagem.motorista_nome] || 0) + 1;
+          }
+          return acc;
+        }, {})
+      ).map(([label, value]) => ({ label, value }))
+    };
+  }, [vammoData]);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-6 bg-gray-800 dark:bg-gray-200 rounded-full animate-pulse"></div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Vammo</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Carregando dados...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+      <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-6 bg-indigo-600 rounded-full"></div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Vammo</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Operações de transporte de motos</p>
+          </div>
+        </div>
+      </div>
+      
+      {vammoData.length > 0 ? (
+        <div className="p-6">
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalViagens}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">KM Total</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.volumeJantas}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jantas</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalMotos}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Motos</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.rotas}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Rotas</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.kmPorMotorista.length}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Motoristas</p>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">KM por Motorista</h4>
+            <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
+              {stats.kmPorMotorista.map((item, index) => {
+                const maxVal = Math.max(...stats.kmPorMotorista.map(v => v.value), 1);
+                const heightPercent = (item.value / maxVal) * 100;
+                return (
+                  <div key={index} className="flex flex-col items-center min-w-[80px]">
+                    <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-1 whitespace-nowrap">
+                      {item.label.split(' ')[0]}
+                    </span>
+                    <div 
+                      className="w-14 bg-indigo-500 dark:bg-indigo-400 rounded-t transition-all duration-300"
+                      style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
+                    />
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+      )}
     </div>
   );
 };
