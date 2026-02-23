@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Camera, Loader2, AlertCircle, Edit2, Save, ArrowLeft, Upload, Trash2 } from 'lucide-react';
+import { X, Download, Camera, Loader2, AlertCircle, Edit2, Save, ArrowLeft, Upload, Trash2, Search, ChevronDown } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { exportChecklistToPDF } from '../../utils/export';
 import { getStatusInfo } from '../../utils/checklistStatus';
@@ -26,6 +26,19 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
   const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null);
+  const [photoUploadState, setPhotoUploadState] = useState<Record<string, { status: 'idle' | 'preparing' | 'uploading' | 'done' | 'error'; progress: number; error?: string }>>({});
+  const activeUploadsRef = useRef(0);
+  const uploadQueueRef = useRef<Array<() => Promise<void>>>([]);
+  const [motoristas, setMotoristas] = useState<Array<{ motorista_id: number; nome: string }>>([]);
+  const [veiculos, setVeiculos] = useState<Array<{ veiculo_id: number; placa: string }>>([]);
+  const [loadingMotoristas, setLoadingMotoristas] = useState(false);
+  const [loadingVeiculos, setLoadingVeiculos] = useState(false);
+  const [motoristaSearchTerm, setMotoristaSearchTerm] = useState('');
+  const [veiculoSearchTerm, setVeiculoSearchTerm] = useState('');
+  const [isMotoristaDropdownOpen, setIsMotoristaDropdownOpen] = useState(false);
+  const [isVeiculoDropdownOpen, setIsVeiculoDropdownOpen] = useState(false);
+  const motoristaDropdownRef = useRef<HTMLDivElement>(null);
+  const veiculoDropdownRef = useRef<HTMLDivElement>(null);
   
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -51,12 +64,85 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
 
   useEffect(() => {
     fetchStatusItems();
+    fetchMotoristas();
+    fetchVeiculos();
     return () => {
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
       }
     };
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (motoristaDropdownRef.current && !motoristaDropdownRef.current.contains(event.target as Node)) {
+        setIsMotoristaDropdownOpen(false);
+      }
+      if (veiculoDropdownRef.current && !veiculoDropdownRef.current.contains(event.target as Node)) {
+        setIsVeiculoDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchMotoristas = async () => {
+    try {
+      setLoadingMotoristas(true);
+      const { data, error } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .eq('ativo', true)
+        .not('nome', 'is', null)
+        .not('nome', 'eq', '')
+        .order('nome');
+      if (error) throw error;
+      setMotoristas(data || []);
+    } catch (err) {
+      console.error('Error fetching motoristas:', err);
+      toast.error('Erro ao carregar motoristas');
+    } finally {
+      setLoadingMotoristas(false);
+    }
+  };
+
+  const fetchVeiculos = async () => {
+    try {
+      setLoadingVeiculos(true);
+      const { data, error } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa')
+        .eq('status_veiculo', true)
+        .not('placa', 'is', null)
+        .not('placa', 'eq', '')
+        .order('placa');
+      if (error) throw error;
+      setVeiculos(data || []);
+    } catch (err) {
+      console.error('Error fetching veiculos:', err);
+      toast.error('Erro ao carregar veículos');
+    } finally {
+      setLoadingVeiculos(false);
+    }
+  };
+
+  const getSelectedMotoristaName = () => {
+    const motorista = motoristas.find(m => m.motorista_id.toString() === formData.motorista_id);
+    return motorista ? motorista.nome : 'Selecione um motorista';
+  };
+
+  const getSelectedVeiculoName = () => {
+    const veiculo = veiculos.find(v => v.veiculo_id.toString() === formData.veiculo_id);
+    return veiculo ? veiculo.placa : 'Selecione um veículo';
+  };
+
+  const filteredMotoristas = motoristas.filter(m =>
+    m.nome && m.nome.trim() !== '' && (m.nome || '').toLowerCase().includes((motoristaSearchTerm || '').toLowerCase())
+  );
+
+  const filteredVeiculos = veiculos.filter(v =>
+    v.placa && v.placa.trim() !== '' && (v.placa || '').toLowerCase().includes((veiculoSearchTerm || '').toLowerCase())
+  );
 
   useEffect(() => {
     if (isOpen && checklist) {
@@ -184,7 +270,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   };
 
   const handleComponentChange = (section: string, field: string, value: any) => {
-    setEditComponents(prev => ({
+    setEditComponents((prev: any) => ({
       ...prev,
       [section]: {
         ...prev[section],
@@ -193,42 +279,131 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
     }));
   };
 
+  const setPhotoState = (photoField: string, next: { status: 'idle' | 'preparing' | 'uploading' | 'done' | 'error'; progress: number; error?: string }) => {
+    setPhotoUploadState(prev => ({
+      ...prev,
+      [photoField]: next
+    }));
+  };
+
+  const runUploadQueue = () => {
+    const MAX_CONCURRENT_UPLOADS = 3;
+    while (activeUploadsRef.current < MAX_CONCURRENT_UPLOADS && uploadQueueRef.current.length > 0) {
+      const job = uploadQueueRef.current.shift();
+      if (!job) return;
+      activeUploadsRef.current += 1;
+      job()
+        .catch(() => {
+          // handled in job
+        })
+        .finally(() => {
+          activeUploadsRef.current -= 1;
+          runUploadQueue();
+        });
+    }
+  };
+
+  const compressImageIfNeeded = async (file: File): Promise<File> => {
+    try {
+      if (!file.type.startsWith('image/')) return file;
+
+      // Skip very small files
+      if (file.size <= 300 * 1024) return file;
+
+      const bitmap = await createImageBitmap(file);
+      const MAX_W = 1600;
+      const scale = Math.min(1, MAX_W / bitmap.width);
+      const targetW = Math.max(1, Math.round(bitmap.width * scale));
+      const targetH = Math.max(1, Math.round(bitmap.height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return file;
+
+      ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+      bitmap.close();
+
+      // Use jpeg for speed/size; keeps original name extension stable for storage key.
+      const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.75));
+      if (!blob) return file;
+
+      return new File([blob], file.name.replace(/\.(png|webp|jpg|jpeg)$/i, '.jpg'), { type: 'image/jpeg' });
+    } catch {
+      return file;
+    }
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, photoField: string) => {
     const file = e.target.files?.[0];
     if (!file || !checklist) return;
+
+    // allow selecting the same file again
+    e.target.value = '';
+
+    const enqueue = (fn: () => Promise<void>) => {
+      uploadQueueRef.current.push(fn);
+      runUploadQueue();
+    };
     
-    try {
-      setUploadingPhoto(photoField);
-      
-      // Create a unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${checklist.checklist_id}_${photoField}_${Date.now()}.${fileExt}`;
-      
-      // Upload file to storage
-      const { error: uploadError, data } = await supabase.storage
-        .from('imagensdocs')
-        .upload(fileName, file);
-        
-      if (uploadError) throw uploadError;
-      
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('imagensdocs')
-        .getPublicUrl(fileName);
-        
-      // Update the photo in state
-      setEditPhotos(prev => ({
-        ...prev,
-        [photoField]: publicUrl
-      }));
-      
-      toast.success('Foto enviada com sucesso');
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      toast.error('Erro ao enviar foto');
-    } finally {
-      setUploadingPhoto(null);
-    }
+    setPhotoState(photoField, { status: 'preparing', progress: 5 });
+
+    enqueue(async () => {
+      try {
+        setPhotoState(photoField, { status: 'preparing', progress: 10 });
+
+        const processedFile = await compressImageIfNeeded(file);
+
+        // Create a unique file name
+        const fileExt = processedFile.name.split('.').pop();
+        const fileName = `${checklist.checklist_id}_${photoField}_${Date.now()}.${fileExt}`;
+
+        setPhotoState(photoField, { status: 'uploading', progress: 25 });
+
+        const { error: uploadError } = await supabase.storage
+          .from('imagensdocs')
+          .upload(fileName, processedFile, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: processedFile.type
+          });
+
+        if (uploadError) throw uploadError;
+
+        setPhotoState(photoField, { status: 'uploading', progress: 85 });
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('imagensdocs')
+          .getPublicUrl(fileName);
+
+        // Update the photo in state
+        setEditPhotos((prev: any) => ({
+          ...prev,
+          [photoField]: publicUrl
+        }));
+
+        setPhotoState(photoField, { status: 'done', progress: 100 });
+        toast.success('Foto enviada com sucesso');
+
+        window.setTimeout(() => {
+          setPhotoUploadState(prev => {
+            const copy = { ...prev };
+            delete copy[photoField];
+            return copy;
+          });
+        }, 1500);
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+        setPhotoState(photoField, {
+          status: 'error',
+          progress: 0,
+          error: error instanceof Error ? error.message : 'Erro ao enviar foto'
+        });
+        toast.error('Erro ao enviar foto');
+      }
+    });
   };
 
   const handleRemovePhoto = async (photoField: string) => {
@@ -258,7 +433,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       }
       
       // Update state to remove the photo
-      setEditPhotos(prev => ({
+      setEditPhotos((prev: any) => ({
         ...prev,
         [photoField]: null
       }));
@@ -286,7 +461,9 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
           hora: formData.hora,
           quilometragem: parseFloat(formData.quilometragem),
           observacoes: formData.observacoes,
-          status: formData.status
+          status: formData.status,
+          motorista_id: formData.motorista_id ? Number(formData.motorista_id) : null,
+          veiculo_id: formData.veiculo_id ? Number(formData.veiculo_id) : null
         })
         .eq('checklist_id', checklist.checklist_id);
         
@@ -496,8 +673,36 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                               border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50
                               hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
                   >
-                    {uploadingPhoto === key ? (
-                      <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+                    {photoUploadState[key]?.status === 'preparing' || photoUploadState[key]?.status === 'uploading' ? (
+                      <div className="w-full px-6">
+                        <div className="flex items-center justify-center mb-3">
+                          <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+                        </div>
+                        <div className="text-center text-sm text-gray-600 dark:text-gray-300 mb-3">
+                          {photoUploadState[key]?.status === 'preparing' ? 'Preparando...' : 'Enviando...'}
+                        </div>
+                        <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-2 bg-blue-600 rounded-full transition-all"
+                            style={{ width: `${photoUploadState[key]?.progress ?? 0}%` }}
+                          />
+                        </div>
+                        <div className="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">
+                          {Math.round(photoUploadState[key]?.progress ?? 0)}%
+                        </div>
+                      </div>
+                    ) : photoUploadState[key]?.status === 'error' ? (
+                      <div className="w-full px-6">
+                        <div className="flex items-center justify-center mb-2">
+                          <AlertCircle className="w-8 h-8 text-red-500" />
+                        </div>
+                        <div className="text-center text-sm text-red-600 dark:text-red-400 mb-2">
+                          Falha no upload
+                        </div>
+                        <div className="text-center text-xs text-gray-500 dark:text-gray-400">
+                          Clique para tentar novamente
+                        </div>
+                      </div>
                     ) : (
                       <>
                         <Camera className="w-8 h-8 text-gray-400 mb-2" />
@@ -739,6 +944,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
                       </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Hora
@@ -751,6 +957,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
                       </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Quilometragem
@@ -760,11 +967,130 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                           name="quilometragem"
                           value={formData.quilometragem}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                           step="0.1"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
                       </div>
-                      <div>
+
+                      <div ref={motoristaDropdownRef} className="relative">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Motorista
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setIsMotoristaDropdownOpen(!isMotoristaDropdownOpen)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 flex items-center justify-between"
+                          disabled={loadingMotoristas}
+                        >
+                          <span className="truncate">
+                            {getSelectedMotoristaName()}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 transition-transform ${isMotoristaDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isMotoristaDropdownOpen && (
+                          <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                  type="text"
+                                  placeholder="Pesquisar motorista..."
+                                  value={motoristaSearchTerm}
+                                  onChange={(e) => setMotoristaSearchTerm(e.target.value)}
+                                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, motorista_id: '' }));
+                                setIsMotoristaDropdownOpen(false);
+                                setMotoristaSearchTerm('');
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm"
+                            >
+                              Limpar seleção
+                            </button>
+                            {filteredMotoristas.map((m) => (
+                              <button
+                                key={m.motorista_id}
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, motorista_id: m.motorista_id.toString() }));
+                                  setIsMotoristaDropdownOpen(false);
+                                  setMotoristaSearchTerm('');
+                                }}
+                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                  formData.motorista_id === m.motorista_id.toString() ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                                }`}
+                              >
+                                {m.nome}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div ref={veiculoDropdownRef} className="relative">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Veículo
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setIsVeiculoDropdownOpen(!isVeiculoDropdownOpen)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 flex items-center justify-between"
+                          disabled={loadingVeiculos}
+                        >
+                          <span className="truncate">
+                            {getSelectedVeiculoName()}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 transition-transform ${isVeiculoDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isVeiculoDropdownOpen && (
+                          <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                  type="text"
+                                  placeholder="Pesquisar veículo..."
+                                  value={veiculoSearchTerm}
+                                  onChange={(e) => setVeiculoSearchTerm(e.target.value)}
+                                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, veiculo_id: '' }));
+                                setIsVeiculoDropdownOpen(false);
+                                setVeiculoSearchTerm('');
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm"
+                            >
+                              Limpar seleção
+                            </button>
+                            {filteredVeiculos.map((v) => (
+                              <button
+                                key={v.veiculo_id}
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, veiculo_id: v.veiculo_id.toString() }));
+                                  setIsVeiculoDropdownOpen(false);
+                                  setVeiculoSearchTerm('');
+                                }}
+                                className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                                  formData.veiculo_id === v.veiculo_id.toString() ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                                }`}
+                              >
+                                {v.placa}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Status
                         </label>
@@ -781,6 +1107,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                           </span>
                         </div>
                       </div>
+
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Observações

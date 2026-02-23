@@ -37,6 +37,8 @@ const ChecklistSemanal = () => {
   const [selectAll, setSelectAll] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all', false);
+  const [localStartDate, setLocalStartDate] = useState(dateRange.startDate || '');
+  const [localEndDate, setLocalEndDate] = useState(dateRange.endDate || '');
   
   // Validate date is within acceptable range
   const validateDate = (dateString: string): boolean => {
@@ -58,6 +60,11 @@ const ChecklistSemanal = () => {
     y: 0,
     checklist: null,
   });
+
+  useEffect(() => {
+    setLocalStartDate(dateRange.startDate || '');
+    setLocalEndDate(dateRange.endDate || '');
+  }, [dateRange]);
 
   useEffect(() => {
     // Only fetch when date range actually changes
@@ -405,18 +412,16 @@ const ChecklistSemanal = () => {
                     <div key={status} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
                       <label 
                         className="flex items-center cursor-pointer"
-                        onClick={() => {
-                          toggleStatusFilter(status);
-                          setShowStatusDropdown(false);
-                        }}
                       >
                         <input
                           type="checkbox"
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
                           checked={statusFilter.includes(status)}
-                          onChange={() => {}}
+                          onChange={() => {
+                            toggleStatusFilter(status);
+                            setShowStatusDropdown(false);
+                          }}
                           onClick={(e) => e.stopPropagation()}
-                          readOnly
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-200 capitalize">{status}</span>
                       </label>
@@ -503,13 +508,15 @@ const ChecklistSemanal = () => {
               <input
                 type="date"
                 data-testid="input-custom-start-date-checklist-semanal"
-                value={dateRange.startDate}
-                onChange={(e) => {
+                value={localStartDate}
+                onChange={(e) => setLocalStartDate(e.target.value)}
+                onBlur={(e) => {
                   const newDate = e.target.value;
                   if (validateDate(newDate)) {
                     setDateRange({ ...dateRange, startDate: e.target.value });
                   } else {
                     toast.error('Por favor selecione uma data entre 2020 e 2099');
+                    setLocalStartDate(dateRange.startDate || '');
                   }
                 }}
                 min="2020-01-01"
@@ -524,13 +531,15 @@ const ChecklistSemanal = () => {
               <input
                 type="date"
                 data-testid="input-custom-end-date-checklist-semanal"
-                value={dateRange.endDate}
-                onChange={(e) => {
+                value={localEndDate}
+                onChange={(e) => setLocalEndDate(e.target.value)}
+                onBlur={(e) => {
                   const newDate = e.target.value;
                   if (validateDate(newDate)) {
                     setDateRange({ ...dateRange, endDate: e.target.value });
                   } else {
                     toast.error('Por favor selecione uma data entre 2020 e 2099');
+                    setLocalEndDate(dateRange.endDate || '');
                   }
                 }}
                 min="2020-01-01"

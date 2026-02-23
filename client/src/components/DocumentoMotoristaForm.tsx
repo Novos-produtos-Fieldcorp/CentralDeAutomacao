@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import {
   X,
@@ -32,6 +32,8 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
   const [veiculo, setVeiculo] = useState<any | null>(null);
   const [documentoVeiculo, setDocumentoVeiculo] = useState<any | null>(null);
   const [activeDocument, setActiveDocument] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const hasInitializedRef = useRef(false);
 
   const [formData, setFormData] = useState({
     foto_cnh: "",
@@ -72,6 +74,48 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
 
   useEffect(() => {
     if (isOpen && motorista_id) {
+      // Reset state when opening / switching motorista
+      hasInitializedRef.current = false;
+      setIsDirty(false);
+      setExistingDocumento(null);
+      setVeiculo(null);
+      setDocumentoVeiculo(null);
+      setActiveDocument(null);
+
+      setFormData({
+        foto_cnh: "",
+        foto_comprovante_residencia: "",
+        nr_registro_cnh: "",
+        categoria_cnh: "",
+        validade_cnh: "",
+        uf_cnh: "",
+        nome_pai: "",
+        nome_mae: "",
+      });
+
+      setVeiculoData({
+        foto_crv: "",
+      });
+
+      setTipoDonoVeiculo("fisica");
+      setPessoaFisicaData({
+        nome: "",
+        cpf: "",
+        nr_rg: "",
+        data_emissao: "",
+        orgao_expedidor: "",
+        nome_pai: "",
+        nome_mae: "",
+        foto_documento: "",
+        comprovante_residencia: "",
+      });
+      setPessoaJuridicaData({
+        razao_social: "",
+        cnpj: "",
+        inscricao_estadual: "",
+        comprovante_residencia: "",
+      });
+
       fetchExistingDocumento();
       fetchVeiculoInfo();
     }
@@ -88,7 +132,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
 
       if (error) throw error;
 
-      if (data) {
+      if (data && !isDirty) {
         setExistingDocumento(data);
         setFormData({
           foto_cnh: data.foto_cnh || "",
@@ -124,7 +168,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
 
       if (docError && docError.code !== "PGRST116") throw docError;
 
-      if (docVeiculo) {
+      if (docVeiculo && !isDirty) {
         setDocumentoVeiculo(docVeiculo);
 
         // Buscar pessoa física
@@ -189,7 +233,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
 
       if (veiculoError) throw veiculoError;
 
-      if (veiculoData) {
+      if (veiculoData && !isDirty) {
         setVeiculo(veiculoData);
 
         // Buscar documento do veículo
@@ -204,12 +248,16 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
 
         if (docError) throw docError;
 
-        if (docData) {
+        if (docData && !isDirty) {
           setDocumentoVeiculo(docData);
           setVeiculoData({
             foto_crv: docData.foto_crv || "",
           });
         }
+      }
+
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true;
       }
     } catch (error) {
       console.error("Error fetching vehicle info:", error);
@@ -404,11 +452,13 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
+    setIsDirty(true);
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handlePessoaFisicaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    setIsDirty(true);
     setPessoaFisicaData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -416,6 +466,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const { name, value } = e.target;
+    setIsDirty(true);
     setPessoaJuridicaData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -636,9 +687,10 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                           </button>
                           <button
                             type="button"
-                            onClick={() =>
-                              setFormData((prev) => ({ ...prev, foto_cnh: "" }))
-                            }
+                            onClick={() => {
+                              setIsDirty(true);
+                              setFormData((prev) => ({ ...prev, foto_cnh: "" }));
+                            }}
                             className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center gap-1"
                           >
                             <X size={16} />
@@ -656,9 +708,10 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                         />
                         <button
                           type="button"
-                          onClick={() =>
-                            setFormData((prev) => ({ ...prev, foto_cnh: "" }))
-                          }
+                          onClick={() => {
+                            setIsDirty(true);
+                            setFormData((prev) => ({ ...prev, foto_cnh: "" }));
+                          }}
                           className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                           title="Remover documento"
                         >
@@ -725,6 +778,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                               .from("imagensdocs")
                               .getPublicUrl(fileName);
 
+                            setIsDirty(true);
                             setFormData((prev) => ({
                               ...prev,
                               foto_cnh: publicUrl,
@@ -812,12 +866,13 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                           </button>
                           <button
                             type="button"
-                            onClick={() =>
+                            onClick={() => {
+                              setIsDirty(true);
                               setFormData((prev) => ({
                                 ...prev,
                                 foto_comprovante_residencia: "",
-                              }))
-                            }
+                              }));
+                            }}
                             className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center gap-1"
                           >
                             <X size={16} />
@@ -839,12 +894,13 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                         />
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
+                            setIsDirty(true);
                             setFormData((prev) => ({
                               ...prev,
                               foto_comprovante_residencia: "",
-                            }))
-                          }
+                            }));
+                          }}
                           className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                           title="Remover documento"
                         >
@@ -911,6 +967,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                               .from("imagensdocs")
                               .getPublicUrl(fileName);
 
+                            setIsDirty(true);
                             setFormData((prev) => ({
                               ...prev,
                               foto_comprovante_residencia: publicUrl,
@@ -1023,12 +1080,13 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                             </button>
                             <button
                               type="button"
-                              onClick={() =>
+                              onClick={() => {
+                                setIsDirty(true);
                                 setVeiculoData((prev) => ({
                                   ...prev,
                                   foto_crv: "",
-                                }))
-                              }
+                                }));
+                              }}
                               className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm flex items-center gap-1"
                             >
                               <X size={16} />
@@ -1048,12 +1106,13 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                           />
                           <button
                             type="button"
-                            onClick={() =>
+                            onClick={() => {
+                              setIsDirty(true);
                               setVeiculoData((prev) => ({
                                 ...prev,
                                 foto_crv: "",
-                              }))
-                            }
+                              }));
+                            }}
                             className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                             title="Remover documento"
                           >
@@ -1120,6 +1179,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                                 .from("imagensdocs")
                                 .getPublicUrl(fileName);
 
+                              setIsDirty(true);
                               setVeiculoData((prev) => ({
                                 ...prev,
                                 foto_crv: publicUrl,
@@ -1219,6 +1279,7 @@ const DocumentoMotoristaForm: React.FC<DocumentoMotoristaFormProps> = ({
                             onChange={(e) => {
                               const value = e.target.value.replace(/\D/g, '');
                               if (value.length <= 11) {
+                                setIsDirty(true);
                                 setPessoaFisicaData(prev => ({ ...prev, cpf: value }));
                               }
                             }}

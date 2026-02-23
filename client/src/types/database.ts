@@ -133,6 +133,36 @@ export interface DocumentoAjudante {
   status_ajudante?: string | null;
   rg_ajudante?: RgAjudante[];
   cnh_ajudante?: CnhAjudante[];
+
+  // Campos achatados (vw_motoristas_completo)
+  nr_rg?: number | null;
+  data_emissao?: string | null;
+  orgao_expedidor?: string | null;
+  filiacao?: string | null;
+  foto_rg?: string | null;
+
+  nr_registro?: number | null;
+  categoria?: string | null;
+  nome_pai?: string | null;
+  nome_mae?: string | null;
+  foto_cnh?: string | null;
+
+  nr_end_ajudante?: number | null;
+  ds_complemento_end_ajudante?: string | null;
+  st_end_ajudante?: boolean | null;
+
+  // A view usa cep_ajudante/bairro_ajudante/cidade_ajudante/estado_ajudante
+  // e em alguns pontos do front aparecem variantes com nr_cep_/nome_*.
+  logradouro_ajudante?: string | null;
+  cep_ajudante?: string | null;
+  nr_cep_ajudante?: string | null;
+  bairro_ajudante?: string | null;
+  nome_bairro_ajudante?: string | null;
+  cidade_ajudante?: string | null;
+  nome_cidade_ajudante?: string | null;
+  estado_ajudante?: string | null;
+  nome_estado_ajudante?: string | null;
+  sigla_estado_ajudante?: string | null;
 }
 
 export interface CnhAjudante {

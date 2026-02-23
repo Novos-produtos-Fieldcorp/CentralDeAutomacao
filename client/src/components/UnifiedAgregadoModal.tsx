@@ -40,6 +40,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
   const [veiculo, setVeiculo] = useState<Veiculo | null>(null);
   const [documento, setDocumento] = useState<DocumentoMotorista | null>(null);
   const [endereco, setEndereco] = useState<any>(null);
+  const [motoristaDetails, setMotoristaDetails] = useState<Motorista | null>(null);
   const [ajudantes, setAjudantes] = useState<any[]>([]);
   const [documentCount, setDocumentCount] = useState(0);
   const [ajudantesCount, setAjudantesCount] = useState(0);
@@ -55,6 +56,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
       setVeiculo(null);
       setDocumento(null);
       setEndereco(null);
+      setMotoristaDetails(motorista);
       setAjudantes([]);
       setDocumentCount(0);
       setAjudantesCount(0);
@@ -74,6 +76,18 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
     fetchingRef.current = true;
 
     try {
+      // Fetch motorista (ensures UI reflects latest values after edits)
+      const { data: motoristaData, error: motoristaError } = await supabase
+        .from('motorista')
+        .select('*')
+        .eq('motorista_id', motorista.motorista_id)
+        .maybeSingle();
+
+      if (motoristaError) throw motoristaError;
+      if (motoristaData) {
+        setMotoristaDetails(motoristaData as any);
+      }
+
       // Fetch veiculo
       const { data: veiculoData, error: veiculoError } = await supabase
         .from('veiculo')
@@ -308,8 +322,9 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
 
   // Ensure we have the motorista data
   // Use nome_motorista if nome is not available (for backward compatibility)
-  const nome = motorista.nome || (motorista as any).nome_motorista || '';
-  const cpf = motorista.cpf || '';
+  const motoristaForDisplay = motoristaDetails || motorista;
+  const nome = motoristaForDisplay.nome || (motoristaForDisplay as any).nome_motorista || '';
+  const cpf = motoristaForDisplay.cpf || '';
 
   const openDocumentInNewTab = (url: string | null | undefined) => {
     if (url) {
@@ -577,7 +592,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             Telefone
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.telefone ? formatPhone(motorista.telefone.toString()) : 'Não informado'}
+                            {motoristaForDisplay.telefone ? formatPhone(motoristaForDisplay.telefone.toString()) : 'Não informado'}
                           </dd>
                         </div>
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -585,7 +600,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             E-mail
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
-                            {motorista.email || 'Não informado'}
+                            {motoristaForDisplay.email || 'Não informado'}
                           </dd>
                         </div>
                         {/* Endereço */}
@@ -1388,7 +1403,7 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
         <EditMotoristaModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          motorista={motorista}
+          motorista={motoristaForDisplay as any}
           onUpdate={() => {
             setIsEditModalOpen(false);
             fetchAgregadoDetails();
