@@ -127,22 +127,19 @@ const BulkActionsModal = ({
     }
   }, [selectedTag, selectedItems.size, actionType, tags]);
 
-  // Função para aplicar tag aos contatos no WiseApp (usando serviços existentes)
   const applyTagToWiseAppContacts = async (tagData: any, motoristaIds: number[]) => {
     if (!accountId || !wiseAppToken) {
       console.log('Token WiseApp ou dados não disponíveis para sincronização');
       return;
     }
 
-    // Inicializar barra de progresso
     const total = motoristaIds.length;
-    const startedAt = Date.now(); // Usar variável local para cálculos
+    const startedAt = Date.now();
     setTotalItems(total);
     setProcessedItems(0);
     setProgress(0);
     setStartTime(startedAt);
 
-    // Buscar o id_conta_wiseapp correto para este company_id
     const { data: company, error: companyError } = await supabase
       .from('company')
       .select('id_conta_wiseapp')
@@ -160,217 +157,96 @@ const BulkActionsModal = ({
       console.log(`Aplicando tag "${tagData.nome}" aos contatos no WiseApp para ${motoristaIds.length} motoristas...`);
 
       let syncSuccessCount = 0;
+
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, telefone, nome')
+        .in('motorista_id', motoristaIds);
+
+      const motoristasMap = new Map<number, { telefone: string; nome: string }>();
+      (motoristasData || []).forEach(m => {
+        if (m.telefone) motoristasMap.set(m.motorista_id, { telefone: m.telefone, nome: m.nome });
+      });
+
+      const missingIds = motoristaIds.filter(id => !motoristasMap.has(id));
+      if (missingIds.length > 0) {
+        const { data: agregadosData } = await supabase
+          .from('agregado')
+          .select('agregado_id, telefone, nome')
+          .in('agregado_id', missingIds);
+        (agregadosData || []).forEach(a => {
+          if (a.telefone) motoristasMap.set(a.agregado_id, { telefone: a.telefone, nome: a.nome });
+        });
+      }
+
+      console.log(`[BULK] Dados carregados: ${motoristasMap.size} motoristas com telefone de ${motoristaIds.length} total`);
+
+      const CONCURRENCY = 5;
       let processedCount = 0;
-      console.log(`DEBUG: Processando ${motoristaIds.length} motoristas:`, motoristaIds);
 
-      // Processar em lotes menores para evitar timeout e problemas de URL longa
-      const batchSize = 25; // Reduzir tamanho do lote
-      const batches = [];
-      for (let i = 0; i < motoristaIds.length; i += batchSize) {
-        batches.push(motoristaIds.slice(i, i + batchSize));
-      }
+      const updateProgress = () => {
+        processedCount++;
+        const currentProgress = Math.round((processedCount / total) * 100);
+        setProgress(currentProgress);
+        setProcessedItems(processedCount);
 
-      console.log(`[BULK] Processando ${batches.length} lotes de até ${batchSize} motoristas cada`);
+        const elapsed = Date.now() - startedAt;
+        const avgTimePerItem = elapsed / processedCount;
+        const remainingItems = total - processedCount;
+        setEstimatedTimeLeft(Math.ceil((avgTimePerItem * remainingItems) / 1000));
+      };
 
-      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-        const batch = batches[batchIndex];
-        console.log(`[BULK] Processando lote ${batchIndex + 1}/${batches.length} com ${batch.length} motoristas`);
-
-        // Rate limiting entre lotes
-        if (batchIndex > 0) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 segundo entre lotes
+      const processMotorista = async (motoristaId: number) => {
+        const motorista = motoristasMap.get(motoristaId);
+        if (!motorista?.telefone) {
+          updateProgress();
+          return;
         }
 
-        // Processar motoristas do lote em paralelo (mas com delay entre cada um)
-        for (let i = 0; i < batch.length; i++) {
-          const motoristaId = batch[i];
+        const phoneStr = String(motorista.telefone).replace(/^\+55/, '');
 
-          // Rate limiting: delay entre requisições para evitar 401
-          if (i > 0) {
-            await new Promise(resolve => setTimeout(resolve, 200)); // 200ms entre requisições
-          }
+        try {
+          const searchData = await searchWiseAppContact(accountId, wiseAppToken, phoneStr, companyId ?? 2);
+          const contacts = Array.isArray(searchData) ? searchData : (searchData?.payload || []);
 
-          try {
-          console.log(`[BULK] Processando motorista ${motoristaId} (${i + 1}/${motoristaIds.length})`);
+          if (contacts.length > 0) {
+            const contact = contacts[0];
+            const tagResponse = await fetch(createApiUrl(`wiseapp/${accountId}/contacts/${contact.id}/labels`), {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                'wiseapp-token': wiseAppToken,
+                'wiseapp-account-id': accountId
+              },
+              body: JSON.stringify({ tagName: tagData.nome })
+            });
 
-          // Buscar dados do motorista usando abordagem mais confiável (tabelas diretas primeiro)
-          let motorista = null;
-          let motoristaError = null;
-
-          // 1. Tentar tabela motorista primeiro (mais comum e confiável)
-          try {
-            const { data: fromMotorista, error } = await supabase
-              .from('motorista')
-              .select('telefone, nome')
-              .eq('motorista_id', motoristaId)
-              .single();
-            
-            if (!error && fromMotorista) {
-              motorista = { telefone: fromMotorista.telefone, nome_motorista: fromMotorista.nome };
-              console.log(`[BULK] Encontrado na tabela motorista:`, motorista);
-            } else if (error.code !== 'PGRST116') {
-              motoristaError = error;
+            if (tagResponse.ok) {
+              syncSuccessCount++;
+              console.log(`[BULK] Tag "${tagData.nome}" aplicada ao contato ${motorista.nome} no WiseApp`);
+            } else if (tagResponse.status === 408) {
+              console.warn(`[BULK] Timeout ao aplicar tag para ${motorista.nome}, continuando...`);
             }
-          } catch (err: any) {
-            if (err.code !== 'PGRST116') {
-              console.warn(`Erro ao buscar na tabela motorista:`, err);
-            }
+          } else {
+            console.log(`[BULK] Nenhum contato encontrado no WiseApp para ${motorista.nome} (${phoneStr})`);
           }
-
-          // 2. Se não encontrou, tentar tabela agregado
-          if (!motorista) {
-            try {
-              const { data: fromAgregado, error } = await supabase
-                .from('agregado')
-                .select('telefone, nome')
-                .eq('agregado_id', motoristaId)
-                .single();
-              
-              if (!error && fromAgregado) {
-                motorista = { telefone: fromAgregado.telefone, nome_motorista: fromAgregado.nome };
-                console.log(`DEBUG: Encontrado na tabela agregado:`, motorista);
-              }
-            } catch (err: any) {
-              if (err.code !== 'PGRST116') {
-                console.warn(`Erro ao buscar na tabela agregado:`, err);
-              }
-            }
-          }
-
-          // 3. Fallback: tentar pela coluna id em ambas as tabelas
-          if (!motorista) {
-            try {
-              const { data: fromMotoristaById } = await supabase
-                .from('motorista')
-                .select('telefone, nome')
-                .eq('id', motoristaId)
-                .single();
-              
-              if (fromMotoristaById) {
-                motorista = { telefone: fromMotoristaById.telefone, nome_motorista: fromMotoristaById.nome };
-                console.log(`DEBUG: Encontrado na tabela motorista por ID:`, motorista);
-              }
-            } catch (err: any) {
-              if (err.code !== 'PGRST116') {
-                console.warn(`Erro ao buscar motorista por ID:`, err);
-              }
-            }
-          }
-
-          if (!motorista) {
-            try {
-              const { data: fromAgregadoById } = await supabase
-                .from('agregado')
-                .select('telefone, nome')
-                .eq('id', motoristaId)
-                .single();
-              
-              if (fromAgregadoById) {
-                motorista = { telefone: fromAgregadoById.telefone, nome_motorista: fromAgregadoById.nome };
-                console.log(`DEBUG: Encontrado na tabela agregado por ID:`, motorista);
-              }
-            } catch (err: any) {
-              if (err.code !== 'PGRST116') {
-                console.warn(`Erro ao buscar agregado por ID:`, err);
-              }
-            }
-          }
-
-          // 4. Último recurso: tentar a view (pode dar 406, mas não vai quebrar)
-          if (!motorista) {
-            console.log(`DEBUG: Tentando busca na view como último recurso para ${motoristaId}...`);
-            try {
-              const { data: fromView } = await supabase
-                .from('vw_agregados_completo')
-                .select('telefone, nome_motorista')
-                .eq('motorista_id', motoristaId)
-                .limit(1)
-                .single();
-
-              if (fromView) {
-                motorista = { telefone: fromView.telefone, nome_motorista: fromView.nome_motorista };
-                console.log(`DEBUG: Encontrado na view:`, motorista);
-              }
-            } catch (viewError: any) {
-              console.warn(`DEBUG: Erro na view (esperado): ${viewError.message}`);
-              // Não quebrar aqui, só log do erro
-            }
-          }
-
-          // Se ainda não encontrou motorista, pular este ID
-          if (!motorista || !motorista.telefone) {
-            console.log(`DEBUG: Motorista ${motoristaId} não encontrado em nenhuma fonte, pulando...`);
-            continue;
-          }
-
-          if (motorista?.telefone) {
-            // Usar telefone sem +55 como na versão individual que funciona
-            const phoneStr = String(motorista.telefone);
-            const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
-
-            try {
-              // Buscar contato no WiseApp usando o serviço existente
-              const searchData = await searchWiseAppContact(accountId, wiseAppToken, formattedPhone, companyId ?? 2);
-
-              // Corrigir estrutura de dados (descoberta: searchData é array direto)
-              const contacts = Array.isArray(searchData) ? searchData : (searchData?.payload || []);
-
-              if (contacts.length > 0) {
-                const contact = contacts[0];
-                
-                // CRITICAL: Use accountId in URL for WiseApp API, NOT companyId
-                // Use tagName instead of labels - Edge Function will fetch existing labels internally
-                const tagResponse = await fetch(createApiUrl(`wiseapp/${accountId}/contacts/${contact.id}/labels`), {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                    'wiseapp-token': wiseAppToken,
-                    'wiseapp-account-id': accountId
-                  },
-                  body: JSON.stringify({ tagName: tagData.nome })
-                });
-                
-                if (!tagResponse.ok) {
-                  // Verificar se é erro de timeout (408) ou outros problemas de rede
-                  if (tagResponse.status === 408) {
-                    console.warn(`[BULK] Timeout ao aplicar tag para ${motorista.nome_motorista}, continuando...`);
-                    // Não falhar a operação em massa por timeout de um item
-                    continue;
-                  }
-                  throw new Error(`Erro ao aplicar tag: ${tagResponse.status}`);
-                }
-
-                syncSuccessCount++;
-                console.log(`[BULK] ✅ Tag "${tagData.nome}" aplicada ao contato ${motorista.nome_motorista} no WiseApp`);
-              } else {
-                console.log(`[BULK] ❌ Nenhum contato encontrado no WiseApp para ${motorista.nome_motorista} (${formattedPhone})`);
-              }
-            } catch (searchError) {
-              console.error(`BULK DEBUG: Erro na busca do contato:`, searchError);
-            }
-          }
-          } catch (contactError) {
-            console.warn(`Erro ao processar motorista ${motoristaId}:`, contactError);
-          } finally {
-            // Atualizar progresso
-            processedCount++;
-            const currentProgress = Math.round((processedCount / total) * 100);
-            setProgress(currentProgress);
-            setProcessedItems(processedCount);
-            
-            // Calcular tempo estimado restante usando variável local
-            if (processedCount > 0) {
-              const elapsed = Date.now() - startedAt;
-              const avgTimePerItem = elapsed / processedCount;
-              const remainingItems = total - processedCount;
-              const estimatedMs = avgTimePerItem * remainingItems;
-              setEstimatedTimeLeft(Math.ceil(estimatedMs / 1000)); // em segundos
-            }
-          }
+        } catch (error) {
+          console.warn(`Erro ao processar motorista ${motoristaId}:`, error);
+        } finally {
+          updateProgress();
         }
-      }
+      };
+
+      const queue = [...motoristaIds];
+      const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+        while (queue.length > 0) {
+          const id = queue.shift()!;
+          await processMotorista(id);
+        }
+      });
+      await Promise.all(workers);
 
       if (syncSuccessCount > 0) {
         toast.success(`Marcador "${tagData.nome}" aplicado a ${syncSuccessCount} contato(s) no WiseApp!`);
@@ -483,73 +359,33 @@ const BulkActionsModal = ({
         let limitReached = false;
         const motoristasComNovaTag: number[] = [];
 
-        for (const motoristaId of itemIds) {
-          // Se já atingimos o limite disponível, parar
-          if (addedCount >= availableSlots) {
-            limitReached = true;
-            break;
+        const { data: existingAssociations } = await supabase
+          .from('associacao_tags')
+          .select('motorista_id')
+          .eq('tag_id', tagId)
+          .in('motorista_id', itemIds);
+
+        const existingMotoristaIds = new Set((existingAssociations || []).map(a => a.motorista_id));
+        const newMotoristaIds = itemIds.filter(id => !existingMotoristaIds.has(id));
+        alreadyHasCount = existingMotoristaIds.size;
+
+        const idsToInsert = newMotoristaIds.slice(0, availableSlots);
+        limitReached = newMotoristaIds.length > availableSlots;
+
+        if (idsToInsert.length > 0) {
+          const records = idsToInsert.map(motoristaId => ({
+            motorista_id: motoristaId,
+            tag_id: tagId
+          }));
+
+          for (let i = 0; i < records.length; i += 100) {
+            const chunk = records.slice(i, i + 100);
+            const { error } = await supabase.from('associacao_tags').insert(chunk);
+            if (error && error.code !== '23505') throw error;
           }
 
-          // Verificar se a associação já existe (ignorar erros RLS)
-          let existingAssociation = null;
-          let shouldCreateAssociation = true;
-
-          try {
-            const result = await supabase
-              .from('associacao_tags')
-              .select('id')
-              .eq('motorista_id', motoristaId)
-              .eq('tag_id', tagId)
-              .single();
-            existingAssociation = result.data;
-          } catch (error: any) {
-            // Ignorar erros de RLS (406) e continuar
-            if (error.code === 'PGRST301' || error.status === 406) {
-              console.warn(`RLS blocked duplicate check for motorista ${motoristaId}, proceeding with creation`);
-            } else if (error.code === 'PGRST116') {
-              // Nenhum registro encontrado - OK para criar
-              console.log(`No existing association found for motorista ${motoristaId}`);
-            } else {
-              throw error;
-            }
-          }
-
-          // Se não existe (ou RLS bloqueou verificação), tentar criar
-          if (!existingAssociation) {
-            try {
-              const { error } = await supabase
-                .from('associacao_tags')
-                .insert({
-                  motorista_id: motoristaId,
-                  tag_id: tagId
-                });
-
-              if (error) {
-                // Ignorar erros de RLS ou duplicata
-                if (error.code === 'PGRST301' || error.code === '23505') {
-                  console.warn(`Supabase association blocked for motorista ${motoristaId}, but WiseApp will work`);
-                  alreadyHasCount++;
-                  shouldCreateAssociation = false;
-                } else {
-                  throw error;
-                }
-              }
-
-              if (shouldCreateAssociation && !error) {
-                addedCount++;
-                motoristasComNovaTag.push(motoristaId); // Coletar para sincronização
-              }
-            } catch (insertError: any) {
-              if (insertError.code === 'PGRST301' || insertError.status === 406 || insertError.code === '23505') {
-                console.warn(`Insert blocked by RLS for motorista ${motoristaId}`);
-                alreadyHasCount++;
-              } else {
-                throw insertError;
-              }
-            }
-          } else {
-            alreadyHasCount++;
-          }
+          addedCount = idsToInsert.length;
+          motoristasComNovaTag.push(...idsToInsert);
         }
 
         const tagName = tag.nome;
