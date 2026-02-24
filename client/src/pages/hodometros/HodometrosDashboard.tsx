@@ -5,6 +5,7 @@ import {
   Gauge, AlertCircle, FileBarChart, ChevronDown, Lock,
   ClipboardList, UserCheck, ImageIcon, Fuel
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -111,6 +112,7 @@ interface VehicleFuelStats {
   totalKm: number;
   mediaKmPorLitro: number;
   abastecimentos: number;
+  totalLeituras: number;
 }
 
 interface KmVsPriceData {
@@ -279,39 +281,49 @@ const HodometrosDashboard = () => {
     return dateStr;
   };
 
+  // Helper to fetch all rows with pagination (Supabase defaults to 1000 row limit)
+  const fetchAllPaginated = async (tableName: string, selectQuery: string, filters: (query: any) => any) => {
+    const PAGE_SIZE = 1000;
+    let allData: any[] = [];
+    let offset = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      let query = supabase.from(tableName).select(selectQuery);
+      query = filters(query);
+      query = query.range(offset, offset + PAGE_SIZE - 1);
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        allData = allData.concat(data);
+        offset += PAGE_SIZE;
+        hasMore = data.length === PAGE_SIZE;
+      } else {
+        hasMore = false;
+      }
+    }
+    return allData;
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
       setConnectionError(false);
       
-      // STEP 1: Fetch all hodometro readings within date range
-      const { data, error } = await supabase.from('hodometro')
-        .select(`
-          *,
-          motorista:motorista_id (
-            motorista_id,
-            nome,
-            cpf
-          ),
-          veiculo:veiculo_id (
-            veiculo_id,
-            placa,
-            marca,
-            tipo
-          ),
-          cliente:cliente_id (
-            cliente_id,
-            nome
-          )
-        `)
-        .eq('company_id', companyId)
-        .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate)
-        .order('veiculo_id', { ascending: true })
-        .order('data', { ascending: true })
-        .order('hora', { ascending: true });
-
-      if (error) throw error;
+      // STEP 1: Fetch all hodometro readings within date range (paginated)
+      const data = await fetchAllPaginated(
+        'hodometro',
+        `*, motorista:motorista_id ( motorista_id, nome, cpf ), veiculo:veiculo_id ( veiculo_id, placa, marca, tipo ), cliente:cliente_id ( cliente_id, nome )`,
+        (q: any) => q
+          .eq('company_id', companyId)
+          .gte('data', dateRange.startDate)
+          .lte('data', dateRange.endDate)
+          .order('veiculo_id', { ascending: true })
+          .order('data', { ascending: true })
+          .order('hora', { ascending: true })
+      );
 
       // Processing hodometro readings data
 
@@ -618,25 +630,15 @@ const HodometrosDashboard = () => {
       const readingsByPlaca = new Map<string, any[]>();
       
       if (vehicleIdsInPeriod.size > 0) {
-        const { data: firstReadingsData, error: firstReadingsError } = await supabase
-          .from('hodometro')
-          .select(`
-            veiculo_id,
-            hod_lido,
-            trip_lida,
-            data,
-            hora,
-            bateria,
-            veiculo:veiculo_id (
-              placa
-            )
-          `)
-          .eq('company_id', companyId)
-          .in('veiculo_id', Array.from(vehicleIdsInPeriod))
-          .order('data', { ascending: true })
-          .order('hora', { ascending: true });
-        
-        if (firstReadingsError) throw firstReadingsError;
+        const firstReadingsData = await fetchAllPaginated(
+          'hodometro',
+          `veiculo_id, hod_lido, trip_lida, data, hora, bateria, veiculo:veiculo_id ( placa )`,
+          (q: any) => q
+            .eq('company_id', companyId)
+            .in('veiculo_id', Array.from(vehicleIdsInPeriod))
+            .order('data', { ascending: true })
+            .order('hora', { ascending: true })
+        );
         
         // Build map using buildOdometerTimeline for reset detection
         // Group readings by normalized placa
@@ -1059,32 +1061,19 @@ const HodometrosDashboard = () => {
         const num = parseFloat(value);
         return isNaN(num) ? 0 : num;
       };
-      
-      // Step 1: Fetch hodometro readings from the SELECTED PERIOD to identify vehicles that drove
-      const { data: hodometrosInPeriod, error: hodometrosError } = await supabase
-        .from('hodometro')
-        .select(`
-          id_hodometro,
-          data,
-          hora,
-          hod_lido,
-          trip_lida,
-          bateria,
-          veiculo_id,
-          veiculo:veiculo_id (
-            veiculo_id,
-            placa,
-            marca
-          )
-        `)
-        .eq('company_id', companyId)
-        .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate)
-        .order('veiculo_id')
-        .order('data')
-        .order('hora');
-      
-      if (hodometrosError) throw hodometrosError;
+
+      // Step 1: Fetch ALL hodometro readings from the SELECTED PERIOD (paginated)
+      const hodometrosInPeriod = await fetchAllPaginated(
+        'hodometro',
+        `id_hodometro, data, hora, hod_lido, trip_lida, bateria, km_rodado, veiculo_id, veiculo:veiculo_id ( veiculo_id, placa, marca )`,
+        (q: any) => q
+          .eq('company_id', companyId)
+          .gte('data', dateRange.startDate)
+          .lte('data', dateRange.endDate)
+          .order('veiculo_id')
+          .order('data')
+          .order('hora')
+      );
       
       // Collect unique vehicle_ids that drove in the period
       const vehicleIdsInPeriod = new Set<number>();
@@ -1132,152 +1121,85 @@ const HodometrosDashboard = () => {
           })()
         : '9999-12-31'; // Fallback: get all
       
-      // Step 2: Fetch bomba_gasolina records UP TO YESTERDAY (excludes today's refills)
+      // Step 2: Fetch bomba_gasolina records UP TO YESTERDAY (paginated)
       // This gives us the fuel that was available for consumption during the period
-      const { data: bombasData, error: bombasError } = await supabase
-        .from('bomba_gasolina')
-        .select(`
-          id,
-          data,
-          litro_lido,
-          preco_lido,
-          veiculo_id,
-          veiculo:veiculo_id (
-            veiculo_id,
-            placa,
-            marca
-          )
-        `)
-        .eq('company_id', companyId)
-        .in('veiculo_id', Array.from(vehicleIdsInPeriod))
-        .gte('data', dateRange.startDate)
-        .lte('data', yesterdayDate)
-        .order('data', { ascending: false });
+      const vehicleIdArray = Array.from(vehicleIdsInPeriod);
+      const bombas = await fetchAllPaginated(
+        'bomba_gasolina',
+        `id, data, litro_lido, preco_lido, veiculo_id, veiculo:veiculo_id ( veiculo_id, placa, marca )`,
+        (q: any) => q
+          .eq('company_id', companyId)
+          .in('veiculo_id', vehicleIdArray)
+          .gte('data', dateRange.startDate)
+          .lte('data', yesterdayDate)
+          .order('data', { ascending: false })
+      );
       
-      if (bombasError) throw bombasError;
-      
-      const bombas = bombasData || [];
-      
-      // Step 3: Calculate KM rodado for each vehicle using hodometros from the period
-      // IMPORTANT: Group by NORMALIZED PLACA first to handle cases where the same physical
-      // vehicle has multiple vehicle_ids in the database
+      // Step 3: Calculate KM rodado using consecutive positive differences
+      // Uses hodometrosInPeriod (already fetched in Step 1) - no extra query needed
       const totalKmRodadoByPlaca = new Map<string, number>();
-      const placaToVehicleId = new Map<string, number>(); // Keep track of one vehicle_id per placa for bomba lookup
-      
-      // Group hodometros by NORMALIZED PLACA (not by veiculo_id)
+      const totalReadingsByPlaca = new Map<string, number>();
+
+      // Group in-period readings by normalized placa
       const hodometrosByPlaca = new Map<string, any[]>();
-      (hodometrosInPeriod || []).forEach(hod => {
+      (hodometrosInPeriod || []).forEach((hod: any) => {
         const veiculo = Array.isArray(hod.veiculo) ? hod.veiculo[0] : hod.veiculo;
-        const originalPlaca = veiculo?.placa || '';
-        const placaNormalizada = originalPlaca.trim().toUpperCase();
-        
-        if (!placaNormalizada) return;
-        
+        const placaNormalizada = (veiculo?.placa || '').trim().toUpperCase();
+        if (!placaNormalizada || placaNormalizada.length < 7) return;
+
         if (!hodometrosByPlaca.has(placaNormalizada)) {
           hodometrosByPlaca.set(placaNormalizada, []);
-          placaToVehicleId.set(placaNormalizada, hod.veiculo_id);
         }
         hodometrosByPlaca.get(placaNormalizada)!.push(hod);
+        totalReadingsByPlaca.set(placaNormalizada, (totalReadingsByPlaca.get(placaNormalizada) || 0) + 1);
       });
-        
-      // Calculate km_rodado per PLACA (consolidating all vehicle_ids with same plate)
+
+      // Calculate km for each vehicle by summing positive consecutive differences
+      // This handles odometer resets naturally (negative diffs are skipped)
       hodometrosByPlaca.forEach((readings, placaNormalizada) => {
-        if (readings.length === 0) return;
-        
-        // Sort ALL readings for this placa by date and time (chronological order)
-        const sortedReadings = [...readings].sort((a, b) => {
-          const dateCompare = a.data.localeCompare(b.data);
-          if (dateCompare !== 0) return dateCompare;
-          return (a.hora || '00:00').localeCompare(b.hora || '00:00');
+        if (readings.length < 2) return;
+
+        const isCiclomotor = readings.some((r: any) => r.bateria !== null && r.bateria !== undefined);
+
+        // Sort chronologically (MUST sort client-side since pagination can break DB ordering)
+        const sorted = [...readings].sort((a: any, b: any) => {
+          const d = (a.data || '').localeCompare(b.data || '');
+          return d !== 0 ? d : (a.hora || '00:00').localeCompare(b.hora || '00:00');
         });
-        
-        // Filter readings within the period and with valid hod_lido values
-        const validReadingsInPeriod = sortedReadings.filter(reading => {
-          if (reading.data < dateRange.startDate || reading.data > dateRange.endDate) return false;
-          const hodLido = reading.hod_lido;
-          return hodLido !== null && hodLido !== undefined && !isNaN(Number(hodLido)) && Number(hodLido) > 0;
-        });
-        
-        if (validReadingsInPeriod.length < 2) {
-          // Need at least 2 readings to calculate km rodado
-          return;
-        }
-        
-        // Get first and last readings chronologically
-        const firstReading = validReadingsInPeriod[0];
-        const lastReading = validReadingsInPeriod[validReadingsInPeriod.length - 1];
-        
-        const firstValue = Number(firstReading.hod_lido);
-        const lastValue = Number(lastReading.hod_lido);
-        
-        // Calculate km rodado as: last reading - first reading
-        // If result is negative (odometer reset or data error), set to 0
-        const kmRodado = Math.max(0, lastValue - firstValue);
-        // teste
-        
-        // Debug log for specific vehicles
-        if (placaNormalizada === 'HBZ6F14' || placaNormalizada === 'HLJ0G42') {
-          console.log(`=== DEBUG ${placaNormalizada} (Consolidado por Placa) ===`);
-          console.log('Placa:', placaNormalizada);
-          console.log('Total leituras válidas no período:', validReadingsInPeriod.length);
-          console.log('Todas as leituras:', validReadingsInPeriod.map(r => ({
-            data: r.data,
-            hora: r.hora,
-            hod_lido: r.hod_lido,
-            veiculo_id: r.veiculo_id
-          })));
-          console.log('Primeira leitura:', {
-            data: firstReading.data,
-            hora: firstReading.hora,
-            hod_lido: firstReading.hod_lido,
-            veiculo_id: firstReading.veiculo_id
-          });
-          console.log('Última leitura:', {
-            data: lastReading.data,
-            hora: lastReading.hora,
-            hod_lido: lastReading.hod_lido,
-            veiculo_id: lastReading.veiculo_id
-          });
-          console.log('KM Rodado calculado:', kmRodado, `(${lastValue} - ${firstValue})`);
-          console.log('==============================================');
+
+        // Extract numeric values
+        const validReadings = sorted
+          .map((r: any) => {
+            const val = isCiclomotor
+              ? parseFloat(r.trip_lida) || 0
+              : parseFloat(r.hod_lido) || 0;
+            return val;
+          })
+          .filter((val: number) => val > 0);
+
+        if (validReadings.length < 2) return;
+
+        // Sum positive consecutive differences (handles resets by skipping negative diffs)
+        let totalKm = 0;
+        for (let i = 1; i < validReadings.length; i++) {
+          const diff = validReadings[i] - validReadings[i - 1];
+          if (diff > 0) totalKm += diff;
         }
 
-        if (kmRodado > 0) {
-          totalKmRodadoByPlaca.set(placaNormalizada, kmRodado);
+        if (totalKm > 0) {
+          totalKmRodadoByPlaca.set(placaNormalizada, totalKm);
         }
       });
       
-      // Step 4: Process bomba data (historical fuel up to day before) and aggregate by normalized placa
-      // Maps to aggregate data by vehicle (using placa as key to avoid duplicates)
-      const vehicleStatsMap = new Map<string, VehicleFuelStats & { ultimoAbastecimento: number }>();
+      // Step 4: Process bomba data and aggregate by normalized placa
+      const vehicleStatsMap = new Map<string, VehicleFuelStats>();
       const kmVsPriceMap = new Map<string, { km: number; preco: number }>();
-      
-      // Track last refuel per vehicle (by date) to exclude from consumption calculation
-      const lastRefuelByPlaca = new Map<string, { data: string; litros: number }>();
       
       let totalLitrosSum = 0;
       let totalGastoSum = 0;
       let validReadingsCount = 0;
       
-      // First pass: find the last (most recent) refuel for each vehicle
-      // bombas are already sorted by date descending, so first occurrence is the most recent
-      bombas.forEach((bomba: any) => {
-        const litros = parseNumber(bomba.litro_lido);
-        if (litros === 0) return;
-        
-        const veiculo = Array.isArray(bomba.veiculo) ? bomba.veiculo[0] : bomba.veiculo;
-        if (!veiculo || !veiculo.veiculo_id) return;
-        
-        const placaNormalizada = (veiculo.placa || '').trim().toUpperCase();
-        if (!placaNormalizada || placaNormalizada.length < 7) return;
-        
-        // Only store if we haven't found the last refuel for this plate yet
-        if (!lastRefuelByPlaca.has(placaNormalizada)) {
-          lastRefuelByPlaca.set(placaNormalizada, { data: bomba.data, litros });
-        }
-      });
-      
-      // Second pass: aggregate all refuels
+      // Aggregate all refuels
       bombas.forEach((bomba: any) => {
         const litros = parseNumber(bomba.litro_lido);
         const preco = parseNumber(bomba.preco_lido);
@@ -1293,12 +1215,7 @@ const HodometrosDashboard = () => {
         if (!placaNormalizada || placaNormalizada.length < 7) return;
         const marca = veiculo.marca || 'Desconhecida';
         
-        // Get the last refuel for this vehicle
-        const lastRefuel = lastRefuelByPlaca.get(placaNormalizada);
-        
-        // Aggregate by placa (normalized to uppercase) instead of veiculo_id
         if (!vehicleStatsMap.has(placaNormalizada)) {
-          // Get km_rodado directly from the placa-based map
           const totalKmForPlaca = totalKmRodadoByPlaca.get(placaNormalizada) || 0;
           
           vehicleStatsMap.set(placaNormalizada, {
@@ -1310,7 +1227,7 @@ const HodometrosDashboard = () => {
             totalKm: totalKmForPlaca,
             mediaKmPorLitro: 0,
             abastecimentos: 0,
-            ultimoAbastecimento: lastRefuel?.litros || 0
+            totalLeituras: totalReadingsByPlaca.get(placaNormalizada) || 0,
           });
         }
         
@@ -1340,14 +1257,20 @@ const HodometrosDashboard = () => {
       });
       
       // Calculate average km per liter for each vehicle
-      // Formula: km rodados no período / (litros abastecidos - último abastecimento)
-      // The last refuel is excluded because it hasn't been consumed yet (still in the tank)
+      // Formula: km rodados no período / total litros abastecidos
+      // Simple and reliable: total km driven / total fuel consumed in the period
+      const MAX_KM_POR_LITRO = 100;
       const vehicleStats = Array.from(vehicleStatsMap.values()).map(stats => {
-        // Subtract the last refuel from total liters for consumption calculation
-        const litrosConsumidos = stats.totalLitros - stats.ultimoAbastecimento;
+        let mediaKmPorLitro = 0;
+        if (stats.totalLitros > 0 && stats.totalKm > 0) {
+          mediaKmPorLitro = stats.totalKm / stats.totalLitros;
+          if (mediaKmPorLitro > MAX_KM_POR_LITRO) {
+            mediaKmPorLitro = 0;
+          }
+        }
         return {
           ...stats,
-          mediaKmPorLitro: litrosConsumidos > 0 ? stats.totalKm / litrosConsumidos : 0
+          mediaKmPorLitro
         };
       });
       // Convert km vs price map to array, filtering out invalid plates
@@ -1521,19 +1444,17 @@ const HodometrosDashboard = () => {
       // Fetch hodometros and bomba by driver
       const readingsByDriver = new Map<number, { nome: string; count: number }>();
       
-      // Fetch hodometros by driver
-      const { data: hodometrosData, error: hodometrosError } = await supabase
-        .from('hodometro')
-        .select(`
-          id_hodometro,
-          motorista_id,
-          motorista:motorista_id ( motorista_id, nome )
-        `)
-        .eq('company_id', companyId)
-        .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate);
+      // Fetch hodometros by driver (paginated)
+      const hodometrosData = await fetchAllPaginated(
+        'hodometro',
+        `id_hodometro, motorista_id, motorista:motorista_id ( motorista_id, nome )`,
+        (q: any) => q
+          .eq('company_id', companyId)
+          .gte('data', dateRange.startDate)
+          .lte('data', dateRange.endDate)
+      );
       
-      if (!hodometrosError && hodometrosData) {
+      if (hodometrosData) {
         hodometrosData.forEach((hodo: any) => {
           if (hodo.motorista_id && hodo.motorista) {
             const motorista = Array.isArray(hodo.motorista) ? hodo.motorista[0] : hodo.motorista;
@@ -1550,24 +1471,18 @@ const HodometrosDashboard = () => {
         });
       }
       
-      // Fetch bomba by driver (using hodometro_id to get motorista)
+      // Fetch bomba by driver (using hodometro_id to get motorista, paginated)
       if (moduleAccess.bomba) {
-        const { data: bombaData, error: bombaError } = await supabase
-          .from('bomba_gasolina')
-          .select(`
-            id,
-            hodometro_id,
-            hodometro:hodometro_id (
-              id_hodometro,
-              motorista_id,
-              motorista:motorista_id ( motorista_id, nome )
-            )
-          `)
-          .eq('company_id', companyId)
-          .gte('data', dateRange.startDate)
-          .lte('data', dateRange.endDate);
+        const bombaData = await fetchAllPaginated(
+          'bomba_gasolina',
+          `id, hodometro_id, hodometro:hodometro_id ( id_hodometro, motorista_id, motorista:motorista_id ( motorista_id, nome ) )`,
+          (q: any) => q
+            .eq('company_id', companyId)
+            .gte('data', dateRange.startDate)
+            .lte('data', dateRange.endDate)
+        );
         
-        if (!bombaError && bombaData) {
+        if (bombaData) {
           bombaData.forEach((bomba: any) => {
             if (bomba.hodometro?.motorista_id && bomba.hodometro?.motorista) {
               const motorista = Array.isArray(bomba.hodometro.motorista) 
@@ -2024,6 +1939,7 @@ const HodometrosDashboard = () => {
                     <tr className="border-b border-gray-200 dark:border-gray-700">
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Placa</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Marca</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Leituras</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Abast.</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Litros</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Gasto (R$)</th>
@@ -2042,14 +1958,45 @@ const HodometrosDashboard = () => {
                         >
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{stats.placa}</td>
                           <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{stats.marca}</td>
+                          <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">{stats.totalLeituras}</td>
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">{stats.abastecimentos}</td>
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">{stats.totalLitros.toFixed(1)} L</td>
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">R$ {stats.totalGasto.toFixed(2)}</td>
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">
-                            {stats.totalKm > 0 ? `${stats.totalKm.toFixed(0)} km` : '-'}
+                            {stats.totalKm > 0 ? `${stats.totalKm.toFixed(0)} km` : (
+                              stats.totalLeituras <= 1 ? (
+                                <TooltipProvider delayDuration={100}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="inline-flex items-center justify-end cursor-help">
+                                        <AlertTriangle className="text-amber-500" size={14} />
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-[200px] text-center">
+                                      <p>Apenas 1 leitura. Necessário 2+ para calcular.</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ) : '-'
+                            )}
                           </td>
                           <td className="py-3 px-4 text-sm font-semibold text-purple-600 dark:text-purple-400 text-right">
-                            {stats.mediaKmPorLitro > 0 ? `${stats.mediaKmPorLitro.toFixed(2)} km/L` : '-'}
+                            {stats.mediaKmPorLitro > 0 ? `${stats.mediaKmPorLitro.toFixed(2)} km/L` : (
+                              stats.totalLeituras <= 1 ? (
+                                <TooltipProvider delayDuration={100}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="inline-flex items-center justify-end cursor-help">
+                                        <AlertTriangle className="text-amber-500" size={14} />
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-[200px] text-center">
+                                      <p>Apenas 1 leitura. Necessário 2+ para calcular.</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ) : '-'
+                            )}
                           </td>
                         </tr>
                       ))}
