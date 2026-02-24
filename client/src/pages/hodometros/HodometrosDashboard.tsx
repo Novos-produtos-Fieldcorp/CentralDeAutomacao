@@ -281,39 +281,49 @@ const HodometrosDashboard = () => {
     return dateStr;
   };
 
+  // Helper to fetch all rows with pagination (Supabase defaults to 1000 row limit)
+  const fetchAllPaginated = async (tableName: string, selectQuery: string, filters: (query: any) => any) => {
+    const PAGE_SIZE = 1000;
+    let allData: any[] = [];
+    let offset = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      let query = supabase.from(tableName).select(selectQuery);
+      query = filters(query);
+      query = query.range(offset, offset + PAGE_SIZE - 1);
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        allData = allData.concat(data);
+        offset += PAGE_SIZE;
+        hasMore = data.length === PAGE_SIZE;
+      } else {
+        hasMore = false;
+      }
+    }
+    return allData;
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
       setConnectionError(false);
       
-      // STEP 1: Fetch all hodometro readings within date range
-      const { data, error } = await supabase.from('hodometro')
-        .select(`
-          *,
-          motorista:motorista_id (
-            motorista_id,
-            nome,
-            cpf
-          ),
-          veiculo:veiculo_id (
-            veiculo_id,
-            placa,
-            marca,
-            tipo
-          ),
-          cliente:cliente_id (
-            cliente_id,
-            nome
-          )
-        `)
-        .eq('company_id', companyId)
-        .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate)
-        .order('veiculo_id', { ascending: true })
-        .order('data', { ascending: true })
-        .order('hora', { ascending: true });
-
-      if (error) throw error;
+      // STEP 1: Fetch all hodometro readings within date range (paginated)
+      const data = await fetchAllPaginated(
+        'hodometro',
+        `*, motorista:motorista_id ( motorista_id, nome, cpf ), veiculo:veiculo_id ( veiculo_id, placa, marca, tipo ), cliente:cliente_id ( cliente_id, nome )`,
+        (q: any) => q
+          .eq('company_id', companyId)
+          .gte('data', dateRange.startDate)
+          .lte('data', dateRange.endDate)
+          .order('veiculo_id', { ascending: true })
+          .order('data', { ascending: true })
+          .order('hora', { ascending: true })
+      );
 
       // Processing hodometro readings data
 
@@ -620,25 +630,15 @@ const HodometrosDashboard = () => {
       const readingsByPlaca = new Map<string, any[]>();
       
       if (vehicleIdsInPeriod.size > 0) {
-        const { data: firstReadingsData, error: firstReadingsError } = await supabase
-          .from('hodometro')
-          .select(`
-            veiculo_id,
-            hod_lido,
-            trip_lida,
-            data,
-            hora,
-            bateria,
-            veiculo:veiculo_id (
-              placa
-            )
-          `)
-          .eq('company_id', companyId)
-          .in('veiculo_id', Array.from(vehicleIdsInPeriod))
-          .order('data', { ascending: true })
-          .order('hora', { ascending: true });
-        
-        if (firstReadingsError) throw firstReadingsError;
+        const firstReadingsData = await fetchAllPaginated(
+          'hodometro',
+          `veiculo_id, hod_lido, trip_lida, data, hora, bateria, veiculo:veiculo_id ( placa )`,
+          (q: any) => q
+            .eq('company_id', companyId)
+            .in('veiculo_id', Array.from(vehicleIdsInPeriod))
+            .order('data', { ascending: true })
+            .order('hora', { ascending: true })
+        );
         
         // Build map using buildOdometerTimeline for reset detection
         // Group readings by normalized placa
@@ -1061,33 +1061,19 @@ const HodometrosDashboard = () => {
         const num = parseFloat(value);
         return isNaN(num) ? 0 : num;
       };
-      
-      // Step 1: Fetch hodometro readings from the SELECTED PERIOD to identify vehicles that drove
-      const { data: hodometrosInPeriod, error: hodometrosError } = await supabase
-        .from('hodometro')
-        .select(`
-          id_hodometro,
-          data,
-          hora,
-          hod_lido,
-          trip_lida,
-          bateria,
-          km_rodado,
-          veiculo_id,
-          veiculo:veiculo_id (
-            veiculo_id,
-            placa,
-            marca
-          )
-        `)
-        .eq('company_id', companyId)
-        .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate)
-        .order('veiculo_id')
-        .order('data')
-        .order('hora');
-      
-      if (hodometrosError) throw hodometrosError;
+
+      // Step 1: Fetch ALL hodometro readings from the SELECTED PERIOD (paginated)
+      const hodometrosInPeriod = await fetchAllPaginated(
+        'hodometro',
+        `id_hodometro, data, hora, hod_lido, trip_lida, bateria, km_rodado, veiculo_id, veiculo:veiculo_id ( veiculo_id, placa, marca )`,
+        (q: any) => q
+          .eq('company_id', companyId)
+          .gte('data', dateRange.startDate)
+          .lte('data', dateRange.endDate)
+          .order('veiculo_id')
+          .order('data')
+          .order('hora')
+      );
       
       // Collect unique vehicle_ids that drove in the period
       const vehicleIdsInPeriod = new Set<number>();
@@ -1135,31 +1121,19 @@ const HodometrosDashboard = () => {
           })()
         : '9999-12-31'; // Fallback: get all
       
-      // Step 2: Fetch bomba_gasolina records UP TO YESTERDAY (excludes today's refills)
+      // Step 2: Fetch bomba_gasolina records UP TO YESTERDAY (paginated)
       // This gives us the fuel that was available for consumption during the period
-      const { data: bombasData, error: bombasError } = await supabase
-        .from('bomba_gasolina')
-        .select(`
-          id,
-          data,
-          litro_lido,
-          preco_lido,
-          veiculo_id,
-          veiculo:veiculo_id (
-            veiculo_id,
-            placa,
-            marca
-          )
-        `)
-        .eq('company_id', companyId)
-        .in('veiculo_id', Array.from(vehicleIdsInPeriod))
-        .gte('data', dateRange.startDate)
-        .lte('data', yesterdayDate)
-        .order('data', { ascending: false });
-      
-      if (bombasError) throw bombasError;
-      
-      const bombas = bombasData || [];
+      const vehicleIdArray = Array.from(vehicleIdsInPeriod);
+      const bombas = await fetchAllPaginated(
+        'bomba_gasolina',
+        `id, data, litro_lido, preco_lido, veiculo_id, veiculo:veiculo_id ( veiculo_id, placa, marca )`,
+        (q: any) => q
+          .eq('company_id', companyId)
+          .in('veiculo_id', vehicleIdArray)
+          .gte('data', dateRange.startDate)
+          .lte('data', yesterdayDate)
+          .order('data', { ascending: false })
+      );
       
       // Step 3: Calculate KM rodado using consecutive positive differences
       // Uses hodometrosInPeriod (already fetched in Step 1) - no extra query needed
@@ -1468,19 +1442,17 @@ const HodometrosDashboard = () => {
       // Fetch hodometros and bomba by driver
       const readingsByDriver = new Map<number, { nome: string; count: number }>();
       
-      // Fetch hodometros by driver
-      const { data: hodometrosData, error: hodometrosError } = await supabase
-        .from('hodometro')
-        .select(`
-          id_hodometro,
-          motorista_id,
-          motorista:motorista_id ( motorista_id, nome )
-        `)
-        .eq('company_id', companyId)
-        .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate);
+      // Fetch hodometros by driver (paginated)
+      const hodometrosData = await fetchAllPaginated(
+        'hodometro',
+        `id_hodometro, motorista_id, motorista:motorista_id ( motorista_id, nome )`,
+        (q: any) => q
+          .eq('company_id', companyId)
+          .gte('data', dateRange.startDate)
+          .lte('data', dateRange.endDate)
+      );
       
-      if (!hodometrosError && hodometrosData) {
+      if (hodometrosData) {
         hodometrosData.forEach((hodo: any) => {
           if (hodo.motorista_id && hodo.motorista) {
             const motorista = Array.isArray(hodo.motorista) ? hodo.motorista[0] : hodo.motorista;
@@ -1497,24 +1469,18 @@ const HodometrosDashboard = () => {
         });
       }
       
-      // Fetch bomba by driver (using hodometro_id to get motorista)
+      // Fetch bomba by driver (using hodometro_id to get motorista, paginated)
       if (moduleAccess.bomba) {
-        const { data: bombaData, error: bombaError } = await supabase
-          .from('bomba_gasolina')
-          .select(`
-            id,
-            hodometro_id,
-            hodometro:hodometro_id (
-              id_hodometro,
-              motorista_id,
-              motorista:motorista_id ( motorista_id, nome )
-            )
-          `)
-          .eq('company_id', companyId)
-          .gte('data', dateRange.startDate)
-          .lte('data', dateRange.endDate);
+        const bombaData = await fetchAllPaginated(
+          'bomba_gasolina',
+          `id, hodometro_id, hodometro:hodometro_id ( id_hodometro, motorista_id, motorista:motorista_id ( motorista_id, nome ) )`,
+          (q: any) => q
+            .eq('company_id', companyId)
+            .gte('data', dateRange.startDate)
+            .lte('data', dateRange.endDate)
+        );
         
-        if (!bombaError && bombaData) {
+        if (bombaData) {
           bombaData.forEach((bomba: any) => {
             if (bomba.hodometro?.motorista_id && bomba.hodometro?.motorista) {
               const motorista = Array.isArray(bomba.hodometro.motorista) 
