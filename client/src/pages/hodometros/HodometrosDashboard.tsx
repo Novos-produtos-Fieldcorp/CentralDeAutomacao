@@ -2037,10 +2037,22 @@ const HodometrosDashboard = () => {
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">{stats.totalLitros.toFixed(1)} L</td>
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">R$ {stats.totalGasto.toFixed(2)}</td>
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">
-                            {stats.totalKm > 0 ? `${stats.totalKm.toFixed(0)} km` : '-'}
+                            {stats.totalKm > 0 ? `${stats.totalKm.toFixed(0)} km` : (
+                              stats.totalLeituras <= 1 ? (
+                                <span className="inline-flex items-center justify-end gap-1" title="Apenas 1 leitura no período. Necessário ao menos 2 para calcular.">
+                                  <AlertTriangle className="text-amber-500" size={14} />
+                                </span>
+                              ) : '-'
+                            )}
                           </td>
                           <td className="py-3 px-4 text-sm font-semibold text-purple-600 dark:text-purple-400 text-right">
-                            {stats.mediaKmPorLitro > 0 ? `${stats.mediaKmPorLitro.toFixed(2)} km/L` : '-'}
+                            {stats.mediaKmPorLitro > 0 ? `${stats.mediaKmPorLitro.toFixed(2)} km/L` : (
+                              stats.totalLeituras <= 1 ? (
+                                <span className="inline-flex items-center justify-end gap-1" title="Apenas 1 leitura no período. Necessário ao menos 2 para calcular.">
+                                  <AlertTriangle className="text-amber-500" size={14} />
+                                </span>
+                              ) : '-'
+                            )}
                           </td>
                         </tr>
                       ))}
