@@ -432,6 +432,10 @@ const HodometrosDashboard = () => {
       // Post-process daily vehicle data to calculate total kilometers
       let totalKilometers = 0;
       
+      // Maximum km a vehicle can plausibly drive in a single day.
+      // Differences above this are treated as odometer reading errors and discarded.
+      const MAX_KM_PER_DAY_PER_VEHICLE = 3000;
+      
       // Process daily vehicle data to calculate mileage
       // When calculoUmPorDia is true: compare today's reading with yesterday's reading
       // When calculoUmPorDia is false: use difference between first and last reading of the same day
@@ -482,7 +486,13 @@ const HodometrosDashboard = () => {
             // Handle negative values (odometer reset or error)
             if (kmRodadoNoDia < 0) {
               console.warn(`Negative km_rodado for vehicle ${vehicleId} on ${currentDay.date}. Resetting to 0.`);
-              continue; // Skip this day
+              continue;
+            }
+            
+            // Discard outliers — values above the daily max are likely typos
+            if (kmRodadoNoDia > MAX_KM_PER_DAY_PER_VEHICLE) {
+              console.warn(`Outlier km_rodado for vehicle ${vehicleId} on ${currentDay.date}: ${kmRodadoNoDia} km. Skipping.`);
+              continue;
             }
             
             if (kmRodadoNoDia > 0) {
@@ -548,6 +558,12 @@ const HodometrosDashboard = () => {
               console.warn(`Negative km_rodado for ciclomotor on ${date} for vehicle ${vehicleId}. Resetting to 0.`);
               kmRodadoNoDia = 0;
             }
+          }
+          
+          // Discard outliers — values above the daily max are likely typos
+          if (kmRodadoNoDia > MAX_KM_PER_DAY_PER_VEHICLE) {
+            console.warn(`Outlier km_rodado for vehicle ${vehicleId} on ${date}: ${kmRodadoNoDia} km. Skipping.`);
+            kmRodadoNoDia = 0;
           }
           
           if (kmRodadoNoDia > 0) {
@@ -1180,7 +1196,7 @@ const HodometrosDashboard = () => {
         let totalKm = 0;
         for (let i = 1; i < validReadings.length; i++) {
           const diff = validReadings[i] - validReadings[i - 1];
-          if (diff > 0) totalKm += diff;
+          if (diff > 0 && diff <= 3000) totalKm += diff; // outliers above 3000 km/day discarded
         }
 
         if (totalKm > 0) {
