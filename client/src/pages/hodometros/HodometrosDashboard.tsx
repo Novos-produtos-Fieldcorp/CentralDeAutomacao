@@ -1070,6 +1070,7 @@ const HodometrosDashboard = () => {
           hod_lido,
           trip_lida,
           bateria,
+          km_rodado,
           veiculo_id,
           veiculo:veiculo_id (
             veiculo_id,
@@ -1213,37 +1214,25 @@ const HodometrosDashboard = () => {
         // Calculate km rodado as: last reading - first reading
         // If result is negative (odometer reset or data error), set to 0
         const kmRodado = Math.max(0, lastValue - firstValue);
-        // teste
         
-        // Debug log for specific vehicles
-        if (placaNormalizada === 'HBZ6F14' || placaNormalizada === 'HLJ0G42') {
-          console.log(`=== DEBUG ${placaNormalizada} (Consolidado por Placa) ===`);
-          console.log('Placa:', placaNormalizada);
-          console.log('Total leituras válidas no período:', validReadingsInPeriod.length);
-          console.log('Todas as leituras:', validReadingsInPeriod.map(r => ({
-            data: r.data,
-            hora: r.hora,
-            hod_lido: r.hod_lido,
-            veiculo_id: r.veiculo_id
-          })));
-          console.log('Primeira leitura:', {
-            data: firstReading.data,
-            hora: firstReading.hora,
-            hod_lido: firstReading.hod_lido,
-            veiculo_id: firstReading.veiculo_id
-          });
-          console.log('Última leitura:', {
-            data: lastReading.data,
-            hora: lastReading.hora,
-            hod_lido: lastReading.hod_lido,
-            veiculo_id: lastReading.veiculo_id
-          });
-          console.log('KM Rodado calculado:', kmRodado, `(${lastValue} - ${firstValue})`);
-          console.log('==============================================');
-        }
-
         if (kmRodado > 0) {
           totalKmRodadoByPlaca.set(placaNormalizada, kmRodado);
+        }
+      });
+      
+      hodometrosByPlaca.forEach((readings, placaNormalizada) => {
+        if (totalKmRodadoByPlaca.has(placaNormalizada)) return;
+        
+        let totalKmFromRecords = 0;
+        readings.forEach(reading => {
+          const kmRodado = reading.km_rodado;
+          if (kmRodado !== null && kmRodado !== undefined && Number(kmRodado) > 0) {
+            totalKmFromRecords += Number(kmRodado);
+          }
+        });
+        
+        if (totalKmFromRecords > 0) {
+          totalKmRodadoByPlaca.set(placaNormalizada, totalKmFromRecords);
         }
       });
       
