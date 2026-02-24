@@ -111,6 +111,7 @@ interface VehicleFuelStats {
   totalKm: number;
   mediaKmPorLitro: number;
   abastecimentos: number;
+  totalLeituras: number;
 }
 
 interface KmVsPriceData {
@@ -1163,6 +1164,7 @@ const HodometrosDashboard = () => {
       // IMPORTANT: Group by NORMALIZED PLACA first to handle cases where the same physical
       // vehicle has multiple vehicle_ids in the database
       const totalKmRodadoByPlaca = new Map<string, number>();
+      const totalReadingsByPlaca = new Map<string, number>();
       const placaToVehicleId = new Map<string, number>(); // Keep track of one vehicle_id per placa for bomba lookup
       
       // Group hodometros by NORMALIZED PLACA (not by veiculo_id)
@@ -1179,6 +1181,10 @@ const HodometrosDashboard = () => {
           placaToVehicleId.set(placaNormalizada, hod.veiculo_id);
         }
         hodometrosByPlaca.get(placaNormalizada)!.push(hod);
+      });
+      
+      hodometrosByPlaca.forEach((readings, placaNormalizada) => {
+        totalReadingsByPlaca.set(placaNormalizada, readings.length);
       });
         
       hodometrosByPlaca.forEach((readings, placaNormalizada) => {
@@ -1293,6 +1299,7 @@ const HodometrosDashboard = () => {
             totalKm: totalKmForPlaca,
             mediaKmPorLitro: 0,
             abastecimentos: 0,
+            totalLeituras: totalReadingsByPlaca.get(placaNormalizada) || 0,
             ultimoAbastecimento: lastRefuel?.litros || 0
           });
         }
@@ -2006,6 +2013,7 @@ const HodometrosDashboard = () => {
                     <tr className="border-b border-gray-200 dark:border-gray-700">
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Placa</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Marca</th>
+                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Leituras</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Abast.</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Litros</th>
                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Gasto (R$)</th>
@@ -2024,6 +2032,7 @@ const HodometrosDashboard = () => {
                         >
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">{stats.placa}</td>
                           <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{stats.marca}</td>
+                          <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">{stats.totalLeituras}</td>
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">{stats.abastecimentos}</td>
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">{stats.totalLitros.toFixed(1)} L</td>
                           <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 text-right">R$ {stats.totalGasto.toFixed(2)}</td>
