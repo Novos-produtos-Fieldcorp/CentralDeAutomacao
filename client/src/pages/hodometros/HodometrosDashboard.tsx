@@ -1161,113 +1161,91 @@ const HodometrosDashboard = () => {
       
       const bombas = bombasData || [];
       
-      // Step 3: Calculate KM rodado for each vehicle using hodometros from the period
-      // IMPORTANT: Group by NORMALIZED PLACA first to handle cases where the same physical
-      // vehicle has multiple vehicle_ids in the database
+      // Step 3: Calculate KM rodado using buildOdometerTimeline (same method as charts)
+      // Fetch ALL readings for these vehicles (not just in-period) for proper reset detection
+      const { data: allHodometrosData, error: allHodError } = await supabase
+        .from('hodometro')
+        .select(`
+          veiculo_id,
+          hod_lido,
+          trip_lida,
+          data,
+          hora,
+          bateria,
+          veiculo:veiculo_id (
+            placa
+          )
+        `)
+        .eq('company_id', companyId)
+        .in('veiculo_id', Array.from(vehicleIdsInPeriod))
+        .order('data', { ascending: true })
+        .order('hora', { ascending: true });
+
+      if (allHodError) throw allHodError;
+
       const totalKmRodadoByPlaca = new Map<string, number>();
       const totalReadingsByPlaca = new Map<string, number>();
-      const placaToVehicleId = new Map<string, number>(); // Keep track of one vehicle_id per placa for bomba lookup
-      
-      // Group hodometros by NORMALIZED PLACA (not by veiculo_id)
-      const hodometrosByPlaca = new Map<string, any[]>();
-      (hodometrosInPeriod || []).forEach(hod => {
+
+      // Group all readings by normalized placa
+      const allReadingsByPlaca = new Map<string, any[]>();
+      (allHodometrosData || []).forEach(reading => {
+        const veiculoData = Array.isArray(reading.veiculo) ? reading.veiculo[0] : reading.veiculo;
+        if (!veiculoData?.placa) return;
+        const placaNormalizada = veiculoData.placa.trim().toUpperCase();
+        if (!placaNormalizada || placaNormalizada.length < 7) return;
+        if (!allReadingsByPlaca.has(placaNormalizada)) {
+          allReadingsByPlaca.set(placaNormalizada, []);
+        }
+        allReadingsByPlaca.get(placaNormalizada)!.push(reading);
+      });
+
+      // Count in-period readings per placa
+      (hodometrosInPeriod || []).forEach((hod: any) => {
         const veiculo = Array.isArray(hod.veiculo) ? hod.veiculo[0] : hod.veiculo;
-        const originalPlaca = veiculo?.placa || '';
-        const placaNormalizada = originalPlaca.trim().toUpperCase();
-        
+        const placaNormalizada = (veiculo?.placa || '').trim().toUpperCase();
         if (!placaNormalizada) return;
-        
-        if (!hodometrosByPlaca.has(placaNormalizada)) {
-          hodometrosByPlaca.set(placaNormalizada, []);
-          placaToVehicleId.set(placaNormalizada, hod.veiculo_id);
-        }
-        hodometrosByPlaca.get(placaNormalizada)!.push(hod);
+        totalReadingsByPlaca.set(placaNormalizada, (totalReadingsByPlaca.get(placaNormalizada) || 0) + 1);
       });
-      
-      hodometrosByPlaca.forEach((readings, placaNormalizada) => {
-        totalReadingsByPlaca.set(placaNormalizada, readings.length);
-      });
-        
-      hodometrosByPlaca.forEach((readings, placaNormalizada) => {
+
+      // Use buildOdometerTimeline + calculateKmRodadoForPeriod (same as charts)
+      allReadingsByPlaca.forEach((readings, placaNormalizada) => {
         if (readings.length === 0) return;
-        
-        const validReadings = readings.filter((reading: any) => {
-          if (reading.data < dateRange.startDate || reading.data > dateRange.endDate) return false;
-          const hodLido = reading.hod_lido;
-          return hodLido !== null && hodLido !== undefined && !isNaN(Number(hodLido)) && Number(hodLido) > 0;
-        });
-        
-        if (validReadings.length < 2) return;
-        
-        const byVehicleId = new Map<number, any[]>();
-        validReadings.forEach((r: any) => {
-          if (!byVehicleId.has(r.veiculo_id)) byVehicleId.set(r.veiculo_id, []);
-          byVehicleId.get(r.veiculo_id)!.push(r);
-        });
-        
-        let totalKm = 0;
-        byVehicleId.forEach((vReadings) => {
-          if (vReadings.length < 2) return;
-          const sorted = [...vReadings].sort((a, b) => {
-            const d = a.data.localeCompare(b.data);
-            return d !== 0 ? d : (a.hora || '00:00').localeCompare(b.hora || '00:00');
-          });
-          for (let i = 1; i < sorted.length; i++) {
-            const diff = Number(sorted[i].hod_lido) - Number(sorted[i - 1].hod_lido);
-            if (diff > 0) totalKm += diff;
-          }
-        });
-        
-        if (totalKm > 0) {
-          totalKmRodadoByPlaca.set(placaNormalizada, totalKm);
+
+        const timelineInputs: HodometroReadingInput[] = readings.map((reading: any) => ({
+          data: reading.data,
+          hora: reading.hora ?? '00:00',
+          hod_lido: reading.hod_lido === null || reading.hod_lido === undefined ? null : String(reading.hod_lido),
+          trip_lida: reading.trip_lida === null || reading.trip_lida === undefined ? null : String(reading.trip_lida),
+          bateria: reading.bateria ?? null,
+        }));
+
+        const timeline = buildOdometerTimeline(timelineInputs);
+
+        const readingsInPeriod = timelineInputs.filter((r) =>
+          r.data >= dateRange.startDate && r.data <= dateRange.endDate
+        );
+
+        const kmRodadoPeriodo = calculateKmRodadoForPeriod(
+          timeline,
+          dateRange.startDate,
+          dateRange.endDate,
+          readingsInPeriod
+        );
+
+        if (kmRodadoPeriodo > 0) {
+          totalKmRodadoByPlaca.set(placaNormalizada, kmRodadoPeriodo);
         }
       });
       
-      hodometrosByPlaca.forEach((readings, placaNormalizada) => {
-        if (totalKmRodadoByPlaca.has(placaNormalizada)) return;
-        let totalKmFromRecords = 0;
-        readings.forEach((reading: any) => {
-          const kmRodado = reading.km_rodado;
-          if (kmRodado !== null && kmRodado !== undefined && Number(kmRodado) > 0) {
-            totalKmFromRecords += Number(kmRodado);
-          }
-        });
-        if (totalKmFromRecords > 0) {
-          totalKmRodadoByPlaca.set(placaNormalizada, totalKmFromRecords);
-        }
-      });
-      
-      // Step 4: Process bomba data (historical fuel up to day before) and aggregate by normalized placa
-      // Maps to aggregate data by vehicle (using placa as key to avoid duplicates)
-      const vehicleStatsMap = new Map<string, VehicleFuelStats & { ultimoAbastecimento: number }>();
+      // Step 4: Process bomba data and aggregate by normalized placa
+      const vehicleStatsMap = new Map<string, VehicleFuelStats>();
       const kmVsPriceMap = new Map<string, { km: number; preco: number }>();
-      
-      // Track last refuel per vehicle (by date) to exclude from consumption calculation
-      const lastRefuelByPlaca = new Map<string, { data: string; litros: number }>();
       
       let totalLitrosSum = 0;
       let totalGastoSum = 0;
       let validReadingsCount = 0;
       
-      // First pass: find the last (most recent) refuel for each vehicle
-      // bombas are already sorted by date descending, so first occurrence is the most recent
-      bombas.forEach((bomba: any) => {
-        const litros = parseNumber(bomba.litro_lido);
-        if (litros === 0) return;
-        
-        const veiculo = Array.isArray(bomba.veiculo) ? bomba.veiculo[0] : bomba.veiculo;
-        if (!veiculo || !veiculo.veiculo_id) return;
-        
-        const placaNormalizada = (veiculo.placa || '').trim().toUpperCase();
-        if (!placaNormalizada || placaNormalizada.length < 7) return;
-        
-        // Only store if we haven't found the last refuel for this plate yet
-        if (!lastRefuelByPlaca.has(placaNormalizada)) {
-          lastRefuelByPlaca.set(placaNormalizada, { data: bomba.data, litros });
-        }
-      });
-      
-      // Second pass: aggregate all refuels
+      // Aggregate all refuels
       bombas.forEach((bomba: any) => {
         const litros = parseNumber(bomba.litro_lido);
         const preco = parseNumber(bomba.preco_lido);
@@ -1283,12 +1261,7 @@ const HodometrosDashboard = () => {
         if (!placaNormalizada || placaNormalizada.length < 7) return;
         const marca = veiculo.marca || 'Desconhecida';
         
-        // Get the last refuel for this vehicle
-        const lastRefuel = lastRefuelByPlaca.get(placaNormalizada);
-        
-        // Aggregate by placa (normalized to uppercase) instead of veiculo_id
         if (!vehicleStatsMap.has(placaNormalizada)) {
-          // Get km_rodado directly from the placa-based map
           const totalKmForPlaca = totalKmRodadoByPlaca.get(placaNormalizada) || 0;
           
           vehicleStatsMap.set(placaNormalizada, {
@@ -1301,7 +1274,6 @@ const HodometrosDashboard = () => {
             mediaKmPorLitro: 0,
             abastecimentos: 0,
             totalLeituras: totalReadingsByPlaca.get(placaNormalizada) || 0,
-            ultimoAbastecimento: lastRefuel?.litros || 0
           });
         }
         
@@ -1331,13 +1303,20 @@ const HodometrosDashboard = () => {
       });
       
       // Calculate average km per liter for each vehicle
-      // Formula: km rodados no período / (litros abastecidos - último abastecimento)
-      // The last refuel is excluded because it hasn't been consumed yet (still in the tank)
+      // Formula: km rodados no período / total litros abastecidos
+      // Simple and reliable: total km driven / total fuel consumed in the period
+      const MAX_KM_POR_LITRO = 25;
       const vehicleStats = Array.from(vehicleStatsMap.values()).map(stats => {
-        const litrosConsumidos = stats.totalLitros - stats.ultimoAbastecimento;
+        let mediaKmPorLitro = 0;
+        if (stats.totalLitros > 0 && stats.totalKm > 0) {
+          mediaKmPorLitro = stats.totalKm / stats.totalLitros;
+          if (mediaKmPorLitro > MAX_KM_POR_LITRO) {
+            mediaKmPorLitro = 0;
+          }
+        }
         return {
           ...stats,
-          mediaKmPorLitro: litrosConsumidos > 0 ? stats.totalKm / litrosConsumidos : 0
+          mediaKmPorLitro
         };
       });
       // Convert km vs price map to array, filtering out invalid plates
