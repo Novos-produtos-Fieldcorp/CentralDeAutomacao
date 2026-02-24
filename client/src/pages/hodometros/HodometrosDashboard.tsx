@@ -883,18 +883,16 @@ const HodometrosDashboard = () => {
       // Adjust end date to include the full day (23:59:59.999)
       const endDateFull = dateRange.endDate ? `${dateRange.endDate}T23:59:59.999` : null;
       
-      // Fetch minutas within date range
-      const { data, error } = await supabase
-        .from('minuta')
-        .select('id, created_at, motorista_id, foto_minuta')
-        .eq('company_id', companyId)
-        .gte('created_at', dateRange.startDate)
-        .lte('created_at', endDateFull)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      const minutas = data || [];
+      // Fetch all minutas within date range (paginated)
+      const minutas = await fetchAllPaginated(
+        'minuta',
+        'id, created_at, motorista_id, foto_minuta',
+        (q: any) => q
+          .eq('company_id', companyId)
+          .gte('created_at', dateRange.startDate)
+          .lte('created_at', endDateFull)
+          .order('created_at', { ascending: false })
+      );
       const totalMinutasCount = minutas.length;
       
       // Calculate total days in the selected period
@@ -937,18 +935,17 @@ const HodometrosDashboard = () => {
     try {
       setConnectionError(false);
       
-      // Fetch bomba_gasolina records within date range (include litro_lido and preco_lido for filtering)
-      const { data, error } = await supabase
-        .from('bomba_gasolina')
-        .select('id, data, litro_lido, preco_lido')
-        .eq('company_id', companyId)
-        .gte('data', dateRange.startDate)
-        .lte('data', dateRange.endDate)
-        .order('data', { ascending: false });
+      // Fetch all bomba_gasolina records within date range (paginated)
+      const bombas = await fetchAllPaginated(
+        'bomba_gasolina',
+        'id, data, litro_lido, preco_lido',
+        (q: any) => q
+          .eq('company_id', companyId)
+          .gte('data', dateRange.startDate)
+          .lte('data', dateRange.endDate)
+          .order('data', { ascending: false })
+      );
       
-      if (error) throw error;
-      
-      const bombas = data || [];
       const validBombas = bombas.filter((b: any) => {
         const litros = parseFloat(b.litro_lido) || 0;
         const preco = parseFloat(b.preco_lido) || 0;
@@ -1346,22 +1343,16 @@ const HodometrosDashboard = () => {
       // Adjust end date to include the full day (23:59:59.999)
       const endDateFull = dateRange.endDate ? `${dateRange.endDate}T23:59:59.999` : null;
       
-      // Fetch minutas grouped by filial
-      const { data, error } = await supabase
-        .from('minuta')
-        .select(`
-          id,
-          filial_id,
-          filial:filial_id ( id, filial )
-        `)
-        .eq('company_id', companyId)
-        .gte('created_at', dateRange.startDate)
-        .lte('created_at', endDateFull)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      const minutas = data || [];
+      // Fetch all minutas grouped by filial (paginated)
+      const minutas = await fetchAllPaginated(
+        'minuta',
+        `id, filial_id, filial:filial_id ( id, filial )`,
+        (q: any) => q
+          .eq('company_id', companyId)
+          .gte('created_at', dateRange.startDate)
+          .lte('created_at', endDateFull)
+          .order('created_at', { ascending: false })
+      );
       
       // Group by filial
       const filialCounts = new Map<string, number>();
@@ -1393,18 +1384,16 @@ const HodometrosDashboard = () => {
       const minutasByDriver = new Map<number, { nome: string; count: number }>();
       
       if (moduleAccess.minuta) {
-        const { data: minutasData, error: minutasError } = await supabase
-          .from('minuta')
-          .select(`
-            id,
-            motorista_id,
-            motorista:motorista_id ( motorista_id, nome )
-          `)
-          .eq('company_id', companyId)
-          .gte('created_at', dateRange.startDate)
-          .lte('created_at', endDateFull);
+        const minutasData = await fetchAllPaginated(
+          'minuta',
+          `id, motorista_id, motorista:motorista_id ( motorista_id, nome )`,
+          (q: any) => q
+            .eq('company_id', companyId)
+            .gte('created_at', dateRange.startDate)
+            .lte('created_at', endDateFull)
+        );
         
-        if (!minutasError && minutasData) {
+        if (minutasData) {
           minutasData.forEach((minuta: any) => {
             if (minuta.motorista_id && minuta.motorista) {
               const motorista = Array.isArray(minuta.motorista) ? minuta.motorista[0] : minuta.motorista;
