@@ -1161,12 +1161,14 @@ const HodometrosDashboard = () => {
 
         const isCiclomotor = readings.some((r: any) => r.bateria !== null && r.bateria !== undefined);
 
-        // Sort chronologically and extract numeric values
-        const validReadings = readings
-          .sort((a: any, b: any) => {
-            const d = a.data.localeCompare(b.data);
-            return d !== 0 ? d : (a.hora || '00:00').localeCompare(b.hora || '00:00');
-          })
+        // Sort chronologically (MUST sort client-side since pagination can break DB ordering)
+        const sorted = [...readings].sort((a: any, b: any) => {
+          const d = (a.data || '').localeCompare(b.data || '');
+          return d !== 0 ? d : (a.hora || '00:00').localeCompare(b.hora || '00:00');
+        });
+
+        // Extract numeric values
+        const validReadings = sorted
           .map((r: any) => {
             const val = isCiclomotor
               ? parseFloat(r.trip_lida) || 0
@@ -1257,7 +1259,7 @@ const HodometrosDashboard = () => {
       // Calculate average km per liter for each vehicle
       // Formula: km rodados no período / total litros abastecidos
       // Simple and reliable: total km driven / total fuel consumed in the period
-      const MAX_KM_POR_LITRO = 25;
+      const MAX_KM_POR_LITRO = 100;
       const vehicleStats = Array.from(vehicleStatsMap.values()).map(stats => {
         let mediaKmPorLitro = 0;
         if (stats.totalLitros > 0 && stats.totalKm > 0) {
