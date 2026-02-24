@@ -1181,77 +1181,53 @@ const HodometrosDashboard = () => {
         hodometrosByPlaca.get(placaNormalizada)!.push(hod);
       });
         
-      // Calculate km_rodado per PLACA (consolidating all vehicle_ids with same plate)
       hodometrosByPlaca.forEach((readings, placaNormalizada) => {
         if (readings.length === 0) return;
         
-        // Sort ALL readings for this placa by date and time (chronological order)
-        const sortedReadings = [...readings].sort((a, b) => {
-          const dateCompare = a.data.localeCompare(b.data);
-          if (dateCompare !== 0) return dateCompare;
-          return (a.hora || '00:00').localeCompare(b.hora || '00:00');
-        });
-        
-        // Filter readings within the period and with valid hod_lido values
-        const validReadingsInPeriod = sortedReadings.filter(reading => {
+        const validReadings = readings.filter((reading: any) => {
           if (reading.data < dateRange.startDate || reading.data > dateRange.endDate) return false;
           const hodLido = reading.hod_lido;
           return hodLido !== null && hodLido !== undefined && !isNaN(Number(hodLido)) && Number(hodLido) > 0;
         });
         
-        if (validReadingsInPeriod.length < 2) {
-          // Need at least 2 readings to calculate km rodado
-          return;
-        }
+        if (validReadings.length < 2) return;
         
-        // Get first and last readings chronologically
-        const firstReading = validReadingsInPeriod[0];
-        const lastReading = validReadingsInPeriod[validReadingsInPeriod.length - 1];
+        const byVehicleId = new Map<number, any[]>();
+        validReadings.forEach((r: any) => {
+          if (!byVehicleId.has(r.veiculo_id)) byVehicleId.set(r.veiculo_id, []);
+          byVehicleId.get(r.veiculo_id)!.push(r);
+        });
         
-        const firstValue = Number(firstReading.hod_lido);
-        const lastValue = Number(lastReading.hod_lido);
+        let totalKm = 0;
+        byVehicleId.forEach((vReadings) => {
+          if (vReadings.length < 2) return;
+          const sorted = [...vReadings].sort((a, b) => {
+            const d = a.data.localeCompare(b.data);
+            return d !== 0 ? d : (a.hora || '00:00').localeCompare(b.hora || '00:00');
+          });
+          for (let i = 1; i < sorted.length; i++) {
+            const diff = Number(sorted[i].hod_lido) - Number(sorted[i - 1].hod_lido);
+            if (diff > 0) totalKm += diff;
+          }
+        });
         
-        // Calculate km rodado as: last reading - first reading
-        // If result is negative (odometer reset or data error), set to 0
-        const kmRodado = Math.max(0, lastValue - firstValue);
-        
-        if (kmRodado > 0) {
-          totalKmRodadoByPlaca.set(placaNormalizada, kmRodado);
+        if (totalKm > 0) {
+          totalKmRodadoByPlaca.set(placaNormalizada, totalKm);
         }
       });
       
       hodometrosByPlaca.forEach((readings, placaNormalizada) => {
         if (totalKmRodadoByPlaca.has(placaNormalizada)) return;
-        
         let totalKmFromRecords = 0;
-        readings.forEach(reading => {
+        readings.forEach((reading: any) => {
           const kmRodado = reading.km_rodado;
           if (kmRodado !== null && kmRodado !== undefined && Number(kmRodado) > 0) {
             totalKmFromRecords += Number(kmRodado);
           }
         });
-        
         if (totalKmFromRecords > 0) {
           totalKmRodadoByPlaca.set(placaNormalizada, totalKmFromRecords);
         }
-      });
-
-      const debugPlates = ['AUG1C74', 'GZV0J40'];
-      debugPlates.forEach(plate => {
-        const readings = hodometrosByPlaca.get(plate);
-        console.log(`=== DEBUG BOMBA ${plate} ===`);
-        console.log(`Has hodometro readings:`, !!readings, `Count:`, readings?.length || 0);
-        if (readings) {
-          console.log(`Readings data:`, readings.map((r: any) => ({
-            data: r.data,
-            hod_lido: r.hod_lido,
-            trip_lida: r.trip_lida,
-            km_rodado: r.km_rodado,
-            veiculo_id: r.veiculo_id
-          })));
-        }
-        console.log(`totalKmRodadoByPlaca has ${plate}:`, totalKmRodadoByPlaca.has(plate), `value:`, totalKmRodadoByPlaca.get(plate));
-        console.log(`========================`);
       });
       
       // Step 4: Process bomba data (historical fuel up to day before) and aggregate by normalized placa
@@ -1350,14 +1326,7 @@ const HodometrosDashboard = () => {
       // Formula: km rodados no período / (litros abastecidos - último abastecimento)
       // The last refuel is excluded because it hasn't been consumed yet (still in the tank)
       const vehicleStats = Array.from(vehicleStatsMap.values()).map(stats => {
-        // Subtract the last refuel from total liters for consumption calculation
         const litrosConsumidos = stats.totalLitros - stats.ultimoAbastecimento;
-        if (debugPlates.includes(stats.placa)) {
-          console.log(`=== DEBUG FINAL ${stats.placa} ===`);
-          console.log(`totalKm: ${stats.totalKm}, totalLitros: ${stats.totalLitros}, ultimoAbastecimento: ${stats.ultimoAbastecimento}, litrosConsumidos: ${litrosConsumidos}`);
-          console.log(`mediaKmPorLitro: ${litrosConsumidos > 0 ? stats.totalKm / litrosConsumidos : 0}`);
-          console.log(`==============================`);
-        }
         return {
           ...stats,
           mediaKmPorLitro: litrosConsumidos > 0 ? stats.totalKm / litrosConsumidos : 0
