@@ -1235,6 +1235,24 @@ const HodometrosDashboard = () => {
           totalKmRodadoByPlaca.set(placaNormalizada, totalKmFromRecords);
         }
       });
+
+      const debugPlates = ['AUG1C74', 'GZV0J40'];
+      debugPlates.forEach(plate => {
+        const readings = hodometrosByPlaca.get(plate);
+        console.log(`=== DEBUG BOMBA ${plate} ===`);
+        console.log(`Has hodometro readings:`, !!readings, `Count:`, readings?.length || 0);
+        if (readings) {
+          console.log(`Readings data:`, readings.map((r: any) => ({
+            data: r.data,
+            hod_lido: r.hod_lido,
+            trip_lida: r.trip_lida,
+            km_rodado: r.km_rodado,
+            veiculo_id: r.veiculo_id
+          })));
+        }
+        console.log(`totalKmRodadoByPlaca has ${plate}:`, totalKmRodadoByPlaca.has(plate), `value:`, totalKmRodadoByPlaca.get(plate));
+        console.log(`========================`);
+      });
       
       // Step 4: Process bomba data (historical fuel up to day before) and aggregate by normalized placa
       // Maps to aggregate data by vehicle (using placa as key to avoid duplicates)
@@ -1334,6 +1352,12 @@ const HodometrosDashboard = () => {
       const vehicleStats = Array.from(vehicleStatsMap.values()).map(stats => {
         // Subtract the last refuel from total liters for consumption calculation
         const litrosConsumidos = stats.totalLitros - stats.ultimoAbastecimento;
+        if (debugPlates.includes(stats.placa)) {
+          console.log(`=== DEBUG FINAL ${stats.placa} ===`);
+          console.log(`totalKm: ${stats.totalKm}, totalLitros: ${stats.totalLitros}, ultimoAbastecimento: ${stats.ultimoAbastecimento}, litrosConsumidos: ${litrosConsumidos}`);
+          console.log(`mediaKmPorLitro: ${litrosConsumidos > 0 ? stats.totalKm / litrosConsumidos : 0}`);
+          console.log(`==============================`);
+        }
         return {
           ...stats,
           mediaKmPorLitro: litrosConsumidos > 0 ? stats.totalKm / litrosConsumidos : 0
