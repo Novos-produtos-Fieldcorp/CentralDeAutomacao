@@ -1161,79 +1161,57 @@ const HodometrosDashboard = () => {
       
       const bombas = bombasData || [];
       
-      // Step 3: Calculate KM rodado using buildOdometerTimeline (same method as charts)
-      // Fetch ALL readings for these vehicles (not just in-period) for proper reset detection
-      const { data: allHodometrosData, error: allHodError } = await supabase
-        .from('hodometro')
-        .select(`
-          veiculo_id,
-          hod_lido,
-          trip_lida,
-          data,
-          hora,
-          bateria,
-          veiculo:veiculo_id (
-            placa
-          )
-        `)
-        .eq('company_id', companyId)
-        .in('veiculo_id', Array.from(vehicleIdsInPeriod))
-        .order('data', { ascending: true })
-        .order('hora', { ascending: true });
-
-      if (allHodError) throw allHodError;
-
+      // Step 3: Calculate KM rodado using consecutive positive differences
+      // Uses hodometrosInPeriod (already fetched in Step 1) - no extra query needed
       const totalKmRodadoByPlaca = new Map<string, number>();
       const totalReadingsByPlaca = new Map<string, number>();
 
-      // Group all readings by normalized placa
-      const allReadingsByPlaca = new Map<string, any[]>();
-      (allHodometrosData || []).forEach(reading => {
-        const veiculoData = Array.isArray(reading.veiculo) ? reading.veiculo[0] : reading.veiculo;
-        if (!veiculoData?.placa) return;
-        const placaNormalizada = veiculoData.placa.trim().toUpperCase();
-        if (!placaNormalizada || placaNormalizada.length < 7) return;
-        if (!allReadingsByPlaca.has(placaNormalizada)) {
-          allReadingsByPlaca.set(placaNormalizada, []);
-        }
-        allReadingsByPlaca.get(placaNormalizada)!.push(reading);
-      });
-
-      // Count in-period readings per placa
+      // Group in-period readings by normalized placa
+      const hodometrosByPlaca = new Map<string, any[]>();
       (hodometrosInPeriod || []).forEach((hod: any) => {
         const veiculo = Array.isArray(hod.veiculo) ? hod.veiculo[0] : hod.veiculo;
         const placaNormalizada = (veiculo?.placa || '').trim().toUpperCase();
-        if (!placaNormalizada) return;
+        if (!placaNormalizada || placaNormalizada.length < 7) return;
+
+        if (!hodometrosByPlaca.has(placaNormalizada)) {
+          hodometrosByPlaca.set(placaNormalizada, []);
+        }
+        hodometrosByPlaca.get(placaNormalizada)!.push(hod);
         totalReadingsByPlaca.set(placaNormalizada, (totalReadingsByPlaca.get(placaNormalizada) || 0) + 1);
       });
 
-      // Use buildOdometerTimeline + calculateKmRodadoForPeriod (same as charts)
-      allReadingsByPlaca.forEach((readings, placaNormalizada) => {
-        if (readings.length === 0) return;
+      // Calculate km for each vehicle by summing positive consecutive differences
+      // This handles odometer resets naturally (negative diffs are skipped)
+      hodometrosByPlaca.forEach((readings, placaNormalizada) => {
+        if (readings.length < 2) return;
 
-        const timelineInputs: HodometroReadingInput[] = readings.map((reading: any) => ({
-          data: reading.data,
-          hora: reading.hora ?? '00:00',
-          hod_lido: reading.hod_lido === null || reading.hod_lido === undefined ? null : String(reading.hod_lido),
-          trip_lida: reading.trip_lida === null || reading.trip_lida === undefined ? null : String(reading.trip_lida),
-          bateria: reading.bateria ?? null,
-        }));
+        const isCiclomotor = readings.some((r: any) => r.bateria !== null && r.bateria !== undefined);
 
-        const timeline = buildOdometerTimeline(timelineInputs);
+        // Sort chronologically and extract numeric values
+        const validReadings = readings
+          .sort((a: any, b: any) => {
+            const d = a.data.localeCompare(b.data);
+            return d !== 0 ? d : (a.hora || '00:00').localeCompare(b.hora || '00:00');
+          })
+          .map((r: any) => {
+            const val = isCiclomotor
+              ? parseFloat(r.trip_lida) || 0
+              : parseFloat(r.hod_lido) || 0;
+            return val;
+          })
+          .filter((val: number) => val > 0);
 
-        const readingsInPeriod = timelineInputs.filter((r) =>
-          r.data >= dateRange.startDate && r.data <= dateRange.endDate
-        );
+        if (validReadings.length < 2) return;
 
-        const kmRodadoPeriodo = calculateKmRodadoForPeriod(
-          timeline,
-          dateRange.startDate,
-          dateRange.endDate,
-          readingsInPeriod
-        );
+        // Sum positive consecutive differences (handles resets by skipping negative diffs)
+        let totalKm = 0;
+        for (let i = 1; i < validReadings.length; i++) {
+          const diff = validReadings[i] - validReadings[i - 1];
+          if (diff > 0) totalKm += diff;
+        }
 
-        if (kmRodadoPeriodo > 0) {
-          totalKmRodadoByPlaca.set(placaNormalizada, kmRodadoPeriodo);
+        if (totalKm > 0) {
+          totalKmRodadoByPlaca.set(placaNormalizada, totalKm);
         }
       });
       
