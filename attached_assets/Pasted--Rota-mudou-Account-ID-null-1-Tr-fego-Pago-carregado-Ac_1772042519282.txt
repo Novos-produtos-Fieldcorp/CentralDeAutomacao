@@ -1,0 +1,98 @@
+ 🔄 Rota mudou - Account ID: null → 1
+ ✅ Tráfego Pago carregado
+ 🏢 Account ID: 1
+ 🔗 [Tráfego Pago] https://n8nqp.wiseapp360.com/webhook/anuncios?account_id=1&token=RuqWmaXEufZMgFG36CLPC6FTgYkXHMOGCHzsqcZOguBalkU7v82i2ZAsMHeOOuTv
+ ✅ Tráfego Pago carregado
+ 🏢 Account ID: 1
+ 🔗 [Tráfego Pago] https://n8nqp.wiseapp360.com/webhook/anuncios?account_id=1&token=RuqWmaXEufZMgFG36CLPC6FTgYkXHMOGCHzsqcZOguBalkU7v82i2ZAsMHeOOuTv
+ [UserGuiding INFO] 
+
+Please check this article https://help.userguiding.com/en/articles/2722978-mau-quota and take the recommended measures. 
+
+*Submit a ticket using the link below if you think this is a bug
+https://desk.zoho.com/portal/userguiding/newticket
+ ✅ Botão "Tráfego Pago" criado no menu lateral
+ Hybrid API Configuration: Object
+ Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+Y1 @ index-C_v35SEa.js:265
+ 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+ 🔍 [WiseAppAccess] Account ID da URL: 1
+ 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 1
+ 📊 [WiseAppAccess] Resultado da busca da empresa: Object
+ ✅ [WiseAppAccess] Empresa encontrada: Object
+ 📧 [WiseAppAccess] Mostrando modal de autenticação (e-mail obrigatório)
+ Dashboard data loaded: Object
+ ✅ Token encontrado para email, usando id_conta_wiseapp: 6
+ 📧 [WiseAppAccess] Token salvo para email, usando accountId: 6 (do email: 6 , fallback: 1 )
+ 🔄 [WiseAppAccess] Atualizando sessão: Object
+ 🔄 [WiseAppAccess] Sincronizando companyId com AuthContext: 2 accountId: 6
+ 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 2
+ 🔄 [AuthContext] AccountId mudou: 1 → 6
+ 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+ 🔍 [WiseAppAccess] Já verificado nesta sessão...
+ ✅ [WiseAppAccess] Sessão válida com email: gabriel.mauro@fieldcorp.com.br
+ 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+ 🔍 [WiseAppAccess] Já verificado nesta sessão...
+ ✅ [WiseAppAccess] Sessão válida com email: gabriel.mauro@fieldcorp.com.br
+ [SyncFromWiseApp] Usando accountId 6 para buscar labels
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels:1  Failed to load resource: the server responded with a status of 404 ()
+ [RobustFetch] Erro na tentativa 1 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels: HTTP 404: 
+jve @ index-C_v35SEa.js:266
+ [RobustFetch] Tentativa 2 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels
+ [WiseApp] Tentativa 1 falhou: HTTP 404: . Tentando novamente...
+ [WiseApp] Tentativa 1 falhou: HTTP 404: 
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels:1  Failed to load resource: the server responded with a status of 404 ()
+ [RobustFetch] Erro na tentativa 2 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels: HTTP 404: 
+jve @ index-C_v35SEa.js:266
+ [RobustFetch] Tentativa 3 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels
+ [WiseApp] Tentativa 2 falhou: HTTP 404: . Tentando novamente...
+ [WiseApp] Tentativa 2 falhou: HTTP 404: 
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels:1  Failed to load resource: the server responded with a status of 404 ()
+ [RobustFetch] Erro na tentativa 3 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels: HTTP 404: 
+jve @ index-C_v35SEa.js:266
+ [RobustFetch] Tentativa 4 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels
+ [WiseApp] Tentativa 3 falhou: HTTP 404: . Tentando novamente...
+ [WiseApp] Tentativa 3 falhou: HTTP 404: 
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels:1  Failed to load resource: the server responded with a status of 404 ()
+ [RobustFetch] Erro na tentativa 4 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels: HTTP 404: 
+jve @ index-C_v35SEa.js:266
+index-C_v35SEa.js:266 [RobustFetch] Tentativa 5 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels
+index-C_v35SEa.js:266 [WiseApp] Tentativa 4 falhou: HTTP 404: . Tentando novamente...
+index-C_v35SEa.js:266 [WiseApp] Tentativa 4 falhou: HTTP 404: 
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels:1  Failed to load resource: the server responded with a status of 404 ()
+index-C_v35SEa.js:266 [RobustFetch] Erro na tentativa 5 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels: HTTP 404: 
+jve @ index-C_v35SEa.js:266
+index-C_v35SEa.js:266 [RobustFetch] Tentativa 6 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels
+index-C_v35SEa.js:266 [WiseApp] Tentativa 5 falhou: HTTP 404: . Tentando novamente...
+index-C_v35SEa.js:266 [WiseApp] Tentativa 5 falhou: HTTP 404: 
+index-C_v35SEa.js:2069 🧹 Limpou 0 caches ao trocar de conta
+index-C_v35SEa.js:1146 🔄 [WiseAppAccess] Trocando para conta: 1 company: 2
+index-C_v35SEa.js:1146 🧹 [WiseAppAccess] Removendo todas as queries do cache...
+index-C_v35SEa.js:266 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 2
+index-C_v35SEa.js:266 🔄 [AuthContext] AccountId mudou: 6 → 1
+index-C_v35SEa.js:1146 🔄 [WiseAppAccess] Invalidando todas as queries após troca de conta (post-commit)...
+index-C_v35SEa.js:2069 🧹 Limpou 0 caches ao trocar de conta
+index-C_v35SEa.js:1146 🔄 [WiseAppAccess] Trocando para conta: 6 company: 1
+index-C_v35SEa.js:1146 🧹 [WiseAppAccess] Removendo todas as queries do cache...
+index-C_v35SEa.js:266 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 1
+index-C_v35SEa.js:266 🔄 [AuthContext] CompanyId mudou: 2 → 1
+index-C_v35SEa.js:266 🔄 [AuthContext] AccountId mudou: 1 → 6
+index-C_v35SEa.js:1146 🔄 [WiseAppAccess] Invalidando todas as queries após troca de conta (post-commit)...
+index-C_v35SEa.js:2069 🧹 Limpou 0 caches ao trocar de conta
+index-C_v35SEa.js:1146 🔄 [WiseAppAccess] Trocando para conta: 1 company: 2
+index-C_v35SEa.js:1146 🧹 [WiseAppAccess] Removendo todas as queries do cache...
+index-C_v35SEa.js:266 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 2
+index-C_v35SEa.js:266 🔄 [AuthContext] CompanyId mudou: 1 → 2
+index-C_v35SEa.js:266 🔄 [AuthContext] AccountId mudou: 6 → 1
+index-C_v35SEa.js:1146 🔄 [WiseAppAccess] Invalidando todas as queries após troca de conta (post-commit)...
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels:1  Failed to load resource: the server responded with a status of 404 ()
+index-C_v35SEa.js:266 [RobustFetch] Erro na tentativa 6 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels: HTTP 404: 
+jve @ index-C_v35SEa.js:266
+index-C_v35SEa.js:266 [RobustFetch] Todas as tentativas falharam para as URLs: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/api/wiseapp/6/labels
+jve @ index-C_v35SEa.js:266
+index-C_v35SEa.js:266 Erro na requisição via backend (todas as tentativas falharam): Error: Failed to fetch after 6 retries across 1 URLs. Last errors: HTTP 404: , HTTP 404: , HTTP 404: 
+    at jve (index-C_v35SEa.js:266:43170)
+    at async gte (index-C_v35SEa.js:266:44325)
+    at async Object.mutationFn (index-C_v35SEa.js:2069:33292)
+gte @ index-C_v35SEa.js:266
+ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/tag?select=*&account_id=eq.6&order=nome.asc:1  Failed to load resource: the server responded with a status of 400 ()

@@ -315,13 +315,12 @@ export const getWiseAppLabels = async (accountId: string, token: string, company
   } catch (error) {
     console.error('Erro na requisição via backend (todas as tentativas falharam):', error);
     
-    // Tentar retornar dados em cache como último recurso - busca pela accountId
+    // Tentar retornar dados em cache como último recurso - busca pelo companyId
     try {
-      const { data: cachedTags } = await supabase
-        .from('tag')
-        .select('*')
-        .eq('account_id', accountId)
-        .order('nome');
+      const tagQuery = supabase.from('tag').select('*').order('nome');
+      const { data: cachedTags } = companyId
+        ? await tagQuery.eq('company_id', companyId)
+        : await tagQuery;
       
       if (cachedTags && cachedTags.length > 0) {
         console.warn('WiseApp indisponível, usando tags locais como fallback');

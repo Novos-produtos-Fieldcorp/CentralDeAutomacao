@@ -64,18 +64,19 @@ export const createApiUrl = (path: string) => {
     return `${API_BASE_URL}/wiseapp/${cleanPath}`;
   }
   
-  // Em produção (Netlify), usar Supabase Functions com prefixo api/
+  // Em produção (Netlify), usar Supabase Functions
+  // API_BASE_URL já termina em /api, então NÃO adicionar /api novamente
   if (isNetlify) {
     // Se já tem prefixo wiseapp/, usar diretamente
     if (cleanPath.startsWith('wiseapp/')) {
-      return `${API_BASE_URL}/api/${cleanPath}`;
+      return `${API_BASE_URL}/${cleanPath}`;
     }
     // Para rotas de sincronização sem prefixo, adicionar wiseapp/
     if (cleanPath.includes('sync-') || cleanPath.includes('bulk-sync-')) {
-      return `${API_BASE_URL}/api/wiseapp/${cleanPath}`;
+      return `${API_BASE_URL}/wiseapp/${cleanPath}`;
     }
-    // Para outras rotas WiseApp, adicionar prefixo 'api/wiseapp'
-    return `${API_BASE_URL}/api/wiseapp/${cleanPath}`;
+    // Para outras rotas WiseApp, adicionar prefixo 'wiseapp'
+    return `${API_BASE_URL}/wiseapp/${cleanPath}`;
   }
   
   // Fallback
