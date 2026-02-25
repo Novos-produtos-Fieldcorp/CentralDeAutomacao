@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, Tags, FileText, MapPin, FileUp, Route } from 'lucide-react';
+import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, Tags, FileText, MapPin, FileUp, Route, ScrollText } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
@@ -123,6 +123,7 @@ const Navbar = ({ onToggle }: NavbarProps) => {
     { path: '/resumos-grupo', icon: MessagesSquare, label: 'Resumos em Grupo', needsAccess: true, enabled: moduleAccess.resumos },
     { path: '/tags-admin', icon: Tags, label: 'Marcadores', needsAccess: true, enabled: moduleAccess.tags },
     { path: '/operacoes', icon: Route, label: 'Acompanhamento de Viagem', needsAccess: true, enabled: moduleAccess.operacoes },
+    { path: '/logs', icon: ScrollText, label: 'Logs de Auditoria', needsAccess: false, enabled: true },
   ];
 
   // Filter menu items to only show enabled ones

@@ -29,6 +29,7 @@ import Comprovantes from "./pages/Comprovantes";
 import Vagas from "./pages/Vagas";
 import ComprovRota from "./pages/ComprovRota";
 import Operacoes from "./pages/Operacoes";
+import Logs from "./pages/Logs";
 
 const AppRoutes = () => {
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -102,6 +103,10 @@ const AppRoutes = () => {
                 <Route
                   path="/operacoes/*"
                   element={<Operacoes />}
+                />
+                <Route
+                  path="/logs"
+                  element={<Logs />}
                 />
               </Routes>
               <Version />
