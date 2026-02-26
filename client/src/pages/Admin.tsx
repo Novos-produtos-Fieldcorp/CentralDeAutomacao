@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Save, Eye, EyeOff, Shield, CheckCircle, X, AlertTriangle, Building2, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 interface AccessControl {
   company_id: number;
@@ -371,7 +371,6 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div><Toaster position="top-right" /></div>
       <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <div className="flex items-center gap-3">
