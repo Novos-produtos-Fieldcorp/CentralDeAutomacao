@@ -1090,23 +1090,25 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
                         )}
                       </div>
 
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Status
-                        </label>
-                        <div className="flex items-center mt-2">
-                          <input
-                            type="checkbox"
-                            name="status"
-                            checked={formData.status}
-                            onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.checked }))}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                          />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            Verificado
-                          </span>
+                      {!isWeeklyChecklist && (
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Status
+                          </label>
+                          <div className="flex items-center mt-2">
+                            <input
+                              type="checkbox"
+                              name="status"
+                              checked={formData.status}
+                              onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.checked }))}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              Verificado
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
