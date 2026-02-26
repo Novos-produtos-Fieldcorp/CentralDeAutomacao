@@ -112,7 +112,7 @@ const AppRoutes = () => {
               </Routes>
               <Version />
               <CustomToaster />
-              <Toaster containerStyle={{ display: "none" }} toastOptions={{ duration: 8000 }} />
+              <Toaster containerStyle={{ display: "none" }} toastOptions={{ duration: 12000 }} />
             </SidebarLayout>
           </ProtectedRoute>
         }

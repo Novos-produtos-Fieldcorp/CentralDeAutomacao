@@ -57,7 +57,7 @@ export function CustomToaster() {
         const animClass = t.visible ? "toast-visible" : "toast-hidden";
         const duration = typeof t.duration === "number" && t.duration !== Infinity
           ? t.duration
-          : 8000;
+          : 12000;
 
         const barColor =
           t.type === "success"
