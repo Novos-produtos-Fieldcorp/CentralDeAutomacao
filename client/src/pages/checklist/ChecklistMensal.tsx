@@ -254,24 +254,70 @@ const ChecklistMensal = () => {
     );
   };
 
-  const exportToExcel = (currentFiltered: typeof checklists) => {
+  const exportToExcel = async (currentFiltered: typeof checklists) => {
     try {
       const checklistsToExport = selectedItems.size > 0
         ? currentFiltered.filter(c => selectedItems.has(c.checklist_id))
         : currentFiltered;
 
-      const exportData = checklistsToExport.map(checklist => ({
-        'ID': checklist.checklist_id,
-        'Data': checklist.data ? new Date(checklist.data + 'T00:00:00').toLocaleDateString('pt-BR') : '-',
-        'Hora': checklist.hora || '-',
-        'Motorista': checklist.motorista?.nome || 'Não informado',
-        'CPF': checklist.motorista?.cpf || 'Não informado',
-        'Placa': checklist.veiculo?.placa || 'Não informado',
-        'Modelo': checklist.veiculo ? `${checklist.veiculo.marca || ''} ${checklist.veiculo.tipo || ''}`.trim() || 'Não informado' : 'Não informado',
-        'Quilometragem': checklist.quilometragem ?? '-',
-        'Status': checklist.status ? 'Verificado' : 'Não verificado',
-        'Observações': checklist.observacoes || '-',
-      }));
+      if (checklistsToExport.length === 0) {
+        toast.error('Nenhum checklist para exportar');
+        return;
+      }
+
+      toast.loading('Buscando fotos...', { id: 'export-loading' });
+
+      // Fetch photos for all checklists in one batch
+      const ids = checklistsToExport.map(c => c.checklist_id);
+      const { data: fotosData } = await supabase
+        .from('foto_checklist')
+        .select('*')
+        .in('checklist_id', ids);
+
+      // Map photos by checklist_id for quick lookup
+      const fotosMap = new Map<number, Record<string, string>>();
+      (fotosData || []).forEach(f => fotosMap.set(f.checklist_id, f));
+
+      const photoFields = [
+        { key: 'foto_hodometro',              label: 'Foto Hodômetro' },
+        { key: 'foto_oleo',                   label: 'Foto Óleo' },
+        { key: 'foto_bateria',                label: 'Foto Bateria' },
+        { key: 'foto_carrinho_carga',         label: 'Foto Carrinho de Carga' },
+        { key: 'foto_dianteira',              label: 'Foto Dianteira' },
+        { key: 'foto_traseira',               label: 'Foto Traseira' },
+        { key: 'foto_lateral_direita',        label: 'Foto Lateral Direita' },
+        { key: 'foto_lateral_esquerda',       label: 'Foto Lateral Esquerda' },
+        { key: 'foto_estepe',                 label: 'Foto Estepe' },
+        { key: 'foto_pneu_dianteiro_direito', label: 'Foto Pneu Dianteiro Direito' },
+        { key: 'foto_pneu_dianteiro_esquerdo',label: 'Foto Pneu Dianteiro Esquerdo' },
+        { key: 'foto_pneu_traseiro_direito',  label: 'Foto Pneu Traseiro Direito' },
+        { key: 'foto_pneu_traseiro_esquerdo', label: 'Foto Pneu Traseiro Esquerdo' },
+        { key: 'foto_macaco',                 label: 'Foto Macaco' },
+        { key: 'foto_chavederoda',            label: 'Foto Chave de Roda' },
+        { key: 'foto_triangulo',              label: 'Foto Triângulo' },
+      ];
+
+      const exportData = checklistsToExport.map(checklist => {
+        const fotos = fotosMap.get(checklist.checklist_id) || {};
+        const photoColumns: Record<string, string> = {};
+        photoFields.forEach(({ key, label }) => {
+          photoColumns[label] = fotos[key] || '-';
+        });
+
+        return {
+          'ID': checklist.checklist_id,
+          'Data': checklist.data ? new Date(checklist.data + 'T00:00:00').toLocaleDateString('pt-BR') : '-',
+          'Hora': checklist.hora || '-',
+          'Motorista': checklist.motorista?.nome || 'Não informado',
+          'CPF': checklist.motorista?.cpf || 'Não informado',
+          'Placa': checklist.veiculo?.placa || 'Não informado',
+          'Modelo': checklist.veiculo ? `${checklist.veiculo.marca || ''} ${checklist.veiculo.tipo || ''}`.trim() || 'Não informado' : 'Não informado',
+          'Quilometragem': checklist.quilometragem ?? '-',
+          'Status': checklist.status ? 'Verificado' : 'Não verificado',
+          'Observações': checklist.observacoes || '-',
+          ...photoColumns,
+        };
+      });
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -287,13 +333,16 @@ const ChecklistMensal = () => {
         { wch: 15 }, // Quilometragem
         { wch: 16 }, // Status
         { wch: 35 }, // Observações
+        ...photoFields.map(() => ({ wch: 80 })), // URL columns
       ];
 
       XLSX.utils.book_append_sheet(wb, ws, 'Checklists Mensais');
       XLSX.writeFile(wb, `checklists_mensais_${new Date().toISOString().split('T')[0]}.xlsx`);
 
+      toast.dismiss('export-loading');
       toast.success(`${checklistsToExport.length} checklist${checklistsToExport.length !== 1 ? 's' : ''} exportado${checklistsToExport.length !== 1 ? 's' : ''} com sucesso`);
     } catch (error) {
+      toast.dismiss('export-loading');
       console.error('Error exporting to Excel:', error);
       toast.error('Erro ao exportar para Excel');
     }
