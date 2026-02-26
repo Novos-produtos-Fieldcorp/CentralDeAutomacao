@@ -20,6 +20,7 @@ interface AccessControl {
   romaneio_access: boolean;
   bau_access: boolean;
   operacoes_access: boolean;
+  logs_access: boolean;
   st_company: boolean;
 }
 
@@ -90,10 +91,18 @@ const Admin = () => {
 
       if (error) throw error;
 
-      // Ensure minuta_access exists on each record for backwards compatibility
+      // Try fetching logs_access separately — column may not exist yet
+      const { data: logsData } = await supabase
+        .from('company')
+        .select('company_id, logs_access');
+      const logsMap = new Map<number, boolean>(
+        (logsData || []).map((r: any) => [r.company_id, r.logs_access ?? false])
+      );
+
       const normalized = (data || []).map((d: any) => ({
         ...d,
-        minuta_access: d.hasOwnProperty('minuta_access') ? d.minuta_access : false
+        minuta_access: d.hasOwnProperty('minuta_access') ? d.minuta_access : false,
+        logs_access: logsMap.get(d.company_id) ?? false
       }));
 
       setAccessControls(normalized);
@@ -210,7 +219,8 @@ const Admin = () => {
             tags_access: control.tags_access,
             romaneio_access: control.romaneio_access,
             bau_access: control.bau_access,
-            operacoes_access: control.operacoes_access
+            operacoes_access: control.operacoes_access,
+            logs_access: control.logs_access
           })
           .eq('company_id', control.company_id);
 
@@ -447,6 +457,9 @@ const Admin = () => {
                       Operações
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Logs
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
                     </th>
                   </tr>
@@ -596,6 +609,19 @@ const Admin = () => {
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleToggleAccess(index, 'logs_access')}
+                          className={`p-2 rounded-full ${
+                            control.logs_access
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                          }`}
+                          data-testid={`button-toggle-logs-${index}`}
+                        >
+                          <CheckCircle size={20} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           control.st_company
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
@@ -608,7 +634,7 @@ const Admin = () => {
                   ))}
                   {accessControls.length === 0 && (
                     <tr>
-                      <td colSpan={14} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <td colSpan={15} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                         Nenhuma conta configurada
                       </td>
                     </tr>

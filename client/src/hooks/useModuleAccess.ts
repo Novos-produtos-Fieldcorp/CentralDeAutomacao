@@ -19,6 +19,7 @@ interface ModuleAccess {
   calculoUmPorDia: boolean;
   bau: boolean;
   operacoes: boolean;
+  logs: boolean;
 }
 
 export const useModuleAccess = () => {
@@ -40,6 +41,7 @@ export const useModuleAccess = () => {
     calculoUmPorDia: false,
     bau: false,
     operacoes: false,
+    logs: false,
   });
 
   useEffect(() => {
@@ -56,7 +58,7 @@ export const useModuleAccess = () => {
         const { data: company, error: companyError } = await supabase
           .from("company")
           .select(
-            "checklist_access, motorista_access, hodometro_acsess, minuta_access, romaneio_access, resumo_access, tags_access, comprovante_access, comprov_rota_access, bomba_gasolina_access, calculo_um_por_dia, bau_access, operacoes_access",
+            "checklist_access, motorista_access, hodometro_acsess, minuta_access, romaneio_access, resumo_access, tags_access, comprovante_access, comprov_rota_access, bomba_gasolina_access, calculo_um_por_dia, bau_access, operacoes_access, logs_access",
           )
           .eq("company_id", companyId)
           .maybeSingle();
@@ -80,6 +82,7 @@ export const useModuleAccess = () => {
             calculoUmPorDia: false,
             bau: false,
             operacoes: false,
+            logs: false,
           });
           return;
         }
@@ -101,6 +104,7 @@ export const useModuleAccess = () => {
             calculoUmPorDia: company.calculo_um_por_dia || false,
             bau: company.bau_access || false,
             operacoes: company.operacoes_access || false,
+            logs: (company as any).logs_access || false,
           });
         } else {
           // Default to all modules enabled if company data doesn't exist
@@ -120,6 +124,7 @@ export const useModuleAccess = () => {
             calculoUmPorDia: false,
             bau: false,
             operacoes: false,
+            logs: false,
           });
         }
       } catch (error) {
@@ -145,6 +150,7 @@ export const useModuleAccess = () => {
           calculoUmPorDia: false,
           bau: false,
           operacoes: false,
+          logs: false,
         });
       } finally {
         setLoading(false);
