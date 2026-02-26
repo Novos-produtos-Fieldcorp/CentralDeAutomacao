@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { CustomToaster } from "./components/CustomToaster";
+import { Toaster } from "react-hot-toast";
 import { queryClient } from "./lib/queryClient";
 import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -111,6 +112,7 @@ const AppRoutes = () => {
               </Routes>
               <Version />
               <CustomToaster />
+              <Toaster containerStyle={{ display: "none" }} toastOptions={{ duration: 8000 }} />
             </SidebarLayout>
           </ProtectedRoute>
         }

@@ -43,7 +43,9 @@ export function CustomToaster() {
       {toasts.map((t) => {
         const message = resolveValue(t.message, t);
         const animClass = t.visible ? "toast-visible" : "toast-hidden";
-        const duration = typeof t.duration === "number" ? t.duration : 4000;
+        const duration = t.type === "loading"
+          ? Infinity
+          : Math.max(typeof t.duration === "number" ? t.duration : 8000, 8000);
 
         return (
           <div
