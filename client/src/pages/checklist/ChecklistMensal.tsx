@@ -254,45 +254,45 @@ const ChecklistMensal = () => {
     );
   };
 
-  const exportToExcel = () => {
+  const exportToExcel = (currentFiltered: typeof checklists) => {
     try {
-      // Get selected checklists or all filtered checklists
-      const checklistsToExport = selectedItems.size > 0 
-        ? filteredChecklists.filter(c => selectedItems.has(c.checklist_id))
-        : filteredChecklists;
+      const checklistsToExport = selectedItems.size > 0
+        ? currentFiltered.filter(c => selectedItems.has(c.checklist_id))
+        : currentFiltered;
 
-      // Prepare data for export
       const exportData = checklistsToExport.map(checklist => ({
         'ID': checklist.checklist_id,
-        'Data': checklist.data ? new Date(checklist.data).toLocaleDateString('pt-BR') : '-',
+        'Data': checklist.data ? new Date(checklist.data + 'T00:00:00').toLocaleDateString('pt-BR') : '-',
+        'Hora': checklist.hora || '-',
         'Motorista': checklist.motorista?.nome || 'Não informado',
         'CPF': checklist.motorista?.cpf || 'Não informado',
-        'Veículo': checklist.veiculo?.placa || 'Não informado',
-        'Status': checklist.status ? 'Ativo' : 'Desativo',
+        'Placa': checklist.veiculo?.placa || 'Não informado',
+        'Modelo': checklist.veiculo ? `${checklist.veiculo.marca || ''} ${checklist.veiculo.tipo || ''}`.trim() || 'Não informado' : 'Não informado',
+        'Quilometragem': checklist.quilometragem ?? '-',
+        'Status': checklist.status ? 'Verificado' : 'Não verificado',
         'Observações': checklist.observacoes || '-',
       }));
 
-      // Create workbook and worksheet
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(exportData);
-      
-      // Auto-size columns
-      const colWidths = [
+
+      ws['!cols'] = [
         { wch: 8 },  // ID
         { wch: 12 }, // Data
-        { wch: 25 }, // Motorista
+        { wch: 10 }, // Hora
+        { wch: 28 }, // Motorista
         { wch: 15 }, // CPF
-        { wch: 12 }, // Veículo
-        { wch: 10 }, // Status
-        { wch: 30 }, // Observações
+        { wch: 12 }, // Placa
+        { wch: 25 }, // Modelo
+        { wch: 15 }, // Quilometragem
+        { wch: 16 }, // Status
+        { wch: 35 }, // Observações
       ];
-      
-      ws['!cols'] = colWidths;
-      
+
       XLSX.utils.book_append_sheet(wb, ws, 'Checklists Mensais');
       XLSX.writeFile(wb, `checklists_mensais_${new Date().toISOString().split('T')[0]}.xlsx`);
-      
-      toast.success('Relatório exportado com sucesso');
+
+      toast.success(`${checklistsToExport.length} checklist${checklistsToExport.length !== 1 ? 's' : ''} exportado${checklistsToExport.length !== 1 ? 's' : ''} com sucesso`);
     } catch (error) {
       console.error('Error exporting to Excel:', error);
       toast.error('Erro ao exportar para Excel');
@@ -486,14 +486,31 @@ const ChecklistMensal = () => {
             </div>
           </div>
           
-          {/* Add Checklist Button */}
-          <button
-            onClick={() => setIsNewModalOpen(true)}
-            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Novo Checklist</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Export Button */}
+            <button
+              onClick={() => exportToExcel(filteredChecklists)}
+              className="px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm flex items-center gap-2 text-sm"
+              title="Exportar para Excel"
+            >
+              <Download className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span>
+                Exportar
+                {selectedItems.size > 0
+                  ? ` (${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''})`
+                  : ` (${filteredChecklists.length})`}
+              </span>
+            </button>
+
+            {/* Add Checklist Button */}
+            <button
+              onClick={() => setIsNewModalOpen(true)}
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Novo Checklist</span>
+            </button>
+          </div>
         </div>
 
         {/* Custom Date Range */}
