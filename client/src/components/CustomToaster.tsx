@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useToaster, resolveValue, toast as hotToast } from "react-hot-toast";
 import { CheckCircle2, XCircle, Loader2, Info, X } from "lucide-react";
 import type { Toast } from "react-hot-toast";
@@ -24,6 +25,17 @@ function ToastIcon({ type }: { type: Toast["type"] }) {
 export function CustomToaster() {
   const { toasts, handlers } = useToaster();
   const { startPause, endPause } = handlers;
+  const [isPaused, setIsPaused] = useState(false);
+
+  const handleMouseEnter = () => {
+    setIsPaused(true);
+    startPause();
+  };
+
+  const handleMouseLeave = () => {
+    setIsPaused(false);
+    endPause();
+  };
 
   return (
     <div
@@ -37,15 +49,22 @@ export function CustomToaster() {
         gap: "10px",
         pointerEvents: "none",
       }}
-      onMouseEnter={startPause}
-      onMouseLeave={endPause}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {toasts.map((t) => {
         const message = resolveValue(t.message, t);
         const animClass = t.visible ? "toast-visible" : "toast-hidden";
-        const duration = t.type === "loading"
-          ? Infinity
-          : Math.max(typeof t.duration === "number" ? t.duration : 8000, 8000);
+        const duration = typeof t.duration === "number" && t.duration !== Infinity
+          ? t.duration
+          : 8000;
+
+        const barColor =
+          t.type === "success"
+            ? "rgba(74, 222, 128, 0.65)"
+            : t.type === "error"
+            ? "rgba(248, 113, 113, 0.65)"
+            : "rgba(96, 165, 250, 0.65)";
 
         return (
           <div
@@ -126,23 +145,19 @@ export function CustomToaster() {
                 style={{
                   height: "3px",
                   width: "100%",
-                  background: "rgba(59, 130, 246, 0.15)",
+                  background: "rgba(59, 130, 246, 0.12)",
                   overflow: "hidden",
                 }}
               >
                 <div
+                  key={t.id + "-bar"}
                   style={{
                     height: "100%",
-                    background:
-                      t.type === "success"
-                        ? "rgba(74, 222, 128, 0.55)"
-                        : t.type === "error"
-                        ? "rgba(248, 113, 113, 0.55)"
-                        : "rgba(96, 165, 250, 0.55)",
+                    width: "100%",
+                    background: barColor,
                     transformOrigin: "left center",
-                    animation: t.visible
-                      ? `toast-progress ${duration}ms linear forwards`
-                      : "none",
+                    animation: `toast-progress ${duration}ms linear forwards`,
+                    animationPlayState: isPaused ? "paused" : "running",
                   }}
                 />
               </div>
