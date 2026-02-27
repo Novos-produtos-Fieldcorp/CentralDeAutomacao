@@ -47,15 +47,44 @@ export default function WiseAppTokenModal({
 
       if (existing) {
         if (existing.access_token_wiseapp) {
-          console.log('✅ Token encontrado para email, usando id_conta_wiseapp:', existing.id_conta_wiseapp);
-          onTokenSaved(
-            existing.access_token_wiseapp,
-            existing.wiseapp_acesso_id,
-            existing.nome || 'Atendente',
-            email,
-            existing.id_conta_wiseapp?.toString()
-          );
-          onClose();
+          console.log('🔍 Token encontrado para email, validando antes de usar...', existing.id_conta_wiseapp);
+
+          try {
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+            const validateRes = await fetch(`${supabaseUrl}/functions/v1/api/wiseapp/validate-token`, {
+              method: 'POST',
+              headers: {
+                'apikey': supabaseKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                token: existing.access_token_wiseapp,
+                accountId: existing.id_conta_wiseapp?.toString(),
+              }),
+            });
+            const validateData = await validateRes.json();
+
+            if (validateData.valid === true) {
+              console.log('✅ Token válido, usando sessão existente');
+              onTokenSaved(
+                existing.access_token_wiseapp,
+                existing.wiseapp_acesso_id,
+                existing.nome || 'Atendente',
+                email,
+                existing.id_conta_wiseapp?.toString()
+              );
+              onClose();
+            } else {
+              console.warn('⚠️ Token expirado para este email, solicitando novo token');
+              setRequiresAttendantName(false);
+              setStep('tutorial');
+            }
+          } catch (validationErr) {
+            console.warn('⚠️ Erro ao validar token existente, solicitando novo token:', validationErr);
+            setRequiresAttendantName(false);
+            setStep('tutorial');
+          }
         } else {
           setRequiresAttendantName(false);
           setStep('tutorial');
@@ -99,73 +128,83 @@ export default function WiseAppTokenModal({
     }
 
     try {
-      console.log('🔐 Validando token com Chatwoot...');
-      
-      let validationResponse: Response | null = null;
-      
-      // Tentar validar via endpoint Express primeiro (Replit)
+      console.log('🔐 Validando token com WiseApp...');
+
+      const accountId = localStorage?.getItem('account_id') || '0';
+      let tokenIsValid = false;
+
+      // Tentar validar via Supabase Edge Function (funciona em Replit e Netlify)
       try {
-        console.log('🔄 Tentando endpoint Express /api/validate-wiseapp-token...');
-        const expressResponse = await fetch('/api/validate-wiseapp-token', {
+        console.log('🔄 Tentando validação via Supabase Edge Function...');
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        const edgeRes = await fetch(`${supabaseUrl}/functions/v1/api/wiseapp/validate-token`, {
           method: 'POST',
           headers: {
+            'apikey': supabaseKey,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ token: token.trim() }),
+          body: JSON.stringify({ token: token.trim(), accountId }),
         });
-        
-        // Se retornou 404, é porque não existe (estamos no Netlify)
-        if (expressResponse.status !== 404) {
-          validationResponse = expressResponse;
-          console.log('✅ Usando endpoint Express');
+        const edgeData = await edgeRes.json();
+        if (edgeData.valid === true) {
+          console.log('✅ Token válido via Supabase Edge Function');
+          tokenIsValid = true;
+        } else if (edgeData.valid === false) {
+          console.error('❌ Token inválido via Supabase Edge Function');
+          throw new Error('Token inválido. Por favor, verifique se o token está correto.');
         }
       } catch (err: any) {
-        console.warn('⚠️ Endpoint Express não disponível:', err.message);
+        if (err.message?.includes('Token inválido')) throw err;
+        console.warn('⚠️ Supabase Edge Function indisponível, tentando fallbacks:', err.message);
       }
 
-      // Se falhar, tentar Netlify Functions
-      if (!validationResponse || validationResponse.status === 404) {
+      // Fallback: endpoint Express (Replit)
+      if (!tokenIsValid) {
         try {
-          console.log('🔄 Tentando endpoint Netlify /.netlify/functions/validate-wiseapp-token...');
-          const netlifyResponse = await fetch('/.netlify/functions/validate-wiseapp-token', {
+          console.log('🔄 Tentando endpoint Express /api/validate-wiseapp-token...');
+          const expressResponse = await fetch('/api/validate-wiseapp-token', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token: token.trim() }),
           });
-          
-          if (netlifyResponse.status !== 404) {
-            validationResponse = netlifyResponse;
-            console.log('✅ Usando endpoint Netlify Functions');
+          if (expressResponse.status !== 404 && expressResponse.ok) {
+            console.log('✅ Token válido via endpoint Express');
+            tokenIsValid = true;
+          } else if (expressResponse.status !== 404 && !expressResponse.ok) {
+            throw new Error('Token inválido. Por favor, verifique se o token está correto.');
           }
         } catch (err: any) {
-          console.warn('⚠️ Endpoint Netlify não disponível:', err.message);
+          if (err.message?.includes('Token inválido')) throw err;
+          console.warn('⚠️ Endpoint Express não disponível:', err.message);
         }
       }
 
-      // Se ainda falhar, tentar diretamente com Chatwoot (pode ter CORS issues)
-      if (!validationResponse || validationResponse.status === 404) {
-        console.log('🔄 Tentando validar diretamente com Chatwoot...');
-        validationResponse = await fetch('https://chat.wiseapp360.com/api/v1/profile', {
+      // Fallback: CORS direto ao WiseApp
+      if (!tokenIsValid) {
+        console.log('🔄 Tentando validar diretamente com WiseApp...');
+        const directRes = await fetch('https://chat.wiseapp360.com/api/v1/profile', {
           method: 'GET',
           headers: {
             'api_access_token': token.trim(),
             'Content-Type': 'application/json',
-          }
+          },
         });
+        if (!directRes.ok) {
+          console.error('❌ Token inválido. Status:', directRes.status);
+          throw new Error('Token inválido. Por favor, verifique se o token está correto.');
+        }
+        console.log('✅ Token válido via WiseApp direto');
+        tokenIsValid = true;
       }
 
-      if (!validationResponse || !validationResponse.ok) {
-        console.error('❌ Token inválido. Status:', validationResponse?.status);
+      if (!tokenIsValid) {
         throw new Error('Token inválido. Por favor, verifique se o token está correto.');
       }
 
-      const validationData = await validationResponse.json();
-      console.log('✅ Token válido para usuário:', validationData.userData?.name || validationData.name);
-      
-      const accountId = localStorage?.getItem('account_id');
-      if (!accountId) {
+      console.log('✅ Token validado com sucesso');
+
+      if (!accountId || accountId === '0') {
         throw new Error('Account ID não encontrado - acesse via URL com account_id');
       }
 
