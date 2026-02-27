@@ -254,46 +254,95 @@ const ChecklistMensal = () => {
     );
   };
 
-  const exportToExcel = () => {
+  const exportToExcel = async (currentFiltered: typeof checklists) => {
     try {
-      // Get selected checklists or all filtered checklists
-      const checklistsToExport = selectedItems.size > 0 
-        ? filteredChecklists.filter(c => selectedItems.has(c.checklist_id))
-        : filteredChecklists;
+      const checklistsToExport = selectedItems.size > 0
+        ? currentFiltered.filter(c => selectedItems.has(c.checklist_id))
+        : currentFiltered;
 
-      // Prepare data for export
-      const exportData = checklistsToExport.map(checklist => ({
-        'ID': checklist.checklist_id,
-        'Data': checklist.data ? new Date(checklist.data).toLocaleDateString('pt-BR') : '-',
-        'Motorista': checklist.motorista?.nome || 'Não informado',
-        'CPF': checklist.motorista?.cpf || 'Não informado',
-        'Veículo': checklist.veiculo?.placa || 'Não informado',
-        'Status': checklist.status ? 'Ativo' : 'Desativo',
-        'Observações': checklist.observacoes || '-',
-      }));
+      if (checklistsToExport.length === 0) {
+        toast.error('Nenhum checklist para exportar');
+        return;
+      }
 
-      // Create workbook and worksheet
+      toast.loading('Buscando fotos...', { id: 'export-loading' });
+
+      // Fetch photos for all checklists in one batch
+      const ids = checklistsToExport.map(c => c.checklist_id);
+      const { data: fotosData } = await supabase
+        .from('foto_checklist')
+        .select('*')
+        .in('checklist_id', ids);
+
+      // Map photos by checklist_id for quick lookup
+      const fotosMap = new Map<number, Record<string, string>>();
+      (fotosData || []).forEach(f => fotosMap.set(f.checklist_id, f));
+
+      const photoFields = [
+        { key: 'foto_hodometro',              label: 'Foto Hodômetro' },
+        { key: 'foto_oleo',                   label: 'Foto Óleo' },
+        { key: 'foto_bateria',                label: 'Foto Bateria' },
+        { key: 'foto_carrinho_carga',         label: 'Foto Carrinho de Carga' },
+        { key: 'foto_dianteira',              label: 'Foto Dianteira' },
+        { key: 'foto_traseira',               label: 'Foto Traseira' },
+        { key: 'foto_lateral_direita',        label: 'Foto Lateral Direita' },
+        { key: 'foto_lateral_esquerda',       label: 'Foto Lateral Esquerda' },
+        { key: 'foto_estepe',                 label: 'Foto Estepe' },
+        { key: 'foto_pneu_dianteiro_direito', label: 'Foto Pneu Dianteiro Direito' },
+        { key: 'foto_pneu_dianteiro_esquerdo',label: 'Foto Pneu Dianteiro Esquerdo' },
+        { key: 'foto_pneu_traseiro_direito',  label: 'Foto Pneu Traseiro Direito' },
+        { key: 'foto_pneu_traseiro_esquerdo', label: 'Foto Pneu Traseiro Esquerdo' },
+        { key: 'foto_macaco',                 label: 'Foto Macaco' },
+        { key: 'foto_chavederoda',            label: 'Foto Chave de Roda' },
+        { key: 'foto_triangulo',              label: 'Foto Triângulo' },
+      ];
+
+      const exportData = checklistsToExport.map(checklist => {
+        const fotos = fotosMap.get(checklist.checklist_id) || {};
+        const photoColumns: Record<string, string> = {};
+        photoFields.forEach(({ key, label }) => {
+          photoColumns[label] = fotos[key] || '-';
+        });
+
+        return {
+          'ID': checklist.checklist_id,
+          'Data': checklist.data ? new Date(checklist.data + 'T00:00:00').toLocaleDateString('pt-BR') : '-',
+          'Hora': checklist.hora || '-',
+          'Motorista': checklist.motorista?.nome || 'Não informado',
+          'CPF': checklist.motorista?.cpf || 'Não informado',
+          'Placa': checklist.veiculo?.placa || 'Não informado',
+          'Modelo': checklist.veiculo ? `${checklist.veiculo.marca || ''} ${checklist.veiculo.tipo || ''}`.trim() || 'Não informado' : 'Não informado',
+          'Quilometragem': checklist.quilometragem ?? '-',
+          'Status': checklist.status ? 'Verificado' : 'Não verificado',
+          'Observações': checklist.observacoes || '-',
+          ...photoColumns,
+        };
+      });
+
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(exportData);
-      
-      // Auto-size columns
-      const colWidths = [
+
+      ws['!cols'] = [
         { wch: 8 },  // ID
         { wch: 12 }, // Data
-        { wch: 25 }, // Motorista
+        { wch: 10 }, // Hora
+        { wch: 28 }, // Motorista
         { wch: 15 }, // CPF
-        { wch: 12 }, // Veículo
-        { wch: 10 }, // Status
-        { wch: 30 }, // Observações
+        { wch: 12 }, // Placa
+        { wch: 25 }, // Modelo
+        { wch: 15 }, // Quilometragem
+        { wch: 16 }, // Status
+        { wch: 35 }, // Observações
+        ...photoFields.map(() => ({ wch: 80 })), // URL columns
       ];
-      
-      ws['!cols'] = colWidths;
-      
+
       XLSX.utils.book_append_sheet(wb, ws, 'Checklists Mensais');
       XLSX.writeFile(wb, `checklists_mensais_${new Date().toISOString().split('T')[0]}.xlsx`);
-      
-      toast.success('Relatório exportado com sucesso');
+
+      toast.dismiss('export-loading');
+      toast.success(`${checklistsToExport.length} checklist${checklistsToExport.length !== 1 ? 's' : ''} exportado${checklistsToExport.length !== 1 ? 's' : ''} com sucesso`);
     } catch (error) {
+      toast.dismiss('export-loading');
       console.error('Error exporting to Excel:', error);
       toast.error('Erro ao exportar para Excel');
     }
@@ -486,14 +535,31 @@ const ChecklistMensal = () => {
             </div>
           </div>
           
-          {/* Add Checklist Button */}
-          <button
-            onClick={() => setIsNewModalOpen(true)}
-            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Novo Checklist</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Export Button */}
+            <button
+              onClick={() => exportToExcel(filteredChecklists)}
+              className="px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm flex items-center gap-2 text-sm"
+              title="Exportar para Excel"
+            >
+              <Download className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span>
+                Exportar
+                {selectedItems.size > 0
+                  ? ` (${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''})`
+                  : ` (${filteredChecklists.length})`}
+              </span>
+            </button>
+
+            {/* Add Checklist Button */}
+            <button
+              onClick={() => setIsNewModalOpen(true)}
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2 text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Novo Checklist</span>
+            </button>
+          </div>
         </div>
 
         {/* Custom Date Range */}

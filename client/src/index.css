@@ -269,3 +269,21 @@
 .dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
 }
+
+/* ── Custom Toast Animations ─────────────────────────────────────── */
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateX(calc(100% + 24px)) scale(0.92); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes toast-exit {
+  from { opacity: 1; transform: translateX(0) scale(1); max-height: 120px; margin-bottom: 10px; }
+  to   { opacity: 0; transform: translateX(calc(100% + 24px)) scale(0.88); max-height: 0; margin-bottom: 0; }
+}
+.toast-visible { animation: toast-enter 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards; }
+.toast-hidden  { animation: toast-exit  0.4s cubic-bezier(0.06, 0.71, 0.55, 1) forwards; }
+@keyframes toast-spinner { to { transform: rotate(360deg); } }
+.toast-spinner-icon { animation: toast-spinner 0.8s linear infinite; }
+@keyframes toast-progress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}

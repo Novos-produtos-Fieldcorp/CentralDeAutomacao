@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Save, Eye, EyeOff, Shield, CheckCircle, X, AlertTriangle, Building2, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 interface AccessControl {
   company_id: number;
@@ -20,6 +20,7 @@ interface AccessControl {
   romaneio_access: boolean;
   bau_access: boolean;
   operacoes_access: boolean;
+  logs_access: boolean;
   st_company: boolean;
 }
 
@@ -90,10 +91,18 @@ const Admin = () => {
 
       if (error) throw error;
 
-      // Ensure minuta_access exists on each record for backwards compatibility
+      // Try fetching logs_access separately — column may not exist yet
+      const { data: logsData } = await supabase
+        .from('company')
+        .select('company_id, logs_access');
+      const logsMap = new Map<number, boolean>(
+        (logsData || []).map((r: any) => [r.company_id, r.logs_access ?? false])
+      );
+
       const normalized = (data || []).map((d: any) => ({
         ...d,
-        minuta_access: d.hasOwnProperty('minuta_access') ? d.minuta_access : false
+        minuta_access: d.hasOwnProperty('minuta_access') ? d.minuta_access : false,
+        logs_access: logsMap.get(d.company_id) ?? false
       }));
 
       setAccessControls(normalized);
@@ -210,7 +219,8 @@ const Admin = () => {
             tags_access: control.tags_access,
             romaneio_access: control.romaneio_access,
             bau_access: control.bau_access,
-            operacoes_access: control.operacoes_access
+            operacoes_access: control.operacoes_access,
+            logs_access: control.logs_access
           })
           .eq('company_id', control.company_id);
 
@@ -361,7 +371,6 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div><Toaster position="top-right" /></div>
       <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -445,6 +454,9 @@ const Admin = () => {
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Operações
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Logs
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
@@ -596,6 +608,19 @@ const Admin = () => {
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleToggleAccess(index, 'logs_access')}
+                          className={`p-2 rounded-full ${
+                            control.logs_access
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                          }`}
+                          data-testid={`button-toggle-logs-${index}`}
+                        >
+                          <CheckCircle size={20} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           control.st_company
                             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200'
@@ -608,7 +633,7 @@ const Admin = () => {
                   ))}
                   {accessControls.length === 0 && (
                     <tr>
-                      <td colSpan={14} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      <td colSpan={15} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                         Nenhuma conta configurada
                       </td>
                     </tr>
