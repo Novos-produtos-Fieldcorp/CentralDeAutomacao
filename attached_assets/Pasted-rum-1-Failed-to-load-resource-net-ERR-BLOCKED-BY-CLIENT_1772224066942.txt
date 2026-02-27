@@ -1,0 +1,73 @@
+rum:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+index-wI3lHzS0.js:266 Hybrid API Configuration: Object
+index-wI3lHzS0.js:265 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+Y1 @ index-wI3lHzS0.js:265
+index-wI3lHzS0.js:1146 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-wI3lHzS0.js:1146 🔍 [WiseAppAccess] Account ID da URL: undefined
+index-wI3lHzS0.js:1146 🔍 [WiseAppAccess] Account ID do localStorage: 20
+index-wI3lHzS0.js:1146 ✅ [WiseAppAccess] Sessão válida encontrada para: paula.silva@entregajalog.com.br accountId: 20
+index-wI3lHzS0.js:1146 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 5 accountId: 20
+index-wI3lHzS0.js:266 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 5
+index-wI3lHzS0.js:266 [SyncFromWiseApp] Usando accountId 20 para buscar labels
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels:1  Failed to load resource: the server responded with a status of 500 ()
+index-wI3lHzS0.js:266 [RobustFetch] Erro na tentativa 1 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels: HTTP 500: 
+jve @ index-wI3lHzS0.js:266
+index-wI3lHzS0.js:266 [RobustFetch] Tentativa 2 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels
+index-wI3lHzS0.js:266 [WiseApp] Tentativa 1 falhou: HTTP 500: . Tentando novamente...
+index-wI3lHzS0.js:266 [WiseApp] Tentativa 1 falhou: HTTP 500: 
+index-wI3lHzS0.js:266  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels 500 (Internal Server Error)
+kve @ index-wI3lHzS0.js:266
+jve @ index-wI3lHzS0.js:266
+index-wI3lHzS0.js:266 [RobustFetch] Erro na tentativa 2 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels: HTTP 500: 
+jve @ index-wI3lHzS0.js:266
+index-wI3lHzS0.js:266 [RobustFetch] Tentativa 3 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels
+index-wI3lHzS0.js:266 [WiseApp] Tentativa 2 falhou: HTTP 500: . Tentando novamente...
+index-wI3lHzS0.js:266 [WiseApp] Tentativa 2 falhou: HTTP 500: 
+index-wI3lHzS0.js:266  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels 500 (Internal Server Error)
+kve @ index-wI3lHzS0.js:266
+jve @ index-wI3lHzS0.js:266
+index-wI3lHzS0.js:266 [RobustFetch] Erro na tentativa 3 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels: HTTP 500: 
+jve @ index-wI3lHzS0.js:266
+index-wI3lHzS0.js:266 [RobustFetch] Tentativa 4 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels
+index-wI3lHzS0.js:266 [WiseApp] Tentativa 3 falhou: HTTP 500: . Tentando novamente...
+index-wI3lHzS0.js:266 [WiseApp] Tentativa 3 falhou: HTTP 500: 
+index-wI3lHzS0.js:2069 Criando tag com dados: {nome: 'teste2', cor: '#3B82F6', limite_max: null, company_id: 5}
+index-wI3lHzS0.js:2069  POST https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels 401 (Unauthorized)
+U @ index-wI3lHzS0.js:2069
+mutationFn @ index-wI3lHzS0.js:2069
+fn @ index-wI3lHzS0.js:51
+A @ index-wI3lHzS0.js:51
+start @ index-wI3lHzS0.js:51
+execute @ index-wI3lHzS0.js:51
+await in execute
+mutate @ index-wI3lHzS0.js:51
+(anonymous) @ index-wI3lHzS0.js:51
+N @ index-wI3lHzS0.js:2069
+u @ index-wI3lHzS0.js:2069
+cge @ index-wI3lHzS0.js:37
+uge @ index-wI3lHzS0.js:37
+fge @ index-wI3lHzS0.js:37
+_L @ index-wI3lHzS0.js:37
+YJ @ index-wI3lHzS0.js:37
+(anonymous) @ index-wI3lHzS0.js:37
+WO @ index-wI3lHzS0.js:40
+vJ @ index-wI3lHzS0.js:37
+b3 @ index-wI3lHzS0.js:37
+wO @ index-wI3lHzS0.js:37
+Sge @ index-wI3lHzS0.js:37
+index-wI3lHzS0.js:266  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels 500 (Internal Server Error)
+kve @ index-wI3lHzS0.js:266
+jve @ index-wI3lHzS0.js:266
+index-wI3lHzS0.js:266 [RobustFetch] Erro na tentativa 4 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels: HTTP 500: 
+jve @ index-wI3lHzS0.js:266
+index-wI3lHzS0.js:266 [RobustFetch] Tentativa 5 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels
+index-wI3lHzS0.js:266 [WiseApp] Tentativa 4 falhou: HTTP 500: . Tentando novamente...
+index-wI3lHzS0.js:266 [WiseApp] Tentativa 4 falhou: HTTP 500: 
+index-wI3lHzS0.js:266  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels 500 (Internal Server Error)
+kve @ index-wI3lHzS0.js:266
+jve @ index-wI3lHzS0.js:266
+index-wI3lHzS0.js:266 [RobustFetch] Erro na tentativa 5 para URL https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels: HTTP 500: 
+jve @ index-wI3lHzS0.js:266
+index-wI3lHzS0.js:266 [RobustFetch] Tentativa 6 de 6 para URL: https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/20/labels
+index-wI3lHzS0.js:266 [WiseApp] Tentativa 5 falhou: HTTP 500: . Tentando novamente...
+index-wI3lHzS0.js:266 [WiseApp] Tentativa 5 falhou: HTTP 500: 
