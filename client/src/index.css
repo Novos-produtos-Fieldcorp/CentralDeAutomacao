@@ -287,3 +287,15 @@
   from { transform: scaleX(1); }
   to   { transform: scaleX(0); }
 }
+
+@keyframes slingshot {
+  0%, 60%  { transform: translateX(0); }
+  68%      { transform: translateX(-10px); }
+  80%      { transform: translateX(8px); }
+  88%      { transform: translateX(-4px); }
+  94%      { transform: translateX(2px); }
+  100%     { transform: translateX(0); }
+}
+.scroll-slingshot {
+  animation: slingshot 2.8s ease-in-out infinite;
+}
