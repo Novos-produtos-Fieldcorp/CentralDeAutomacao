@@ -187,7 +187,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const PAGE_SIZE = 50;
+  const [pageSize, setPageSize] = useState(50);
   const [serverPage, setServerPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
@@ -1074,7 +1074,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   useEffect(() => {
     fetchContratados(serverPage);
-  }, [serverPage, debouncedSearch, statusFilter, cidadeFilter, bauFilter, clienteFilter, dateFilter, customDateRange, companyId]);
+  }, [serverPage, pageSize, debouncedSearch, statusFilter, cidadeFilter, bauFilter, clienteFilter, dateFilter, customDateRange, companyId]);
 
   useEffect(() => {
     fetchClientes();
@@ -1330,7 +1330,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       // Order by data_cadastro (newest first) then paginate server-side
       query = query.order('data_cadastro', { ascending: false });
-      query = query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      query = query.range(page * pageSize, (page + 1) * pageSize - 1);
 
       const { data, error, count } = await query;
 
@@ -2111,11 +2111,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   // serverPage is 0-indexed; Pagination component expects 1-indexed currentPage
   const paginatedData = filteredContratados;
   const currentPage = serverPage + 1;
-  const pageSize = PAGE_SIZE;
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const totalPages = Math.ceil(totalCount / pageSize);
   const totalItems = totalCount;
   const handlePageChange = (page: number) => setServerPage(page - 1);
-  const handlePageSizeChange = (_: number) => {};
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setServerPage(0);
+  };
 
   if (loading) {
     return <LoadingSpinner />;
