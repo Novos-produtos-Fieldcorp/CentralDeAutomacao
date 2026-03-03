@@ -19,6 +19,7 @@ interface TableDropdownProps {
   dropdownClassName?: string;
   disabled?: boolean;
   maxHeight?: string;
+  dropdownMinWidth?: number;
 }
 
 export const TableDropdown: React.FC<TableDropdownProps> = ({
@@ -30,7 +31,8 @@ export const TableDropdown: React.FC<TableDropdownProps> = ({
   buttonClassName = "",
   dropdownClassName = "",
   disabled = false,
-  maxHeight = "200px"
+  maxHeight = "200px",
+  dropdownMinWidth
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -46,12 +48,12 @@ export const TableDropdown: React.FC<TableDropdownProps> = ({
   const updatePosition = () => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const width = dropdownMinWidth ? Math.max(rect.width, dropdownMinWidth) : rect.width;
       
-      // Use viewport coordinates directly since we're using fixed positioning
       setDropdownPosition({
         top: rect.bottom + 4,
         left: rect.left,
-        width: rect.width
+        width
       });
     }
   };

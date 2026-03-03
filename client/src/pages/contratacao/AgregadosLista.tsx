@@ -3015,7 +3015,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cliente</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 w-[130px]">Cliente</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Marcadores</th>
@@ -3126,7 +3126,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-4 whitespace-nowrap w-[130px] max-w-[130px]">
                           <div className="relative">
                             <TableDropdown
                               value={motorista.cliente_id}
@@ -3139,8 +3139,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                 }))
                               ]}
                               onSelect={(value) => handleUpdateCliente(null, motorista, value === null ? null : value as number)}
-                              placeholder="Selecionar Cliente"
+                              placeholder="Sem cliente"
                               disabled={updatingCliente === motorista.motorista_id}
+                              dropdownMinWidth={180}
                               buttonClassName={
                                 motorista.cliente_id
                                   ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor ||
