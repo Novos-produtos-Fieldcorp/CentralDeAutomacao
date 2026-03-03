@@ -2029,12 +2029,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   });
 
   // Server-side pagination — paginatedData is already the current page from the server
+  // serverPage is 0-indexed; Pagination component expects 1-indexed currentPage
   const paginatedData = filteredContratados;
-  const currentPage = serverPage;
+  const currentPage = serverPage + 1;
   const pageSize = PAGE_SIZE;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const totalItems = totalCount;
-  const handlePageChange = (page: number) => setServerPage(page);
+  const handlePageChange = (page: number) => setServerPage(page - 1);
   const handlePageSizeChange = (_: number) => {};
 
   if (loading) {
