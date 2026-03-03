@@ -6,6 +6,7 @@ interface PaginationProps {
   totalPages: number;
   pageSize: number;
   totalItems: number;
+  visibleItems?: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
 }
@@ -15,46 +16,36 @@ const Pagination: React.FC<PaginationProps> = ({
   totalPages,
   pageSize,
   totalItems,
+  visibleItems,
   onPageChange,
   onPageSizeChange
 }) => {
-  // Generate page numbers to display
   const getPageNumbers = () => {
     const pages = [];
     const maxPagesToShow = 5;
     
     if (totalPages <= maxPagesToShow) {
-      // Show all pages if there are few
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // More sophisticated pagination with ellipsis
-      // Always show first and last page, and pages around current page
-      
-      // First page
       pages.push(1);
       
-      // Calculate the range of pages to show around current page
       const leftBoundary = Math.max(2, currentPage - 1);
       const rightBoundary = Math.min(totalPages - 1, currentPage + 1);
       
-      // Add ellipsis after first page if needed
       if (leftBoundary > 2) {
         pages.push('...');
       }
       
-      // Add pages around current page
       for (let i = leftBoundary; i <= rightBoundary; i++) {
         pages.push(i);
       }
       
-      // Add ellipsis before last page if needed
       if (rightBoundary < totalPages - 1) {
         pages.push('...');
       }
       
-      // Last page (if not already included)
       if (totalPages > 1) {
         pages.push(totalPages);
       }
@@ -64,13 +55,17 @@ const Pagination: React.FC<PaginationProps> = ({
   };
 
   const pageNumbers = getPageNumbers();
+
+  const firstItem = totalItems === 0 ? 0 : Math.min((currentPage - 1) * pageSize + 1, totalItems);
+  const actualVisible = visibleItems ?? Math.min(currentPage * pageSize, totalItems);
+  const lastItem = Math.min((currentPage - 1) * pageSize + actualVisible, totalItems);
   
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
       <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4 sm:mb-0">
         <span>
-          Mostrando <span className="font-medium">{Math.min((currentPage - 1) * pageSize + 1, totalItems)}</span> a{' '}
-          <span className="font-medium">{Math.min(currentPage * pageSize, totalItems)}</span> de{' '}
+          Mostrando <span className="font-medium">{firstItem}</span> a{' '}
+          <span className="font-medium">{lastItem}</span> de{' '}
           <span className="font-medium">{totalItems}</span> resultados
         </span>
         

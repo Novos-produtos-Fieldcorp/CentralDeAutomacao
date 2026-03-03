@@ -3419,6 +3419,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               totalPages={totalPages}
               pageSize={pageSize}
               totalItems={totalItems}
+              visibleItems={filteredContratados.length}
               onPageChange={handlePageChange}
               onPageSizeChange={handlePageSizeChange}
             />
