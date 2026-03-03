@@ -129,7 +129,11 @@ const Pagination: React.FC<PaginationProps> = ({
         
         <button
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages || totalPages === 0}
+          disabled={
+            currentPage === totalPages
+            || totalPages === 0
+            || (clientFiltersActive && visibleItems !== undefined && visibleItems < pageSize)
+          }
           className={navButton}
         >
           <ChevronRight className="w-5 h-5" />
