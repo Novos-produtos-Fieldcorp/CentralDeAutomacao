@@ -216,7 +216,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
   const [bulkActionType, setBulkActionType] = useState<'status' | 'client' | 'tags'>('status');
   const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
-  const [selectAll, setSelectAll] = useState(false);
   const [selectAllResults, setSelectAllResults] = useState(false);
   const [selectAllResultsLoading, setSelectAllResultsLoading] = useState(false);
   const [documento] = useState<DocumentoMotorista | null>(null);
@@ -1058,14 +1057,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   useEffect(() => {
     setServerPage(0);
     setSelectedItems(new Set());
-    setSelectAll(false);
     setSelectAllResults(false);
   }, [statusFilter, cidadeFilter, bauFilter, clienteFilter, dateFilter, customDateRange]);
 
   // Reset selection when search changes
   useEffect(() => {
     setSelectedItems(new Set());
-    setSelectAll(false);
     setSelectAllResults(false);
   }, [debouncedSearch]);
 
@@ -1647,12 +1644,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     const newSelectedItems = new Set(selectedItems);
     if (selectedItems.has(id)) {
       newSelectedItems.delete(id);
+      setSelectAllResults(false);
     } else {
       newSelectedItems.add(id);
     }
     setSelectedItems(newSelectedItems);
-    setSelectAllResults(false);
-    setSelectAll(newSelectedItems.size === filteredContratados.length && filteredContratados.length > 0);
   };
 
   // Funções para manipular filtros de múltipla seleção
@@ -1768,13 +1764,18 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   };
 
   const handleSelectAll = () => {
-    if (selectAll) {
-      setSelectedItems(new Set());
+    const currentPageIds = filteredContratados.map(m => m.motorista_id || 0).filter(Boolean);
+    const allCurrentSelected = currentPageIds.length > 0 && currentPageIds.every(id => selectedItems.has(id));
+    const newSelectedItems = new Set(selectedItems);
+    if (allCurrentSelected) {
+      // Desmarcar itens da página atual
+      currentPageIds.forEach(id => newSelectedItems.delete(id));
       setSelectAllResults(false);
     } else {
-      setSelectedItems(new Set(filteredContratados.map(m => m.motorista_id || 0)));
+      // Adicionar itens da página atual ao set existente
+      currentPageIds.forEach(id => newSelectedItems.add(id));
     }
-    setSelectAll(!selectAll);
+    setSelectedItems(newSelectedItems);
   };
 
   const handleSelectAllResults = async () => {
@@ -1825,7 +1826,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       const allIds = new Set((data ?? []).map(r => r.motorista_id).filter(Boolean) as number[]);
       setSelectedItems(allIds);
-      setSelectAll(true);
       setSelectAllResults(true);
     } catch {
       toast.error('Erro ao selecionar todos os resultados');
@@ -1851,7 +1851,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       // Reset selection
       setSelectedItems(new Set());
-      setSelectAll(false);
+      setSelectAllResults(false);
       setIsBulkDeleteModalOpen(false);
     } catch (error) {
       console.error('Error deleting motoristas:', error);
@@ -2096,6 +2096,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       searchMatch
     );
   });
+
+  // selectAll is derived: true when every item on the current page is selected
+  const selectAll = filteredContratados.length > 0 &&
+    filteredContratados.every(m => m.motorista_id != null && selectedItems.has(m.motorista_id));
 
   // Server-side pagination — paginatedData is already the current page from the server
   // serverPage is 0-indexed; Pagination component expects 1-indexed currentPage
@@ -2968,7 +2972,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <div className="mt-2 text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
                   <span>Todos os {selectedItems.size} resultados selecionados.</span>
                   <button
-                    onClick={() => { setSelectedItems(new Set()); setSelectAll(false); setSelectAllResults(false); }}
+                    onClick={() => { setSelectedItems(new Set()); setSelectAllResults(false); }}
                     className="underline hover:text-blue-800 dark:hover:text-blue-300"
                   >
                     Limpar seleção
