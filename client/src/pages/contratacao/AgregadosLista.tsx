@@ -3005,8 +3005,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               )}
             </div>
 
-            <div className="overflow-x-auto">
-              <div ref={tableContainerRef} className="w-full">
+            <div className="overflow-x-auto" ref={tableContainerRef}>
+              <div className="w-full">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead>
                     <tr>
