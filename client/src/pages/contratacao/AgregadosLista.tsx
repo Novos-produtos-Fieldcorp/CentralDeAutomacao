@@ -1073,7 +1073,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   }, [tipoVeiculoFilter, ativoFilter, tagFilter]);
 
   useEffect(() => {
-    fetchContratados(serverPage);
+    fetchContratados(serverPage, pageSize);
   }, [serverPage, pageSize, debouncedSearch, statusFilter, cidadeFilter, bauFilter, clienteFilter, dateFilter, customDateRange, companyId]);
 
   useEffect(() => {
@@ -1257,7 +1257,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   };
 
 
-  const fetchContratados = async (page = 0) => {
+  const fetchContratados = async (page = 0, size = pageSize) => {
     try {
       setLoading(true);
       // Buscar os agregados da view vw_agregados_completo que já inclui dados de endereço
@@ -1330,7 +1330,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       // Order by data_cadastro (newest first) then paginate server-side
       query = query.order('data_cadastro', { ascending: false });
-      query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+      query = query.range(page * size, (page + 1) * size - 1);
 
       const { data, error, count } = await query;
 
