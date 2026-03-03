@@ -217,6 +217,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [bulkActionType, setBulkActionType] = useState<'status' | 'client' | 'tags'>('status');
   const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
   const [selectAll, setSelectAll] = useState(false);
+  const [selectAllResults, setSelectAllResults] = useState(false);
+  const [selectAllResultsLoading, setSelectAllResultsLoading] = useState(false);
   const [documento] = useState<DocumentoMotorista | null>(null);
   const [showAtivoDropdown, setShowAtivoDropdown] = useState(false);
 
@@ -1052,10 +1054,20 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Reset page when server-side filters change
+  // Reset page and selection when server-side filters change
   useEffect(() => {
     setServerPage(0);
+    setSelectedItems(new Set());
+    setSelectAll(false);
+    setSelectAllResults(false);
   }, [statusFilter, cidadeFilter, bauFilter, clienteFilter, dateFilter, customDateRange]);
+
+  // Reset selection when search changes
+  useEffect(() => {
+    setSelectedItems(new Set());
+    setSelectAll(false);
+    setSelectAllResults(false);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     fetchContratados(serverPage);
@@ -1639,9 +1651,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       newSelectedItems.add(id);
     }
     setSelectedItems(newSelectedItems);
-
-    // Update selectAll state
-    setSelectAll(newSelectedItems.size === filteredContratados.length);
+    setSelectAllResults(false);
+    setSelectAll(newSelectedItems.size === filteredContratados.length && filteredContratados.length > 0);
   };
 
   // Funções para manipular filtros de múltipla seleção
@@ -1759,10 +1770,68 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedItems(new Set());
+      setSelectAllResults(false);
     } else {
       setSelectedItems(new Set(filteredContratados.map(m => m.motorista_id || 0)));
     }
     setSelectAll(!selectAll);
+  };
+
+  const handleSelectAllResults = async () => {
+    setSelectAllResultsLoading(true);
+    try {
+      let q = supabase
+        .from('vw_agregados_completo')
+        .select('motorista_id')
+        .eq('company_id', companyId)
+        .eq('funcao', 'Agregado');
+
+      if (debouncedSearch.trim()) {
+        const term = debouncedSearch.trim();
+        q = q.or(`nome_motorista.ilike.%${term}%,cpf.ilike.%${term}%,placa.ilike.%${term}%,telefone.ilike.%${term}%`);
+      }
+      if (statusFilter.length > 0) q = q.in('st_cadastro', statusFilter);
+      if (cidadeFilter.length > 0) q = q.in('nome_cidade', cidadeFilter);
+      const bauFiltrosReais = bauFilter.filter(b => b !== 'sem_bau');
+      if (bauFiltrosReais.length > 0 && !bauFilter.includes('sem_bau')) q = q.in('bau', bauFiltrosReais);
+      const clientesFiltros = clienteFilter.filter(c => c !== 'sem_cliente');
+      if (clientesFiltros.length > 0 && !clienteFilter.includes('sem_cliente')) {
+        q = q.in('cliente_id', clientesFiltros.map(Number));
+      } else if (clienteFilter.includes('sem_cliente') && clienteFilter.length === 1) {
+        q = q.is('cliente_id', null);
+      }
+      if (dateFilter !== 'all') {
+        const today = new Date();
+        let startDate = new Date();
+        if (dateFilter === 'today') {
+          startDate = new Date(today.setHours(0, 0, 0, 0));
+          q = q.gte('data_cadastro', startDate.toISOString().split('T')[0]).lte('data_cadastro', new Date().toISOString().split('T')[0]);
+        } else if (dateFilter === '2days') {
+          startDate.setDate(today.getDate() - 2);
+          q = q.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+        } else if (dateFilter === '15days') {
+          startDate.setDate(today.getDate() - 15);
+          q = q.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+        } else if (dateFilter === '30days') {
+          startDate.setDate(today.getDate() - 30);
+          q = q.gte('data_cadastro', startDate.toISOString().split('T')[0]);
+        } else if (dateFilter === 'custom' && customDateRange.startDate && customDateRange.endDate) {
+          q = q.gte('data_cadastro', customDateRange.startDate).lte('data_cadastro', customDateRange.endDate);
+        }
+      }
+
+      const { data, error } = await q;
+      if (error) throw error;
+
+      const allIds = new Set((data ?? []).map(r => r.motorista_id).filter(Boolean) as number[]);
+      setSelectedItems(allIds);
+      setSelectAll(true);
+      setSelectAllResults(true);
+    } catch {
+      toast.error('Erro ao selecionar todos os resultados');
+    } finally {
+      setSelectAllResultsLoading(false);
+    }
   };
 
   const handleBulkDelete = async () => {
@@ -2864,7 +2933,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
           <div className="overflow-visible">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -2873,9 +2942,39 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {selectedItems.size > 0 ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}` : `Selecionar todos (${filteredContratados.length} registro${filteredContratados.length !== 1 ? 's' : ''})`}
+                  {selectedItems.size > 0
+                    ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}${selectAllResults ? ` de ${totalCount}` : ''}`
+                    : `Selecionar todos (${filteredContratados.length} registro${filteredContratados.length !== 1 ? 's' : ''})`}
                 </span>
               </div>
+
+              {/* Banner: todos da página selecionados — oferecer selecionar tudo */}
+              {selectAll && !selectAllResults && totalCount > filteredContratados.length && (
+                <div className="mt-2 text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                  <span>Todos os {filteredContratados.length} da página selecionados.</span>
+                  <button
+                    onClick={handleSelectAllResults}
+                    disabled={selectAllResultsLoading}
+                    className="underline hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-60 flex items-center gap-1"
+                  >
+                    {selectAllResultsLoading && <span className="inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
+                    {selectAllResultsLoading ? 'Carregando...' : `Selecionar todos os ${totalCount} resultados`}
+                  </button>
+                </div>
+              )}
+
+              {/* Banner: todos os resultados selecionados */}
+              {selectAllResults && (
+                <div className="mt-2 text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                  <span>Todos os {selectedItems.size} resultados selecionados.</span>
+                  <button
+                    onClick={() => { setSelectedItems(new Set()); setSelectAll(false); setSelectAllResults(false); }}
+                    className="underline hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    Limpar seleção
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="overflow-x-auto">
