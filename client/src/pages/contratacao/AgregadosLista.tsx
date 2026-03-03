@@ -1066,6 +1066,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     setSelectAllResults(false);
   }, [debouncedSearch]);
 
+  // Reset selection when client-side-only filters change
+  useEffect(() => {
+    setSelectedItems(new Set());
+    setSelectAllResults(false);
+  }, [tipoVeiculoFilter, ativoFilter, tagFilter]);
+
   useEffect(() => {
     fetchContratados(serverPage);
   }, [serverPage, debouncedSearch, statusFilter, cidadeFilter, bauFilter, clienteFilter, dateFilter, customDateRange, companyId]);
@@ -2953,19 +2959,27 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               </div>
 
               {/* Banner: todos da página selecionados — oferecer selecionar tudo */}
-              {selectAll && !selectAllResults && totalCount > filteredContratados.length && (
-                <div className="mt-2 text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                  <span>Todos os {filteredContratados.length} da página selecionados.</span>
-                  <button
-                    onClick={handleSelectAllResults}
-                    disabled={selectAllResultsLoading}
-                    className="underline hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-60 flex items-center gap-1"
-                  >
-                    {selectAllResultsLoading && <span className="inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
-                    {selectAllResultsLoading ? 'Carregando...' : `Selecionar todos os ${totalCount} resultados`}
-                  </button>
-                </div>
-              )}
+              {(() => {
+                const hasClientSideFilters = tipoVeiculoFilter.length > 0 || ativoFilter !== '' || tagFilter.length > 0;
+                if (!selectAll || selectAllResults || totalCount <= filteredContratados.length) return null;
+                return (
+                  <div className="mt-2 text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1 flex-wrap">
+                    <span>Todos os {filteredContratados.length} da página selecionados.</span>
+                    {hasClientSideFilters ? (
+                      <span className="text-gray-500 dark:text-gray-400">(Filtros adicionais ativos — navegue pelas páginas para selecionar mais.)</span>
+                    ) : (
+                      <button
+                        onClick={handleSelectAllResults}
+                        disabled={selectAllResultsLoading}
+                        className="underline hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-60 flex items-center gap-1"
+                      >
+                        {selectAllResultsLoading && <span className="inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
+                        {selectAllResultsLoading ? 'Carregando...' : `Selecionar todos os ${totalCount} resultados`}
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Banner: todos os resultados selecionados */}
               {selectAllResults && (
