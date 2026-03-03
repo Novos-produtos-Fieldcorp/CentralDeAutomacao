@@ -186,6 +186,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const PAGE_SIZE = 50;
+  const [serverPage, setServerPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -1039,12 +1043,30 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     endDate: '',
   });
 
+  // Debounce search term to avoid excessive queries
   useEffect(() => {
-    fetchContratados();
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setServerPage(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset page when server-side filters change
+  useEffect(() => {
+    setServerPage(0);
+  }, [statusFilter, cidadeFilter, bauFilter, clienteFilter, dateFilter, customDateRange]);
+
+  useEffect(() => {
+    fetchContratados(serverPage);
+  }, [serverPage, debouncedSearch, statusFilter, cidadeFilter, bauFilter, clienteFilter, dateFilter, customDateRange, companyId]);
+
+  useEffect(() => {
     fetchClientes();
     fetchTiposVeiculoFromTable();
     fetchBauTypesFromTable();
-  }, [dateFilter, customDateRange]);
+    fetchCidadesAgregados();
+  }, []);
 
   // Carregar tags dos agregados automaticamente quando a lista de contratados mudar
   useEffect(() => {
@@ -1220,15 +1242,47 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   };
 
 
-  const fetchContratados = async () => {
+  const fetchContratados = async (page = 0) => {
     try {
       setLoading(true);
       // Buscar os agregados da view vw_agregados_completo que já inclui dados de endereço
       let query = supabase
         .from('vw_agregados_completo')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('company_id', companyId)
         .eq('funcao', 'Agregado');
+
+      // Server-side search
+      if (debouncedSearch.trim()) {
+        const term = debouncedSearch.trim();
+        query = query.or(
+          `nome_motorista.ilike.%${term}%,cpf.ilike.%${term}%,placa.ilike.%${term}%,telefone.ilike.%${term}%`
+        );
+      }
+
+      // Server-side status filter
+      if (statusFilter.length > 0) {
+        query = query.in('st_cadastro', statusFilter);
+      }
+
+      // Server-side cidade filter
+      if (cidadeFilter.length > 0) {
+        query = query.in('nome_cidade', cidadeFilter);
+      }
+
+      // Server-side baú filter (skip complex 'sem_bau' logic — keep client-side)
+      const bauFiltrosReais = bauFilter.filter(b => b !== 'sem_bau');
+      if (bauFiltrosReais.length > 0 && !bauFilter.includes('sem_bau')) {
+        query = query.in('bau', bauFiltrosReais);
+      }
+
+      // Server-side cliente filter
+      const clientesFiltros = clienteFilter.filter(c => c !== 'sem_cliente');
+      if (clientesFiltros.length > 0 && !clienteFilter.includes('sem_cliente')) {
+        query = query.in('cliente_id', clientesFiltros.map(Number));
+      } else if (clienteFilter.includes('sem_cliente') && clienteFilter.length === 1) {
+        query = query.is('cliente_id', null);
+      }
 
       // Apply date filter
       if (dateFilter !== 'all') {
@@ -1259,43 +1313,17 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         }
       }
 
-      // Order by data_cadastro (newest first)
+      // Order by data_cadastro (newest first) then paginate server-side
       query = query.order('data_cadastro', { ascending: false });
+      query = query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
+
+      setTotalCount(count ?? 0);
 
       if (error) throw error;
 
 
-      // Log para debug dos valores de funcao
-      // Processing function values from data
-      // Data processing completed
-
-      // Extract unique cities from contratados - buscar separadamente
-      const uniqueCities = new Set<string>();
-
-      // Buscar cidades disponíveis para o filtro
-      console.log('🏙️ Buscando cidades para filtro...');
-      await fetchCidadesAgregados();
-
-      // Extrair cidades únicas dos dados carregados da view
-      const cidadesUnicas = new Set<string>();
-      data?.forEach(motorista => {
-        if (motorista.nome_cidade) {
-          cidadesUnicas.add(motorista.nome_cidade);
-        }
-      });
-
-      // Atualizar a lista de cidades com as cidades encontradas nos dados
-      const cidadesEncontradas = Array.from(cidadesUnicas).sort();
-      if (cidadesEncontradas.length > 0) {
-        // Mesclar com as cidades do filtro (sem duplicatas) mantendo ordem alfabética
-        setCidades(prev => {
-          const cidadesMescladas = [...new Set([...prev, ...cidadesEncontradas])].sort();
-          return cidadesMescladas;
-        });
-        console.log('✅ Cidades encontradas nos dados:', cidadesEncontradas);
-      }
 
       // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
       const motoristaIds = data?.map(m => m.motorista_id).filter((id): id is number => id !== undefined && id !== null) || [];
@@ -1912,33 +1940,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const filteredContratados = contratados.filter((motorista): boolean => {
     const searchLower = searchTerm.toLowerCase();
 
-    // Lógica para filtro de status (multiseleção)
-    const statusMatch = statusFilter.length === 0 ||
-      (motorista.st_cadastro && statusFilter.includes(motorista.st_cadastro));
-
-    // Lógica para filtro de cliente (multiseleção)
-    let clienteMatch = true;
-    if (clienteFilter.length > 0) {
-      if (clienteFilter.includes('sem_cliente')) {
-        // Se 'sem_cliente' está selecionado, inclui registros sem cliente
-        clienteMatch = motorista.cliente_id === null || motorista.cliente_id === undefined;
-      } else {
-        // Verifica se o cliente do motorista está na lista de clientes selecionados
-        clienteMatch = motorista.cliente_id !== null &&
-          motorista.cliente_id !== undefined &&
-          clienteFilter.includes(motorista.cliente_id.toString());
-      }
-
-      // Se 'sem_cliente' está selecionado junto com outros clientes, combina os resultados
-      if (clienteFilter.includes('sem_cliente') && clienteFilter.length > 1) {
-        clienteMatch = clienteMatch || (motorista.cliente_id === null || motorista.cliente_id === undefined);
-      }
-    }
-
-    // Lógica para filtro de cidade (multiseleção)
-    const motoristaCidade = getMotoristaCity(motorista);
-    const cidadeMatch = cidadeFilter.length === 0 ||
-      (motoristaCidade && cidadeFilter.includes(motoristaCidade));
+    // Status, cidade, cliente are filtered server-side — skip here
 
     // Lógica para filtro de tipo de veículo (multiseleção)
     let tipoVeiculoMatch = true;
@@ -2007,17 +2009,17 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     ativoFilter === 'ativo' ? motorista.ativo === true :
       ativoFilter === 'inativo' ? motorista.ativo === false : true;
 
-    const searchMatch = Boolean(
+    // Client-side search is a no-op when server-side search is active
+    // (already filtered by server). Only needed for email which isn't in the view OR
+    // when debouncedSearch is empty.
+    const searchMatch = !debouncedSearch.trim() ? Boolean(
       (motorista.nome_motorista && motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
       (motorista.cpf && motorista.cpf.includes(searchLower)) ||
       (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
       (motorista.telefone && motorista.telefone.toString().includes(searchLower))
-    );
+    ) : true;
 
     return Boolean(
-      statusMatch &&
-      clienteMatch &&
-      cidadeMatch &&
       tipoVeiculoMatch &&
       bauMatch &&
       tagMatch &&
@@ -2026,18 +2028,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     );
   });
 
-  const {
-    currentPage,
-    pageSize,
-    totalPages,
-    totalItems,
-    paginatedData,
-    handlePageChange,
-    handlePageSizeChange
-  } = usePagination({
-    data: filteredContratados,
-    initialPageSize: 10
-  });
+  // Server-side pagination — paginatedData is already the current page from the server
+  const paginatedData = filteredContratados;
+  const currentPage = serverPage;
+  const pageSize = PAGE_SIZE;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const totalItems = totalCount;
+  const handlePageChange = (page: number) => setServerPage(page);
+  const handlePageSizeChange = (_: number) => {};
 
   if (loading) {
     return <LoadingSpinner />;
