@@ -1078,8 +1078,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   useEffect(() => {
     fetchClientes();
+  }, [companyId]);
+
+  useEffect(() => {
     fetchTiposVeiculoFromTable();
     fetchBauTypesFromTable();
+  }, [companyId]);
+
+  useEffect(() => {
     fetchCidadesAgregados();
   }, []);
 
@@ -1258,6 +1264,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
 
   const fetchContratados = async (page = 0, size = pageSize) => {
+    if (!companyId) return;
     try {
       setLoading(true);
       // Buscar os agregados da view vw_agregados_completo que já inclui dados de endereço
@@ -1582,6 +1589,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   ];
 
   const fetchClientes = async () => {
+    if (!companyId) return;
     try {
       const { data, error } = await supabase
         .from('cliente')
@@ -3420,6 +3428,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               pageSize={pageSize}
               totalItems={totalItems}
               visibleItems={filteredContratados.length}
+              clientFiltersActive={tipoVeiculoFilter.length > 0 || ativoFilter !== '' || tagFilter.length > 0}
               onPageChange={handlePageChange}
               onPageSizeChange={handlePageSizeChange}
             />

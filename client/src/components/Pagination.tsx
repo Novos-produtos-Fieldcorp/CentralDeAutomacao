@@ -7,6 +7,7 @@ interface PaginationProps {
   pageSize: number;
   totalItems: number;
   visibleItems?: number;
+  clientFiltersActive?: boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
 }
@@ -17,6 +18,7 @@ const Pagination: React.FC<PaginationProps> = ({
   pageSize,
   totalItems,
   visibleItems,
+  clientFiltersActive = false,
   onPageChange,
   onPageSizeChange
 }) => {
@@ -59,17 +61,26 @@ const Pagination: React.FC<PaginationProps> = ({
   const firstItem = totalItems === 0 ? 0 : Math.min((currentPage - 1) * pageSize + 1, totalItems);
   const actualVisible = visibleItems ?? Math.min(currentPage * pageSize, totalItems);
   const lastItem = Math.min((currentPage - 1) * pageSize + actualVisible, totalItems);
-  
+
+  const buttonBase = "px-2 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed";
+  const navButton = `${buttonBase} text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700`;
+
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4 sm:mb-0">
+      <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4 sm:mb-0 flex-wrap gap-2">
         <span>
           Mostrando <span className="font-medium">{firstItem}</span> a{' '}
           <span className="font-medium">{lastItem}</span> de{' '}
           <span className="font-medium">{totalItems}</span> resultados
         </span>
+
+        {clientFiltersActive && (
+          <span className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded">
+            Filtros adicionais ativos
+          </span>
+        )}
         
-        <div className="ml-4">
+        <div>
           <select
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -88,32 +99,38 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="px-2 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          className={navButton}
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        
-        {pageNumbers.map((page, index) => (
-          <button
-            key={index}
-            onClick={() => typeof page === 'number' ? onPageChange(page) : null}
-            disabled={page === '...'}
-            className={`px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
-              page === currentPage
-                ? 'bg-blue-600 text-white border border-blue-600 dark:bg-blue-700 dark:border-blue-700'
-                : page === '...'
-                ? 'text-gray-700 bg-white border border-gray-300 cursor-default dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300'
-                : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
-            }`}
-          >
-            {page}
-          </button>
-        ))}
+
+        {clientFiltersActive ? (
+          <span className="px-3 py-1 text-sm text-gray-600 dark:text-gray-300">
+            Página {currentPage} de ~{totalPages}
+          </span>
+        ) : (
+          pageNumbers.map((page, index) => (
+            <button
+              key={index}
+              onClick={() => typeof page === 'number' ? onPageChange(page) : null}
+              disabled={page === '...'}
+              className={`px-3 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
+                page === currentPage
+                  ? 'bg-blue-600 text-white border border-blue-600 dark:bg-blue-700 dark:border-blue-700'
+                  : page === '...'
+                  ? 'text-gray-700 bg-white border border-gray-300 cursor-default dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300'
+                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
+              }`}
+            >
+              {page}
+            </button>
+          ))
+        )}
         
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages || totalPages === 0}
-          className="px-2 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+          className={navButton}
         >
           <ChevronRight className="w-5 h-5" />
         </button>
