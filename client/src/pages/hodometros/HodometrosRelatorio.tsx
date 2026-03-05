@@ -13,6 +13,7 @@ import MileageChartModal from '../../components/hodometros/MileageChartModal';
 import Pagination from '../../components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import * as XLSX from 'xlsx';
+import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 
 interface HodometroReading {
   id_hodometro: number;
@@ -74,6 +75,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
   const [plateFilter, setPlateFilter] = useState<string>('all');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
   
   // Local state for date inputs to prevent search on every keystroke
   const [localStartDate, setLocalStartDate] = useState(dateRange.startDate);
@@ -793,7 +795,8 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
 
       {/* Readings Table */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" ref={tableContainerRef}>
+            <ScrollableTableIndicator containerRef={tableContainerRef} />
             {/* ...existing readings table markup... */}
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               {/* Reuse existing thead and tbody by rendering the same structure as before via copy */}
