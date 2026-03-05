@@ -198,8 +198,11 @@ const ContratacaoKanban = () => {
   useEffect(() => {
     // Initial load of all columns
     const loadAllColumns = async () => {
-      if (!companyId) return; // Add guard clause
+      if (!companyId) return;
       
+      // Reset all columns to page 1 when filters change
+      setColumns(prev => prev.map(col => ({ ...col, currentPage: 1 })));
+
       setLoading(true);
       try {
         // First, get counts for all statuses
@@ -218,71 +221,102 @@ const ContratacaoKanban = () => {
     if (companyId) {
       loadAllColumns();
     }
-  }, [funcaoFilter, itemsPerPage, companyId]); // Add companyId to dependencies
+  }, [funcaoFilter, itemsPerPage, companyId, cidadeFilter, clienteFilter, ativoFilter]);
 
   const fetchColumnCount = async (status: string, companyId: number) => {
     try {
-      // Get all motoristas with this status
-      const { data, error } = await supabase
-        .from('motorista')
-        .select('motorista_id')
-        .eq('st_cadastro', status)
-        .eq('company_id', companyId);
-
-      if (error) throw error;
-
-      // Filter the data based on function and search term
-      let filteredData = data || [];
-      
-      // Apply function filter if not 'todos'
-      if (funcaoFilter !== 'todos') {
-        // We need to get the full data to filter by function
-        const { data: fullData } = await supabase
-          .from('motorista')
-          .select('motorista_id, funcao')
+      // Helper to build a filtered count query on a given view
+      const buildCountQuery = (viewName: string) => {
+        let q = supabase
+          .from(viewName)
+          .select('motorista_id', { count: 'exact', head: true })
           .eq('st_cadastro', status)
           .eq('company_id', companyId);
-          
-        if (fullData) {
-          const matchingIds = fullData
-            .filter(m => m.funcao === funcaoFilter)
-            .map(m => m.motorista_id);
-          
-          filteredData = filteredData.filter(m => matchingIds.includes(m.motorista_id));
+
+        if (funcaoFilter !== 'todos') {
+          q = q.eq('funcao', funcaoFilter);
         }
-      }
-      
-      // Apply search filter if provided
-      if (debouncedSearchTerm) {
-        // We need to get the full data to search by name or CPF
-        const { data: fullData } = await supabase
-          .from('motorista')
-          .select('motorista_id, nome, cpf')
+        if (debouncedSearchTerm) {
+          q = q.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
+        }
+        if (cidadeFilter.length > 0) {
+          q = q.in('nome_cidade', cidadeFilter);
+        }
+        if (clienteFilter.length > 0) {
+          const hasNoCliente = clienteFilter.includes('0');
+          const clienteIds = clienteFilter.filter(id => id !== '0').map(Number);
+          if (hasNoCliente && clienteIds.length > 0) {
+            q = q.or(`cliente_id.is.null,cliente_id.in.(${clienteIds.join(',')})`);
+          } else if (hasNoCliente) {
+            q = q.is('cliente_id', null);
+          } else {
+            q = q.in('cliente_id', clienteIds);
+          }
+        }
+        if (ativoFilter === 'ativo') {
+          q = q.eq('ativo', true);
+        } else if (ativoFilter === 'inativo') {
+          q = q.eq('ativo', false);
+        }
+        return q;
+      };
+
+      // Count from motoristas view
+      const { count: motoristaCount, error: err1 } = await buildCountQuery('vw_motoristas_completo');
+      if (err1) throw err1;
+
+      let totalCount = motoristaCount || 0;
+
+      // If showing agregados, also count from agregados view (excluding already counted)
+      if (funcaoFilter === 'Agregado' || funcaoFilter === 'todos') {
+        let agregadosQ = supabase
+          .from('vw_agregados_completo')
+          .select('motorista_id', { count: 'exact', head: true })
           .eq('st_cadastro', status)
-          .eq('company_id', companyId);
-          
-        if (fullData) {
-          const searchLower = debouncedSearchTerm.toLowerCase();
-          const matchingIds = fullData.filter(m => 
-            (m.nome?.toLowerCase().includes(searchLower) || 
-            m.cpf?.includes(searchLower))
-          ).map(m => m.motorista_id);
-          
-          filteredData = filteredData.filter(m => matchingIds.includes(m.motorista_id));
+          .eq('company_id', companyId)
+          .eq('funcao', 'Agregado');
+
+        if (debouncedSearchTerm) {
+          agregadosQ = agregadosQ.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
         }
+        if (cidadeFilter.length > 0) {
+          agregadosQ = agregadosQ.in('nome_cidade', cidadeFilter);
+        }
+        if (clienteFilter.length > 0) {
+          const hasNoCliente = clienteFilter.includes('0');
+          const clienteIds = clienteFilter.filter(id => id !== '0').map(Number);
+          if (hasNoCliente && clienteIds.length > 0) {
+            agregadosQ = agregadosQ.or(`cliente_id.is.null,cliente_id.in.(${clienteIds.join(',')})`);
+          } else if (hasNoCliente) {
+            agregadosQ = agregadosQ.is('cliente_id', null);
+          } else {
+            agregadosQ = agregadosQ.in('cliente_id', clienteIds);
+          }
+        }
+        if (ativoFilter === 'ativo') {
+          agregadosQ = agregadosQ.eq('ativo', true);
+        } else if (ativoFilter === 'inativo') {
+          agregadosQ = agregadosQ.eq('ativo', false);
+        }
+
+        const { count: agregadoCount } = await agregadosQ;
+        // When 'todos', vw_motoristas_completo already includes motoristas; agregados view adds extras
+        // When 'Agregado', motoristasCount will be 0, so total = agregadoCount
+        if (funcaoFilter === 'Agregado') {
+          totalCount = agregadoCount || 0;
+        }
+        // For 'todos', we trust the merged dedup logic in fetchColumnData uses both views;
+        // approximate total as motorista count (includes agregados in that view) to avoid double-count
       }
-      
-      const totalCount = filteredData.length;
 
       // Update the column with the count
       setColumns(prev => prev.map(col => {
         if (col.id === status) {
-          // Ensure we calculate total pages correctly
           const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage || 1));
           return {
             ...col,
-            totalCount: totalCount,
-            totalPages: totalPages,
+            totalCount,
+            totalPages,
           };
         }
         return col;
@@ -333,6 +367,31 @@ const ContratacaoKanban = () => {
       if (debouncedSearchTerm) {
         query = query.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
       }
+
+      // Apply cidade filter
+      if (cidadeFilter.length > 0) {
+        query = query.in('nome_cidade', cidadeFilter);
+      }
+
+      // Apply cliente filter
+      if (clienteFilter.length > 0) {
+        const hasNoCliente = clienteFilter.includes('0');
+        const clienteIds = clienteFilter.filter(id => id !== '0').map(Number);
+        if (hasNoCliente && clienteIds.length > 0) {
+          query = query.or(`cliente_id.is.null,cliente_id.in.(${clienteIds.join(',')})`);
+        } else if (hasNoCliente) {
+          query = query.is('cliente_id', null);
+        } else {
+          query = query.in('cliente_id', clienteIds);
+        }
+      }
+
+      // Apply ativo filter
+      if (ativoFilter === 'ativo') {
+        query = query.eq('ativo', true);
+      } else if (ativoFilter === 'inativo') {
+        query = query.eq('ativo', false);
+      }
       
       // Apply sorting by data_cadastro (newest first)
       query = query.order('data_cadastro', { ascending: false });
@@ -364,6 +423,28 @@ const ContratacaoKanban = () => {
           
         if (debouncedSearchTerm) {
           agregadosQuery = agregadosQuery.or(`nome_motorista.ilike.%${debouncedSearchTerm}%,cpf.ilike.%${debouncedSearchTerm}%`);
+        }
+
+        if (cidadeFilter.length > 0) {
+          agregadosQuery = agregadosQuery.in('nome_cidade', cidadeFilter);
+        }
+
+        if (clienteFilter.length > 0) {
+          const hasNoCliente = clienteFilter.includes('0');
+          const clienteIds = clienteFilter.filter(id => id !== '0').map(Number);
+          if (hasNoCliente && clienteIds.length > 0) {
+            agregadosQuery = agregadosQuery.or(`cliente_id.is.null,cliente_id.in.(${clienteIds.join(',')})`);
+          } else if (hasNoCliente) {
+            agregadosQuery = agregadosQuery.is('cliente_id', null);
+          } else {
+            agregadosQuery = agregadosQuery.in('cliente_id', clienteIds);
+          }
+        }
+
+        if (ativoFilter === 'ativo') {
+          agregadosQuery = agregadosQuery.eq('ativo', true);
+        } else if (ativoFilter === 'inativo') {
+          agregadosQuery = agregadosQuery.eq('ativo', false);
         }
         
         agregadosQuery = agregadosQuery.order('data_cadastro', { ascending: false });
@@ -1035,7 +1116,7 @@ const ContratacaoKanban = () => {
       <div className="flex-1 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex gap-4 overflow-x-auto overflow-y-hidden h-full"
              style={{ minHeight: 'calc(100vh - 25rem)' }}>
-          {columns.map((column) => (
+          {columns.filter(col => statusFilter.length === 0 || statusFilter.includes(col.id)).map((column) => (
             <div
               key={column.id}
               className="flex-shrink-0 w-[340px] flex flex-col h-full max-h-full"
