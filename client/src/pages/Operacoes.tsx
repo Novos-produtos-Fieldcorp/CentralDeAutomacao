@@ -3640,6 +3640,7 @@ interface FaturamentoSada {
   caminhoes: string | null;
   comissao_motorista_prancha: string | null;
   comissao_motorista_cegonha: string | null;
+  mitsubishi: string | null;
 }
 
 interface FaturamentoSuperterminais {
@@ -3984,6 +3985,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     'caminhões': 'caminhoes',
     'caminhao': 'caminhoes',
     'caminhão': 'caminhoes',
+    'mitsubishi': 'mitsubishi',
   };
 
   // Função para extrair veículos e quantidades do texto do modelo
@@ -5315,6 +5317,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         scudo: sadaForm.scudo || null,
         ducato: sadaForm.ducato || null,
         caminhoes: sadaForm.caminhoes || null,
+        mitsubishi: sadaForm.mitsubishi || null,
         comissao_motorista_prancha: sadaForm.comissao_motorista_prancha || null,
         comissao_motorista_cegonha: sadaForm.comissao_motorista_cegonha || null,
         updated_at: new Date().toISOString(),
@@ -5556,6 +5559,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     { key: 'scudo', label: 'Scudo', group: 'veiculos' },
     { key: 'ducato', label: 'Ducato', group: 'veiculos' },
     { key: 'caminhoes', label: 'Caminhões', group: 'veiculos' },
+    { key: 'mitsubishi', label: 'Mitsubishi', group: 'veiculos' },
     { key: 'comissao_motorista_cegonha', label: 'Cegonha (por veículo)', group: 'comissao' },
     { key: 'comissao_motorista_prancha', label: 'Prancha (fixo por viagem)', group: 'comissao' },
   ];
