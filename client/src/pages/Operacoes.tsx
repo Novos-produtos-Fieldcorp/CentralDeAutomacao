@@ -4,8 +4,21 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef } from 'lucide-react';
 import { useState as useStateReact } from 'react';
 import { supabase } from '../lib/supabase';
+import { API_BASE_URL, supabaseAnonKey } from '@/lib/api-config-supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
+
 import SpotlightCard from '../components/SpotlightCard';
+
+const operacoesApiFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'apikey': supabaseAnonKey,
+    ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+    ...(options.headers as Record<string, string> || {}),
+  };
+  return fetch(url, { ...options, headers });
+};
 
 interface Operacao {
   id: number;
@@ -3758,7 +3771,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   const { data: precosMitsubishi } = useQuery({
     queryKey: ['faturamento-mitsubishi-precos'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/mitsubishi');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/mitsubishi`);
       if (!response.ok) throw new Error('Erro ao buscar preços Mitsubishi');
       const data = await response.json();
       return (data as FaturamentoMitsubishi) || null;
@@ -3769,7 +3782,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   const { data: precosAutoservice } = useQuery({
     queryKey: ['faturamento-autoservice-precos'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/autoservice');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/autoservice`);
       if (!response.ok) throw new Error('Erro ao buscar preços Autoservice');
       const data = await response.json();
       if (!data) return null;
@@ -3821,7 +3834,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       let mitsubishiMap: Record<number, number> = {};
       if (viagensComModelo.length > 0) {
         try {
-          const aiRes = await fetch('/api/operacoes/sada/identificar-mitsubishi', {
+          const aiRes = await operacoesApiFetch(`${API_BASE_URL}/operacoes/sada/identificar-mitsubishi`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ viagens: viagensComModelo }),
@@ -3895,7 +3908,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     queryKey: ['financeiro-mitsubishi-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const response = await fetch(`/api/operacoes/financeiro/mitsubishi/${companyId}`);
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/financeiro/mitsubishi/${companyId}`);
       if (!response.ok) throw new Error('Erro ao buscar viagens Mitsubishi');
       return response.json();
     },
@@ -3906,7 +3919,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     queryKey: ['financeiro-autoservice-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const response = await fetch(`/api/operacoes/financeiro/autoservice/${companyId}`);
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/financeiro/autoservice/${companyId}`);
       if (!response.ok) throw new Error('Erro ao buscar viagens Autoservice');
       return response.json();
     },
@@ -3916,7 +3929,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   const { data: precosTegma } = useQuery({
     queryKey: ['faturamento-tegma-precos'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/tegma');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/tegma`);
       if (!response.ok) throw new Error('Erro ao buscar preços Tegma');
       const data = await response.json();
       return data as FaturamentoTegma;
@@ -3927,7 +3940,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     queryKey: ['financeiro-tegma-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const response = await fetch(`/api/operacoes/financeiro/tegma/${companyId}`);
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/financeiro/tegma/${companyId}`);
       if (!response.ok) throw new Error('Erro ao buscar viagens Tegma');
       return response.json();
     },
@@ -3938,7 +3951,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     queryKey: ['financeiro-cesari-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const response = await fetch(`/api/operacoes/financeiro/cesari/${companyId}`);
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/financeiro/cesari/${companyId}`);
       if (!response.ok) throw new Error('Erro ao buscar viagens Cesari');
       return response.json();
     },
@@ -3948,7 +3961,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   const { data: precosCesari = [] } = useQuery({
     queryKey: ['faturamento-cesari-financeiro'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/cesari');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/cesari`);
       if (!response.ok) return [];
       return response.json() as Promise<FaturamentoCesari[]>;
     },
@@ -5238,7 +5251,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const { data: currentMitsubishiPrices, isLoading: isLoadingMitsubishi, isError: isErrorMitsubishi, refetch: refetchMitsubishi } = useQuery({
     queryKey: ['faturamento-mitsubishi-current'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/mitsubishi');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/mitsubishi`);
       if (!response.ok) throw new Error('Erro ao buscar preços Mitsubishi');
       const data = await response.json();
       return (data as FaturamentoMitsubishi) || null;
@@ -5248,7 +5261,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const { data: currentAutoservicePrices, isLoading: isLoadingAutoservice, isError: isErrorAutoservice, refetch: refetchAutoservice } = useQuery({
     queryKey: ['faturamento-autoservice-current'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/autoservice');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/autoservice`);
       if (!response.ok) throw new Error('Erro ao buscar preços Autoservice');
       const data = await response.json();
       if (!data) return null;
@@ -5297,7 +5310,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const { data: cesariPrices = [], isLoading: isLoadingCesari, isError: isErrorCesari, refetch: refetchCesari } = useQuery({
     queryKey: ['faturamento-cesari-all'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/cesari');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/cesari`);
       if (!response.ok) throw new Error('Erro ao buscar preços Cesari');
       return response.json() as Promise<FaturamentoCesari[]>;
     },
@@ -5306,7 +5319,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const { data: currentTegmaPrices, isLoading: isLoadingTegma, isError: isErrorTegma } = useQuery({
     queryKey: ['faturamento-tegma-current'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/tegma');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/tegma`);
       if (!response.ok) throw new Error('Erro ao buscar preços Tegma');
       const data = await response.json();
       return data as FaturamentoTegma;
@@ -5399,7 +5412,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         comissao_ajudante: mitsubishiForm.comissao_ajudante || null,
       };
 
-      const response = await fetch('/api/operacoes/faturamento/mitsubishi', {
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/mitsubishi`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
@@ -5468,7 +5481,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         forma_pagamento_ajudante: autoserviceForm.forma_pagamento_ajudante || null,
       };
 
-      const response = await fetch('/api/operacoes/faturamento/autoservice', {
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/autoservice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
@@ -5560,7 +5573,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const handleDeleteCesari = async (id: number) => {
     if (!confirm('Tem certeza que deseja excluir este preço?')) return;
     try {
-      const response = await fetch(`/api/operacoes/faturamento/cesari/${id}`, {
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/cesari/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
