@@ -14,6 +14,11 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   });
 
   useEffect(() => {
+    // Remove inline styles set by the flash-prevention script in index.html
+    // so CSS class-based theming takes full control
+    document.documentElement.style.removeProperty('background-color');
+    document.body.style.removeProperty('background-color');
+
     if (isDark) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
