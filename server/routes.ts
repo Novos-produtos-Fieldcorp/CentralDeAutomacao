@@ -5705,6 +5705,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/operacoes/sada/identificar-mitsubishi", async (req, res) => {
+    const { viagens } = req.body as { viagens: { id_operacao: number; modelo: string }[] };
+
+    const fallback = (viagens || []).map((v) => ({ id_operacao: v.id_operacao, qtd_mitsubishi: 0 }));
+
+    if (!viagens || viagens.length === 0) return res.json([]);
+
+    const groqKey = process.env.GROQ_API_KEY;
+    if (!groqKey) {
+      console.warn("[SADA IA] GROQ_API_KEY não configurado — retornando zeros");
+      return res.json(fallback);
+    }
+
+    const systemPrompt = `Você é um especialista em identificação de modelos de veículos automotores.
+Para cada entrada do array JSON fornecido, identifique quantos veículos da marca Mitsubishi estão descritos no campo "modelo".
+Modelos Mitsubishi incluem (mas não se limitam a): Eclipse Cross, Outlander, ASX, L200, Pajero, Galant, Colt, Lancer, Carisma, Space Star, Triton, Strada, e qualquer variação que mencione explicitamente "mitsubishi".
+Retorne APENAS um array JSON válido, sem nenhum texto adicional, comentários ou markdown. Formato: [{"id_operacao": N, "qtd_mitsubishi": M}]`;
+
+    const userPrompt = `Analise as seguintes viagens e retorne quantos veículos Mitsubishi cada uma possui:
+${JSON.stringify(viagens)}
+Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}]`;
+
+    try {
+      const response = await axios.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.1,
+          max_tokens: 1024,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${groqKey}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 15000,
+        }
+      );
+
+      const content: string = response.data?.choices?.[0]?.message?.content || "[]";
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        console.warn("[SADA IA] Resposta do Groq sem JSON válido:", content);
+        return res.json(fallback);
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]) as { id_operacao: number; qtd_mitsubishi: number }[];
+      return res.json(parsed);
+    } catch (err: any) {
+      console.error("[SADA IA] Erro ao chamar Groq:", err?.message || err);
+      return res.json(fallback);
+    }
+  });
+
   app.post("/api/viagens/import", async (req, res) => {
     try {
       const { operacao, companyId, rows } = req.body;

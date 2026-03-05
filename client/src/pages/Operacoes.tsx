@@ -3813,13 +3813,33 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       
       const motoristasMap: Record<number, string> = {};
       (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
-      
+
+      const viagensComModelo = opData
+        .filter((op: any) => op.modelo)
+        .map((op: any) => ({ id_operacao: op.id_operacao, modelo: op.modelo }));
+
+      let mitsubishiMap: Record<number, number> = {};
+      if (viagensComModelo.length > 0) {
+        try {
+          const aiRes = await fetch('/api/operacoes/sada/identificar-mitsubishi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ viagens: viagensComModelo }),
+          });
+          if (aiRes.ok) {
+            const aiData: { id_operacao: number; qtd_mitsubishi: number }[] = await aiRes.json();
+            aiData.forEach((item) => { mitsubishiMap[item.id_operacao] = item.qtd_mitsubishi; });
+          }
+        } catch (_) {}
+      }
+
       return opData.map((op: any) => {
         const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
         return {
           ...op,
           data_viagem: viagem?.data_hora_inicial,
           motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+          qtd_mitsubishi: mitsubishiMap[op.id_operacao] ?? 0,
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
@@ -3985,7 +4005,6 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     'caminhões': 'caminhoes',
     'caminhao': 'caminhoes',
     'caminhão': 'caminhoes',
-    'mitsubishi': 'mitsubishi',
   };
 
   // Função para extrair veículos e quantidades do texto do modelo
@@ -4023,32 +4042,39 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   };
 
   // Calcular valor do frete baseado no texto do modelo (parsing inteligente)
-  const calcularValorFrete = (modelo: string | null, qtdCarrosTotal: number | null): number => {
-    if (!modelo || !precosSada) return 0;
-    
-    const veiculosParsed = parseModeloTexto(modelo);
-    
-    if (veiculosParsed.length === 0) {
-      // Fallback: se não conseguiu parsear, usa modelo direto com qtd_carros
-      const modeloLower = modelo.toLowerCase().trim();
-      const chave = modeloParaChave[modeloLower];
-      if (chave && qtdCarrosTotal) {
-        const precoUnitario = parsePreco(precosSada[chave] as string);
-        return precoUnitario * qtdCarrosTotal;
-      }
-      return 0;
-    }
-    
-    // Soma o valor de cada tipo de veículo encontrado
+  const calcularValorFrete = (modelo: string | null, qtdCarrosTotal: number | null, qtdMitsubishi: number = 0): number => {
+    if (!precosSada) return 0;
+
     let valorTotal = 0;
-    for (const item of veiculosParsed) {
-      const chave = modeloParaChave[item.modelo];
-      if (chave) {
-        const precoUnitario = parsePreco(precosSada[chave] as string);
-        valorTotal += precoUnitario * item.qtd;
+
+    if (modelo) {
+      const veiculosParsed = parseModeloTexto(modelo);
+
+      if (veiculosParsed.length === 0) {
+        // Fallback: se não conseguiu parsear, usa modelo direto com qtd_carros
+        const modeloLower = modelo.toLowerCase().trim();
+        const chave = modeloParaChave[modeloLower];
+        if (chave && qtdCarrosTotal) {
+          const precoUnitario = parsePreco(precosSada[chave] as string);
+          valorTotal += precoUnitario * qtdCarrosTotal;
+        }
+      } else {
+        // Soma o valor de cada tipo de veículo encontrado (exceto Mitsubishi — tratado via IA)
+        for (const item of veiculosParsed) {
+          const chave = modeloParaChave[item.modelo];
+          if (chave) {
+            const precoUnitario = parsePreco(precosSada[chave] as string);
+            valorTotal += precoUnitario * item.qtd;
+          }
+        }
       }
     }
-    
+
+    // Adicionar veículos Mitsubishi identificados pela IA
+    if (qtdMitsubishi > 0 && precosSada.mitsubishi) {
+      valorTotal += qtdMitsubishi * parsePreco(precosSada.mitsubishi);
+    }
+
     return valorTotal;
   };
 
@@ -4064,15 +4090,15 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   };
 
   // Calcular comissão do motorista
-  const calcularComissao = (tipoCarreta: number | null, modelo: string | null, qtdCarros: number | null): number => {
+  const calcularComissao = (tipoCarreta: number | null, modelo: string | null, qtdCarros: number | null, qtdMitsubishi: number = 0): number => {
     if (!precosSada) return 0;
-    
-    const qtdTotal = calcularQtdTotal(modelo, qtdCarros);
-    
+
     // tipo_carreta: 0 = Prancha (fixo), 1 = Cegonha (por veículo)
     if (tipoCarreta === 0) {
       return parsePreco(precosSada.comissao_motorista_prancha);
     } else if (tipoCarreta === 1) {
+      const qtdOutros = calcularQtdTotal(modelo, qtdCarros);
+      const qtdTotal = qtdOutros + qtdMitsubishi;
       const valorPorVeiculo = parsePreco(precosSada.comissao_motorista_cegonha);
       return valorPorVeiculo * qtdTotal;
     }
@@ -4125,8 +4151,8 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     let totalFrete = 0;
     let totalComissao = 0;
     viagensFiltradas.forEach((v: any) => {
-      totalFrete += calcularValorFrete(v.modelo, v.qtd_carros);
-      totalComissao += calcularComissao(v.tipo_carreta, v.modelo, v.qtd_carros);
+      totalFrete += calcularValorFrete(v.modelo, v.qtd_carros, v.qtd_mitsubishi ?? 0);
+      totalComissao += calcularComissao(v.tipo_carreta, v.modelo, v.qtd_carros, v.qtd_mitsubishi ?? 0);
     });
 
     return (
@@ -4179,8 +4205,8 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                 {viagensFiltradas.map((viagem: any) => {
-                  const valorFrete = calcularValorFrete(viagem.modelo, viagem.qtd_carros);
-                  const comissao = calcularComissao(viagem.tipo_carreta, viagem.modelo, viagem.qtd_carros);
+                  const valorFrete = calcularValorFrete(viagem.modelo, viagem.qtd_carros, viagem.qtd_mitsubishi ?? 0);
+                  const comissao = calcularComissao(viagem.tipo_carreta, viagem.modelo, viagem.qtd_carros, viagem.qtd_mitsubishi ?? 0);
                   const tipoCarreta = viagem.tipo_carreta === 0 ? 'Prancha' : viagem.tipo_carreta === 1 ? 'Cegonha' : '-';
                   
                   return (
