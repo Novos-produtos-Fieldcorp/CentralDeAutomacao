@@ -138,11 +138,20 @@
 
   html {
     scroll-behavior: smooth;
+    background-color: #F9FAFB;
+  }
+
+  html.dark {
+    background-color: #111827;
   }
 
   body {
-    background-color: var(--background);
+    background-color: #F9FAFB;
     color: var(--text-primary);
+  }
+
+  html.dark body {
+    background-color: #111827;
   }
   
   /* Aplica transição apenas para mudanças de tema */

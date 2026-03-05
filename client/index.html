@@ -27,6 +27,25 @@
     <meta name="twitter:description" content="Sistema completo de gerenciamento de frota - controle de motoristas, veículos, contratos e operações logísticas." />
     <meta name="twitter:image" content="/og-image.jpg" />
     
+    <!-- Theme flash prevention: runs before React, applies dark class and background immediately -->
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var isDark = theme === 'dark' || (!theme && prefersDark);
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.style.backgroundColor = '#111827';
+            document.body && (document.body.style.backgroundColor = '#111827');
+          } else {
+            document.documentElement.style.backgroundColor = '#F9FAFB';
+            document.body && (document.body.style.backgroundColor = '#F9FAFB');
+          }
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- Theme Color -->
     <meta name="theme-color" content="#1f2937" />
     <meta name="msapplication-TileColor" content="#1f2937" />

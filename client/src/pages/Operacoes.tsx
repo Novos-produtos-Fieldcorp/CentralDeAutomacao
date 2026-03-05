@@ -4,8 +4,21 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef } from 'lucide-react';
 import { useState as useStateReact } from 'react';
 import { supabase } from '../lib/supabase';
+import { API_BASE_URL, supabaseAnonKey } from '@/lib/api-config-supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
+
 import SpotlightCard from '../components/SpotlightCard';
+
+const operacoesApiFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'apikey': supabaseAnonKey,
+    ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+    ...(options.headers as Record<string, string> || {}),
+  };
+  return fetch(url, { ...options, headers });
+};
 
 interface Operacao {
   id: number;
@@ -3640,6 +3653,7 @@ interface FaturamentoSada {
   caminhoes: string | null;
   comissao_motorista_prancha: string | null;
   comissao_motorista_cegonha: string | null;
+  mitsubishi: string | null;
 }
 
 interface FaturamentoSuperterminais {
@@ -3757,7 +3771,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   const { data: precosMitsubishi } = useQuery({
     queryKey: ['faturamento-mitsubishi-precos'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/mitsubishi');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/mitsubishi`);
       if (!response.ok) throw new Error('Erro ao buscar preços Mitsubishi');
       const data = await response.json();
       return (data as FaturamentoMitsubishi) || null;
@@ -3768,7 +3782,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   const { data: precosAutoservice } = useQuery({
     queryKey: ['faturamento-autoservice-precos'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/autoservice');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/autoservice`);
       if (!response.ok) throw new Error('Erro ao buscar preços Autoservice');
       const data = await response.json();
       if (!data) return null;
@@ -3812,13 +3826,33 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       
       const motoristasMap: Record<number, string> = {};
       (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
-      
+
+      const viagensComModelo = opData
+        .filter((op: any) => op.modelo)
+        .map((op: any) => ({ id_operacao: op.id_operacao, modelo: op.modelo }));
+
+      let mitsubishiMap: Record<number, number> = {};
+      if (viagensComModelo.length > 0) {
+        try {
+          const aiRes = await operacoesApiFetch(`${API_BASE_URL}/operacoes/sada/identificar-mitsubishi`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ viagens: viagensComModelo }),
+          });
+          if (aiRes.ok) {
+            const aiData: { id_operacao: number; qtd_mitsubishi: number }[] = await aiRes.json();
+            aiData.forEach((item) => { mitsubishiMap[item.id_operacao] = item.qtd_mitsubishi; });
+          }
+        } catch (_) {}
+      }
+
       return opData.map((op: any) => {
         const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
         return {
           ...op,
           data_viagem: viagem?.data_hora_inicial,
           motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+          qtd_mitsubishi: mitsubishiMap[op.id_operacao] ?? 0,
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
@@ -3874,7 +3908,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     queryKey: ['financeiro-mitsubishi-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const response = await fetch(`/api/operacoes/financeiro/mitsubishi/${companyId}`);
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/financeiro/mitsubishi/${companyId}`);
       if (!response.ok) throw new Error('Erro ao buscar viagens Mitsubishi');
       return response.json();
     },
@@ -3885,7 +3919,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     queryKey: ['financeiro-autoservice-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const response = await fetch(`/api/operacoes/financeiro/autoservice/${companyId}`);
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/financeiro/autoservice/${companyId}`);
       if (!response.ok) throw new Error('Erro ao buscar viagens Autoservice');
       return response.json();
     },
@@ -3895,7 +3929,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   const { data: precosTegma } = useQuery({
     queryKey: ['faturamento-tegma-precos'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/tegma');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/tegma`);
       if (!response.ok) throw new Error('Erro ao buscar preços Tegma');
       const data = await response.json();
       return data as FaturamentoTegma;
@@ -3906,7 +3940,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     queryKey: ['financeiro-tegma-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const response = await fetch(`/api/operacoes/financeiro/tegma/${companyId}`);
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/financeiro/tegma/${companyId}`);
       if (!response.ok) throw new Error('Erro ao buscar viagens Tegma');
       return response.json();
     },
@@ -3917,7 +3951,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     queryKey: ['financeiro-cesari-viagens', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const response = await fetch(`/api/operacoes/financeiro/cesari/${companyId}`);
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/financeiro/cesari/${companyId}`);
       if (!response.ok) throw new Error('Erro ao buscar viagens Cesari');
       return response.json();
     },
@@ -3927,7 +3961,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   const { data: precosCesari = [] } = useQuery({
     queryKey: ['faturamento-cesari-financeiro'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/cesari');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/cesari`);
       if (!response.ok) return [];
       return response.json() as Promise<FaturamentoCesari[]>;
     },
@@ -4021,32 +4055,39 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   };
 
   // Calcular valor do frete baseado no texto do modelo (parsing inteligente)
-  const calcularValorFrete = (modelo: string | null, qtdCarrosTotal: number | null): number => {
-    if (!modelo || !precosSada) return 0;
-    
-    const veiculosParsed = parseModeloTexto(modelo);
-    
-    if (veiculosParsed.length === 0) {
-      // Fallback: se não conseguiu parsear, usa modelo direto com qtd_carros
-      const modeloLower = modelo.toLowerCase().trim();
-      const chave = modeloParaChave[modeloLower];
-      if (chave && qtdCarrosTotal) {
-        const precoUnitario = parsePreco(precosSada[chave] as string);
-        return precoUnitario * qtdCarrosTotal;
-      }
-      return 0;
-    }
-    
-    // Soma o valor de cada tipo de veículo encontrado
+  const calcularValorFrete = (modelo: string | null, qtdCarrosTotal: number | null, qtdMitsubishi: number = 0): number => {
+    if (!precosSada) return 0;
+
     let valorTotal = 0;
-    for (const item of veiculosParsed) {
-      const chave = modeloParaChave[item.modelo];
-      if (chave) {
-        const precoUnitario = parsePreco(precosSada[chave] as string);
-        valorTotal += precoUnitario * item.qtd;
+
+    if (modelo) {
+      const veiculosParsed = parseModeloTexto(modelo);
+
+      if (veiculosParsed.length === 0) {
+        // Fallback: se não conseguiu parsear, usa modelo direto com qtd_carros
+        const modeloLower = modelo.toLowerCase().trim();
+        const chave = modeloParaChave[modeloLower];
+        if (chave && qtdCarrosTotal) {
+          const precoUnitario = parsePreco(precosSada[chave] as string);
+          valorTotal += precoUnitario * qtdCarrosTotal;
+        }
+      } else {
+        // Soma o valor de cada tipo de veículo encontrado (exceto Mitsubishi — tratado via IA)
+        for (const item of veiculosParsed) {
+          const chave = modeloParaChave[item.modelo];
+          if (chave) {
+            const precoUnitario = parsePreco(precosSada[chave] as string);
+            valorTotal += precoUnitario * item.qtd;
+          }
+        }
       }
     }
-    
+
+    // Adicionar veículos Mitsubishi identificados pela IA
+    if (qtdMitsubishi > 0 && precosSada.mitsubishi) {
+      valorTotal += qtdMitsubishi * parsePreco(precosSada.mitsubishi);
+    }
+
     return valorTotal;
   };
 
@@ -4062,15 +4103,15 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   };
 
   // Calcular comissão do motorista
-  const calcularComissao = (tipoCarreta: number | null, modelo: string | null, qtdCarros: number | null): number => {
+  const calcularComissao = (tipoCarreta: number | null, modelo: string | null, qtdCarros: number | null, qtdMitsubishi: number = 0): number => {
     if (!precosSada) return 0;
-    
-    const qtdTotal = calcularQtdTotal(modelo, qtdCarros);
-    
+
     // tipo_carreta: 0 = Prancha (fixo), 1 = Cegonha (por veículo)
     if (tipoCarreta === 0) {
       return parsePreco(precosSada.comissao_motorista_prancha);
     } else if (tipoCarreta === 1) {
+      const qtdOutros = calcularQtdTotal(modelo, qtdCarros);
+      const qtdTotal = qtdOutros + qtdMitsubishi;
       const valorPorVeiculo = parsePreco(precosSada.comissao_motorista_cegonha);
       return valorPorVeiculo * qtdTotal;
     }
@@ -4123,8 +4164,8 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     let totalFrete = 0;
     let totalComissao = 0;
     viagensFiltradas.forEach((v: any) => {
-      totalFrete += calcularValorFrete(v.modelo, v.qtd_carros);
-      totalComissao += calcularComissao(v.tipo_carreta, v.modelo, v.qtd_carros);
+      totalFrete += calcularValorFrete(v.modelo, v.qtd_carros, v.qtd_mitsubishi ?? 0);
+      totalComissao += calcularComissao(v.tipo_carreta, v.modelo, v.qtd_carros, v.qtd_mitsubishi ?? 0);
     });
 
     return (
@@ -4177,8 +4218,8 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700/50">
                 {viagensFiltradas.map((viagem: any) => {
-                  const valorFrete = calcularValorFrete(viagem.modelo, viagem.qtd_carros);
-                  const comissao = calcularComissao(viagem.tipo_carreta, viagem.modelo, viagem.qtd_carros);
+                  const valorFrete = calcularValorFrete(viagem.modelo, viagem.qtd_carros, viagem.qtd_mitsubishi ?? 0);
+                  const comissao = calcularComissao(viagem.tipo_carreta, viagem.modelo, viagem.qtd_carros, viagem.qtd_mitsubishi ?? 0);
                   const tipoCarreta = viagem.tipo_carreta === 0 ? 'Prancha' : viagem.tipo_carreta === 1 ? 'Cegonha' : '-';
                   
                   return (
@@ -5210,7 +5251,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const { data: currentMitsubishiPrices, isLoading: isLoadingMitsubishi, isError: isErrorMitsubishi, refetch: refetchMitsubishi } = useQuery({
     queryKey: ['faturamento-mitsubishi-current'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/mitsubishi');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/mitsubishi`);
       if (!response.ok) throw new Error('Erro ao buscar preços Mitsubishi');
       const data = await response.json();
       return (data as FaturamentoMitsubishi) || null;
@@ -5220,7 +5261,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const { data: currentAutoservicePrices, isLoading: isLoadingAutoservice, isError: isErrorAutoservice, refetch: refetchAutoservice } = useQuery({
     queryKey: ['faturamento-autoservice-current'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/autoservice');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/autoservice`);
       if (!response.ok) throw new Error('Erro ao buscar preços Autoservice');
       const data = await response.json();
       if (!data) return null;
@@ -5269,7 +5310,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const { data: cesariPrices = [], isLoading: isLoadingCesari, isError: isErrorCesari, refetch: refetchCesari } = useQuery({
     queryKey: ['faturamento-cesari-all'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/cesari');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/cesari`);
       if (!response.ok) throw new Error('Erro ao buscar preços Cesari');
       return response.json() as Promise<FaturamentoCesari[]>;
     },
@@ -5278,7 +5319,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const { data: currentTegmaPrices, isLoading: isLoadingTegma, isError: isErrorTegma } = useQuery({
     queryKey: ['faturamento-tegma-current'],
     queryFn: async () => {
-      const response = await fetch('/api/operacoes/faturamento/tegma');
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/tegma`);
       if (!response.ok) throw new Error('Erro ao buscar preços Tegma');
       const data = await response.json();
       return data as FaturamentoTegma;
@@ -5315,6 +5356,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         scudo: sadaForm.scudo || null,
         ducato: sadaForm.ducato || null,
         caminhoes: sadaForm.caminhoes || null,
+        mitsubishi: sadaForm.mitsubishi || null,
         comissao_motorista_prancha: sadaForm.comissao_motorista_prancha || null,
         comissao_motorista_cegonha: sadaForm.comissao_motorista_cegonha || null,
         updated_at: new Date().toISOString(),
@@ -5370,7 +5412,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         comissao_ajudante: mitsubishiForm.comissao_ajudante || null,
       };
 
-      const response = await fetch('/api/operacoes/faturamento/mitsubishi', {
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/mitsubishi`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
@@ -5439,7 +5481,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
         forma_pagamento_ajudante: autoserviceForm.forma_pagamento_ajudante || null,
       };
 
-      const response = await fetch('/api/operacoes/faturamento/autoservice', {
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/autoservice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
@@ -5531,7 +5573,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
   const handleDeleteCesari = async (id: number) => {
     if (!confirm('Tem certeza que deseja excluir este preço?')) return;
     try {
-      const response = await fetch(`/api/operacoes/faturamento/cesari/${id}`, {
+      const response = await operacoesApiFetch(`${API_BASE_URL}/operacoes/faturamento/cesari/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -5556,6 +5598,7 @@ const OperacoesPrecos = ({ selectedOperacao }: { selectedOperacao: string }) => 
     { key: 'scudo', label: 'Scudo', group: 'veiculos' },
     { key: 'ducato', label: 'Ducato', group: 'veiculos' },
     { key: 'caminhoes', label: 'Caminhões', group: 'veiculos' },
+    { key: 'mitsubishi', label: 'Mitsubishi', group: 'veiculos' },
     { key: 'comissao_motorista_cegonha', label: 'Cegonha (por veículo)', group: 'comissao' },
     { key: 'comissao_motorista_prancha', label: 'Prancha (fixo por viagem)', group: 'comissao' },
   ];
