@@ -18,7 +18,8 @@ import {
   createVaga,
   createUnidade,
   createOperacao,
-  createStatusVaga
+  createStatusVaga,
+  createEndVaga
 } from '../lib/vagasService';
 
 interface AddVagaModalProps {
@@ -128,14 +129,14 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       
       // Salvar endereço da vaga se logradouro foi selecionado
       if (enderecoData.logradouro_id) {
-        supabase.from('end_vaga').insert({
+        createEndVaga({
           vaga_id: newVaga.id,
           logradouro_id: Number(enderecoData.logradouro_id),
           numero: enderecoData.numero || null,
           ds_complemento: enderecoData.ds_complemento || null,
           st_end: enderecoData.st_end,
-        }).then(({ error }) => {
-          if (error) console.error('Erro ao salvar endereço:', error);
+        }).catch((err) => {
+          console.error('Erro ao salvar endereço:', err);
         });
       }
     },

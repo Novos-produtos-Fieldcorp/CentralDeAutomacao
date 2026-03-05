@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { API_BASE_URL } from './api-config-supabase';
 import { InsertVaga, Vaga, InsertStVaga, InsertUnidade, InsertOperacao } from '@shared/schema';
 
 export interface VagaWithRelations {
@@ -24,94 +25,35 @@ export interface VagaWithRelations {
   status_nome: string | null;
 }
 
-// Helper function to set company context for RLS - SECURE VERSION
-const setCompanyContext = async (companyId: number) => {
-  if (!companyId || companyId <= 0) {
-    throw new Error('Company ID deve ser um número válido e positivo');
-  }
-  
-  // Set company context using SQL function (replaces insecure set_config)
-  await supabase.rpc('set_current_company_id', { company_id: companyId });
-};
+// ========== FETCH OPERATIONS (via backend - bypasses RLS) ==========
 
 // Buscar vagas com dados relacionados para uma empresa
 export const fetchVagasWithRelations = async (companyId: number): Promise<VagaWithRelations[]> => {
-  try {
-    // Set company context for RLS
-    await setCompanyContext(companyId);
-    
-    // Buscar vagas
-    const { data: vagas, error: vagasError } = await supabase
-      .from('vaga')
-      .select('*')
-      .eq('company_id', companyId)
-      .order('created_at', { ascending: false });
-
-    if (vagasError) {
-      throw new Error(`Erro ao buscar vagas: ${vagasError.message}`);
-    }
-
-    if (!vagas || vagas.length === 0) {
-      return [];
-    }
-
-    // Buscar dados relacionados em paralelo
-    const [clientesData, unidadesData, operacoesData, statusData] = await Promise.all([
-      supabase.from('cliente').select('cliente_id, nome').eq('company_id', companyId),
-      supabase.from('unidade').select('id, unidade').eq('company_id', companyId),
-      supabase.from('operacao').select('id, operacao').eq('company_id', companyId),
-      supabase.from('st_vaga').select('id, status_vaga').eq('company_id', companyId)
-    ]);
-
-    // Criar mapas de lookup
-    const clientesMap = new Map();
-    clientesData.data?.forEach(c => clientesMap.set(c.cliente_id, c.nome));
-    
-    const unidadesMap = new Map();
-    unidadesData.data?.forEach(u => unidadesMap.set(u.id, u.unidade));
-    
-    const operacoesMap = new Map();
-    operacoesData.data?.forEach(o => operacoesMap.set(o.id, o.operacao));
-    
-    const statusMap = new Map();
-    statusData.data?.forEach(s => statusMap.set(s.id, s.status_vaga));
-
-    // Enriquecer vagas com dados relacionados
-    const enrichedVagas: VagaWithRelations[] = vagas.map(vaga => ({
-      ...vaga,
-      cliente_nome: clientesMap.get(vaga.cliente_id) || null,
-      unidade_nome: unidadesMap.get(vaga.unidade_id) || null,
-      operacao_nome: operacoesMap.get(vaga.operacao_id) || null,
-      status_nome: statusMap.get(vaga.st_vaga_id) || null,
-    }));
-
-    return enrichedVagas;
-  } catch (error) {
-    console.error('Erro ao buscar vagas com relações:', error);
-    throw error;
+  const response = await fetch(`${API_BASE_URL}/vagas/company/${companyId}`);
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Erro ao buscar vagas: ${response.status}`);
   }
+  return response.json();
 };
 
 // Buscar status de vagas para uma empresa
 export const fetchStatusVagas = async (companyId: number) => {
-  const { data, error } = await supabase
-    .from('st_vaga')
-    .select('*')
-    .eq('company_id', companyId);
-
-  if (error) {
-    throw new Error(`Erro ao buscar status das vagas: ${error.message}`);
+  const response = await fetch(`${API_BASE_URL}/status-vagas/${companyId}`);
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Erro ao buscar status das vagas: ${response.status}`);
   }
-
-  return data || [];
+  return response.json();
 };
 
-// Buscar clientes para uma empresa  
+// Buscar clientes para uma empresa (tabela cliente não tem RLS restritivo, funciona direto)
 export const fetchClientes = async (companyId: number) => {
   const { data, error } = await supabase
     .from('cliente')
     .select('cliente_id, nome')
-    .eq('company_id', companyId);
+    .eq('company_id', companyId)
+    .eq('st_cliente', true);
 
   if (error) {
     throw new Error(`Erro ao buscar clientes: ${error.message}`);
@@ -122,30 +64,22 @@ export const fetchClientes = async (companyId: number) => {
 
 // Buscar unidades para uma empresa
 export const fetchUnidades = async (companyId: number) => {
-  const { data, error } = await supabase
-    .from('unidade')
-    .select('id, unidade')
-    .eq('company_id', companyId);
-
-  if (error) {
-    throw new Error(`Erro ao buscar unidades: ${error.message}`);
+  const response = await fetch(`${API_BASE_URL}/unidades/${companyId}`);
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Erro ao buscar unidades: ${response.status}`);
   }
-
-  return data || [];
+  return response.json();
 };
 
 // Buscar operações para uma empresa
 export const fetchOperacoes = async (companyId: number) => {
-  const { data, error } = await supabase
-    .from('operacao')
-    .select('id, operacao')
-    .eq('company_id', companyId);
-
-  if (error) {
-    throw new Error(`Erro ao buscar operações: ${error.message}`);
+  const response = await fetch(`${API_BASE_URL}/operacoes/${companyId}`);
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Erro ao buscar operações: ${response.status}`);
   }
-
-  return data || [];
+  return response.json();
 };
 
 // Buscar dados da empresa por account_id
@@ -163,138 +97,122 @@ export const fetchCompanyByAccount = async (accountId: string) => {
   return data;
 };
 
-// ========== CRUD OPERATIONS ==========
+// ========== CRUD OPERATIONS (via backend - bypasses RLS) ==========
 
 // Criar nova vaga
 export const createVaga = async (vagaData: Omit<InsertVaga, 'created_at' | 'updated_at'>) => {
-  await setCompanyContext(vagaData.company_id);
-  
-  const { data, error } = await supabase
-    .from('vaga')
-    .insert({
-      ...vagaData,
-      updated_at: new Date().toISOString()
-    })
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`Erro ao criar vaga: ${error.message}`);
+  const response = await fetch(`${API_BASE_URL}/vagas`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(vagaData),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Erro ao criar vaga: ${response.status}`);
   }
-
-  return data;
+  return response.json();
 };
 
 // Atualizar vaga existente
 export const updateVaga = async (id: number, vagaData: Partial<Omit<InsertVaga, 'company_id' | 'created_at'>>, companyId: number) => {
-  await setCompanyContext(companyId);
-  
-  const { data, error } = await supabase
-    .from('vaga')
-    .update({
-      ...vagaData,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', id)
-    .eq('company_id', companyId)
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`Erro ao atualizar vaga: ${error.message}`);
+  const response = await fetch(`${API_BASE_URL}/vagas/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...vagaData, company_id: companyId }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Erro ao atualizar vaga: ${response.status}`);
   }
-
-  return data;
+  return response.json();
 };
 
 // Deletar vaga
 export const deleteVaga = async (id: number, companyId: number) => {
-  await setCompanyContext(companyId);
-  
-  const { error } = await supabase
-    .from('vaga')
-    .delete()
-    .eq('id', id)
-    .eq('company_id', companyId);
-
-  if (error) {
-    throw new Error(`Erro ao deletar vaga: ${error.message}`);
+  const response = await fetch(`${API_BASE_URL}/vagas/${id}?company_id=${companyId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Erro ao deletar vaga: ${response.status}`);
   }
-
   return { success: true };
 };
 
 // Atualizar status da vaga
 export const updateVagaStatus = async (id: number, statusId: number, companyId: number) => {
-  await setCompanyContext(companyId);
-  
-  const { data, error } = await supabase
-    .from('vaga')
-    .update({ 
-      st_vaga_id: statusId,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', id)
-    .eq('company_id', companyId)
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`Erro ao atualizar status da vaga: ${error.message}`);
+  const response = await fetch(`${API_BASE_URL}/vagas/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ st_vaga_id: statusId, company_id: companyId }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Erro ao atualizar status da vaga: ${response.status}`);
   }
-
-  return data;
+  return response.json();
 };
 
-// ========== AUXILIARY CRUD OPERATIONS ==========
+// ========== AUXILIARY CRUD OPERATIONS (via backend - bypasses RLS) ==========
 
 // Criar novo status de vaga
 export const createStatusVaga = async (statusData: Omit<InsertStVaga, 'created_at' | 'updated_at'>) => {
-  await setCompanyContext(Number(statusData.company_id));
-  
-  const { data, error } = await supabase
-    .from('st_vaga')
-    .insert(statusData)
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`Erro ao criar status de vaga: ${error.message}`);
+  const response = await fetch(`${API_BASE_URL}/status-vagas`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(statusData),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Erro ao criar status de vaga: ${response.status}`);
   }
-
-  return data;
+  return response.json();
 };
 
 // Criar nova unidade
 export const createUnidade = async (unidadeData: Omit<InsertUnidade, 'created_at' | 'updated_at'>) => {
-  await setCompanyContext(Number(unidadeData.company_id));
-  
-  const { data, error } = await supabase
-    .from('unidade')
-    .insert(unidadeData)
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`Erro ao criar unidade: ${error.message}`);
+  const response = await fetch(`${API_BASE_URL}/unidades`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(unidadeData),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Erro ao criar unidade: ${response.status}`);
   }
-
-  return data;
+  return response.json();
 };
 
 // Criar nova operação
 export const createOperacao = async (operacaoData: Omit<InsertOperacao, 'created_at' | 'updated_at'>) => {
-  await setCompanyContext(Number(operacaoData.company_id));
-  
-  const { data, error } = await supabase
-    .from('operacao')
-    .insert(operacaoData)
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`Erro ao criar operação: ${error.message}`);
+  const response = await fetch(`${API_BASE_URL}/operacoes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(operacaoData),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Erro ao criar operação: ${response.status}`);
   }
+  return response.json();
+};
 
-  return data;
+// Criar endereço de vaga
+export const createEndVaga = async (endData: {
+  vaga_id: number;
+  logradouro_id: number;
+  numero?: string | null;
+  ds_complemento?: string | null;
+  st_end?: boolean;
+}) => {
+  const response = await fetch(`${API_BASE_URL}/end-vaga`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(endData),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || `Erro ao criar endereço da vaga: ${response.status}`);
+  }
+  return response.json();
 };
