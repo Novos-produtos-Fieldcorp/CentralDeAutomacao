@@ -1,0 +1,867 @@
+injected.js:37 Hybrid API Configuration: {hostname: 'd36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev', environment: 'Unknown', apiBaseUrl: '/api', supabaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co', hasAnonKey: true, …}
+injected.js:37 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+(anonymous) @ injected.js:37
+_GoTrueClient @ @supabase_supabase-js.js?v=2afebe29:5715
+SupabaseAuthClient @ @supabase_supabase-js.js?v=2afebe29:7893
+_initSupabaseAuthClient @ @supabase_supabase-js.js?v=2afebe29:8084
+SupabaseClient @ @supabase_supabase-js.js?v=2afebe29:7962
+createClient @ @supabase_supabase-js.js?v=2afebe29:8126
+(anonymous) @ supabase.ts:11
+injected.js:37 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+injected.js:37 🔍 [WiseAppAccess] Account ID da URL: undefined
+injected.js:37 🔍 [WiseAppAccess] Account ID do localStorage: 20
+injected.js:37 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 20
+injected.js:37 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+injected.js:37 🔍 [WiseAppAccess] Account ID da URL: undefined
+injected.js:37 🔍 [WiseAppAccess] Account ID do localStorage: 20
+injected.js:37 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 20
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'battery'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'battery'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'ambient-light-sensor'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'battery'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'execution-while-not-rendered'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'execution-while-out-of-viewport'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'layout-animations'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'legacy-image-formats'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'navigation-override'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'oversized-images'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'publickey-credentials'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'speaker-selection'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'unoptimized-images'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'unsized-media'.
+CentralDeAutomacao-Gabriel:1 Unrecognized feature: 'pointer-lock'.
+CentralDeAutomacao-Gabriel:1 Allow attribute will take precedence over 'allowfullscreen'.
+CentralDeAutomacao-Gabriel:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:143  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:143
+  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.htm…s&id=%3Ar32e%3A:143
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/cliente?select=*&company_id=eq.null&st_cliente=eq.true&order=nome.asc 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4404
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4425
+fulfilled @ @supabase_supabase-js.js?v=2afebe29:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=2afebe29:4390
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4392
+__awaiter8 @ @supabase_supabase-js.js?v=2afebe29:4374
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4415
+then @ @supabase_supabase-js.js?v=2afebe29:90
+  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/cliente?select=*&company_id=eq.null&st_cliente=eq.true&order=nome.asc 400 (Bad Request)
+apply @ d36257fe-d872-414a-8…ols/injected.js:214
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4404
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4425
+fulfilled @ d36257fe-d872-414a-8….js?v=2afebe29:4377
+Promise.then
+step @ d36257fe-d872-414a-8….js?v=2afebe29:4390
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4392
+__awaiter8 @ d36257fe-d872-414a-8….js?v=2afebe29:4374
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4415
+then @ d36257fe-d872-414a-8…js.js?v=2afebe29:90
+injected.js:37 Error fetching clientes: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type bigint: "null"'}
+(anonymous) @ injected.js:37
+fetchClientes @ AgregadosLista.tsx:1603
+await in fetchClientes
+(anonymous) @ AgregadosLista.tsx:1080
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=2afebe29:16915
+commitPassiveMountOnFiber @ chunk-NFC5BX5N.js?v=2afebe29:18156
+commitPassiveMountEffects_complete @ chunk-NFC5BX5N.js?v=2afebe29:18129
+commitPassiveMountEffects_begin @ chunk-NFC5BX5N.js?v=2afebe29:18119
+commitPassiveMountEffects @ chunk-NFC5BX5N.js?v=2afebe29:18109
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=2afebe29:19490
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=2afebe29:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=2afebe29:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=2afebe29:19432
+commitRoot @ chunk-NFC5BX5N.js?v=2afebe29:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=2afebe29:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18718
+workLoop @ chunk-NFC5BX5N.js?v=2afebe29:197
+flushWork @ chunk-NFC5BX5N.js?v=2afebe29:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=2afebe29:384
+injected.js:37 ✅ Cidades encontradas para filtro: (136) ['Americana', 'Aracariguama', 'Aracatuba', 'Araquari', 'Araraquara', 'Araçariguama', 'Arujá', 'Atibaia', 'Barra Mansa', 'Barueri', 'Bauru', 'Belford Roxo', 'Blumenau', 'Bragança Paulista', 'Brasília', 'CARAPICUIBA', 'Cabreúva', 'Caieiras', 'Cajamar', 'Camboriú', 'Campinas', 'Campo Grande', 'Campo Limpo Paulista', 'Caraguatatuba', 'Carapicuíba', 'Catanduva', 'Caçapava', 'Cerquilho', 'Chapecó', 'Conceição do Jacuípe', 'Contagem', 'Cotia', 'Cubatão', 'Descalvado', 'Diadema', 'Embu das Artes', 'Embu-Guacu', 'Embu-Guaçu', 'Engenheiro Coelho', 'Erechim', 'Esteio', 'Eusébio', 'FORTALEZA', 'Feira de Santana', 'Ferraz de Vasconcelos', 'Fortaleza', 'Franca', 'Francisco Morato', 'Franco da Rocha', 'Garuva', 'Guarema', 'Guarujá', 'Guarulhos', 'Hortolândia', 'Ibiúna', 'Imperatriz', 'Indaiatuba', 'Iperó', 'Irineópolis', 'Itajaí', 'Itapecerica da Serra', 'Itapetininga', 'Itapevi', 'Itapoá', 'Itaquaquecetuba', 'Itatiba', 'Itu', 'Itupeva', 'Itápolis', 'Jacareí', 'Jandira', 'Jarinu', 'Jaú', 'Joinville', 'Jundiaí', 'Juquitiba', 'Laranjal Paulista', 'Limeira', 'Lorena', 'Louveira', 'Mairinque', 'Mairiporã', 'Maracanaú', 'Mauá', 'Mendonça', 'Mogi das Cruzes', 'Mongaguá', 'Nova Iguaçu', 'Novo Horizonte', 'Osasco', 'Pindamonhangaba', 'Piracaia', 'Piracicaba', 'Pirapora do Bom Jesus', 'Piraí', 'Ponta Grossa', 'Poá', 'Praia Grande', 'Resende', 'Ribeirão Pires', …]
+injected.js:37 📊 [WiseAppAccess] Resultado da busca da empresa: {error: null, data: {…}}
+injected.js:37 ✅ [WiseAppAccess] Empresa encontrada: {company_id: 5}
+injected.js:37 📧 [WiseAppAccess] Mostrando modal de autenticação (e-mail obrigatório)
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/vw_agregados_completo?select=*&company_id=eq.null&funcao=eq.Agregado&order=data_cadastro.desc&offset=0&limit=50 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4404
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4425
+fulfilled @ @supabase_supabase-js.js?v=2afebe29:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=2afebe29:4390
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4392
+__awaiter8 @ @supabase_supabase-js.js?v=2afebe29:4374
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4415
+then @ @supabase_supabase-js.js?v=2afebe29:90
+  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/vw_agregados_completo?select=*&company_id=eq.null&funcao=eq.Agregado&order=data_cadastro.desc&offset=0&limit=50 400 (Bad Request)
+apply @ d36257fe-d872-414a-8…ols/injected.js:214
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4404
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4425
+fulfilled @ d36257fe-d872-414a-8….js?v=2afebe29:4377
+Promise.then
+step @ d36257fe-d872-414a-8….js?v=2afebe29:4390
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4392
+__awaiter8 @ d36257fe-d872-414a-8….js?v=2afebe29:4374
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4415
+then @ d36257fe-d872-414a-8…js.js?v=2afebe29:90
+injected.js:37 Error fetching contratados: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type bigint: "null"'}
+(anonymous) @ injected.js:37
+fetchContratados @ AgregadosLista.tsx:1426
+await in fetchContratados
+(anonymous) @ AgregadosLista.tsx:1076
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=2afebe29:16915
+commitPassiveMountOnFiber @ chunk-NFC5BX5N.js?v=2afebe29:18156
+commitPassiveMountEffects_complete @ chunk-NFC5BX5N.js?v=2afebe29:18129
+commitPassiveMountEffects_begin @ chunk-NFC5BX5N.js?v=2afebe29:18119
+commitPassiveMountEffects @ chunk-NFC5BX5N.js?v=2afebe29:18109
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=2afebe29:19490
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=2afebe29:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=2afebe29:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=2afebe29:19432
+commitRoot @ chunk-NFC5BX5N.js?v=2afebe29:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=2afebe29:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18718
+workLoop @ chunk-NFC5BX5N.js?v=2afebe29:197
+flushWork @ chunk-NFC5BX5N.js?v=2afebe29:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=2afebe29:384
+301117f63afe5c6f.js:14  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553219558&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=1&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 301117f63afe5c6f.js:14
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/cliente?select=*&company_id=eq.null&st_cliente=eq.true&order=nome.asc 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4404
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4425
+fulfilled @ @supabase_supabase-js.js?v=2afebe29:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=2afebe29:4390
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4392
+__awaiter8 @ @supabase_supabase-js.js?v=2afebe29:4374
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4415
+then @ @supabase_supabase-js.js?v=2afebe29:90
+  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/cliente?select=*&company_id=eq.null&st_cliente=eq.true&order=nome.asc 400 (Bad Request)
+apply @ d36257fe-d872-414a-8…ols/injected.js:214
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4404
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4425
+fulfilled @ d36257fe-d872-414a-8….js?v=2afebe29:4377
+Promise.then
+step @ d36257fe-d872-414a-8….js?v=2afebe29:4390
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4392
+__awaiter8 @ d36257fe-d872-414a-8….js?v=2afebe29:4374
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4415
+then @ d36257fe-d872-414a-8…js.js?v=2afebe29:90
+injected.js:37 Error fetching clientes: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type bigint: "null"'}
+(anonymous) @ injected.js:37
+fetchClientes @ AgregadosLista.tsx:1603
+await in fetchClientes
+(anonymous) @ AgregadosLista.tsx:1080
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=2afebe29:16915
+invokePassiveEffectMountInDEV @ chunk-NFC5BX5N.js?v=2afebe29:18324
+invokeEffectsInDev @ chunk-NFC5BX5N.js?v=2afebe29:19701
+commitDoubleInvokeEffectsInDEV @ chunk-NFC5BX5N.js?v=2afebe29:19686
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=2afebe29:19503
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=2afebe29:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=2afebe29:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=2afebe29:19432
+commitRoot @ chunk-NFC5BX5N.js?v=2afebe29:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=2afebe29:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18718
+workLoop @ chunk-NFC5BX5N.js?v=2afebe29:197
+flushWork @ chunk-NFC5BX5N.js?v=2afebe29:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=2afebe29:384
+injected.js:37 📊 [WiseAppAccess] Resultado da busca da empresa: {error: null, data: {…}}
+injected.js:37 ✅ [WiseAppAccess] Empresa encontrada: {company_id: 5}
+injected.js:37 📧 [WiseAppAccess] Mostrando modal de autenticação (e-mail obrigatório)
+injected.js:37 ✅ Cidades encontradas para filtro: (136) ['Americana', 'Aracariguama', 'Aracatuba', 'Araquari', 'Araraquara', 'Araçariguama', 'Arujá', 'Atibaia', 'Barra Mansa', 'Barueri', 'Bauru', 'Belford Roxo', 'Blumenau', 'Bragança Paulista', 'Brasília', 'CARAPICUIBA', 'Cabreúva', 'Caieiras', 'Cajamar', 'Camboriú', 'Campinas', 'Campo Grande', 'Campo Limpo Paulista', 'Caraguatatuba', 'Carapicuíba', 'Catanduva', 'Caçapava', 'Cerquilho', 'Chapecó', 'Conceição do Jacuípe', 'Contagem', 'Cotia', 'Cubatão', 'Descalvado', 'Diadema', 'Embu das Artes', 'Embu-Guacu', 'Embu-Guaçu', 'Engenheiro Coelho', 'Erechim', 'Esteio', 'Eusébio', 'FORTALEZA', 'Feira de Santana', 'Ferraz de Vasconcelos', 'Fortaleza', 'Franca', 'Francisco Morato', 'Franco da Rocha', 'Garuva', 'Guarema', 'Guarujá', 'Guarulhos', 'Hortolândia', 'Ibiúna', 'Imperatriz', 'Indaiatuba', 'Iperó', 'Irineópolis', 'Itajaí', 'Itapecerica da Serra', 'Itapetininga', 'Itapevi', 'Itapoá', 'Itaquaquecetuba', 'Itatiba', 'Itu', 'Itupeva', 'Itápolis', 'Jacareí', 'Jandira', 'Jarinu', 'Jaú', 'Joinville', 'Jundiaí', 'Juquitiba', 'Laranjal Paulista', 'Limeira', 'Lorena', 'Louveira', 'Mairinque', 'Mairiporã', 'Maracanaú', 'Mauá', 'Mendonça', 'Mogi das Cruzes', 'Mongaguá', 'Nova Iguaçu', 'Novo Horizonte', 'Osasco', 'Pindamonhangaba', 'Piracaia', 'Piracicaba', 'Pirapora do Bom Jesus', 'Piraí', 'Ponta Grossa', 'Poá', 'Praia Grande', 'Resende', 'Ribeirão Pires', …]
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/vw_agregados_completo?select=*&company_id=eq.null&funcao=eq.Agregado&order=data_cadastro.desc&offset=0&limit=50 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4404
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4425
+fulfilled @ @supabase_supabase-js.js?v=2afebe29:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=2afebe29:4390
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4392
+__awaiter8 @ @supabase_supabase-js.js?v=2afebe29:4374
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4415
+then @ @supabase_supabase-js.js?v=2afebe29:90
+  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/vw_agregados_completo?select=*&company_id=eq.null&funcao=eq.Agregado&order=data_cadastro.desc&offset=0&limit=50 400 (Bad Request)
+apply @ d36257fe-d872-414a-8…ols/injected.js:214
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4404
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4425
+fulfilled @ d36257fe-d872-414a-8….js?v=2afebe29:4377
+Promise.then
+step @ d36257fe-d872-414a-8….js?v=2afebe29:4390
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4392
+__awaiter8 @ d36257fe-d872-414a-8….js?v=2afebe29:4374
+(anonymous) @ d36257fe-d872-414a-8….js?v=2afebe29:4415
+then @ d36257fe-d872-414a-8…js.js?v=2afebe29:90
+injected.js:37 Error fetching contratados: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type bigint: "null"'}
+(anonymous) @ injected.js:37
+fetchContratados @ AgregadosLista.tsx:1426
+await in fetchContratados
+(anonymous) @ AgregadosLista.tsx:1076
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=2afebe29:16915
+invokePassiveEffectMountInDEV @ chunk-NFC5BX5N.js?v=2afebe29:18324
+invokeEffectsInDev @ chunk-NFC5BX5N.js?v=2afebe29:19701
+commitDoubleInvokeEffectsInDEV @ chunk-NFC5BX5N.js?v=2afebe29:19686
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=2afebe29:19503
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=2afebe29:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=2afebe29:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=2afebe29:19432
+commitRoot @ chunk-NFC5BX5N.js?v=2afebe29:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=2afebe29:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18718
+workLoop @ chunk-NFC5BX5N.js?v=2afebe29:197
+flushWork @ chunk-NFC5BX5N.js?v=2afebe29:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=2afebe29:384
+301117f63afe5c6f.js:14  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553220721&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=305&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 301117f63afe5c6f.js:14
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+post @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendEventsViaPost @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendEvents @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_retryFailedLogs @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+_safeRetryFailedLogs @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+r._notifyVisibilityChanged @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+content.js:11 Uncaught Error: Extension context invalidated.
+    at i (content.js:11:1376)
+    at content.js:11:1066
+i @ content.js:11
+(anonymous) @ content.js:11
+setTimeout
+o @ content.js:11
+(anonymous) @ content.js:11
+setTimeout
+c @ content.js:11
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:32 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+301117f63afe5c6f.js:14  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553221283&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=305&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 301117f63afe5c6f.js:14
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+a @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+post @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendEventsViaPost @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendEvents @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_retryFailedLogs @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+_safeRetryFailedLogs @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+r._notifyVisibilityChanged @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553221686&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=305&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 301117f63afe5c6f.js:14
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553221686&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=305&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 301117f63afe5c6f.js:14:10038
+    at o.<anonymous> (181c7b4c4f0553d0.js:2:38808)
+    at Generator.next (<anonymous>)
+    at 181c7b4c4f0553d0.js:2:36352
+    at new Promise (<anonymous>)
+    at i (181c7b4c4f0553d0.js:2:36101)
+    at o._sendRequest (181c7b4c4f0553d0.js:2:38031)
+    at 181c7b4c4f0553d0.js:2:26872
+    at r.ErrorBoundary._capture (181c7b4c4f0553d0.js:2:27170)
+    at e.<computed> [as _sendRequest] (181c7b4c4f0553d0.js:2:26841)
+    at o.<anonymous> (181c7b4c4f0553d0.js:2:39979)
+    at Generator.next (<anonymous>)
+    at o (181c7b4c4f0553d0.js:2:36157)
+(anonymous) @ 301117f63afe5c6f.js:14
+error @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+a @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 301117f63afe5c6f.js:14
+warn @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14   WARN  [Statsig] Unable to save failed logs to storage
+(anonymous) @ 301117f63afe5c6f.js:14
+warn @ 181c7b4c4f0553d0.js:2
+_saveFailedLogsToStorage @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553221731&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=1&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 301117f63afe5c6f.js:14
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+post @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendEventsViaPost @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendEvents @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+flush @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+_safeFlushAndForget @ 181c7b4c4f0553d0.js:2
+e @ 181c7b4c4f0553d0.js:2
+r @ 301117f63afe5c6f.js:14
+301117f63afe5c6f.js:14  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553222248&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=1&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 301117f63afe5c6f.js:14
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+a @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+post @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendEventsViaPost @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendEvents @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+flush @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+_safeFlushAndForget @ 181c7b4c4f0553d0.js:2
+e @ 181c7b4c4f0553d0.js:2
+r @ 301117f63afe5c6f.js:14
+301117f63afe5c6f.js:14  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553223292&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=305&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 301117f63afe5c6f.js:14
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1772548359376%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-Gabriel%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ net::ERR_BLOCKED_BY_CLIENT
+H @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1772548359376%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-Gabriel%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+P @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1772548359376%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-Gabriel%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1772548359376%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252Ft%252Ffieldcorp%252Frepls%252FCentralDeAutomacao-Gabriel%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+r @ 301117f63afe5c6f.js:14
+301117f63afe5c6f.js:14  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553224070&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=1&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 301117f63afe5c6f.js:14
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553224070&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=1&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 301117f63afe5c6f.js:14:10038
+    at o.<anonymous> (181c7b4c4f0553d0.js:2:38808)
+    at Generator.next (<anonymous>)
+    at 181c7b4c4f0553d0.js:2:36352
+    at new Promise (<anonymous>)
+    at i (181c7b4c4f0553d0.js:2:36101)
+    at o._sendRequest (181c7b4c4f0553d0.js:2:38031)
+    at 181c7b4c4f0553d0.js:2:26872
+    at r.ErrorBoundary._capture (181c7b4c4f0553d0.js:2:27170)
+    at e.<computed> [as _sendRequest] (181c7b4c4f0553d0.js:2:26841)
+    at o.<anonymous> (181c7b4c4f0553d0.js:2:39979)
+    at Generator.next (<anonymous>)
+    at o (181c7b4c4f0553d0.js:2:36157)
+(anonymous) @ 301117f63afe5c6f.js:14
+error @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+a @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 301117f63afe5c6f.js:14
+warn @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553224273&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=1&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 301117f63afe5c6f.js:14
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+injected.js:37 Hybrid API Configuration: {hostname: 'd36257fe-d872-414a-8300-e1f9d5ef1301-00-3jn0lj8nyojag.worf.replit.dev', environment: 'Unknown', apiBaseUrl: '/api', supabaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co', hasAnonKey: true, …}
+injected.js:37 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+(anonymous) @ injected.js:37
+_GoTrueClient @ @supabase_supabase-js.js?v=2afebe29:5715
+SupabaseAuthClient @ @supabase_supabase-js.js?v=2afebe29:7893
+_initSupabaseAuthClient @ @supabase_supabase-js.js?v=2afebe29:8084
+SupabaseClient @ @supabase_supabase-js.js?v=2afebe29:7962
+createClient @ @supabase_supabase-js.js?v=2afebe29:8126
+(anonymous) @ supabase.ts:11
+injected.js:37 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+injected.js:37 🔍 [WiseAppAccess] Account ID da URL: undefined
+injected.js:37 🔍 [WiseAppAccess] Account ID do localStorage: 20
+injected.js:37 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 20
+injected.js:37 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+injected.js:37 🔍 [WiseAppAccess] Account ID da URL: undefined
+injected.js:37 🔍 [WiseAppAccess] Account ID do localStorage: 20
+injected.js:37 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 20
+workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:143  GET https://replit.com/public/js/beacon.js net::ERR_BLOCKED_BY_CLIENT
+onIframeLoad @ workspace_iframe.html?initialPath=%2Fmotoristas%2Fagregados&id=%3Ar32e%3A:143
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/cliente?select=*&company_id=eq.null&st_cliente=eq.true&order=nome.asc 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4404
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4425
+fulfilled @ @supabase_supabase-js.js?v=2afebe29:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=2afebe29:4390
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4392
+__awaiter8 @ @supabase_supabase-js.js?v=2afebe29:4374
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4415
+then @ @supabase_supabase-js.js?v=2afebe29:90
+injected.js:37 Error fetching clientes: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type bigint: "null"'}
+(anonymous) @ injected.js:37
+fetchClientes @ AgregadosLista.tsx:1603
+await in fetchClientes
+(anonymous) @ AgregadosLista.tsx:1080
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=2afebe29:16915
+commitPassiveMountOnFiber @ chunk-NFC5BX5N.js?v=2afebe29:18156
+commitPassiveMountEffects_complete @ chunk-NFC5BX5N.js?v=2afebe29:18129
+commitPassiveMountEffects_begin @ chunk-NFC5BX5N.js?v=2afebe29:18119
+commitPassiveMountEffects @ chunk-NFC5BX5N.js?v=2afebe29:18109
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=2afebe29:19490
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=2afebe29:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=2afebe29:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=2afebe29:19432
+commitRoot @ chunk-NFC5BX5N.js?v=2afebe29:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=2afebe29:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18718
+workLoop @ chunk-NFC5BX5N.js?v=2afebe29:197
+flushWork @ chunk-NFC5BX5N.js?v=2afebe29:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=2afebe29:384
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/vw_agregados_completo?select=*&company_id=eq.null&funcao=eq.Agregado&order=data_cadastro.desc&offset=0&limit=50 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4404
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4425
+fulfilled @ @supabase_supabase-js.js?v=2afebe29:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=2afebe29:4390
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4392
+__awaiter8 @ @supabase_supabase-js.js?v=2afebe29:4374
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4415
+then @ @supabase_supabase-js.js?v=2afebe29:90
+injected.js:37 Error fetching contratados: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type bigint: "null"'}
+(anonymous) @ injected.js:37
+fetchContratados @ AgregadosLista.tsx:1426
+await in fetchContratados
+(anonymous) @ AgregadosLista.tsx:1076
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=2afebe29:16915
+commitPassiveMountOnFiber @ chunk-NFC5BX5N.js?v=2afebe29:18156
+commitPassiveMountEffects_complete @ chunk-NFC5BX5N.js?v=2afebe29:18129
+commitPassiveMountEffects_begin @ chunk-NFC5BX5N.js?v=2afebe29:18119
+commitPassiveMountEffects @ chunk-NFC5BX5N.js?v=2afebe29:18109
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=2afebe29:19490
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=2afebe29:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=2afebe29:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=2afebe29:19432
+commitRoot @ chunk-NFC5BX5N.js?v=2afebe29:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=2afebe29:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18718
+workLoop @ chunk-NFC5BX5N.js?v=2afebe29:197
+flushWork @ chunk-NFC5BX5N.js?v=2afebe29:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=2afebe29:384
+injected.js:37 ✅ Cidades encontradas para filtro: (136) ['Americana', 'Aracariguama', 'Aracatuba', 'Araquari', 'Araraquara', 'Araçariguama', 'Arujá', 'Atibaia', 'Barra Mansa', 'Barueri', 'Bauru', 'Belford Roxo', 'Blumenau', 'Bragança Paulista', 'Brasília', 'CARAPICUIBA', 'Cabreúva', 'Caieiras', 'Cajamar', 'Camboriú', 'Campinas', 'Campo Grande', 'Campo Limpo Paulista', 'Caraguatatuba', 'Carapicuíba', 'Catanduva', 'Caçapava', 'Cerquilho', 'Chapecó', 'Conceição do Jacuípe', 'Contagem', 'Cotia', 'Cubatão', 'Descalvado', 'Diadema', 'Embu das Artes', 'Embu-Guacu', 'Embu-Guaçu', 'Engenheiro Coelho', 'Erechim', 'Esteio', 'Eusébio', 'FORTALEZA', 'Feira de Santana', 'Ferraz de Vasconcelos', 'Fortaleza', 'Franca', 'Francisco Morato', 'Franco da Rocha', 'Garuva', 'Guarema', 'Guarujá', 'Guarulhos', 'Hortolândia', 'Ibiúna', 'Imperatriz', 'Indaiatuba', 'Iperó', 'Irineópolis', 'Itajaí', 'Itapecerica da Serra', 'Itapetininga', 'Itapevi', 'Itapoá', 'Itaquaquecetuba', 'Itatiba', 'Itu', 'Itupeva', 'Itápolis', 'Jacareí', 'Jandira', 'Jarinu', 'Jaú', 'Joinville', 'Jundiaí', 'Juquitiba', 'Laranjal Paulista', 'Limeira', 'Lorena', 'Louveira', 'Mairinque', 'Mairiporã', 'Maracanaú', 'Mauá', 'Mendonça', 'Mogi das Cruzes', 'Mongaguá', 'Nova Iguaçu', 'Novo Horizonte', 'Osasco', 'Pindamonhangaba', 'Piracaia', 'Piracicaba', 'Pirapora do Bom Jesus', 'Piraí', 'Ponta Grossa', 'Poá', 'Praia Grande', 'Resende', 'Ribeirão Pires', …]
+injected.js:37 📊 [WiseAppAccess] Resultado da busca da empresa: {error: null, data: {…}}
+injected.js:37 ✅ [WiseAppAccess] Empresa encontrada: {company_id: 5}
+injected.js:37 📧 [WiseAppAccess] Mostrando modal de autenticação (e-mail obrigatório)
+injected.js:37 📊 [WiseAppAccess] Resultado da busca da empresa: {error: null, data: {…}}
+injected.js:37 ✅ [WiseAppAccess] Empresa encontrada: {company_id: 5}
+injected.js:37 📧 [WiseAppAccess] Mostrando modal de autenticação (e-mail obrigatório)
+injected.js:37 ✅ Cidades encontradas para filtro: (136) ['Americana', 'Aracariguama', 'Aracatuba', 'Araquari', 'Araraquara', 'Araçariguama', 'Arujá', 'Atibaia', 'Barra Mansa', 'Barueri', 'Bauru', 'Belford Roxo', 'Blumenau', 'Bragança Paulista', 'Brasília', 'CARAPICUIBA', 'Cabreúva', 'Caieiras', 'Cajamar', 'Camboriú', 'Campinas', 'Campo Grande', 'Campo Limpo Paulista', 'Caraguatatuba', 'Carapicuíba', 'Catanduva', 'Caçapava', 'Cerquilho', 'Chapecó', 'Conceição do Jacuípe', 'Contagem', 'Cotia', 'Cubatão', 'Descalvado', 'Diadema', 'Embu das Artes', 'Embu-Guacu', 'Embu-Guaçu', 'Engenheiro Coelho', 'Erechim', 'Esteio', 'Eusébio', 'FORTALEZA', 'Feira de Santana', 'Ferraz de Vasconcelos', 'Fortaleza', 'Franca', 'Francisco Morato', 'Franco da Rocha', 'Garuva', 'Guarema', 'Guarujá', 'Guarulhos', 'Hortolândia', 'Ibiúna', 'Imperatriz', 'Indaiatuba', 'Iperó', 'Irineópolis', 'Itajaí', 'Itapecerica da Serra', 'Itapetininga', 'Itapevi', 'Itapoá', 'Itaquaquecetuba', 'Itatiba', 'Itu', 'Itupeva', 'Itápolis', 'Jacareí', 'Jandira', 'Jarinu', 'Jaú', 'Joinville', 'Jundiaí', 'Juquitiba', 'Laranjal Paulista', 'Limeira', 'Lorena', 'Louveira', 'Mairinque', 'Mairiporã', 'Maracanaú', 'Mauá', 'Mendonça', 'Mogi das Cruzes', 'Mongaguá', 'Nova Iguaçu', 'Novo Horizonte', 'Osasco', 'Pindamonhangaba', 'Piracaia', 'Piracicaba', 'Pirapora do Bom Jesus', 'Piraí', 'Ponta Grossa', 'Poá', 'Praia Grande', 'Resende', 'Ribeirão Pires', …]
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/cliente?select=*&company_id=eq.null&st_cliente=eq.true&order=nome.asc 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4404
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4425
+fulfilled @ @supabase_supabase-js.js?v=2afebe29:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=2afebe29:4390
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4392
+__awaiter8 @ @supabase_supabase-js.js?v=2afebe29:4374
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4415
+then @ @supabase_supabase-js.js?v=2afebe29:90
+injected.js:37 Error fetching clientes: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type bigint: "null"'}
+(anonymous) @ injected.js:37
+fetchClientes @ AgregadosLista.tsx:1603
+await in fetchClientes
+(anonymous) @ AgregadosLista.tsx:1080
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=2afebe29:16915
+invokePassiveEffectMountInDEV @ chunk-NFC5BX5N.js?v=2afebe29:18324
+invokeEffectsInDev @ chunk-NFC5BX5N.js?v=2afebe29:19701
+commitDoubleInvokeEffectsInDEV @ chunk-NFC5BX5N.js?v=2afebe29:19686
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=2afebe29:19503
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=2afebe29:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=2afebe29:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=2afebe29:19432
+commitRoot @ chunk-NFC5BX5N.js?v=2afebe29:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=2afebe29:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18718
+workLoop @ chunk-NFC5BX5N.js?v=2afebe29:197
+flushWork @ chunk-NFC5BX5N.js?v=2afebe29:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=2afebe29:384
+injected.js:214  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/vw_agregados_completo?select=*&company_id=eq.null&funcao=eq.Agregado&order=data_cadastro.desc&offset=0&limit=50 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4404
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4425
+fulfilled @ @supabase_supabase-js.js?v=2afebe29:4377
+Promise.then
+step @ @supabase_supabase-js.js?v=2afebe29:4390
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4392
+__awaiter8 @ @supabase_supabase-js.js?v=2afebe29:4374
+(anonymous) @ @supabase_supabase-js.js?v=2afebe29:4415
+then @ @supabase_supabase-js.js?v=2afebe29:90
+injected.js:37 Error fetching contratados: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type bigint: "null"'}
+(anonymous) @ injected.js:37
+fetchContratados @ AgregadosLista.tsx:1426
+await in fetchContratados
+(anonymous) @ AgregadosLista.tsx:1076
+commitHookEffectListMount @ chunk-NFC5BX5N.js?v=2afebe29:16915
+invokePassiveEffectMountInDEV @ chunk-NFC5BX5N.js?v=2afebe29:18324
+invokeEffectsInDev @ chunk-NFC5BX5N.js?v=2afebe29:19701
+commitDoubleInvokeEffectsInDEV @ chunk-NFC5BX5N.js?v=2afebe29:19686
+flushPassiveEffectsImpl @ chunk-NFC5BX5N.js?v=2afebe29:19503
+flushPassiveEffects @ chunk-NFC5BX5N.js?v=2afebe29:19447
+performSyncWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18868
+flushSyncCallbacks @ chunk-NFC5BX5N.js?v=2afebe29:9119
+commitRootImpl @ chunk-NFC5BX5N.js?v=2afebe29:19432
+commitRoot @ chunk-NFC5BX5N.js?v=2afebe29:19277
+finishConcurrentRender @ chunk-NFC5BX5N.js?v=2afebe29:18805
+performConcurrentWorkOnRoot @ chunk-NFC5BX5N.js?v=2afebe29:18718
+workLoop @ chunk-NFC5BX5N.js?v=2afebe29:197
+flushWork @ chunk-NFC5BX5N.js?v=2afebe29:176
+performWorkUntilDeadline @ chunk-NFC5BX5N.js?v=2afebe29:384
+301117f63afe5c6f.js:14  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553227809&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=305&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 301117f63afe5c6f.js:14
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553227809&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=305&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 301117f63afe5c6f.js:14:10038
+    at o.<anonymous> (181c7b4c4f0553d0.js:2:38808)
+    at Generator.next (<anonymous>)
+    at 181c7b4c4f0553d0.js:2:36352
+    at new Promise (<anonymous>)
+    at i (181c7b4c4f0553d0.js:2:36101)
+    at o._sendRequest (181c7b4c4f0553d0.js:2:38031)
+    at 181c7b4c4f0553d0.js:2:26872
+    at r.ErrorBoundary._capture (181c7b4c4f0553d0.js:2:27170)
+    at e.<computed> [as _sendRequest] (181c7b4c4f0553d0.js:2:26841)
+    at o.<anonymous> (181c7b4c4f0553d0.js:2:39979)
+    at Generator.next (<anonymous>)
+    at o (181c7b4c4f0553d0.js:2:36157)
+(anonymous) @ 301117f63afe5c6f.js:14
+error @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+a @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 301117f63afe5c6f.js:14
+warn @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14   WARN  [Statsig] Unable to save failed logs to storage
+(anonymous) @ 301117f63afe5c6f.js:14
+warn @ 181c7b4c4f0553d0.js:2
+_saveFailedLogsToStorage @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14  POST https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553228793&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=1&gz=1 net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ 301117f63afe5c6f.js:14
+(anonymous) @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14  ERROR  [Statsig] A networking error occurred during POST request to https://prodregistryv2.org/v1/rgstr?k=client-Bp7m7pNB6H0fnSGjVtxN5BeWQw4BSAat4OFsXa3VcTF&st=javascript-client&sv=3.26.0&t=1772553228793&sid=a054f3fe-8e83-4926-9bd4-28fd361def44&ec=1&gz=1. TypeError: Failed to fetch TypeError: Failed to fetch
+    at 301117f63afe5c6f.js:14:10038
+    at o.<anonymous> (181c7b4c4f0553d0.js:2:38808)
+    at Generator.next (<anonymous>)
+    at 181c7b4c4f0553d0.js:2:36352
+    at new Promise (<anonymous>)
+    at i (181c7b4c4f0553d0.js:2:36101)
+    at o._sendRequest (181c7b4c4f0553d0.js:2:38031)
+    at 181c7b4c4f0553d0.js:2:26872
+    at r.ErrorBoundary._capture (181c7b4c4f0553d0.js:2:27170)
+    at e.<computed> [as _sendRequest] (181c7b4c4f0553d0.js:2:26841)
+    at o.<anonymous> (181c7b4c4f0553d0.js:2:39979)
+    at Generator.next (<anonymous>)
+    at o (181c7b4c4f0553d0.js:2:36157)
+(anonymous) @ 301117f63afe5c6f.js:14
+error @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+a @ 181c7b4c4f0553d0.js:2
+Promise.then
+l @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+i @ 181c7b4c4f0553d0.js:2
+_sendRequest @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14   WARN  [Statsig] Failed to flush events.
+(anonymous) @ 301117f63afe5c6f.js:14
+warn @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2
+301117f63afe5c6f.js:14   WARN  [Statsig] Unable to save failed logs to storage
+(anonymous) @ 301117f63afe5c6f.js:14
+warn @ 181c7b4c4f0553d0.js:2
+_saveFailedLogsToStorage @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+_capture @ 181c7b4c4f0553d0.js:2
+e.<computed> @ 181c7b4c4f0553d0.js:2
+(anonymous) @ 181c7b4c4f0553d0.js:2
+o @ 181c7b4c4f0553d0.js:2

@@ -1,77 +1,84 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { ChevronRight } from 'lucide-react';
 
 interface ScrollableTableIndicatorProps {
   containerRef: React.RefObject<HTMLDivElement>;
   className?: string;
 }
 
-const ScrollableTableIndicator: React.FC<ScrollableTableIndicatorProps> = ({ 
-  containerRef,
-  className = ''
-}) => {
-  const [showLeftIndicator, setShowLeftIndicator] = useState(false);
-  const [showRightIndicator, setShowRightIndicator] = useState(false);
+const ScrollableTableIndicator: React.FC<ScrollableTableIndicatorProps> = ({ containerRef }) => {
+  const [showIndicator, setShowIndicator] = useState(false);
+  const [top, setTop] = useState(0);
+  const [left, setLeft] = useState(0);
+
+  const updateAll = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    const canScrollMore = scrollLeft < scrollWidth - clientWidth - 1;
+    setShowIndicator(canScrollMore);
+
+    if (!canScrollMore) return;
+
+    const rect = container.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    const clampedRight = Math.min(rect.right, viewportWidth);
+    const visibleTop = Math.max(rect.top, 0);
+    const visibleBottom = Math.min(rect.bottom, viewportHeight);
+
+    if (visibleBottom > visibleTop) {
+      setTop((visibleTop + visibleBottom) / 2);
+      setLeft(clampedRight - 56);
+    }
+  }, [containerRef]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const checkScroll = () => {
-      const { scrollLeft, scrollWidth, clientWidth } = container;
-      setShowLeftIndicator(scrollLeft > 0);
-      setShowRightIndicator(scrollLeft < scrollWidth - clientWidth - 1); // -1 for rounding errors
-    };
+    updateAll();
 
-    // Initial check
-    checkScroll();
+    container.addEventListener('scroll', updateAll);
+    window.addEventListener('scroll', updateAll, { passive: true });
+    window.addEventListener('resize', updateAll);
 
-    // Add event listener
-    container.addEventListener('scroll', checkScroll);
-    window.addEventListener('resize', checkScroll);
-
-    // Cleanup
     return () => {
-      container.removeEventListener('scroll', checkScroll);
-      window.removeEventListener('resize', checkScroll);
+      container.removeEventListener('scroll', updateAll);
+      window.removeEventListener('scroll', updateAll);
+      window.removeEventListener('resize', updateAll);
     };
-  }, [containerRef]);
+  }, [containerRef, updateAll]);
 
-  const scrollLeft = () => {
+  const scrollToEnd = () => {
     if (containerRef.current) {
-      containerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+      containerRef.current.scrollTo({ left: containerRef.current.scrollWidth, behavior: 'smooth' });
     }
   };
 
-  const scrollRight = () => {
-    if (containerRef.current) {
-      containerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
-    }
-  };
+  if (!showIndicator) return null;
 
-  return (
-    <>
-      {showLeftIndicator && (
-        <div 
-          className={`absolute left-0 top-1/2 transform -translate-y-1/2 z-10 ${className}`}
-          onClick={scrollLeft}
-        >
-          <div className="flex items-center justify-center w-8 h-8 bg-white dark:bg-gray-800 rounded-full shadow-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-            <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-          </div>
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        top,
+        left,
+        transform: 'translateY(-50%)',
+        zIndex: 9999,
+        pointerEvents: 'auto',
+      }}
+    >
+      <div className="scroll-slingshot" onClick={scrollToEnd} style={{ cursor: 'pointer' }}>
+        <div className="flex items-center justify-center w-11 h-11 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-xl transition-colors duration-150 active:scale-95">
+          <ChevronRight className="w-6 h-6 text-gray-700 dark:text-gray-200" />
         </div>
-      )}
-      {showRightIndicator && (
-        <div 
-          className={`absolute right-0 top-1/2 transform -translate-y-1/2 z-10 ${className}`}
-          onClick={scrollRight}
-        >
-          <div className="flex items-center justify-center w-8 h-8 bg-white dark:bg-gray-800 rounded-full shadow-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-            <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-          </div>
-        </div>
-      )}
-    </>
+      </div>
+    </div>,
+    document.body
   );
 };
 

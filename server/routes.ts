@@ -1457,6 +1457,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Criar endereço de vaga
+  app.post("/api/end-vaga", async (req, res) => {
+    try {
+      const { vaga_id, logradouro_id, numero, ds_complemento, st_end } = req.body;
+
+      if (!vaga_id || !logradouro_id) {
+        return res.status(400).json({ error: "vaga_id e logradouro_id são obrigatórios" });
+      }
+
+      const { data: newEndVaga, error } = await supabaseBackend
+        .from("end_vaga")
+        .insert({
+          vaga_id: Number(vaga_id),
+          logradouro_id: Number(logradouro_id),
+          numero: numero || null,
+          ds_complemento: ds_complemento || null,
+          st_end: st_end ?? true,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating end_vaga:", error);
+        return res.status(500).json({ error: "Erro ao criar endereço da vaga", details: error.message });
+      }
+
+      res.status(201).json(newEndVaga);
+    } catch (error) {
+      console.error("Error creating end_vaga:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
   // Tags API routes
   app.get("/api/tags", async (req, res) => {
     try {
