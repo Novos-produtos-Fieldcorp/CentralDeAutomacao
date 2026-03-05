@@ -1,0 +1,423 @@
+precos:60  GET https://centralautomacoes.netlify.app/.netlify/scripts/rum net::ERR_BLOCKED_BY_CLIENT
+index-DkK_2JhV.js:1156 Hybrid API Configuration: {hostname: 'centralautomacoes.netlify.app', environment: 'Netlify (Supabase Functions)', apiBaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api', supabaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co', hasAnonKey: true, …}
+index-DkK_2JhV.js:1155 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+sw @ index-DkK_2JhV.js:1155
+Ive @ index-DkK_2JhV.js:1156
+_initSupabaseAuthClient @ index-DkK_2JhV.js:1156
+Mve @ index-DkK_2JhV.js:1156
+yte @ index-DkK_2JhV.js:1156
+(anonymous) @ index-DkK_2JhV.js:1156
+index-DkK_2JhV.js:1161 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-DkK_2JhV.js:1161 🔍 [WiseAppAccess] Account ID da URL: undefined
+index-DkK_2JhV.js:1161 🔍 [WiseAppAccess] Account ID do localStorage: 45
+index-DkK_2JhV.js:1161 ✅ [WiseAppAccess] Sessão válida encontrada para: alefmarra@marralog.com.br accountId: 45
+index-DkK_2JhV.js:1161 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 16 accountId: 45
+index-DkK_2JhV.js:1156 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 16
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/cesari 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/mitsubishi 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/tegma 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/autoservice 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/autoservice 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/tegma 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/autoservice 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/tegma 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/mitsubishi 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/tegma 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/mitsubishi 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/autoservice 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/cesari 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/cesari 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/mitsubishi 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
+index-DkK_2JhV.js:2157  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/faturamento/cesari 404 (Not Found)
+Lo @ index-DkK_2JhV.js:2157
+await in Lo
+queryFn @ index-DkK_2JhV.js:2157
+i @ index-DkK_2JhV.js:51
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.then
+(anonymous) @ index-DkK_2JhV.js:51
+Promise.catch
+A @ index-DkK_2JhV.js:51
+start @ index-DkK_2JhV.js:51
+fetch @ index-DkK_2JhV.js:51
+Mv @ index-DkK_2JhV.js:51
+onSubscribe @ index-DkK_2JhV.js:51
+subscribe @ index-DkK_2JhV.js:51
+(anonymous) @ index-DkK_2JhV.js:51
+xZ @ index-DkK_2JhV.js:38
+K4 @ index-DkK_2JhV.js:40
+Nx @ index-DkK_2JhV.js:40
+(anonymous) @ index-DkK_2JhV.js:40
+v @ index-DkK_2JhV.js:25
+B @ index-DkK_2JhV.js:25
