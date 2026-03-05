@@ -145,6 +145,11 @@ serve(async (req) => {
       return await handleVagasRoutes(req, path, method, supabase)
     }
 
+    // Operacoes routes
+    if (path.startsWith('/operacoes')) {
+      return await handleOperacoesRoutes(req, path, method, supabase)
+    }
+
     // Inboxes routes (WiseApp)
     if (path.startsWith('/v1/accounts')) {
       return await handleWiseAppProxyRoutes(req, path, method, supabase)
@@ -1736,4 +1741,582 @@ async function handleWiseAppProxyRoutes(req: Request, path: string, method: stri
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
+}
+
+// Operacoes routes handler
+async function handleOperacoesRoutes(req: Request, path: string, method: string, supabase: any) {
+  if (method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  // GET /operacoes/faturamento/cesari
+  if (path === '/operacoes/faturamento/cesari' && method === 'GET') {
+    try {
+      const { data, error } = await supabase
+        .from('faturamento_cesari')
+        .select('*')
+        .eq('ativo', true)
+        .order('local', { ascending: true })
+        .order('sentido', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching faturamento cesari:', error)
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      return new Response(JSON.stringify(data || []), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // POST /operacoes/faturamento/cesari
+  if (path === '/operacoes/faturamento/cesari' && method === 'POST') {
+    try {
+      const body = await req.json()
+      console.log('[POST faturamento cesari] Creating new row:', body)
+
+      const { data, error } = await supabase
+        .from('faturamento_cesari')
+        .insert([{
+          local: body.local,
+          tipo_carga: body.tipo_carga,
+          sentido: body.sentido,
+          destino_especial: body.destino_especial || null,
+          valor_frete: body.valor_frete,
+          valor_pernoite: body.valor_pernoite,
+          comissao_motorista: body.comissao_motorista,
+          comissao_pernoite_feriado_motorista: body.comissao_pernoite_feriado_motorista,
+          observacoes: body.observacoes || null,
+        }])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('[POST faturamento cesari] Insert error:', error)
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // PUT /operacoes/faturamento/cesari/:id
+  const putCesariMatch = path.match(/^\/operacoes\/faturamento\/cesari\/(\d+)$/)
+  if (putCesariMatch && method === 'PUT') {
+    try {
+      const id = putCesariMatch[1]
+      const body = await req.json()
+      console.log(`[PUT faturamento cesari] Updating id=${id}:`, body)
+
+      const updateData: any = { updated_at: new Date().toISOString() }
+      if (body.local !== undefined) updateData.local = body.local
+      if (body.tipo_carga !== undefined) updateData.tipo_carga = body.tipo_carga
+      if (body.sentido !== undefined) updateData.sentido = body.sentido
+      if (body.destino_especial !== undefined) updateData.destino_especial = body.destino_especial
+      if (body.valor_frete !== undefined) updateData.valor_frete = body.valor_frete
+      if (body.valor_pernoite !== undefined) updateData.valor_pernoite = body.valor_pernoite
+      if (body.comissao_motorista !== undefined) updateData.comissao_motorista = body.comissao_motorista
+      if (body.comissao_pernoite_feriado_motorista !== undefined) updateData.comissao_pernoite_feriado_motorista = body.comissao_pernoite_feriado_motorista
+      if (body.observacoes !== undefined) updateData.observacoes = body.observacoes
+      if (body.ativo !== undefined) updateData.ativo = body.ativo
+
+      const { data, error } = await supabase
+        .from('faturamento_cesari')
+        .update(updateData)
+        .eq('id', parseInt(id))
+        .select()
+        .single()
+
+      if (error) {
+        console.error(`[PUT faturamento cesari] Update error:`, error)
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // DELETE /operacoes/faturamento/cesari/:id
+  const deleteCesariMatch = path.match(/^\/operacoes\/faturamento\/cesari\/(\d+)$/)
+  if (deleteCesariMatch && method === 'DELETE') {
+    try {
+      const id = deleteCesariMatch[1]
+      console.log(`[DELETE faturamento cesari] Soft-deleting id=${id}`)
+
+      const { error } = await supabase
+        .from('faturamento_cesari')
+        .update({ ativo: false, updated_at: new Date().toISOString() })
+        .eq('id', parseInt(id))
+
+      if (error) {
+        console.error(`[DELETE faturamento cesari] Error:`, error)
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // GET /operacoes/financeiro/cesari/:companyId
+  const financeiroCesariMatch = path.match(/^\/operacoes\/financeiro\/cesari\/(\d+)$/)
+  if (financeiroCesariMatch && method === 'GET') {
+    try {
+      const companyId = parseInt(financeiroCesariMatch[1])
+      if (isNaN(companyId)) {
+        return new Response(JSON.stringify({ error: 'Invalid companyId' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const { data: opData, error: opError } = await supabase
+        .from('operacao_cesari')
+        .select('*')
+
+      if (opError) {
+        console.error('Error fetching operacao cesari data:', opError)
+        return new Response(JSON.stringify({ error: opError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (!opData || opData.length === 0) {
+        return new Response(JSON.stringify([]), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const viagemIds = [...new Set(opData.map((op: any) => op.id_viagem).filter(Boolean))]
+
+      const { data: viagensEmpresa, error: viagensError } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado, company_id')
+        .in('id', viagemIds)
+
+      if (viagensError) {
+        console.error('Error fetching viagens:', viagensError)
+        return new Response(JSON.stringify({ error: viagensError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const viagensFiltered = (viagensEmpresa || []).filter((v: any) =>
+        v.company_id === companyId || v.company_id === null
+      )
+
+      if (viagensFiltered.length === 0) {
+        return new Response(JSON.stringify([]), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const filteredViagemIds = new Set(viagensFiltered.map((v: any) => v.id))
+      const filteredOpData = opData.filter((op: any) => filteredViagemIds.has(op.id_viagem))
+
+      if (filteredOpData.length === 0) {
+        return new Response(JSON.stringify([]), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const motoristaIds = [...new Set(viagensFiltered.map((v: any) => v.motorista_id).filter(Boolean))]
+      let motoristasMap: Record<number, string> = {}
+      if (motoristaIds.length > 0) {
+        const { data: motoristasData } = await supabase
+          .from('motorista')
+          .select('motorista_id, nome')
+          .in('motorista_id', motoristaIds)
+        ;(motoristasData || []).forEach((m: any) => {
+          motoristasMap[m.motorista_id] = m.nome
+        })
+      }
+
+      const result = filteredOpData.map((op: any) => {
+        const viagem = viagensFiltered.find((v: any) => v.id === op.id_viagem)
+        return {
+          ...op,
+          data_viagem: viagem?.data_hora_inicial,
+          motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+        }
+      }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime())
+
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // GET /operacoes/financeiro/:operacao/:companyId (mitsubishi/autoservice/tegma)
+  const financeiroMatch = path.match(/^\/operacoes\/financeiro\/([^/]+)\/(\d+)$/)
+  if (financeiroMatch && method === 'GET') {
+    try {
+      const operacao = financeiroMatch[1]
+      const companyId = parseInt(financeiroMatch[2])
+
+      if (isNaN(companyId)) {
+        return new Response(JSON.stringify({ error: 'Invalid companyId' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const validOperacoes: Record<string, string> = {
+        mitsubishi: 'operacao_mitsubishi',
+        autoservice: 'operacao_autoservice',
+        tegma: 'operacao_tegma',
+      }
+
+      const tableName = validOperacoes[operacao.toLowerCase()]
+      if (!tableName) {
+        return new Response(JSON.stringify({ error: 'Invalid operacao' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const { data: opData, error: opError } = await supabase
+        .from(tableName)
+        .select('*')
+
+      if (opError) {
+        console.error('Error fetching operacao data:', opError)
+        return new Response(JSON.stringify({ error: opError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (!opData || opData.length === 0) {
+        return new Response(JSON.stringify([]), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const viagemIds = [...new Set(opData.map((op: any) => op.id_viagem).filter(Boolean))]
+
+      const { data: viagensEmpresa, error: viagensError } = await supabase
+        .from('acompanhamento_viagem')
+        .select('id, motorista_id, veiculo_id, data_hora_inicial, km_rodado, company_id')
+        .in('id', viagemIds)
+
+      if (viagensError) {
+        console.error('Error fetching viagens:', viagensError)
+        return new Response(JSON.stringify({ error: viagensError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const viagensFiltered = (viagensEmpresa || []).filter((v: any) =>
+        v.company_id === companyId || v.company_id === null
+      )
+
+      if (viagensFiltered.length === 0) {
+        return new Response(JSON.stringify([]), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const filteredViagemIds = new Set(viagensFiltered.map((v: any) => v.id))
+      const filteredOpData = opData.filter((op: any) => filteredViagemIds.has(op.id_viagem))
+
+      if (filteredOpData.length === 0) {
+        return new Response(JSON.stringify([]), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const motoristaIds = [...new Set(viagensFiltered.map((v: any) => v.motorista_id).filter(Boolean))]
+      let motoristasMap: Record<number, string> = {}
+      if (motoristaIds.length > 0) {
+        const { data: motoristasData } = await supabase
+          .from('motorista')
+          .select('motorista_id, nome')
+          .in('motorista_id', motoristaIds)
+        ;(motoristasData || []).forEach((m: any) => {
+          motoristasMap[m.motorista_id] = m.nome
+        })
+      }
+
+      const result = filteredOpData.map((op: any) => {
+        const viagem = viagensFiltered.find((v: any) => v.id === op.id_viagem)
+        return {
+          ...op,
+          data_viagem: viagem?.data_hora_inicial,
+          motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+        }
+      }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime())
+
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // GET /operacoes/faturamento/:operacao (mitsubishi/autoservice/tegma)
+  const getFaturamentoMatch = path.match(/^\/operacoes\/faturamento\/([^/]+)$/)
+  if (getFaturamentoMatch && method === 'GET') {
+    try {
+      const operacao = getFaturamentoMatch[1]
+
+      const validTables: Record<string, string> = {
+        mitsubishi: 'faturamento_mitsubishi',
+        autoservice: 'faturamento_autoservice',
+        tegma: 'faturamento_tegma',
+      }
+
+      const tableName = validTables[operacao.toLowerCase()]
+      if (!tableName) {
+        return new Response(JSON.stringify({ error: 'Invalid operacao' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      return new Response(JSON.stringify(data?.[0] || null), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // POST /operacoes/faturamento/:operacao (mitsubishi/autoservice/tegma)
+  const postFaturamentoMatch = path.match(/^\/operacoes\/faturamento\/([^/]+)$/)
+  if (postFaturamentoMatch && method === 'POST') {
+    try {
+      const operacao = postFaturamentoMatch[1]
+      const body = await req.json()
+
+      const validTables: Record<string, string> = {
+        mitsubishi: 'faturamento_mitsubishi',
+        autoservice: 'faturamento_autoservice',
+        tegma: 'faturamento_tegma',
+      }
+
+      const tableName = validTables[operacao.toLowerCase()]
+      if (!tableName) {
+        return new Response(JSON.stringify({ error: 'Invalid operacao' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      console.log(`[POST faturamento] Saving to ${tableName}:`, body)
+
+      const { data: existing, error: fetchError } = await supabase
+        .from(tableName)
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (fetchError) {
+        console.error(`[POST faturamento] Error checking existing:`, fetchError)
+        return new Response(JSON.stringify({ error: fetchError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const existingId = existing?.[0]?.id
+
+      if (existingId) {
+        const { data, error } = await supabase
+          .from(tableName)
+          .update({ ...body, updated_at: new Date().toISOString() })
+          .eq('id', existingId)
+          .select()
+          .single()
+
+        if (error) {
+          console.error(`[POST faturamento] Update error:`, error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        console.log(`[POST faturamento] Updated ${tableName} id=${existingId}`)
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      } else {
+        const { data, error } = await supabase
+          .from(tableName)
+          .insert([body])
+          .select()
+          .single()
+
+        if (error) {
+          console.error(`[POST faturamento] Insert error:`, error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        console.log(`[POST faturamento] Inserted new row into ${tableName}`)
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // POST /operacoes/sada/identificar-mitsubishi
+  if (path === '/operacoes/sada/identificar-mitsubishi' && method === 'POST') {
+    try {
+      const { viagens } = await req.json() as { viagens: { id_operacao: number; modelo: string }[] }
+
+      const fallback = (viagens || []).map((v: any) => ({ id_operacao: v.id_operacao, qtd_mitsubishi: 0 }))
+
+      if (!viagens || viagens.length === 0) {
+        return new Response(JSON.stringify([]), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const groqKey = Deno.env.get('GROQ_API_KEY')
+      if (!groqKey) {
+        console.warn('[SADA IA] GROQ_API_KEY não configurado — retornando zeros')
+        return new Response(JSON.stringify(fallback), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const systemPrompt = `Você é um especialista em identificação de modelos de veículos automotores.
+Para cada entrada do array JSON fornecido, identifique quantos veículos da marca Mitsubishi estão descritos no campo "modelo".
+Modelos Mitsubishi incluem (mas não se limitam a): Eclipse Cross, Outlander, ASX, L200, Pajero, Galant, Colt, Lancer, Carisma, Space Star, Triton, Strada, e qualquer variação que mencione explicitamente "mitsubishi".
+Retorne APENAS um array JSON válido, sem nenhum texto adicional, comentários ou markdown. Formato: [{"id_operacao": N, "qtd_mitsubishi": M}]`
+
+      const userPrompt = `Analise as seguintes viagens e retorne quantos veículos Mitsubishi cada uma possui:
+${JSON.stringify(viagens)}
+Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}]`
+
+      const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${groqKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.1,
+          max_tokens: 1024,
+        }),
+      })
+
+      if (!groqResponse.ok) {
+        console.error(`[SADA IA] Groq API error: ${groqResponse.status}`)
+        return new Response(JSON.stringify(fallback), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const groqData = await groqResponse.json()
+      const content: string = groqData?.choices?.[0]?.message?.content || '[]'
+      const jsonMatch = content.match(/\[[\s\S]*\]/)
+      if (!jsonMatch) {
+        console.warn('[SADA IA] Resposta do Groq sem JSON válido:', content)
+        return new Response(JSON.stringify(fallback), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const parsed = JSON.parse(jsonMatch[0])
+      return new Response(JSON.stringify(parsed), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      console.error('[SADA IA] Erro:', error.message)
+      return new Response(JSON.stringify([]), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  return new Response(JSON.stringify({
+    error: 'Endpoint Operacoes não encontrado',
+    path,
+    method
+  }), {
+    status: 404,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  })
 }
