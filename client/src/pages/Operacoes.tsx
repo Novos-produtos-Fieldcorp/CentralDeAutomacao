@@ -1669,7 +1669,6 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
       const { data } = await supabase
         .from('faturamento_sada')
         .select('*')
-        .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(1);
       return data?.[0] || null;
@@ -1888,7 +1887,6 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
       const { data } = await supabase
         .from('faturamento_tegma')
         .select('*')
-        .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(1);
       return data?.[0] || null;
@@ -2105,7 +2103,6 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
       const { data } = await supabase
         .from('faturamento_superterminais')
         .select('*')
-        .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(1);
       return data?.[0] || null;
