@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, Routes, Route, Navigate } from 'react-router-dom';
-import { Users, TruckIcon, LayoutDashboard, Kanban, CheckCircle2, Lock, ChevronRight, Building, Plus, Calendar, Clock } from 'lucide-react';
+import { Users, TruckIcon, LayoutDashboard, Kanban, CheckCircle2, Lock, ChevronRight, Building, Plus, Calendar, Clock, XCircle } from 'lucide-react';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useState, useEffect, useRef } from 'react';
@@ -11,6 +11,7 @@ import AgregadosLista from './contratacao/AgregadosLista';
 import ContratacaoDashboard from './contratacao/ContratacaoDashboard';
 import ContratacaoKanban from './contratacao/ContratacaoKanban';
 import Contratados from './contratacao/Contratados';
+import Inativos from './contratacao/Inativos';
 import MotoristasInfiniteList from './motoristas/MotoristasInfiniteList';
 import DashboardStats from '../components/DashboardStats';
 import VagasList from '../components/VagasList';
@@ -104,6 +105,7 @@ const Motoristas = () => {
     { path: '/motoristas/lista', icon: Users, label: 'Motoristas' },
     { path: '/motoristas/agregados', icon: TruckIcon, label: 'Agregados' },
     { path: '/motoristas/contratados', icon: CheckCircle2, label: 'Contratados' },
+    { path: '/motoristas/inativos', icon: XCircle, label: 'Inativos' },
     { path: '/motoristas/kanban', icon: Kanban, label: 'Kanban' },
     { path: '/motoristas/vagas', icon: Building, label: 'Vagas', count: dashboardData.totalVagas },
   ];
@@ -171,6 +173,8 @@ const Motoristas = () => {
             <Route path="lista-infinita" element={<Navigate to="/motoristas/lista\" replace />} />
             <Route path="agregados" element={<AgregadosLista />} />
             <Route path="contratados" element={<Contratados />} />
+            <Route path="inativos" element={<Inativos />} />
+            <Route path="inativos" element={<Contratados />} />
             <Route path="vagas" element={
               <VagasList 
                 onRefresh={fetchVagasDashboardData} 
