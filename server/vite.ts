@@ -15,22 +15,43 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
-  // Dynamic imports so vite is never required in production builds
+  // ALL imports are dynamic and npm packages (external to esbuild).
+  // vite.config.ts is NOT imported here — esbuild would bundle it and
+  // its static `import { defineConfig } from "vite"` would become a
+  // top-level import in dist/index.js, crashing the production server.
   const { createServer: createViteServer, createLogger } = await import("vite");
   const { nanoid } = await import("nanoid");
-  const viteConfig = (await import("../vite.config")).default;
+  const { default: react } = await import("@vitejs/plugin-react");
+  const { default: runtimeErrorOverlay } = await import("@replit/vite-plugin-runtime-error-modal");
 
   const viteLogger = createLogger();
 
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server },
-    allowedHosts: true,
-  };
+  const plugins: any[] = [react(), runtimeErrorOverlay()];
+
+  if (process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined) {
+    const { cartographer } = await import("@replit/vite-plugin-cartographer");
+    plugins.push(cartographer());
+  }
+
+  const root = path.resolve(process.cwd(), "client");
 
   const vite = await createViteServer({
-    ...viteConfig,
     configFile: false,
+    root,
+    resolve: {
+      alias: {
+        "@": path.resolve(root, "src"),
+        "@shared": path.resolve(process.cwd(), "shared"),
+        "@assets": path.resolve(process.cwd(), "attached_assets"),
+      },
+    },
+    plugins,
+    server: {
+      middlewareMode: true,
+      hmr: { server },
+      allowedHosts: true,
+    },
+    appType: "custom",
     customLogger: {
       ...viteLogger,
       error: (msg, options) => {
@@ -38,8 +59,6 @@ export async function setupVite(app: Express, server: Server) {
         process.exit(1);
       },
     },
-    server: serverOptions,
-    appType: "custom",
   });
 
   app.use(vite.middlewares);
@@ -47,12 +66,7 @@ export async function setupVite(app: Express, server: Server) {
     const url = req.originalUrl;
 
     try {
-      const clientTemplate = path.resolve(
-        import.meta.dirname,
-        "..",
-        "client",
-        "index.html",
-      );
+      const clientTemplate = path.resolve(root, "index.html");
 
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
