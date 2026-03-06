@@ -44,6 +44,7 @@ supabase/
 # Docs and scripts not needed at runtime
 *.md
 *.sh
+!docker-entrypoint.sh
 *.js.map
 build-netlify.js
 check-*.js
