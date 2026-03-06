@@ -1,41 +1,54 @@
 # Dependencies
 node_modules/
 .npm/
+.pnpm-debug.log*
 
 # Build output (built fresh inside Docker)
 dist/
+build/
 
 # Version control
 .git/
 .gitignore
+.gitattributes
 
 # Environment files (pass secrets at runtime via --env-file or -e flags)
 .env
 .env.*
+!.env.example
 
 # Logs
 *.log
 logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Dev/test files
 cypress/
 *.test.ts
 *.spec.ts
 coverage/
+.nyc_output/
 
 # Replit-specific
 .replit
 .upm/
 .cache/
 .config/
+.replitcache
 
 # Large asset files not needed in container
 attached_assets/
+*.tar.gz
+*.zip
+*.rar
 
 # Netlify/Supabase deployment configs (not needed at runtime)
 .netlify/
 netlify/
 supabase/
+!.env.example
 
 # Local agent files
 .local/
@@ -56,18 +69,27 @@ final-check-deploy.js
 test-*.js
 test-*.html
 validate-deploy.js
+alter_vaga_column.js
 
 # Python cache
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 .Python
 .venv/
 venv/
 ai_service/__pycache__/
+pip-log.txt
+pip-delete-this-directory.txt
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Editor
@@ -75,9 +97,18 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+*~
 
 # Temp
 tmp/
 temp/
 backup.sql
 Marcadores
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Wappler
+.wappler/
