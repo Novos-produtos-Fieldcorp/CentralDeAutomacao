@@ -1,0 +1,82 @@
+# Dependencies
+node_modules/
+.npm/
+
+# Build output (built fresh inside Docker)
+dist/
+
+# Version control
+.git/
+.gitignore
+
+# Environment files (pass secrets at runtime via --env-file or -e flags)
+.env
+.env.*
+
+# Logs
+*.log
+logs/
+
+# Dev/test files
+cypress/
+*.test.ts
+*.spec.ts
+coverage/
+
+# Replit-specific
+.replit
+.upm/
+.cache/
+.config/
+
+# Large asset files not needed in container
+attached_assets/
+
+# Netlify/Supabase deployment configs (not needed at runtime)
+.netlify/
+netlify/
+supabase/
+
+# Local agent files
+.local/
+.agents/
+
+# Docs and scripts not needed at runtime
+*.md
+*.sh
+*.js.map
+build-netlify.js
+check-*.js
+debug-*.js
+deploy-*.js
+deploy-*.sh
+fix-*.js
+final-check-deploy.js
+test-*.js
+test-*.html
+validate-deploy.js
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.Python
+.venv/
+venv/
+ai_service/__pycache__/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temp
+tmp/
+temp/
+backup.sql
+Marcadores
