@@ -155,6 +155,224 @@ serve(async (req) => {
       return await handleWiseAppProxyRoutes(req, path, method, supabase)
     }
 
+    // ── AI Group Summary ──────────────────────────────────────────────────────
+    if (path === '/ai/group-summary' && method === 'POST') {
+      try {
+        const body = await req.json()
+        const { nome_do_grupo, company_id, group_id, account_id, api_key, inbox_id } = body
+
+        if (!account_id || !api_key || !inbox_id) {
+          return new Response(JSON.stringify({ success: false, error: 'account_id, api_key e inbox_id sao obrigatorios' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        const groqApiKey = Deno.env.get('GROQ_API_KEY')
+        if (!groqApiKey) {
+          return new Response(JSON.stringify({ success: false, error: 'GROQ_API_KEY nao configurada no servidor' }), {
+            status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        const WISEAPP_API = 'https://chat.wiseapp360.com/api'
+        const wiseHeaders = { 'api_access_token': api_key, 'Content-Type': 'application/json' }
+
+        // Brasilia date helpers
+        const now = new Date()
+        const brasiliaMs = now.getTime() + (now.getTimezoneOffset() + (-3 * 60)) * 60000
+        const brasiliaDate = new Date(brasiliaMs)
+        const todayStr = brasiliaDate.toISOString().split('T')[0]
+        const todayFormatted = `${todayStr.split('-')[2]}/${todayStr.split('-')[1]}/${todayStr.split('-')[0]}`
+
+        // Check dedup guard – skip if already sent successfully today
+        const { data: existingLog } = await supabase
+          .from('envio_resumo')
+          .select('id')
+          .eq('grupo_id', group_id)
+          .eq('data_envio', todayStr)
+          .eq('status', true)
+          .limit(1)
+          .maybeSingle()
+
+        if (existingLog) {
+          return new Response(JSON.stringify({ success: true, summary: null, already_sent: true, message: 'Resumo ja enviado hoje' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        // Find conversation in WiseApp
+        let convId: number | null = null
+        let convName = nome_do_grupo
+
+        const convListResp = await fetch(`${WISEAPP_API}/v1/accounts/${account_id}/conversations?inbox_id=${inbox_id}&page=1`, {
+          headers: wiseHeaders
+        })
+        if (convListResp.ok) {
+          const convData = await convListResp.json()
+          const convs: any[] = convData?.data?.payload || []
+          const match = convs.find((c: any) => {
+            const name: string = c?.meta?.sender?.name || ''
+            return nome_do_grupo && name.toLowerCase().includes(nome_do_grupo.toLowerCase().split('/')[0].trim().toLowerCase())
+          })
+          const chosen = match || convs[0]
+          if (chosen) {
+            convId = chosen.id
+            convName = chosen?.meta?.sender?.name || nome_do_grupo
+          }
+        }
+
+        // Fallback: search all conversations by name
+        if (!convId) {
+          for (let page = 1; page <= 5; page++) {
+            const fallbackResp = await fetch(`${WISEAPP_API}/v1/accounts/${account_id}/conversations?page=${page}`, {
+              headers: wiseHeaders
+            })
+            if (!fallbackResp.ok) break
+            const fallbackData = await fallbackResp.json()
+            const allConvs: any[] = fallbackData?.data?.payload || []
+            if (!allConvs.length) break
+            const nameParts = nome_do_grupo.split('/')
+            const found = allConvs.find((c: any) => {
+              const name: string = c?.meta?.sender?.name || ''
+              return nameParts.some((part: string) => name.toLowerCase().includes(part.trim().toLowerCase()))
+            })
+            if (found) { convId = found.id; convName = found?.meta?.sender?.name || nome_do_grupo; break }
+            if (page * 25 >= (fallbackData?.data?.meta?.all_count || 0)) break
+          }
+        }
+
+        if (!convId) {
+          await supabase.from('envio_resumo').insert({
+            grupo_id: group_id, company_id, data_envio: todayStr,
+            status: false, mensagem: 'Conversa nao encontrada no WiseApp'
+          })
+          return new Response(JSON.stringify({ success: false, error: `Conversa para '${nome_do_grupo}' nao encontrada` }), {
+            status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        // Fetch today's messages
+        const msgsResp = await fetch(`${WISEAPP_API}/v1/accounts/${account_id}/conversations/${convId}/messages?limit=200`, {
+          headers: wiseHeaders
+        })
+        let todayMessages: { time: string; sender: string; content: string }[] = []
+        if (msgsResp.ok) {
+          const msgsData = await msgsResp.json()
+          const allMsgs: any[] = msgsData?.payload || []
+          for (const msg of allMsgs) {
+            const createdAt = msg.created_at
+            if (!createdAt) continue
+            let msgDate: Date
+            if (typeof createdAt === 'number') {
+              msgDate = new Date(createdAt * 1000)
+            } else {
+              msgDate = new Date(createdAt)
+            }
+            const msgBrasiliaMs = msgDate.getTime() + (msgDate.getTimezoneOffset() + (-3 * 60)) * 60000
+            const msgBrasiliaDate = new Date(msgBrasiliaMs).toISOString().split('T')[0]
+            if (msgBrasiliaDate !== todayStr) continue
+
+            const senderInfo = msg.sender
+            let senderName = senderInfo?.name || 'Desconhecido'
+            if (msg.message_type === 1) senderName = 'Atendente'
+
+            let content = msg.content || ''
+            const contentType = msg.content_type || 'text'
+            if (contentType === 'image') content = '[Imagem enviada]'
+            else if (contentType === 'audio') content = '[Audio enviado]'
+            else if (contentType === 'video') content = '[Video enviado]'
+            else if (contentType === 'file') content = '[Arquivo enviado]'
+            else if (!content) content = '[Mensagem sem texto]'
+
+            const msgBrasiliaTime = new Date(msgBrasiliaMs)
+            const timeStr = `${String(msgBrasiliaTime.getUTCHours()).padStart(2,'0')}:${String(msgBrasiliaTime.getUTCMinutes()).padStart(2,'0')}`
+            todayMessages.push({ time: timeStr, sender: senderName, content })
+          }
+          todayMessages.reverse()
+        }
+
+        // Build messages context for Groq
+        let messagesContext: string
+        if (todayMessages.length === 0) {
+          messagesContext = `Nenhuma mensagem encontrada hoje (${todayFormatted}) no grupo.`
+        } else {
+          messagesContext = `MENSAGENS DO DIA - ${convName}\nData: ${todayFormatted}\nTotal de mensagens hoje: ${todayMessages.length}\n${'─'.repeat(40)}\n`
+          messagesContext += todayMessages.slice(-80).map(m => `[${m.time}] ${m.sender}: ${m.content}`).join('\n')
+        }
+
+        // Call Groq API to generate summary
+        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${groqApiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'llama-3.1-70b-versatile',
+            messages: [
+              {
+                role: 'system',
+                content: `Voce e um analista que gera resumos executivos de conversas em grupo. Seja objetivo e preciso. Baseie-se APENAS nas mensagens fornecidas. NAO invente informacoes.`
+              },
+              {
+                role: 'user',
+                content: `Analise as mensagens do grupo "${nome_do_grupo}" e gere um resumo executivo.\n\n${messagesContext}\n\nREGRAS:\n1. O titulo DEVE ser exatamente: Resumo do Grupo "${nome_do_grupo}"\n2. Inclua: quantidade de mensagens, principais assuntos discutidos, problemas/pendencias, tom geral\n3. Se nao houver mensagens hoje, responda apenas: Resumo do Grupo "${nome_do_grupo}"\nNenhuma mensagem encontrada hoje neste grupo.\nEste resumo foi gerado automaticamente pela IAzinha\n4. DEVE terminar com: Este resumo foi gerado automaticamente pela IAzinha`
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: 1024,
+          })
+        })
+
+        let summaryText: string
+        if (!groqResp.ok) {
+          const errText = await groqResp.text()
+          console.error('[AI Group Summary] Groq error:', groqResp.status, errText)
+          summaryText = `Resumo do Grupo "${nome_do_grupo}"\n\nErro ao gerar resumo com IA. Tente novamente mais tarde.\n\nEste resumo foi gerado automaticamente pela IAzinha`
+        } else {
+          const groqData = await groqResp.json()
+          summaryText = groqData?.choices?.[0]?.message?.content || `Resumo do Grupo "${nome_do_grupo}"\n\nNao foi possivel gerar o resumo.\n\nEste resumo foi gerado automaticamente pela IAzinha`
+        }
+
+        // Send summary to WiseApp group
+        let messageSent = false
+        let sendError: string | null = null
+        const sendResp = await fetch(`${WISEAPP_API}/v1/accounts/${account_id}/conversations/${convId}/messages`, {
+          method: 'POST',
+          headers: wiseHeaders,
+          body: JSON.stringify({ content: summaryText, message_type: 'outgoing', private: false })
+        })
+        if (sendResp.ok) {
+          messageSent = true
+        } else {
+          sendError = await sendResp.text()
+          console.error('[AI Group Summary] Failed to send to WiseApp:', sendError)
+        }
+
+        // Log to envio_resumo
+        await supabase.from('envio_resumo').insert({
+          grupo_id: group_id,
+          company_id,
+          data_envio: todayStr,
+          status: messageSent,
+          mensagem: messageSent ? 'Resumo gerado e enviado com sucesso' : `Resumo gerado mas falha no envio: ${sendError}`,
+          resumo_grupo: summaryText.substring(0, 5000)
+        })
+
+        return new Response(JSON.stringify({
+          success: true,
+          summary: summaryText,
+          group_id,
+          group_name: nome_do_grupo,
+          message_sent: messageSent,
+          send_error: sendError
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+      } catch (error: any) {
+        console.error('[AI Group Summary] Error:', error.message)
+        return new Response(JSON.stringify({ success: false, error: error.message || 'Erro interno' }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
     // Default 404
     return new Response(JSON.stringify({
       error: 'Endpoint não encontrado',
@@ -2307,232 +2525,6 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
       console.error('[SADA IA] Erro:', error.message)
       return new Response(JSON.stringify([]), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-  }
-
-  // ── AI Group Summary ──────────────────────────────────────────────────────
-  if (path === '/ai/group-summary' && method === 'POST') {
-    try {
-      const body = await req.json()
-      const { nome_do_grupo, company_id, group_id, account_id, api_key, inbox_id } = body
-
-      if (!account_id || !api_key || !inbox_id) {
-        return new Response(JSON.stringify({ success: false, error: 'account_id, api_key e inbox_id sao obrigatorios' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      const groqApiKey = Deno.env.get('GROQ_API_KEY')
-      if (!groqApiKey) {
-        return new Response(JSON.stringify({ success: false, error: 'GROQ_API_KEY nao configurada no servidor' }), {
-          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      const WISEAPP_API = 'https://chat.wiseapp360.com/api'
-      const wiseHeaders = { 'api_access_token': api_key, 'Content-Type': 'application/json' }
-
-      // Brasilia date helpers
-      const now = new Date()
-      const brasiliaMs = now.getTime() + (now.getTimezoneOffset() + (-3 * 60)) * 60000
-      const brasiliaDate = new Date(brasiliaMs)
-      const todayStr = brasiliaDate.toISOString().split('T')[0]
-      const todayFormatted = `${todayStr.split('-')[2]}/${todayStr.split('-')[1]}/${todayStr.split('-')[0]}`
-
-      // Check dedup guard – skip if already sent successfully today
-      const { data: existingLog } = await supabase
-        .from('envio_resumo')
-        .select('id')
-        .eq('grupo_id', group_id)
-        .eq('data_envio', todayStr)
-        .eq('status', true)
-        .limit(1)
-        .maybeSingle()
-
-      if (existingLog) {
-        return new Response(JSON.stringify({ success: true, summary: null, already_sent: true, message: 'Resumo ja enviado hoje' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      // Find conversation in WiseApp
-      let convId: number | null = null
-      let convName = nome_do_grupo
-
-      const convListResp = await fetch(`${WISEAPP_API}/v1/accounts/${account_id}/conversations?inbox_id=${inbox_id}&page=1`, {
-        headers: wiseHeaders
-      })
-      if (convListResp.ok) {
-        const convData = await convListResp.json()
-        const convs: any[] = convData?.data?.payload || []
-        const match = convs.find((c: any) => {
-          const name: string = c?.meta?.sender?.name || ''
-          return nome_do_grupo && name.toLowerCase().includes(nome_do_grupo.toLowerCase().split('/')[0].trim().toLowerCase())
-        })
-        const chosen = match || convs[0]
-        if (chosen) {
-          convId = chosen.id
-          convName = chosen?.meta?.sender?.name || nome_do_grupo
-        }
-      }
-
-      // Fallback: search all conversations by name
-      if (!convId) {
-        for (let page = 1; page <= 5; page++) {
-          const fallbackResp = await fetch(`${WISEAPP_API}/v1/accounts/${account_id}/conversations?page=${page}`, {
-            headers: wiseHeaders
-          })
-          if (!fallbackResp.ok) break
-          const fallbackData = await fallbackResp.json()
-          const allConvs: any[] = fallbackData?.data?.payload || []
-          if (!allConvs.length) break
-          const nameParts = nome_do_grupo.split('/')
-          const found = allConvs.find((c: any) => {
-            const name: string = c?.meta?.sender?.name || ''
-            return nameParts.some((part: string) => name.toLowerCase().includes(part.trim().toLowerCase()))
-          })
-          if (found) { convId = found.id; convName = found?.meta?.sender?.name || nome_do_grupo; break }
-          if (page * 25 >= (fallbackData?.data?.meta?.all_count || 0)) break
-        }
-      }
-
-      if (!convId) {
-        await supabase.from('envio_resumo').insert({
-          grupo_id: group_id, company_id, data_envio: todayStr,
-          status: false, mensagem: 'Conversa nao encontrada no WiseApp'
-        })
-        return new Response(JSON.stringify({ success: false, error: `Conversa para '${nome_do_grupo}' nao encontrada` }), {
-          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      // Fetch today's messages
-      const msgsResp = await fetch(`${WISEAPP_API}/v1/accounts/${account_id}/conversations/${convId}/messages?limit=200`, {
-        headers: wiseHeaders
-      })
-      let todayMessages: { time: string; sender: string; content: string }[] = []
-      if (msgsResp.ok) {
-        const msgsData = await msgsResp.json()
-        const allMsgs: any[] = msgsData?.payload || []
-        for (const msg of allMsgs) {
-          const createdAt = msg.created_at
-          if (!createdAt) continue
-          let msgDate: Date
-          if (typeof createdAt === 'number') {
-            msgDate = new Date(createdAt * 1000)
-          } else {
-            msgDate = new Date(createdAt)
-          }
-          const msgBrasiliaMs = msgDate.getTime() + (msgDate.getTimezoneOffset() + (-3 * 60)) * 60000
-          const msgBrasiliaDate = new Date(msgBrasiliaMs).toISOString().split('T')[0]
-          if (msgBrasiliaDate !== todayStr) continue
-
-          const senderInfo = msg.sender
-          let senderName = senderInfo?.name || 'Desconhecido'
-          if (msg.message_type === 1) senderName = 'Atendente'
-
-          let content = msg.content || ''
-          const contentType = msg.content_type || 'text'
-          if (contentType === 'image') content = '[Imagem enviada]'
-          else if (contentType === 'audio') content = '[Audio enviado]'
-          else if (contentType === 'video') content = '[Video enviado]'
-          else if (contentType === 'file') content = '[Arquivo enviado]'
-          else if (!content) content = '[Mensagem sem texto]'
-
-          const msgBrasiliaTime = new Date(msgBrasiliaMs)
-          const timeStr = `${String(msgBrasiliaTime.getUTCHours()).padStart(2,'0')}:${String(msgBrasiliaTime.getUTCMinutes()).padStart(2,'0')}`
-          todayMessages.push({ time: timeStr, sender: senderName, content })
-        }
-        todayMessages.reverse()
-      }
-
-      // Build messages context for Groq
-      let messagesContext: string
-      if (todayMessages.length === 0) {
-        messagesContext = `Nenhuma mensagem encontrada hoje (${todayFormatted}) no grupo.`
-      } else {
-        messagesContext = `MENSAGENS DO DIA - ${convName}\nData: ${todayFormatted}\nTotal de mensagens hoje: ${todayMessages.length}\n${'─'.repeat(40)}\n`
-        messagesContext += todayMessages.slice(-80).map(m => `[${m.time}] ${m.sender}: ${m.content}`).join('\n')
-      }
-
-      // Call Groq API to generate summary
-      const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${groqApiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'llama-3.1-70b-versatile',
-          messages: [
-            {
-              role: 'system',
-              content: `Voce e um analista que gera resumos executivos de conversas em grupo. Seja objetivo e preciso. Baseie-se APENAS nas mensagens fornecidas. NAO invente informacoes.`
-            },
-            {
-              role: 'user',
-              content: `Analise as mensagens do grupo "${nome_do_grupo}" e gere um resumo executivo.
-
-${messagesContext}
-
-REGRAS:
-1. O titulo DEVE ser exatamente: Resumo do Grupo "${nome_do_grupo}"
-2. Inclua: quantidade de mensagens, principais assuntos discutidos, problemas/pendencias, tom geral
-3. Se nao houver mensagens hoje, responda apenas: Resumo do Grupo "${nome_do_grupo}"\nNenhuma mensagem encontrada hoje neste grupo.\nEste resumo foi gerado automaticamente pela IAzinha
-4. DEVE terminar com: Este resumo foi gerado automaticamente pela IAzinha`
-            }
-          ],
-          temperature: 0.3,
-          max_tokens: 1024,
-        })
-      })
-
-      let summaryText: string
-      if (!groqResp.ok) {
-        const errText = await groqResp.text()
-        console.error('[AI Group Summary] Groq error:', groqResp.status, errText)
-        summaryText = `Resumo do Grupo "${nome_do_grupo}"\n\nErro ao gerar resumo com IA. Tente novamente mais tarde.\n\nEste resumo foi gerado automaticamente pela IAzinha`
-      } else {
-        const groqData = await groqResp.json()
-        summaryText = groqData?.choices?.[0]?.message?.content || `Resumo do Grupo "${nome_do_grupo}"\n\nNao foi possivel gerar o resumo.\n\nEste resumo foi gerado automaticamente pela IAzinha`
-      }
-
-      // Send summary to WiseApp group
-      let messageSent = false
-      let sendError: string | null = null
-      const sendResp = await fetch(`${WISEAPP_API}/v1/accounts/${account_id}/conversations/${convId}/messages`, {
-        method: 'POST',
-        headers: wiseHeaders,
-        body: JSON.stringify({ content: summaryText, message_type: 'outgoing', private: false })
-      })
-      if (sendResp.ok) {
-        messageSent = true
-      } else {
-        sendError = await sendResp.text()
-        console.error('[AI Group Summary] Failed to send to WiseApp:', sendError)
-      }
-
-      // Log to envio_resumo
-      await supabase.from('envio_resumo').insert({
-        grupo_id: group_id,
-        company_id,
-        data_envio: todayStr,
-        status: messageSent,
-        mensagem: messageSent ? 'Resumo gerado e enviado com sucesso' : `Resumo gerado mas falha no envio: ${sendError}`,
-        resumo_grupo: summaryText.substring(0, 5000)
-      })
-
-      return new Response(JSON.stringify({
-        success: true,
-        summary: summaryText,
-        group_id,
-        group_name: nome_do_grupo,
-        message_sent: messageSent,
-        send_error: sendError
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-    } catch (error: any) {
-      console.error('[AI Group Summary] Error:', error.message)
-      return new Response(JSON.stringify({ success: false, error: error.message || 'Erro interno' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
   }
