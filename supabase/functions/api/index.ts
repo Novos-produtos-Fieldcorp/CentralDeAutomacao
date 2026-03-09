@@ -235,15 +235,21 @@ serve(async (req) => {
           })
         }
 
-        // Fetch today's messages
-        const msgsResp = await fetch(`${WISEAPP_API}/v1/accounts/${account_id}/conversations/${convId}/messages?limit=200`, {
-          headers: wiseHeaders
-        })
+        // Fetch today's messages (paginated — WiseApp returns 20 per page)
         let todayMessages: { time: string; sender: string; content: string }[] = []
-        if (msgsResp.ok) {
+        let beforeId: number | null = null
+        for (let _page = 0; _page < 50; _page++) {
+          const msgsUrl = `${WISEAPP_API}/v1/accounts/${account_id}/conversations/${convId}/messages` +
+            (beforeId ? `?before=${beforeId}` : '')
+          const msgsResp = await fetch(msgsUrl, { headers: wiseHeaders })
+          if (!msgsResp.ok) break
           const msgsData = await msgsResp.json()
-          const allMsgs: any[] = msgsData?.payload || []
-          for (const msg of allMsgs) {
+          const batch: any[] = msgsData?.payload || []
+          if (!batch.length) break
+
+          let hitYesterday = false
+          let oldestId: number | null = null
+          for (const msg of batch) {
             const createdAt = msg.created_at
             if (!createdAt) continue
             let msgDate: Date
@@ -254,7 +260,10 @@ serve(async (req) => {
             }
             const msgBrasiliaMs = msgDate.getTime() + (msgDate.getTimezoneOffset() + (-3 * 60)) * 60000
             const msgBrasiliaDate = new Date(msgBrasiliaMs).toISOString().split('T')[0]
-            if (msgBrasiliaDate !== todayStr) continue
+
+            if (oldestId === null || (msg.id as number) < oldestId) oldestId = msg.id as number
+
+            if (msgBrasiliaDate !== todayStr) { hitYesterday = true; continue }
 
             const senderInfo = msg.sender
             let senderName = senderInfo?.name || 'Desconhecido'
@@ -272,8 +281,11 @@ serve(async (req) => {
             const timeStr = `${String(msgBrasiliaTime.getUTCHours()).padStart(2,'0')}:${String(msgBrasiliaTime.getUTCMinutes()).padStart(2,'0')}`
             todayMessages.push({ time: timeStr, sender: senderName, content })
           }
-          todayMessages.reverse()
+
+          if (hitYesterday || batch.length < 20) break
+          beforeId = oldestId
         }
+        todayMessages.reverse()
 
         // Build messages context for Groq
         let messagesContext: string

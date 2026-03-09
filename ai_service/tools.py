@@ -250,18 +250,32 @@ def buscar_mensagens_grupo(group_name: str, account_id: str, api_key: str, limit
         }
 
         with httpx.Client() as client:
-            msg_response = client.get(
-                f"{WISEAPP_API_URL}/v1/accounts/{account_id}/conversations/{conv_id}/messages",
-                headers=headers,
-                params={"limit": 200},
-                timeout=60
-            )
-
-            if msg_response.status_code != 200:
-                return f"Erro ao buscar mensagens: {msg_response.text}"
-
-            messages_data = msg_response.json()
-            messages = messages_data.get("payload", [])
+            all_messages = []
+            before_id = None
+            for _page in range(50):
+                params = {}
+                if before_id:
+                    params["before"] = before_id
+                msg_response = client.get(
+                    f"{WISEAPP_API_URL}/v1/accounts/{account_id}/conversations/{conv_id}/messages",
+                    headers=headers,
+                    params=params,
+                    timeout=60
+                )
+                if msg_response.status_code != 200:
+                    break
+                messages_data = msg_response.json()
+                batch = messages_data.get("payload", [])
+                if not batch:
+                    break
+                all_messages.extend(batch)
+                oldest_msg = min(batch, key=lambda m: m.get("id", 0))
+                if not is_message_from_today(oldest_msg):
+                    break
+                if len(batch) < 20:
+                    break
+                before_id = oldest_msg.get("id")
+            messages = all_messages
 
             if not messages:
                 return f"Nenhuma mensagem encontrada na conversa do grupo '{contact_name}'."
