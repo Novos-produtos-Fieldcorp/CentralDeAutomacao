@@ -1,0 +1,25 @@
+index-BSKAz5cM.js:1156 Hybrid API Configuration: Object
+index-BSKAz5cM.js:1155 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+sw @ index-BSKAz5cM.js:1155
+index-BSKAz5cM.js:1161 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-BSKAz5cM.js:1161 🔍 [WiseAppAccess] Account ID da URL: 1
+index-BSKAz5cM.js:1161 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 1
+index-BSKAz5cM.js:1161 📊 [WiseAppAccess] Resultado da busca da empresa: Object
+index-BSKAz5cM.js:1161 ✅ [WiseAppAccess] Empresa encontrada: Object
+index-BSKAz5cM.js:1161 📧 [WiseAppAccess] Mostrando modal de autenticação (e-mail obrigatório)
+index-BSKAz5cM.js:1510 Dashboard data loaded: Object
+index-BSKAz5cM.js:1161 🔍 Token encontrado para email, validando antes de usar... 6
+index-BSKAz5cM.js:1161 ✅ Token válido, usando sessão existente
+index-BSKAz5cM.js:1161 📧 [WiseAppAccess] Token salvo para email, usando accountId: 6 (do email: 6 , fallback: 1 )
+index-BSKAz5cM.js:1161 🔄 [WiseAppAccess] Atualizando sessão: Object
+index-BSKAz5cM.js:1161 🔄 [WiseAppAccess] Sincronizando companyId com AuthContext: 2 accountId: 6
+index-BSKAz5cM.js:1156 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 2
+index-BSKAz5cM.js:1156 🔄 [AuthContext] AccountId mudou: 1 → 6
+index-BSKAz5cM.js:1161 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-BSKAz5cM.js:1161 🔍 [WiseAppAccess] Já verificado nesta sessão...
+index-BSKAz5cM.js:1161 ✅ [WiseAppAccess] Sessão válida com email: gabriel.mauro@fieldcorp.com.br
+index-BSKAz5cM.js:1161 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-BSKAz5cM.js:1161 🔍 [WiseAppAccess] Já verificado nesta sessão...
+index-BSKAz5cM.js:1161 ✅ [WiseAppAccess] Sessão válida com email: gabriel.mauro@fieldcorp.com.br
+ohmoxsvwjvohmqqgxjhb.supabase.co/rest/v1/rpc/get_envio_resumo_all:1  Failed to load resource: the server responded with a status of 404 ()
+index-BSKAz5cM.js:2075 Using fallback query
