@@ -184,22 +184,6 @@ serve(async (req) => {
         const todayStr = brasiliaDate.toISOString().split('T')[0]
         const todayFormatted = `${todayStr.split('-')[2]}/${todayStr.split('-')[1]}/${todayStr.split('-')[0]}`
 
-        // Check dedup guard – skip if already sent successfully today
-        const { data: existingLog } = await supabase
-          .from('envio_resumo')
-          .select('id')
-          .eq('grupo_id', group_id)
-          .eq('data_envio', todayStr)
-          .eq('status', true)
-          .limit(1)
-          .maybeSingle()
-
-        if (existingLog) {
-          return new Response(JSON.stringify({ success: true, summary: null, already_sent: true, message: 'Resumo ja enviado hoje' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
         // Find conversation in WiseApp
         let convId: number | null = null
         let convName = nome_do_grupo
