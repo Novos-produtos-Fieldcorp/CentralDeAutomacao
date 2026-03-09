@@ -13,9 +13,6 @@ build/
 .gitattributes
 
 # Environment files (pass secrets at runtime via --env-file or -e flags)
-.env
-.env.*
-!.env.example
 
 # Logs
 *.log
@@ -48,7 +45,6 @@ attached_assets/
 .netlify/
 netlify/
 supabase/
-!.env.example
 
 # Local agent files
 .local/
