@@ -32,6 +32,13 @@ function getCurrentBrasiliaTime(): string {
   return `${hours}:${minutes}`;
 }
 
+function getCurrentBrasiliaDate(): string {
+  const now = new Date();
+  const brasiliaOffset = -3 * 60;
+  const brasiliaTime = new Date(now.getTime() + (now.getTimezoneOffset() + brasiliaOffset) * 60000);
+  return brasiliaTime.toISOString().split('T')[0];
+}
+
 async function processScheduledSummaries() {
   const currentTimeUTC = getCurrentUTCTime();
   const currentTimeBrasilia = getCurrentBrasiliaTime();
@@ -77,6 +84,22 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
   console.log(`[CRON] Processando grupo: ${grupo.nome_grupo} (ID: ${grupo.id})`);
   
   try {
+    // Guard: skip if a successful summary was already sent today for this group
+    const today = getCurrentBrasiliaDate();
+    const { data: existingLog } = await supabase
+      .from('envio_resumo')
+      .select('id')
+      .eq('grupo_id', grupo.id)
+      .eq('data_envio', today)
+      .eq('status', true)
+      .limit(1)
+      .single();
+    
+    if (existingLog) {
+      console.log(`[CRON] Grupo ${grupo.id} já recebeu resumo com sucesso hoje — pulando`);
+      return;
+    }
+
     // Use account_id stored directly on the group if available; otherwise fall back to company default
     let accountId: string | null = grupo.account_id ? String(grupo.account_id) : null;
     
@@ -139,7 +162,7 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
 
 async function recordLog(grupo: GrupoResumo, status: boolean, mensagem: string, horarioUTC: string) {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentBrasiliaDate();
     
     await supabase.from('envio_resumo').insert({
       grupo_id: grupo.id,
