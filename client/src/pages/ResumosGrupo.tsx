@@ -25,6 +25,7 @@ interface GrupoResumo {
   color_name?: string;
   inbox_id?: number;
   nome_inbox?: string;
+  account_id?: number;
 }
 
 interface EnvioResumo {
@@ -75,7 +76,8 @@ const ResumosGrupo = () => {
     icon_name: 'MessagesSquare',
     color_name: 'blue',
     inbox_id: null as number | null,
-    nome_inbox: ''
+    nome_inbox: '',
+    account_id: null as number | null
   });
   const [availableInboxes, setAvailableInboxes] = useState<Inbox[]>([]);
   const [loadingInboxes, setLoadingInboxes] = useState(false);
@@ -308,7 +310,8 @@ const ResumosGrupo = () => {
         ativo: formData.ativo,
         icon_name: formData.icon_name,
         color_name: formData.color_name,
-        company_id: effectiveCompanyId
+        company_id: effectiveCompanyId,
+        account_id: formData.account_id || (accountId ? Number(accountId) : null)
       };
       
       // Add inbox_id if selected
@@ -368,7 +371,8 @@ const ResumosGrupo = () => {
         nome_inbox: formData.nome_inbox || formData.nome_grupo,
         horario: utcHorario,
         icon_name: formData.icon_name,
-        color_name: formData.color_name
+        color_name: formData.color_name,
+        account_id: formData.account_id || (accountId ? Number(accountId) : null)
       };
       
       // Add inbox_id if selected
@@ -464,16 +468,12 @@ const ResumosGrupo = () => {
         }
       }
       
-      // Fetch company's id_conta_wiseapp
-      const { data: companyData } = await supabase
-        .from('company')
-        .select('id_conta_wiseapp')
-        .eq('company_id', effectiveCompanyId)
-        .single();
+      // Use account_id stored on the group (set when creating/editing), or fall back to current account
+      const wiseappAccountId = grupo.account_id
+        ? String(grupo.account_id)
+        : (accountId || userAccountId || null);
       
-      const wiseappAccountId = companyData?.id_conta_wiseapp || userAccountId || null;
-      
-      // Fetch user's API key from wiseapp_acesso
+      // Fetch user's API key from wiseapp_acesso for the correct account
       let apiKey = null;
       if (userEmail && wiseappAccountId) {
         const { data: accessData } = await supabase
@@ -486,7 +486,7 @@ const ResumosGrupo = () => {
         apiKey = accessData?.access_token_wiseapp || null;
       }
       
-      // If no API key found for the user, try to get any valid key for the account
+      // If no API key found for this user, try any valid key for the account
       if (!apiKey && wiseappAccountId) {
         const { data: fallbackAccessData } = await supabase
           .from('wiseapp_acesso')
@@ -559,7 +559,8 @@ const ResumosGrupo = () => {
       icon_name: 'MessagesSquare',
       color_name: 'blue',
       inbox_id: null,
-      nome_inbox: ''
+      nome_inbox: '',
+      account_id: accountId ? Number(accountId) : null
     });
     setSelectedGrupo(null);
   };
@@ -981,7 +982,8 @@ const ResumosGrupo = () => {
                                   icon_name: grupo.icon_name || 'MessagesSquare',
                                   color_name: grupo.color_name || 'blue',
                                   inbox_id: grupo.inbox_id || null,
-                                  nome_inbox: grupo.nome_inbox || ''
+                                  nome_inbox: grupo.nome_inbox || '',
+                                  account_id: grupo.account_id || (accountId ? Number(accountId) : null)
                                 });
                                 setIsEditModalOpen(true);
                               }}

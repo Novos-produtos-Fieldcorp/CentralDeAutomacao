@@ -13,6 +13,7 @@ interface GrupoResumo {
   ativo: boolean;
   company_id: number;
   inbox_id?: string;
+  account_id?: number;
 }
 
 function getCurrentUTCTime(): string {
@@ -68,13 +69,17 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
   console.log(`[CRON] Processando grupo: ${grupo.nome_grupo} (ID: ${grupo.id})`);
   
   try {
-    const { data: companyData } = await supabase
-      .from('company')
-      .select('id_conta_wiseapp')
-      .eq('company_id', grupo.company_id)
-      .single();
+    // Use account_id stored directly on the group if available; otherwise fall back to company default
+    let accountId: string | null = grupo.account_id ? String(grupo.account_id) : null;
     
-    const accountId = companyData?.id_conta_wiseapp || null;
+    if (!accountId) {
+      const { data: companyData } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
+        .eq('company_id', grupo.company_id)
+        .single();
+      accountId = companyData?.id_conta_wiseapp ? String(companyData.id_conta_wiseapp) : null;
+    }
     
     let apiKey = null;
     if (accountId) {
