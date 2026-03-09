@@ -48,8 +48,11 @@ interface Inbox {
   phone_number?: string;
 }
 
-// API endpoint for AI-powered group summary (replaces n8n webhook)
-const AI_SUMMARY_URL = '/api/ai/group-summary';
+// API endpoint for AI-powered group summary
+// On Netlify (static frontend), VITE_AI_BACKEND_URL must point to the Replit backend URL
+// e.g. https://your-app.replit.app
+const _AI_BACKEND_BASE = import.meta.env.VITE_AI_BACKEND_URL || '';
+const AI_SUMMARY_URL = `${_AI_BACKEND_BASE}/api/ai/group-summary`;
 
 const ResumosGrupo = () => {
   const [searchParams] = useSearchParams();
