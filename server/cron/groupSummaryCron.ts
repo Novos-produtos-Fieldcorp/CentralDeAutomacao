@@ -57,7 +57,15 @@ async function processScheduledSummaries() {
     
     console.log(`[CRON] Encontrados ${grupos.length} grupo(s) para processar`);
     
+    // Deduplicate: skip groups that share the same (inbox_id, account_id) already processed this run
+    const processedInboxes = new Set<string>();
     for (const grupo of grupos as GrupoResumo[]) {
+      const inboxKey = `${grupo.account_id ?? 'x'}_${grupo.inbox_id ?? 'x'}`;
+      if (grupo.inbox_id && processedInboxes.has(inboxKey)) {
+        console.log(`[CRON] Pulando grupo ${grupo.id} (${grupo.nome_grupo}) - inbox ${grupo.inbox_id} já processado neste ciclo`);
+        continue;
+      }
+      processedInboxes.add(inboxKey);
       await processGroup(grupo, currentTimeUTC);
     }
   } catch (error) {
