@@ -12,6 +12,7 @@ def create_group_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
         - group_name: {group_name}
         - account_id: {account_id}
         - api_key: {api_key}
+        - inbox_id: {inbox_id}
         
         REGRAS IMPORTANTES:
         1. Baseie seu resumo APENAS nas mensagens REAIS que voce encontrar

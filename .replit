@@ -53,7 +53,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd ai_service && python main.py"
+args = "pip install -r ai_service/requirements.txt -q && cd ai_service && python main.py"
 waitForPort = 8000
 
 [agent]

@@ -184,6 +184,22 @@ serve(async (req) => {
         const todayStr = brasiliaDate.toISOString().split('T')[0]
         const todayFormatted = `${todayStr.split('-')[2]}/${todayStr.split('-')[1]}/${todayStr.split('-')[0]}`
 
+        // Check dedup guard – skip if already sent successfully today
+        const { data: existingLog } = await supabase
+          .from('envio_resumo')
+          .select('id')
+          .eq('grupo_id', group_id)
+          .eq('data_envio', todayStr)
+          .eq('status', true)
+          .limit(1)
+          .maybeSingle()
+
+        if (existingLog) {
+          return new Response(JSON.stringify({ success: true, summary: null, already_sent: true, message: 'Resumo ja enviado hoje' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
         // Find conversation in WiseApp
         let convId: number | null = null
         let convName = nome_do_grupo
@@ -235,21 +251,15 @@ serve(async (req) => {
           })
         }
 
-        // Fetch today's messages (paginated — WiseApp returns 20 per page)
+        // Fetch today's messages
+        const msgsResp = await fetch(`${WISEAPP_API}/v1/accounts/${account_id}/conversations/${convId}/messages?limit=200`, {
+          headers: wiseHeaders
+        })
         let todayMessages: { time: string; sender: string; content: string }[] = []
-        let beforeId: number | null = null
-        for (let _page = 0; _page < 50; _page++) {
-          const msgsUrl = `${WISEAPP_API}/v1/accounts/${account_id}/conversations/${convId}/messages` +
-            (beforeId ? `?before=${beforeId}` : '')
-          const msgsResp = await fetch(msgsUrl, { headers: wiseHeaders })
-          if (!msgsResp.ok) break
+        if (msgsResp.ok) {
           const msgsData = await msgsResp.json()
-          const batch: any[] = msgsData?.payload || []
-          if (!batch.length) break
-
-          let hitYesterday = false
-          let oldestId: number | null = null
-          for (const msg of batch) {
+          const allMsgs: any[] = msgsData?.payload || []
+          for (const msg of allMsgs) {
             const createdAt = msg.created_at
             if (!createdAt) continue
             let msgDate: Date
@@ -260,10 +270,7 @@ serve(async (req) => {
             }
             const msgBrasiliaMs = msgDate.getTime() + (msgDate.getTimezoneOffset() + (-3 * 60)) * 60000
             const msgBrasiliaDate = new Date(msgBrasiliaMs).toISOString().split('T')[0]
-
-            if (oldestId === null || (msg.id as number) < oldestId) oldestId = msg.id as number
-
-            if (msgBrasiliaDate !== todayStr) { hitYesterday = true; continue }
+            if (msgBrasiliaDate !== todayStr) continue
 
             const senderInfo = msg.sender
             let senderName = senderInfo?.name || 'Desconhecido'
@@ -281,11 +288,8 @@ serve(async (req) => {
             const timeStr = `${String(msgBrasiliaTime.getUTCHours()).padStart(2,'0')}:${String(msgBrasiliaTime.getUTCMinutes()).padStart(2,'0')}`
             todayMessages.push({ time: timeStr, sender: senderName, content })
           }
-
-          if (hitYesterday || batch.length < 20) break
-          beforeId = oldestId
+          todayMessages.reverse()
         }
-        todayMessages.reverse()
 
         // Build messages context for Groq
         let messagesContext: string
@@ -301,7 +305,7 @@ serve(async (req) => {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${groqApiKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'llama-3.1-8b-instant',
+            model: 'llama-3.1-70b-versatile',
             messages: [
               {
                 role: 'system',

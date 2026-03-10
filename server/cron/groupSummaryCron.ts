@@ -13,6 +13,7 @@ interface GrupoResumo {
   ativo: boolean;
   company_id: number;
   inbox_id?: string;
+  account_id?: number;
 }
 
 function getCurrentUTCTime(): string {
@@ -29,6 +30,13 @@ function getCurrentBrasiliaTime(): string {
   const hours = brasiliaTime.getHours().toString().padStart(2, '0');
   const minutes = brasiliaTime.getMinutes().toString().padStart(2, '0');
   return `${hours}:${minutes}`;
+}
+
+function getCurrentBrasiliaDate(): string {
+  const now = new Date();
+  const brasiliaOffset = -3 * 60;
+  const brasiliaTime = new Date(now.getTime() + (now.getTimezoneOffset() + brasiliaOffset) * 60000);
+  return brasiliaTime.toISOString().split('T')[0];
 }
 
 async function processScheduledSummaries() {
@@ -56,7 +64,15 @@ async function processScheduledSummaries() {
     
     console.log(`[CRON] Encontrados ${grupos.length} grupo(s) para processar`);
     
+    // Deduplicate: skip groups that share the same (inbox_id, account_id) already processed this run
+    const processedInboxes = new Set<string>();
     for (const grupo of grupos as GrupoResumo[]) {
+      const inboxKey = `${grupo.account_id ?? 'x'}_${grupo.inbox_id ?? 'x'}`;
+      if (grupo.inbox_id && processedInboxes.has(inboxKey)) {
+        console.log(`[CRON] Pulando grupo ${grupo.id} (${grupo.nome_grupo}) - inbox ${grupo.inbox_id} já processado neste ciclo`);
+        continue;
+      }
+      processedInboxes.add(inboxKey);
       await processGroup(grupo, currentTimeUTC);
     }
   } catch (error) {
@@ -68,13 +84,33 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
   console.log(`[CRON] Processando grupo: ${grupo.nome_grupo} (ID: ${grupo.id})`);
   
   try {
-    const { data: companyData } = await supabase
-      .from('company')
-      .select('id_conta_wiseapp')
-      .eq('company_id', grupo.company_id)
+    // Guard: skip if a successful summary was already sent today for this group
+    const today = getCurrentBrasiliaDate();
+    const { data: existingLog } = await supabase
+      .from('envio_resumo')
+      .select('id')
+      .eq('grupo_id', grupo.id)
+      .eq('data_envio', today)
+      .eq('status', true)
+      .limit(1)
       .single();
     
-    const accountId = companyData?.id_conta_wiseapp || null;
+    if (existingLog) {
+      console.log(`[CRON] Grupo ${grupo.id} já recebeu resumo com sucesso hoje — pulando`);
+      return;
+    }
+
+    // Use account_id stored directly on the group if available; otherwise fall back to company default
+    let accountId: string | null = grupo.account_id ? String(grupo.account_id) : null;
+    
+    if (!accountId) {
+      const { data: companyData } = await supabase
+        .from('company')
+        .select('id_conta_wiseapp')
+        .eq('company_id', grupo.company_id)
+        .single();
+      accountId = companyData?.id_conta_wiseapp ? String(companyData.id_conta_wiseapp) : null;
+    }
     
     let apiKey = null;
     if (accountId) {
@@ -126,7 +162,7 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
 
 async function recordLog(grupo: GrupoResumo, status: boolean, mensagem: string, horarioUTC: string) {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentBrasiliaDate();
     
     await supabase.from('envio_resumo').insert({
       grupo_id: grupo.id,

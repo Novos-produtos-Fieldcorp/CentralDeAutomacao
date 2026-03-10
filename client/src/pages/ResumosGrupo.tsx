@@ -25,6 +25,7 @@ interface GrupoResumo {
   color_name?: string;
   inbox_id?: number;
   nome_inbox?: string;
+  account_id?: number;
 }
 
 interface EnvioResumo {
@@ -47,8 +48,10 @@ interface Inbox {
   phone_number?: string;
 }
 
-// API endpoint for AI-powered group summary (replaces n8n webhook)
-const AI_SUMMARY_URL = '/api/ai/group-summary';
+// API endpoint for AI group summary
+// On Netlify: routes through Supabase Edge Function (API_BASE_URL = supabase/functions/v1/api)
+// On Replit: routes through Express backend (/api)
+const AI_SUMMARY_URL = `${API_BASE_URL}/ai/group-summary`;
 
 const ResumosGrupo = () => {
   const [searchParams] = useSearchParams();
@@ -75,10 +78,13 @@ const ResumosGrupo = () => {
     icon_name: 'MessagesSquare',
     color_name: 'blue',
     inbox_id: null as number | null,
-    nome_inbox: ''
+    nome_inbox: '',
+    account_id: null as number | null
   });
   const [availableInboxes, setAvailableInboxes] = useState<Inbox[]>([]);
   const [loadingInboxes, setLoadingInboxes] = useState(false);
+  const [modalAccounts, setModalAccounts] = useState<{ account_id: string; name: string }[]>([]);
+  const [loadingModalAccounts, setLoadingModalAccounts] = useState(false);
   const [envios, setEnvios] = useState<Record<number, EnvioResumo[]>>({});
   const [allEnvios, setAllEnvios] = useState<EnvioResumo[]>([]);
   const [loadingEnvios, setLoadingEnvios] = useState<Record<number, boolean>>({});
@@ -144,18 +150,83 @@ const ResumosGrupo = () => {
     setPaginatedEnvios(filteredEnvios.slice(startIndex, endIndex));
   }, [filteredEnvios, currentPage, pageSize]);
 
-  // Load inboxes when modal opens — mesma forma que em contratados (FloatingChat) ao enviar chat individual
+  // Load accounts when modal opens
   useEffect(() => {
-    if ((isAddModalOpen || isEditModalOpen) && accountId && wiseAppToken) {
-      loadInboxes();
+    if (isAddModalOpen || isEditModalOpen) {
+      loadModalAccounts();
     }
-  }, [isAddModalOpen, isEditModalOpen, accountId, wiseAppToken]);
+  }, [isAddModalOpen, isEditModalOpen]);
 
-  const loadInboxes = async () => {
-    const apiKey = wiseAppToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('wiseapp_token') : null);
-    if (!accountId || !apiKey) return;
+  // Load inboxes whenever the modal account changes
+  useEffect(() => {
+    if ((isAddModalOpen || isEditModalOpen) && formData.account_id) {
+      loadInboxesForAccount(String(formData.account_id));
+    }
+  }, [isAddModalOpen, isEditModalOpen, formData.account_id]);
+
+  const loadModalAccounts = async () => {
+    const token = wiseAppToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('wiseapp_token') : null);
+    if (!token) return;
+    setLoadingModalAccounts(true);
+    try {
+      const response = await fetch('/api/wiseapp/available-accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setModalAccounts(data.accounts || []);
+      }
+    } catch (error) {
+      console.error('Error loading modal accounts:', error);
+    } finally {
+      setLoadingModalAccounts(false);
+    }
+  };
+
+  const loadInboxesForAccount = async (targetAccountId: string) => {
+    if (!targetAccountId) return;
+
+    // Get API key for this account from wiseapp_acesso
+    let apiKey: string | null = null;
+    try {
+      const cachedSession = localStorage.getItem('wiseapp_session');
+      let userEmail = '';
+      if (cachedSession) {
+        try { userEmail = JSON.parse(cachedSession).email || ''; } catch {}
+      }
+      if (userEmail) {
+        const { data: accessData } = await supabase
+          .from('wiseapp_acesso')
+          .select('access_token_wiseapp')
+          .eq('email', userEmail)
+          .eq('id_conta_wiseapp', targetAccountId)
+          .single();
+        apiKey = accessData?.access_token_wiseapp || null;
+      }
+      // Fallback: any valid key for this account
+      if (!apiKey) {
+        const { data: fallback } = await supabase
+          .from('wiseapp_acesso')
+          .select('access_token_wiseapp')
+          .eq('id_conta_wiseapp', targetAccountId)
+          .not('access_token_wiseapp', 'is', null)
+          .limit(1)
+          .single();
+        apiKey = fallback?.access_token_wiseapp || null;
+      }
+    } catch {}
+
+    // Last resort: use the current global token
+    if (!apiKey) {
+      apiKey = wiseAppToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('wiseapp_token') : null);
+    }
+
+    if (!apiKey) return;
 
     setLoadingInboxes(true);
+    setAvailableInboxes([]);
     try {
       const api = axios.create({
         baseURL: API_BASE_URL,
@@ -165,7 +236,7 @@ const ResumosGrupo = () => {
           Accept: 'application/json',
         },
       });
-      const response = await api.get(`/v1/accounts/${accountId}/inboxes`);
+      const response = await api.get(`/v1/accounts/${targetAccountId}/inboxes`);
 
       if (response.data?.error === 'WiseApp authentication failed') {
         setAvailableInboxes([]);
@@ -308,7 +379,8 @@ const ResumosGrupo = () => {
         ativo: formData.ativo,
         icon_name: formData.icon_name,
         color_name: formData.color_name,
-        company_id: effectiveCompanyId
+        company_id: effectiveCompanyId,
+        account_id: formData.account_id || (accountId ? Number(accountId) : null)
       };
       
       // Add inbox_id if selected
@@ -368,7 +440,8 @@ const ResumosGrupo = () => {
         nome_inbox: formData.nome_inbox || formData.nome_grupo,
         horario: utcHorario,
         icon_name: formData.icon_name,
-        color_name: formData.color_name
+        color_name: formData.color_name,
+        account_id: formData.account_id || (accountId ? Number(accountId) : null)
       };
       
       // Add inbox_id if selected
@@ -464,16 +537,12 @@ const ResumosGrupo = () => {
         }
       }
       
-      // Fetch company's id_conta_wiseapp
-      const { data: companyData } = await supabase
-        .from('company')
-        .select('id_conta_wiseapp')
-        .eq('company_id', effectiveCompanyId)
-        .single();
+      // Use account_id stored on the group (set when creating/editing), or fall back to current account
+      const wiseappAccountId = grupo.account_id
+        ? String(grupo.account_id)
+        : (accountId || userAccountId || null);
       
-      const wiseappAccountId = companyData?.id_conta_wiseapp || userAccountId || null;
-      
-      // Fetch user's API key from wiseapp_acesso
+      // Fetch user's API key from wiseapp_acesso for the correct account
       let apiKey = null;
       if (userEmail && wiseappAccountId) {
         const { data: accessData } = await supabase
@@ -486,7 +555,7 @@ const ResumosGrupo = () => {
         apiKey = accessData?.access_token_wiseapp || null;
       }
       
-      // If no API key found for the user, try to get any valid key for the account
+      // If no API key found for this user, try any valid key for the account
       if (!apiKey && wiseappAccountId) {
         const { data: fallbackAccessData } = await supabase
           .from('wiseapp_acesso')
@@ -559,7 +628,8 @@ const ResumosGrupo = () => {
       icon_name: 'MessagesSquare',
       color_name: 'blue',
       inbox_id: null,
-      nome_inbox: ''
+      nome_inbox: '',
+      account_id: accountId ? Number(accountId) : null
     });
     setSelectedGrupo(null);
   };
@@ -981,7 +1051,8 @@ const ResumosGrupo = () => {
                                   icon_name: grupo.icon_name || 'MessagesSquare',
                                   color_name: grupo.color_name || 'blue',
                                   inbox_id: grupo.inbox_id || null,
-                                  nome_inbox: grupo.nome_inbox || ''
+                                  nome_inbox: grupo.nome_inbox || '',
+                                  account_id: grupo.account_id || (accountId ? Number(accountId) : null)
                                 });
                                 setIsEditModalOpen(true);
                               }}
@@ -1294,9 +1365,43 @@ const ResumosGrupo = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Conta WiseApp *
+                </label>
+                {loadingModalAccounts ? (
+                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 py-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Carregando contas...</span>
+                  </div>
+                ) : modalAccounts.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {modalAccounts.map(acc => (
+                      <button
+                        key={acc.account_id}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, account_id: Number(acc.account_id), inbox_id: null, nome_inbox: '' }))}
+                        data-testid={`account-btn-${acc.account_id}`}
+                        className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                          formData.account_id === Number(acc.account_id)
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {acc.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma conta disponível</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Caixa de Entrada *
                 </label>
-                {loadingInboxes ? (
+                {!formData.account_id ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Selecione uma conta primeiro</p>
+                ) : loadingInboxes ? (
                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 py-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span className="text-sm">Carregando caixas de entrada...</span>
@@ -1441,9 +1546,43 @@ const ResumosGrupo = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Conta WiseApp *
+                </label>
+                {loadingModalAccounts ? (
+                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 py-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Carregando contas...</span>
+                  </div>
+                ) : modalAccounts.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {modalAccounts.map(acc => (
+                      <button
+                        key={acc.account_id}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, account_id: Number(acc.account_id), inbox_id: null, nome_inbox: '' }))}
+                        data-testid={`account-btn-edit-${acc.account_id}`}
+                        className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                          formData.account_id === Number(acc.account_id)
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {acc.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma conta disponível</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Caixa de Entrada *
                 </label>
-                {loadingInboxes ? (
+                {!formData.account_id ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Selecione uma conta primeiro</p>
+                ) : loadingInboxes ? (
                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 py-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span className="text-sm">Carregando caixas de entrada...</span>
