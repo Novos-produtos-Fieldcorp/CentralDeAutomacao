@@ -305,14 +305,14 @@ serve(async (req) => {
             messages: [
               {
                 role: 'system',
-                content: `Voce e um analista que gera resumos executivos de conversas em grupo. Seja objetivo e preciso. Baseie-se APENAS nas mensagens fornecidas. NAO invente informacoes.`
+                content: `Voce e um assistente especializado em suporte ao cliente e logistica que gera resumos concisos de grupos. Use SEMPRE palavras e frases CONCRETAS das mensagens. NUNCA use generalizacoes vagas como "assunto discutido" ou "problema relatado". Se a mensagem diz "entrega atrasada", escreva "entrega atrasada". Se diz "motorista nao apareceu", escreva "motorista nao apareceu". Seja especifico e direto.`
               },
               {
                 role: 'user',
-                content: `Analise as mensagens do grupo "${nome_do_grupo}" e gere um resumo executivo.\n\n${messagesContext}\n\nREGRAS:\n1. O titulo DEVE ser exatamente: Resumo do Grupo "${nome_do_grupo}"\n2. Inclua: quantidade de mensagens, principais assuntos discutidos, problemas/pendencias, tom geral\n3. Se nao houver mensagens hoje, responda apenas: Resumo do Grupo "${nome_do_grupo}"\nNenhuma mensagem encontrada hoje neste grupo.\nEste resumo foi gerado automaticamente pela IAzinha\n4. DEVE terminar com: Este resumo foi gerado automaticamente pela IAzinha`
+                content: `Analise as mensagens do grupo "${nome_do_grupo}" abaixo e gere um resumo no formato EXATO:\n\nResumo do Grupo "${nome_do_grupo}"\n• Quantidade de mensagens: [numero]\n• Principais assuntos: [liste os topicos ESPECIFICOS mencionados, usando as proprias palavras das mensagens]\n• Problemas/Pendencias: [descreva problemas CONCRETOS citados, ou "Nenhum problema identificado"]\n• Tom geral: [Urgente/Tranquilo/Insatisfeito/Satisfeito/Neutro - com breve justificativa]\n\nEste resumo foi gerado automaticamente pela IAzinha\n\n${messagesContext}\n\nSe nao houver mensagens hoje, retorne:\nResumo do Grupo "${nome_do_grupo}"\nNenhuma mensagem encontrada hoje neste grupo.\nEste resumo foi gerado automaticamente pela IAzinha\n\nIMPORTANTE: Use o formato de bullet points acima. Cite palavras EXATAS das mensagens nos assuntos e problemas.`
               }
             ],
-            temperature: 0.3,
+            temperature: 0.2,
             max_tokens: 1024,
           })
         })
@@ -467,14 +467,14 @@ serve(async (req) => {
             messages: [
               {
                 role: 'system',
-                content: `Voce e um analista que gera resumos executivos de conversas. Seja objetivo e preciso. Baseie-se APENAS nas mensagens fornecidas. NAO invente informacoes.`
+                content: `Voce e um assistente especializado em suporte ao cliente que gera resumos concisos de conversas individuais. Use SEMPRE palavras e frases CONCRETAS das mensagens. NUNCA use generalizacoes vagas como "problema relatado" ou "assunto mencionado". Se o cliente disse "tela travou", escreva "tela travou". Se disse "boleto nao chegou", escreva "boleto nao chegou". Tom: analise se o cliente esta satisfeito, insatisfeito, urgente ou neutro com base no que ESCREVEU.`
               },
               {
                 role: 'user',
-                content: `Analise as mensagens da ${tipoLabel.toLowerCase()} "${displayName}" e gere um resumo executivo.\n\n${messagesContext}\n\nREGRAS:\n1. O titulo DEVE ser exatamente: Resumo da ${tipoLabel} "${displayName}"\n2. Inclua: quantidade de mensagens, principais assuntos discutidos, problemas/pendencias, tom geral\n3. Se nao houver mensagens hoje, responda apenas: Resumo da ${tipoLabel} "${displayName}"\nNenhuma mensagem encontrada hoje.\nEste resumo foi gerado automaticamente pela IAzinha\n4. DEVE terminar com: Este resumo foi gerado automaticamente pela IAzinha`
+                content: `Analise as mensagens da ${tipoLabel.toLowerCase()} "${displayName}" abaixo e gere um resumo no formato EXATO:\n\nResumo da ${tipoLabel} "${displayName}"\n• Quantidade de mensagens: [numero]\n• Principais assuntos: [cite os topicos ESPECIFICOS usando palavras das proprias mensagens, ex: "tela travou", "pedido cancelado"]\n• Problemas/Pendencias: [descreva o problema CONCRETO relatado, ou "Nenhum problema identificado"]\n• Tom geral: [Urgente/Insatisfeito/Satisfeito/Neutro/Tranquilo - com breve justificativa baseada no conteudo]\n\nEste resumo foi gerado automaticamente pela IAzinha\n\n${messagesContext}\n\nSe nao houver mensagens hoje, retorne:\nResumo da ${tipoLabel} "${displayName}"\nNenhuma mensagem encontrada hoje.\nEste resumo foi gerado automaticamente pela IAzinha\n\nIMPORTANTE: Use o formato de bullet points acima. Cite as palavras EXATAS que o cliente e o atendente usaram.`
               }
             ],
-            temperature: 0.3,
+            temperature: 0.2,
             max_tokens: 1024,
           })
         })
