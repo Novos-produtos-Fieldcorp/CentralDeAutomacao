@@ -26,6 +26,9 @@ interface GrupoResumo {
   inbox_id?: number;
   nome_inbox?: string;
   account_id?: number;
+  tipo?: string;
+  conv_id?: number;
+  contact_name?: string;
 }
 
 interface EnvioResumo {
@@ -36,6 +39,7 @@ interface EnvioResumo {
   status: boolean;
   mensagem: string;
   resumo_grupo?: string;
+  tipo?: string;
   grupo?: {
     nome_grupo: string;
   };
@@ -48,10 +52,28 @@ interface Inbox {
   phone_number?: string;
 }
 
-// API endpoint for AI group summary
-// On Netlify: routes through Supabase Edge Function (API_BASE_URL = supabase/functions/v1/api)
-// On Replit: routes through Express backend (/api)
+interface WiseAppContact {
+  id: number;
+  name: string;
+  phone_number?: string;
+  email?: string;
+}
+
+interface WiseAppConversation {
+  id: number;
+  inbox_id: number;
+  status: string;
+  meta?: {
+    sender?: {
+      name?: string;
+    };
+  };
+  created_at?: string;
+  messages_count?: number;
+}
+
 const AI_SUMMARY_URL = `${API_BASE_URL}/ai/group-summary`;
+const AI_CONV_SUMMARY_URL = `${API_BASE_URL}/ai/conversation-summary`;
 
 const ResumosGrupo = () => {
   const [searchParams] = useSearchParams();
@@ -91,7 +113,7 @@ const ResumosGrupo = () => {
   const [loadingAllEnvios, setLoadingAllEnvios] = useState(false);
   const [sendingManualSummary, setSendingManualSummary] = useState<Record<number, boolean>>({});
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
-  const [activeTab, setActiveTab] = useState<'groups' | 'history'>('groups');
+  const [activeTab, setActiveTab] = useState<'groups' | 'conversations' | 'emails' | 'history'>('groups');
   const [selectedEnvio, setSelectedEnvio] = useState<EnvioResumo | null>(null);
   const [isEnvioModalOpen, setIsEnvioModalOpen] = useState(false);
   const [dateFilter, setDateFilter] = useState({ from: '', to: '' });
@@ -99,6 +121,20 @@ const ResumosGrupo = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [paginatedEnvios, setPaginatedEnvios] = useState<EnvioResumo[]>([]);
+
+  const [conversas, setConversas] = useState<GrupoResumo[]>([]);
+  const [emails, setEmails] = useState<GrupoResumo[]>([]);
+  const [contactSearchQuery, setContactSearchQuery] = useState('');
+  const [contactSearchResults, setContactSearchResults] = useState<WiseAppContact[]>([]);
+  const [loadingContactSearch, setLoadingContactSearch] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<WiseAppContact | null>(null);
+  const [contactConversations, setContactConversations] = useState<WiseAppConversation[]>([]);
+  const [loadingContactConversations, setLoadingContactConversations] = useState(false);
+  const [emailInboxes, setEmailInboxes] = useState<Inbox[]>([]);
+  const [emailConversations, setEmailConversations] = useState<WiseAppConversation[]>([]);
+  const [loadingEmailConversations, setLoadingEmailConversations] = useState(false);
+  const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
+  const [selectedConvName, setSelectedConvName] = useState('');
 
   useEffect(() => {
     if (effectiveCompanyId) {
@@ -273,13 +309,14 @@ const ResumosGrupo = () => {
 
       if (error) throw error;
       
-      // Convert UTC times from database to Brasilia time for display
       const gruposWithLocalTime = (data || []).map(grupo => ({
         ...grupo,
         horario: convertUTCToBrasilia(grupo.horario)
       }));
       
-      setGrupos(gruposWithLocalTime);
+      setGrupos(gruposWithLocalTime.filter(g => !g.tipo || g.tipo === 'grupo'));
+      setConversas(gruposWithLocalTime.filter(g => g.tipo === 'conversa'));
+      setEmails(gruposWithLocalTime.filter(g => g.tipo === 'email'));
     } catch (error) {
       console.error('Error fetching grupos:', error);
       toast.error('Erro ao carregar grupos');
@@ -487,12 +524,16 @@ const ResumosGrupo = () => {
         .eq('id', selectedGrupo.id);
 
       if (error) throw error;
-      setGrupos(grupos.filter(grupo => grupo.id !== selectedGrupo.id));
+      const filterOut = (list: GrupoResumo[]) => list.filter(g => g.id !== selectedGrupo.id);
+      setGrupos(filterOut(grupos));
+      setConversas(filterOut(conversas));
+      setEmails(filterOut(emails));
       setIsDeleteModalOpen(false);
-      toast.success('Grupo excluído com sucesso');
+      const label = activeTab === 'conversations' ? 'Conversa' : activeTab === 'emails' ? 'E-mail' : 'Grupo';
+      toast.success(`${label} excluído(a) com sucesso`);
     } catch (error) {
       console.error('Error deleting grupo:', error);
-      toast.error('Erro ao excluir grupo');
+      toast.error('Erro ao excluir');
     }
   };
 
@@ -505,16 +546,15 @@ const ResumosGrupo = () => {
 
       if (error) throw error;
       
-      setGrupos(grupos.map(g => 
-        g.id === grupo.id 
-          ? { ...g, ativo: !g.ativo } 
-          : g
-      ));
+      const updater = (list: GrupoResumo[]) => list.map(g => g.id === grupo.id ? { ...g, ativo: !g.ativo } : g);
+      setGrupos(updater(grupos));
+      setConversas(updater(conversas));
+      setEmails(updater(emails));
       
-      toast.success(`Grupo ${!grupo.ativo ? 'ativado' : 'desativado'} com sucesso`);
+      toast.success(`${!grupo.ativo ? 'Ativado' : 'Desativado'} com sucesso`);
     } catch (error) {
-      console.error('Error toggling grupo status:', error);
-      toast.error('Erro ao alterar status do grupo');
+      console.error('Error toggling status:', error);
+      toast.error('Erro ao alterar status');
     }
   };
 
@@ -620,6 +660,251 @@ const ResumosGrupo = () => {
     }
   };
 
+  const handleSendConvSummary = async (item: GrupoResumo) => {
+    try {
+      setSendingManualSummary(prev => ({ ...prev, [item.id]: true }));
+      
+      const cachedSession = localStorage.getItem('wiseapp_session');
+      let userEmail = '';
+      if (cachedSession) {
+        try { userEmail = JSON.parse(cachedSession).email || ''; } catch {}
+      }
+      
+      const wiseappAccountId = item.account_id ? String(item.account_id) : (accountId || null);
+      
+      let apiKey = null;
+      if (userEmail && wiseappAccountId) {
+        const { data: accessData } = await supabase
+          .from('wiseapp_acesso')
+          .select('access_token_wiseapp')
+          .eq('email', userEmail)
+          .eq('id_conta_wiseapp', wiseappAccountId)
+          .single();
+        apiKey = accessData?.access_token_wiseapp || null;
+      }
+      if (!apiKey && wiseappAccountId) {
+        const { data: fallbackData } = await supabase
+          .from('wiseapp_acesso')
+          .select('access_token_wiseapp')
+          .eq('id_conta_wiseapp', wiseappAccountId)
+          .not('access_token_wiseapp', 'is', null)
+          .limit(1)
+          .single();
+        apiKey = fallbackData?.access_token_wiseapp || null;
+      }
+      
+      const response = await fetch(AI_CONV_SUMMARY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          account_id: wiseappAccountId,
+          api_key: apiKey,
+          conv_id: item.conv_id,
+          conv_name: item.contact_name || item.nome_grupo,
+          tipo: item.tipo || 'conversa',
+          group_id: item.id,
+          company_id: effectiveCompanyId
+        })
+      });
+      
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Falha ao gerar resumo');
+      }
+      
+      toast.success('Resumo gerado com sucesso!');
+      fetchEnvios(item.id);
+      if (activeTab === 'history') fetchAllEnvios();
+    } catch (error) {
+      console.error('Error sending conv summary:', error);
+      toast.error(`Erro ao enviar resumo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    } finally {
+      setSendingManualSummary(prev => ({ ...prev, [item.id]: false }));
+    }
+  };
+
+  const searchContacts = async (query: string) => {
+    if (!formData.account_id || !query.trim()) {
+      setContactSearchResults([]);
+      return;
+    }
+    setLoadingContactSearch(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/wiseapp/${formData.account_id}/contacts-search?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      const contacts = data?.payload || [];
+      setContactSearchResults(contacts.map((c: any) => ({
+        id: c.id,
+        name: c.name || 'Sem nome',
+        phone_number: c.phone_number,
+        email: c.email
+      })));
+    } catch (error) {
+      console.error('Error searching contacts:', error);
+      setContactSearchResults([]);
+    } finally {
+      setLoadingContactSearch(false);
+    }
+  };
+
+  const fetchContactConversations = async (contactId: number) => {
+    if (!formData.account_id) return;
+    setLoadingContactConversations(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/wiseapp/${formData.account_id}/contacts/${contactId}/conversations`);
+      const data = await response.json();
+      const convs = data?.payload || [];
+      setContactConversations(convs.map((c: any) => ({
+        id: c.id,
+        inbox_id: c.inbox_id,
+        status: c.status,
+        meta: c.meta,
+        created_at: c.created_at,
+        messages_count: c.messages_count
+      })));
+    } catch (error) {
+      console.error('Error fetching contact conversations:', error);
+      setContactConversations([]);
+    } finally {
+      setLoadingContactConversations(false);
+    }
+  };
+
+  const fetchEmailConversations = async (inboxId: number) => {
+    if (!formData.account_id) return;
+    setLoadingEmailConversations(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/wiseapp/${formData.account_id}/conversations?inbox_id=${inboxId}`);
+      const data = await response.json();
+      const convs = data?.data?.payload || [];
+      setEmailConversations(convs.map((c: any) => ({
+        id: c.id,
+        inbox_id: c.inbox_id,
+        status: c.status,
+        meta: c.meta,
+        created_at: c.created_at,
+        messages_count: c.messages_count
+      })));
+    } catch (error) {
+      console.error('Error fetching email conversations:', error);
+      setEmailConversations([]);
+    } finally {
+      setLoadingEmailConversations(false);
+    }
+  };
+
+  const handleAddConvOrEmail = async (tipo: 'conversa' | 'email') => {
+    if (!formData.nome_grupo?.trim()) {
+      toast.error('Nome é obrigatório');
+      return;
+    }
+    if (!formData.horario) {
+      toast.error('Horário é obrigatório');
+      return;
+    }
+    if (!selectedConvId) {
+      toast.error(tipo === 'email' ? 'Selecione uma conversa de e-mail' : 'Selecione uma conversa');
+      return;
+    }
+
+    try {
+      const utcHorario = convertBrasiliaToUTC(formData.horario);
+      const insertData: any = {
+        nome_grupo: formData.nome_grupo,
+        horario: utcHorario,
+        ativo: formData.ativo,
+        icon_name: formData.icon_name,
+        color_name: formData.color_name,
+        company_id: effectiveCompanyId,
+        account_id: formData.account_id || (accountId ? Number(accountId) : null),
+        tipo,
+        conv_id: selectedConvId,
+        contact_name: selectedConvName || formData.nome_grupo
+      };
+
+      if (tipo === 'email' && formData.inbox_id) {
+        insertData.inbox_id = formData.inbox_id;
+        insertData.nome_inbox = formData.nome_inbox;
+      }
+
+      const { data, error } = await supabase
+        .from('grupo_resumo')
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newItem = { ...data, horario: convertUTCToBrasilia(data.horario) };
+      if (tipo === 'conversa') {
+        setConversas([...conversas, newItem]);
+      } else {
+        setEmails([...emails, newItem]);
+      }
+      setIsAddModalOpen(false);
+      resetForm();
+      toast.success(`${tipo === 'email' ? 'E-mail' : 'Conversa'} adicionado(a) com sucesso`);
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast.error('Erro ao adicionar');
+    }
+  };
+
+  const handleEditConvOrEmail = async (tipo: 'conversa' | 'email') => {
+    if (!selectedGrupo) return;
+    if (!formData.nome_grupo?.trim()) {
+      toast.error('Nome é obrigatório');
+      return;
+    }
+    if (!formData.horario) {
+      toast.error('Horário é obrigatório');
+      return;
+    }
+
+    try {
+      const utcHorario = convertBrasiliaToUTC(formData.horario);
+      const updateData: any = {
+        nome_grupo: formData.nome_grupo,
+        horario: utcHorario,
+        icon_name: formData.icon_name,
+        color_name: formData.color_name,
+        account_id: formData.account_id || (accountId ? Number(accountId) : null)
+      };
+
+      if (selectedConvId) {
+        updateData.conv_id = selectedConvId;
+        updateData.contact_name = selectedConvName || formData.nome_grupo;
+      }
+
+      if (tipo === 'email' && formData.inbox_id) {
+        updateData.inbox_id = formData.inbox_id;
+        updateData.nome_inbox = formData.nome_inbox;
+      }
+
+      const { error } = await supabase
+        .from('grupo_resumo')
+        .update(updateData)
+        .eq('id', selectedGrupo.id);
+
+      if (error) throw error;
+
+      const updater = (item: GrupoResumo) =>
+        item.id === selectedGrupo.id
+          ? { ...item, nome_grupo: formData.nome_grupo, horario: formData.horario, icon_name: formData.icon_name, color_name: formData.color_name, ...(selectedConvId ? { conv_id: selectedConvId, contact_name: selectedConvName } : {}) }
+          : item;
+
+      if (tipo === 'conversa') setConversas(conversas.map(updater));
+      else setEmails(emails.map(updater));
+
+      setIsEditModalOpen(false);
+      resetForm();
+      toast.success('Atualizado com sucesso');
+    } catch (error) {
+      console.error('Error updating:', error);
+      toast.error('Erro ao atualizar');
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       nome_grupo: '',
@@ -632,6 +917,13 @@ const ResumosGrupo = () => {
       account_id: accountId ? Number(accountId) : null
     });
     setSelectedGrupo(null);
+    setContactSearchQuery('');
+    setContactSearchResults([]);
+    setSelectedContact(null);
+    setContactConversations([]);
+    setEmailConversations([]);
+    setSelectedConvId(null);
+    setSelectedConvName('');
   };
 
   const toggleGroupExpansion = (grupoId: number) => {
@@ -921,20 +1213,23 @@ const ResumosGrupo = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Resumos em Grupo</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">IAzinha - Resumos</h1>
         <div className="flex gap-2">
-          <button
-            onClick={() => {
-              setIsAddModalOpen(true);
-              resetForm();
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                     transition-colors flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Novo Grupo
-          </button>
+          {activeTab !== 'history' && (
+            <button
+              onClick={() => {
+                setIsAddModalOpen(true);
+                resetForm();
+              }}
+              data-testid="btn-add-new"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                       transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              {activeTab === 'conversations' ? 'Nova Conversa' : activeTab === 'emails' ? 'Novo E-mail' : 'Novo Grupo'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -944,6 +1239,7 @@ const ResumosGrupo = () => {
           <nav className="flex space-x-8 px-6" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('groups')}
+              data-testid="tab-groups"
               className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200 ${
                 activeTab === 'groups'
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -954,7 +1250,32 @@ const ResumosGrupo = () => {
               Grupos
             </button>
             <button
+              onClick={() => setActiveTab('conversations')}
+              data-testid="tab-conversations"
+              className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200 ${
+                activeTab === 'conversations'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <MessageCircle className="w-5 h-5 mr-2" />
+              Conversas
+            </button>
+            <button
+              onClick={() => setActiveTab('emails')}
+              data-testid="tab-emails"
+              className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200 ${
+                activeTab === 'emails'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+            >
+              <Mail className="w-5 h-5 mr-2" />
+              E-mails
+            </button>
+            <button
               onClick={() => setActiveTab('history')}
+              data-testid="tab-history"
               className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200 ${
                 activeTab === 'history'
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
@@ -1147,6 +1468,250 @@ const ResumosGrupo = () => {
             </>
           )}
 
+          {/* Conversas Tab */}
+          {activeTab === 'conversations' && (
+            <>
+              {conversas.length === 0 ? (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
+                  <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Nenhuma conversa configurada
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                    Configure conversas individuais para gerar resumos automáticos diários. O resumo será enviado como nota privada.
+                  </p>
+                  <button
+                    onClick={() => { setIsAddModalOpen(true); resetForm(); }}
+                    data-testid="btn-add-conversa"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 mx-auto"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Adicionar Conversa
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {conversas.map(item => (
+                    <div key={item.id} className={`bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden ${!item.ativo ? 'opacity-60' : ''}`}>
+                      <div className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-3 rounded-full ${getColorClass(item.color_name || 'blue')}`}>
+                              {getIconComponent(item.icon_name || 'MessageCircle')}
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{item.nome_grupo}</h3>
+                              {item.contact_name && item.contact_name !== item.nome_grupo && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{item.contact_name}</p>
+                              )}
+                              <div className="flex items-center gap-2 mt-1">
+                                <Clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                <span className="text-sm text-gray-500 dark:text-gray-400">{item.horario}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleToggleActive(item)}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${item.ativo ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                            role="switch"
+                            aria-checked={item.ativo}
+                          >
+                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${item.ativo ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
+                        <div className="flex justify-between items-center mt-6">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedGrupo(item);
+                                setFormData({ nome_grupo: item.nome_grupo, horario: item.horario, ativo: item.ativo, icon_name: item.icon_name || 'MessageCircle', color_name: item.color_name || 'blue', inbox_id: item.inbox_id || null, nome_inbox: item.nome_inbox || '', account_id: item.account_id || (accountId ? Number(accountId) : null) });
+                                setSelectedConvId(item.conv_id || null);
+                                setSelectedConvName(item.contact_name || '');
+                                setIsEditModalOpen(true);
+                              }}
+                              className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                              title="Editar"
+                            >
+                              <Edit2 className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => { setSelectedGrupo(item); setIsDeleteModalOpen(true); }}
+                              className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => toggleGroupExpansion(item.id)}
+                              className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                              title={expandedGroups.has(item.id) ? "Ocultar histórico" : "Ver histórico"}
+                            >
+                              <LayoutList className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleSendConvSummary(item)}
+                              disabled={sendingManualSummary[item.id] || !item.ativo}
+                              className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Enviar resumo agora"
+                            >
+                              {sendingManualSummary[item.id] ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      {expandedGroups.has(item.id) && (
+                        <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Histórico de Envios</h4>
+                          {loadingEnvios[item.id] ? (
+                            <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 text-blue-500 animate-spin" /></div>
+                          ) : envios[item.id]?.length ? (
+                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                              {envios[item.id].map(envio => (
+                                <div key={envio.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white">{formatDateTime(envio.data_envio)}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{envio.mensagem}</div>
+                                  </div>
+                                  <div>{envio.status ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}</div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-4 text-gray-500 dark:text-gray-400">Nenhum envio registrado</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* E-mails Tab */}
+          {activeTab === 'emails' && (
+            <>
+              {emails.length === 0 ? (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
+                  <Mail className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    Nenhum e-mail configurado
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                    Configure conversas de e-mail para gerar resumos automáticos diários. O resumo será enviado como nota privada.
+                  </p>
+                  <button
+                    onClick={() => { setIsAddModalOpen(true); resetForm(); }}
+                    data-testid="btn-add-email"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 mx-auto"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Adicionar E-mail
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {emails.map(item => (
+                    <div key={item.id} className={`bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden ${!item.ativo ? 'opacity-60' : ''}`}>
+                      <div className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-3 rounded-full ${getColorClass(item.color_name || 'purple')}`}>
+                              {getIconComponent(item.icon_name || 'Mail')}
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{item.nome_grupo}</h3>
+                              {item.contact_name && item.contact_name !== item.nome_grupo && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{item.contact_name}</p>
+                              )}
+                              <div className="flex items-center gap-2 mt-1">
+                                <Clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                <span className="text-sm text-gray-500 dark:text-gray-400">{item.horario}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleToggleActive(item)}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${item.ativo ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                            role="switch"
+                            aria-checked={item.ativo}
+                          >
+                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${item.ativo ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
+                        <div className="flex justify-between items-center mt-6">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedGrupo(item);
+                                setFormData({ nome_grupo: item.nome_grupo, horario: item.horario, ativo: item.ativo, icon_name: item.icon_name || 'Mail', color_name: item.color_name || 'purple', inbox_id: item.inbox_id || null, nome_inbox: item.nome_inbox || '', account_id: item.account_id || (accountId ? Number(accountId) : null) });
+                                setSelectedConvId(item.conv_id || null);
+                                setSelectedConvName(item.contact_name || '');
+                                setIsEditModalOpen(true);
+                              }}
+                              className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                              title="Editar"
+                            >
+                              <Edit2 className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => { setSelectedGrupo(item); setIsDeleteModalOpen(true); }}
+                              className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => toggleGroupExpansion(item.id)}
+                              className="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                              title={expandedGroups.has(item.id) ? "Ocultar histórico" : "Ver histórico"}
+                            >
+                              <LayoutList className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleSendConvSummary(item)}
+                              disabled={sendingManualSummary[item.id] || !item.ativo}
+                              className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Enviar resumo agora"
+                            >
+                              {sendingManualSummary[item.id] ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      {expandedGroups.has(item.id) && (
+                        <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
+                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Histórico de Envios</h4>
+                          {loadingEnvios[item.id] ? (
+                            <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 text-blue-500 animate-spin" /></div>
+                          ) : envios[item.id]?.length ? (
+                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                              {envios[item.id].map(envio => (
+                                <div key={envio.id} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white">{formatDateTime(envio.data_envio)}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{envio.mensagem}</div>
+                                  </div>
+                                  <div>{envio.status ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}</div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-4 text-gray-500 dark:text-gray-400">Nenhum envio registrado</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
           {activeTab === 'history' && (
             <div className="space-y-6">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
@@ -1203,7 +1768,10 @@ const ResumosGrupo = () => {
                               Data/Hora
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              Grupo
+                              Nome
+                            </th>
+                            <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Tipo
                             </th>
                             <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                               Status
@@ -1231,9 +1799,24 @@ const ResumosGrupo = () => {
                                 })()}
                               </td>
                               <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white max-w-[120px]">
-                                <div className="truncate" title={envio.grupo?.nome_grupo || 'Grupo desconhecido'}>
+                                <div className="truncate" title={envio.grupo?.nome_grupo || 'Desconhecido'}>
                                   {envio.grupo?.nome_grupo || 'Desconhecido'}
                                 </div>
+                              </td>
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                {(() => {
+                                  const tipo = envio.tipo || 'grupo';
+                                  const badgeConfig = {
+                                    grupo: { label: 'Grupo', cls: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
+                                    conversa: { label: 'Conversa', cls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
+                                    email: { label: 'E-mail', cls: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' }
+                                  }[tipo] || { label: tipo, cls: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' };
+                                  return (
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badgeConfig.cls}`}>
+                                      {badgeConfig.label}
+                                    </span>
+                                  );
+                                })()}
                               </td>
                               <td className="px-3 py-2 whitespace-nowrap">
                                 {envio.status ? (
@@ -1315,34 +1898,37 @@ const ResumosGrupo = () => {
         </div>
       </div>
 
-      {/* Add Group Modal */}
+      {/* Add Modal (Groups / Conversas / Emails) */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Novo Grupo
+                {activeTab === 'conversations' ? 'Nova Conversa' : activeTab === 'emails' ? 'Novo E-mail' : 'Novo Grupo'}
               </h2>
             </div>
             <div className="p-4 space-y-3">
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nome do Grupo *
-                  <div className="relative group">
-                    <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
-                      <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-1.5 px-2 shadow-lg whitespace-nowrap">
-                        Nome deve ser igual ao WhatsApp
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                  {activeTab === 'conversations' ? 'Nome da Conversa *' : activeTab === 'emails' ? 'Nome do E-mail *' : 'Nome do Grupo *'}
+                  {activeTab === 'groups' && (
+                    <div className="relative group">
+                      <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                        <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-1.5 px-2 shadow-lg whitespace-nowrap">
+                          Nome deve ser igual ao WhatsApp
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </label>
                 <input
                   type="text"
                   value={formData.nome_grupo}
                   onChange={(e) => setFormData({ ...formData, nome_grupo: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder={activeTab === 'conversations' ? 'Ex: Resumo João Silva' : activeTab === 'emails' ? 'Ex: Resumo Suporte' : 'Ex: Resumo Operações'}
                   required
                 />
               </div>
@@ -1378,7 +1964,19 @@ const ResumosGrupo = () => {
                       <button
                         key={acc.account_id}
                         type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, account_id: Number(acc.account_id), inbox_id: null, nome_inbox: '' }))}
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, account_id: Number(acc.account_id), inbox_id: null, nome_inbox: '' }));
+                          setSelectedContact(null);
+                          setContactSearchResults([]);
+                          setContactConversations([]);
+                          setEmailConversations([]);
+                          setSelectedConvId(null);
+                          setSelectedConvName('');
+                          if (activeTab === 'emails') {
+                            const emailInbs = availableInboxes.filter(i => i.channel_type === 'Channel::Email');
+                            setEmailInboxes(emailInbs);
+                          }
+                        }}
                         data-testid={`account-btn-${acc.account_id}`}
                         className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                           formData.account_id === Number(acc.account_id)
@@ -1395,46 +1993,219 @@ const ResumosGrupo = () => {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Caixa de Entrada *
-                </label>
-                {!formData.account_id ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Selecione uma conta primeiro</p>
-                ) : loadingInboxes ? (
-                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 py-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Carregando caixas de entrada...</span>
+              {/* Groups: Inbox selector */}
+              {activeTab === 'groups' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Caixa de Entrada *
+                  </label>
+                  {!formData.account_id ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Selecione uma conta primeiro</p>
+                  ) : loadingInboxes ? (
+                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 py-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm">Carregando caixas de entrada...</span>
+                    </div>
+                  ) : availableInboxes.length > 0 ? (
+                    <select
+                      value={formData.inbox_id || ''}
+                      onChange={(e) => {
+                        const selectedId = e.target.value ? Number(e.target.value) : null;
+                        const selectedInbox = availableInboxes.find(i => i.id === selectedId);
+                        setFormData({ ...formData, inbox_id: selectedId, nome_inbox: selectedInbox?.name || '' });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      required
+                      data-testid="select-inbox"
+                    >
+                      <option value="">Selecione uma caixa de entrada</option>
+                      {availableInboxes.map(inbox => (
+                        <option key={inbox.id} value={inbox.id}>
+                          {inbox.name} {inbox.phone_number ? `(${inbox.phone_number})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma caixa de entrada disponível</p>
+                  )}
+                </div>
+              )}
+
+              {/* Conversas: Contact search + conversation picker */}
+              {activeTab === 'conversations' && formData.account_id && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Buscar Contato *
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={contactSearchQuery}
+                        onChange={(e) => setContactSearchQuery(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); searchContacts(contactSearchQuery); } }}
+                        placeholder="Nome ou telefone do contato"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        data-testid="input-contact-search"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => searchContacts(contactSearchQuery)}
+                        disabled={loadingContactSearch}
+                        className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        data-testid="btn-search-contacts"
+                      >
+                        {loadingContactSearch ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
-                ) : availableInboxes.length > 0 ? (
-                  <select
-                    value={formData.inbox_id || ''}
-                    onChange={(e) => {
-                      const selectedId = e.target.value ? Number(e.target.value) : null;
-                      const selectedInbox = availableInboxes.find(i => i.id === selectedId);
-                      setFormData({
-                        ...formData,
-                        inbox_id: selectedId,
-                        nome_inbox: selectedInbox?.name || ''
-                      });
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    required
-                    data-testid="select-inbox"
-                  >
-                    <option value="">Selecione uma caixa de entrada</option>
-                    {availableInboxes.map(inbox => (
-                      <option key={inbox.id} value={inbox.id}>
-                        {inbox.name} {inbox.phone_number ? `(${inbox.phone_number})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Nenhuma caixa de entrada disponível
-                  </p>
-                )}
-              </div>
+                  {contactSearchResults.length > 0 && (
+                    <div className="max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                      {contactSearchResults.map(contact => (
+                        <button
+                          key={contact.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedContact(contact);
+                            setContactSearchResults([]);
+                            setFormData(prev => ({ ...prev, nome_grupo: prev.nome_grupo || contact.name }));
+                            fetchContactConversations(contact.id);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${
+                            selectedContact?.id === contact.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                          }`}
+                          data-testid={`contact-${contact.id}`}
+                        >
+                          <div className="font-medium text-gray-900 dark:text-white">{contact.name}</div>
+                          {contact.phone_number && <div className="text-xs text-gray-500">{contact.phone_number}</div>}
+                          {contact.email && <div className="text-xs text-gray-500">{contact.email}</div>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {selectedContact && (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg flex items-center justify-between">
+                      <span className="text-sm text-blue-800 dark:text-blue-200">
+                        <User className="w-4 h-4 inline mr-1" />
+                        {selectedContact.name}
+                      </span>
+                      <button type="button" onClick={() => { setSelectedContact(null); setContactConversations([]); setSelectedConvId(null); }} className="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                  {selectedContact && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Conversa *
+                      </label>
+                      {loadingContactConversations ? (
+                        <div className="flex items-center gap-2 text-gray-500 py-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-sm">Carregando conversas...</span>
+                        </div>
+                      ) : contactConversations.length > 0 ? (
+                        <select
+                          value={selectedConvId || ''}
+                          onChange={(e) => {
+                            const id = e.target.value ? Number(e.target.value) : null;
+                            setSelectedConvId(id);
+                            const conv = contactConversations.find(c => c.id === id);
+                            setSelectedConvName(conv?.meta?.sender?.name || selectedContact.name);
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          data-testid="select-conv"
+                        >
+                          <option value="">Selecione uma conversa</option>
+                          {contactConversations.map(conv => (
+                            <option key={conv.id} value={conv.id}>
+                              #{conv.id} - {conv.meta?.sender?.name || 'Conversa'} ({conv.messages_count || 0} msgs)
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma conversa encontrada</p>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* E-mails: Email inbox + conversation picker */}
+              {activeTab === 'emails' && formData.account_id && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Caixa de E-mail *
+                    </label>
+                    {loadingInboxes ? (
+                      <div className="flex items-center gap-2 text-gray-500 py-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm">Carregando caixas...</span>
+                      </div>
+                    ) : (() => {
+                      const emailInbs = availableInboxes.filter(i => i.channel_type === 'Channel::Email');
+                      return emailInbs.length > 0 ? (
+                        <select
+                          value={formData.inbox_id || ''}
+                          onChange={(e) => {
+                            const selectedId = e.target.value ? Number(e.target.value) : null;
+                            const selectedInbox = emailInbs.find(i => i.id === selectedId);
+                            setFormData({ ...formData, inbox_id: selectedId, nome_inbox: selectedInbox?.name || '' });
+                            if (selectedId) fetchEmailConversations(selectedId);
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          data-testid="select-email-inbox"
+                        >
+                          <option value="">Selecione uma caixa de e-mail</option>
+                          {emailInbs.map(inbox => (
+                            <option key={inbox.id} value={inbox.id}>{inbox.name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma caixa de e-mail disponível</p>
+                      );
+                    })()}
+                  </div>
+                  {formData.inbox_id && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Conversa de E-mail *
+                      </label>
+                      {loadingEmailConversations ? (
+                        <div className="flex items-center gap-2 text-gray-500 py-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-sm">Carregando conversas...</span>
+                        </div>
+                      ) : emailConversations.length > 0 ? (
+                        <select
+                          value={selectedConvId || ''}
+                          onChange={(e) => {
+                            const id = e.target.value ? Number(e.target.value) : null;
+                            setSelectedConvId(id);
+                            const conv = emailConversations.find(c => c.id === id);
+                            setSelectedConvName(conv?.meta?.sender?.name || 'E-mail');
+                            if (conv?.meta?.sender?.name && !formData.nome_grupo) {
+                              setFormData(prev => ({ ...prev, nome_grupo: conv.meta?.sender?.name || '' }));
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          data-testid="select-email-conv"
+                        >
+                          <option value="">Selecione uma conversa</option>
+                          {emailConversations.map(conv => (
+                            <option key={conv.id} value={conv.id}>
+                              #{conv.id} - {conv.meta?.sender?.name || 'E-mail'} ({conv.messages_count || 0} msgs)
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma conversa encontrada</p>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1486,7 +2257,12 @@ const ResumosGrupo = () => {
                 Cancelar
               </button>
               <button
-                onClick={handleAddGrupo}
+                onClick={() => {
+                  if (activeTab === 'conversations') handleAddConvOrEmail('conversa');
+                  else if (activeTab === 'emails') handleAddConvOrEmail('email');
+                  else handleAddGrupo();
+                }}
+                data-testid="btn-save-add"
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500"
               >
                 Salvar
@@ -1496,28 +2272,30 @@ const ResumosGrupo = () => {
         </div>
       )}
 
-      {/* Edit Group Modal */}
+      {/* Edit Modal (Groups / Conversas / Emails) */}
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Editar Grupo
+                {activeTab === 'conversations' ? 'Editar Conversa' : activeTab === 'emails' ? 'Editar E-mail' : 'Editar Grupo'}
               </h2>
             </div>
             <div className="p-4 space-y-3">
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nome do Grupo *
-                  <div className="relative group">
-                    <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
-                      <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-1.5 px-2 shadow-lg whitespace-nowrap">
-                        Nome deve ser igual ao WhatsApp
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                  {activeTab === 'conversations' ? 'Nome da Conversa *' : activeTab === 'emails' ? 'Nome do E-mail *' : 'Nome do Grupo *'}
+                  {activeTab === 'groups' && (
+                    <div className="relative group">
+                      <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-help" />
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                        <div className="bg-gray-900 dark:bg-gray-700 text-white text-xs rounded py-1.5 px-2 shadow-lg whitespace-nowrap">
+                          Nome deve ser igual ao WhatsApp
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </label>
                 <input
                   type="text"
@@ -1576,46 +2354,133 @@ const ResumosGrupo = () => {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Caixa de Entrada *
-                </label>
-                {!formData.account_id ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Selecione uma conta primeiro</p>
-                ) : loadingInboxes ? (
-                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 py-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Carregando caixas de entrada...</span>
+              {/* Groups: Inbox selector */}
+              {activeTab === 'groups' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Caixa de Entrada *
+                  </label>
+                  {!formData.account_id ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Selecione uma conta primeiro</p>
+                  ) : loadingInboxes ? (
+                    <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 py-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm">Carregando caixas de entrada...</span>
+                    </div>
+                  ) : availableInboxes.length > 0 ? (
+                    <select
+                      value={formData.inbox_id || ''}
+                      onChange={(e) => {
+                        const selectedId = e.target.value ? Number(e.target.value) : null;
+                        const selectedInbox = availableInboxes.find(i => i.id === selectedId);
+                        setFormData({ ...formData, inbox_id: selectedId, nome_inbox: selectedInbox?.name || '' });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      required
+                      data-testid="select-inbox-edit"
+                    >
+                      <option value="">Selecione uma caixa de entrada</option>
+                      {availableInboxes.map(inbox => (
+                        <option key={inbox.id} value={inbox.id}>
+                          {inbox.name} {inbox.phone_number ? `(${inbox.phone_number})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma caixa de entrada disponível</p>
+                  )}
+                </div>
+              )}
+
+              {/* Conversas: Current conv + contact search to change */}
+              {activeTab === 'conversations' && formData.account_id && (
+                <>
+                  {selectedConvId && (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+                      <span className="text-sm text-blue-800 dark:text-blue-200">
+                        <MessageCircle className="w-4 h-4 inline mr-1" />
+                        Conversa atual: #{selectedConvId} {selectedConvName && `- ${selectedConvName}`}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Alterar Contato (opcional)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={contactSearchQuery}
+                        onChange={(e) => setContactSearchQuery(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); searchContacts(contactSearchQuery); } }}
+                        placeholder="Buscar contato..."
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      />
+                      <button type="button" onClick={() => searchContacts(contactSearchQuery)} disabled={loadingContactSearch} className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                        {loadingContactSearch ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
-                ) : availableInboxes.length > 0 ? (
-                  <select
-                    value={formData.inbox_id || ''}
-                    onChange={(e) => {
-                      const selectedId = e.target.value ? Number(e.target.value) : null;
-                      const selectedInbox = availableInboxes.find(i => i.id === selectedId);
-                      setFormData({
-                        ...formData,
-                        inbox_id: selectedId,
-                        nome_inbox: selectedInbox?.name || ''
-                      });
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    required
-                    data-testid="select-inbox-edit"
-                  >
-                    <option value="">Selecione uma caixa de entrada</option>
-                    {availableInboxes.map(inbox => (
-                      <option key={inbox.id} value={inbox.id}>
-                        {inbox.name} {inbox.phone_number ? `(${inbox.phone_number})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Nenhuma caixa de entrada disponível
-                  </p>
-                )}
-              </div>
+                  {contactSearchResults.length > 0 && (
+                    <div className="max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                      {contactSearchResults.map(contact => (
+                        <button key={contact.id} type="button" onClick={() => { setSelectedContact(contact); setContactSearchResults([]); fetchContactConversations(contact.id); }}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                          <div className="font-medium text-gray-900 dark:text-white">{contact.name}</div>
+                          {contact.phone_number && <div className="text-xs text-gray-500">{contact.phone_number}</div>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {selectedContact && contactConversations.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nova Conversa</label>
+                      <select value={selectedConvId || ''} onChange={(e) => { const id = e.target.value ? Number(e.target.value) : null; setSelectedConvId(id); const conv = contactConversations.find(c => c.id === id); setSelectedConvName(conv?.meta?.sender?.name || selectedContact.name); }}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                        <option value="">Selecione</option>
+                        {contactConversations.map(conv => (<option key={conv.id} value={conv.id}>#{conv.id} - {conv.meta?.sender?.name || 'Conversa'} ({conv.messages_count || 0} msgs)</option>))}
+                      </select>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* E-mails: Current conv + email inbox to change */}
+              {activeTab === 'emails' && formData.account_id && (
+                <>
+                  {selectedConvId && (
+                    <div className="bg-purple-50 dark:bg-purple-900/20 p-2 rounded-lg">
+                      <span className="text-sm text-purple-800 dark:text-purple-200">
+                        <Mail className="w-4 h-4 inline mr-1" />
+                        Conversa atual: #{selectedConvId} {selectedConvName && `- ${selectedConvName}`}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Caixa de E-mail</label>
+                    {(() => {
+                      const emailInbs = availableInboxes.filter(i => i.channel_type === 'Channel::Email');
+                      return emailInbs.length > 0 ? (
+                        <select value={formData.inbox_id || ''} onChange={(e) => { const selectedId = e.target.value ? Number(e.target.value) : null; const selectedInbox = emailInbs.find(i => i.id === selectedId); setFormData({ ...formData, inbox_id: selectedId, nome_inbox: selectedInbox?.name || '' }); if (selectedId) fetchEmailConversations(selectedId); }}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                          <option value="">Selecione</option>
+                          {emailInbs.map(inbox => (<option key={inbox.id} value={inbox.id}>{inbox.name}</option>))}
+                        </select>
+                      ) : <p className="text-sm text-gray-500">Nenhuma caixa de e-mail</p>;
+                    })()}
+                  </div>
+                  {emailConversations.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nova Conversa de E-mail</label>
+                      <select value={selectedConvId || ''} onChange={(e) => { const id = e.target.value ? Number(e.target.value) : null; setSelectedConvId(id); const conv = emailConversations.find(c => c.id === id); setSelectedConvName(conv?.meta?.sender?.name || 'E-mail'); }}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                        <option value="">Selecione</option>
+                        {emailConversations.map(conv => (<option key={conv.id} value={conv.id}>#{conv.id} - {conv.meta?.sender?.name || 'E-mail'} ({conv.messages_count || 0} msgs)</option>))}
+                      </select>
+                    </div>
+                  )}
+                </>
+              )}
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1667,7 +2532,12 @@ const ResumosGrupo = () => {
                 Cancelar
               </button>
               <button
-                onClick={handleEditGrupo}
+                onClick={() => {
+                  if (activeTab === 'conversations') handleEditConvOrEmail('conversa');
+                  else if (activeTab === 'emails') handleEditConvOrEmail('email');
+                  else handleEditGrupo();
+                }}
+                data-testid="btn-save-edit"
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:hover:bg-blue-500"
               >
                 Salvar

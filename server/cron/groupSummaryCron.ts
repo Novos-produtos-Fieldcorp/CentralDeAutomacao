@@ -14,6 +14,9 @@ interface GrupoResumo {
   company_id: number;
   inbox_id?: string;
   account_id?: number;
+  tipo?: string;
+  conv_id?: number;
+  contact_name?: string;
 }
 
 function getCurrentUTCTime(): string {
@@ -131,18 +134,34 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
       return;
     }
     
-    console.log(`[CRON] Grupo ${grupo.id}: Enviando para IA (account_id: ${accountId})`);
+    const tipoLabel = grupo.tipo || 'grupo';
+    console.log(`[CRON] ${tipoLabel} ${grupo.id}: Enviando para IA (account_id: ${accountId})`);
     
-    const response = await axios.post('http://localhost:8000/api/group-summary', {
-      nome_do_grupo: grupo.nome_grupo,
-      company_id: grupo.company_id,
-      group_id: grupo.id,
-      account_id: accountId,
-      api_key: apiKey,
-      inbox_id: grupo.inbox_id
-    }, {
-      timeout: 120000
-    });
+    let response;
+    if (tipoLabel === 'conversa' || tipoLabel === 'email') {
+      response = await axios.post('http://localhost:5000/api/ai/conversation-summary', {
+        account_id: accountId,
+        api_key: apiKey,
+        conv_id: grupo.conv_id,
+        conv_name: grupo.contact_name || grupo.nome_grupo,
+        tipo: tipoLabel,
+        group_id: grupo.id,
+        company_id: grupo.company_id
+      }, {
+        timeout: 120000
+      });
+    } else {
+      response = await axios.post('http://localhost:8000/api/group-summary', {
+        nome_do_grupo: grupo.nome_grupo,
+        company_id: grupo.company_id,
+        group_id: grupo.id,
+        account_id: accountId,
+        api_key: apiKey,
+        inbox_id: grupo.inbox_id
+      }, {
+        timeout: 120000
+      });
+    }
     
     if (response.data.success) {
       console.log(`[CRON] Grupo ${grupo.id}: Resumo gerado com sucesso!`);
