@@ -1221,7 +1221,7 @@ const ResumosGrupo = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">IAzinha - Resumos</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">✨ Resumos de Conversas</h1>
         <div className="flex gap-2">
           {activeTab !== 'history' && (
             <button
@@ -1235,7 +1235,7 @@ const ResumosGrupo = () => {
                        transition-colors flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              {activeTab === 'conversations' ? 'Nova Conversa' : activeTab === 'emails' ? 'Novo E-mail' : 'Novo Grupo'}
+              {activeTab === 'conversations' ? 'Nova Conversa' : 'Novo Grupo'}
             </button>
           )}
         </div>
@@ -1268,18 +1268,6 @@ const ResumosGrupo = () => {
             >
               <MessageCircle className="w-5 h-5 mr-2" />
               Conversas
-            </button>
-            <button
-              onClick={() => setActiveTab('emails')}
-              data-testid="tab-emails"
-              className={`flex items-center px-3 py-4 text-sm font-medium border-b-2 transition-all duration-200 ${
-                activeTab === 'emails'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              <Mail className="w-5 h-5 mr-2" />
-              E-mails
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -1912,7 +1900,7 @@ const ResumosGrupo = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {activeTab === 'conversations' ? 'Nova Conversa' : activeTab === 'emails' ? 'Novo E-mail' : 'Novo Grupo'}
+                {activeTab === 'conversations' ? 'Nova Conversa' : 'Novo Grupo'}
               </h2>
             </div>
             <div className="p-4 space-y-3">
