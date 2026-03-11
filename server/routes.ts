@@ -5486,12 +5486,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Token nao encontrado' });
       }
 
-      const convUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/conversations?status=all`;
+      const convUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/conversations`;
       const response = await fetch(convUrl, {
         headers: { 'api_access_token': tokenData.access_token_wiseapp, 'Content-Type': 'application/json' }
       });
 
       const data = await response.json();
+      console.log(`[contacts/conversations] accountId=${accountId} contactId=${contactId} status=${response.status} keys=${Object.keys(data||{}).join(',')}`);
+      if (Array.isArray(data?.payload)) {
+        console.log(`[contacts/conversations] payload count=${data.payload.length}`);
+      }
       res.json(data);
     } catch (error: any) {
       res.status(500).json({ error: 'Erro ao buscar conversas do contato', details: error.message });

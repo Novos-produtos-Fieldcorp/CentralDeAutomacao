@@ -747,13 +747,19 @@ const ResumosGrupo = () => {
     }
   };
 
-  const fetchContactConversations = async (contactId: number) => {
-    if (!formData.account_id) return;
+  const fetchContactConversations = async (contactId: number, accountOverride?: number) => {
+    const accId = accountOverride || formData.account_id;
+    if (!accId) return;
     setLoadingContactConversations(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/wiseapp/${formData.account_id}/contacts/${contactId}/conversations`);
+      const response = await fetch(`${API_BASE_URL}/wiseapp/${accId}/contacts/${contactId}/conversations`);
       const data = await response.json();
-      const convs = data?.payload || [];
+      // WiseApp API may return { payload: [...] } or { data: [...] } or array directly
+      let convs: any[] = [];
+      if (Array.isArray(data)) convs = data;
+      else if (Array.isArray(data?.payload)) convs = data.payload;
+      else if (Array.isArray(data?.data)) convs = data.data;
+      console.log('[fetchContactConversations] raw keys:', Object.keys(data || {}), 'convs:', convs.length);
       setContactConversations(convs.map((c: any) => ({
         id: c.id,
         inbox_id: c.inbox_id,
@@ -819,12 +825,14 @@ const ResumosGrupo = () => {
         account_id: formData.account_id || (accountId ? Number(accountId) : null),
         tipo,
         conv_id: selectedConvId,
-        contact_name: selectedConvName || formData.nome_grupo
+        contact_name: selectedConvName || formData.nome_grupo,
+        nome_inbox: formData.nome_inbox || '',
+        inbox_id: formData.inbox_id || null
       };
 
       if (tipo === 'email' && formData.inbox_id) {
         insertData.inbox_id = formData.inbox_id;
-        insertData.nome_inbox = formData.nome_inbox;
+        insertData.nome_inbox = formData.nome_inbox || '';
       }
 
       const { data, error } = await supabase
