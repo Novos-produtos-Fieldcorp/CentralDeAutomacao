@@ -760,7 +760,7 @@ const ResumosGrupo = () => {
         status: c.status,
         meta: c.meta,
         created_at: c.created_at,
-        messages_count: c.messages_count
+        messages_count: c.meta?.all_count || c.messages_count || 0
       })));
     } catch (error) {
       console.error('Error fetching contact conversations:', error);
@@ -2119,7 +2119,7 @@ const ResumosGrupo = () => {
                           <option value="">Selecione uma conversa</option>
                           {contactConversations.map(conv => (
                             <option key={conv.id} value={conv.id}>
-                              #{conv.id} - {conv.meta?.sender?.name || 'Conversa'} ({conv.messages_count || 0} msgs)
+                              #{conv.id} - {conv.meta?.sender?.name || 'Conversa'} ({conv.messages_count || 0} msgs · {conv.status === 'resolved' ? 'resolvida' : conv.status === 'pending' ? 'pendente' : 'aberta'})
                             </option>
                           ))}
                         </select>
@@ -2195,7 +2195,7 @@ const ResumosGrupo = () => {
                           <option value="">Selecione uma conversa</option>
                           {emailConversations.map(conv => (
                             <option key={conv.id} value={conv.id}>
-                              #{conv.id} - {conv.meta?.sender?.name || 'E-mail'} ({conv.messages_count || 0} msgs)
+                              #{conv.id} - {conv.meta?.sender?.name || 'E-mail'} ({conv.messages_count || 0} msgs · {conv.status === 'resolved' ? 'resolvida' : conv.status === 'pending' ? 'pendente' : 'aberta'})
                             </option>
                           ))}
                         </select>
@@ -2438,7 +2438,7 @@ const ResumosGrupo = () => {
                       <select value={selectedConvId || ''} onChange={(e) => { const id = e.target.value ? Number(e.target.value) : null; setSelectedConvId(id); const conv = contactConversations.find(c => c.id === id); setSelectedConvName(conv?.meta?.sender?.name || selectedContact.name); }}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                         <option value="">Selecione</option>
-                        {contactConversations.map(conv => (<option key={conv.id} value={conv.id}>#{conv.id} - {conv.meta?.sender?.name || 'Conversa'} ({conv.messages_count || 0} msgs)</option>))}
+                        {contactConversations.map(conv => (<option key={conv.id} value={conv.id}>#{conv.id} - {conv.meta?.sender?.name || 'Conversa'} ({conv.messages_count || 0} msgs · {conv.status === 'resolved' ? 'resolvida' : conv.status === 'pending' ? 'pendente' : 'aberta'})</option>))}
                       </select>
                     </div>
                   )}
@@ -2475,7 +2475,7 @@ const ResumosGrupo = () => {
                       <select value={selectedConvId || ''} onChange={(e) => { const id = e.target.value ? Number(e.target.value) : null; setSelectedConvId(id); const conv = emailConversations.find(c => c.id === id); setSelectedConvName(conv?.meta?.sender?.name || 'E-mail'); }}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                         <option value="">Selecione</option>
-                        {emailConversations.map(conv => (<option key={conv.id} value={conv.id}>#{conv.id} - {conv.meta?.sender?.name || 'E-mail'} ({conv.messages_count || 0} msgs)</option>))}
+                        {emailConversations.map(conv => (<option key={conv.id} value={conv.id}>#{conv.id} - {conv.meta?.sender?.name || 'E-mail'} ({conv.messages_count || 0} msgs · {conv.status === 'resolved' ? 'resolvida' : conv.status === 'pending' ? 'pendente' : 'aberta'})</option>))}
                       </select>
                     </div>
                   )}
