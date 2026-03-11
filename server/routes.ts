@@ -5493,8 +5493,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const data = await response.json();
       console.log(`[contacts/conversations] accountId=${accountId} contactId=${contactId} status=${response.status} keys=${Object.keys(data||{}).join(',')}`);
-      if (Array.isArray(data?.payload)) {
-        console.log(`[contacts/conversations] payload count=${data.payload.length}`);
+      if (Array.isArray(data?.payload) && data.payload.length > 0) {
+        const first = data.payload[0];
+        console.log(`[contacts/conversations] payload count=${data.payload.length}, first conv keys=${Object.keys(first).join(',')}`);
+        console.log(`[contacts/conversations] first conv: id=${first.id} status=${first.status} messages_count=${first.messages_count} meta=${JSON.stringify(first.meta)}`);
       }
       res.json(data);
     } catch (error: any) {

@@ -760,13 +760,18 @@ const ResumosGrupo = () => {
       else if (Array.isArray(data?.payload)) convs = data.payload;
       else if (Array.isArray(data?.data)) convs = data.data;
       console.log('[fetchContactConversations] raw keys:', Object.keys(data || {}), 'convs:', convs.length);
+      if (convs.length > 0) {
+        const f = convs[0];
+        console.log('[fetchContactConversations] first conv keys:', Object.keys(f));
+        console.log('[fetchContactConversations] first conv id:', f.id, 'messages_count:', f.messages_count, 'meta:', JSON.stringify(f.meta), 'messages.length:', f.messages?.length);
+      }
       setContactConversations(convs.map((c: any) => ({
         id: c.id,
         inbox_id: c.inbox_id,
         status: c.status,
         meta: c.meta,
         created_at: c.created_at,
-        messages_count: c.meta?.all_count || c.messages_count || 0
+        messages_count: c.messages_count || c.messages?.length || c.meta?.all_count || 0
       })));
     } catch (error) {
       console.error('Error fetching contact conversations:', error);
