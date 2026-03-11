@@ -1221,7 +1221,7 @@ const ResumosGrupo = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">✨ Resumos de Conversas</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Resumos de Conversas</h1>
         <div className="flex gap-2">
           {activeTab !== 'history' && (
             <button
