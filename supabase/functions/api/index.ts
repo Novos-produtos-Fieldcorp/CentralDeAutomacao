@@ -305,14 +305,14 @@ serve(async (req) => {
             messages: [
               {
                 role: 'system',
-                content: `Voce e um analista que gera resumos executivos de conversas em grupo. Seja objetivo e preciso. Baseie-se APENAS nas mensagens fornecidas. NAO invente informacoes.`
+                content: `Voce e um assistente especializado em suporte ao cliente e logistica que gera resumos concisos de grupos. Regras absolutas: (1) Cite palavras EXATAS das mensagens - nunca generalize. Se a mensagem diz "entrega atrasada", escreva "entrega atrasada". Se diz "motorista nao apareceu", escreva "motorista nao apareceu". (2) Para grupos com poucas mensagens ou informacoes incompletas, liste o que ainda precisa ser verificado. (3) Seja especifico e direto.`
               },
               {
                 role: 'user',
-                content: `Analise as mensagens do grupo "${nome_do_grupo}" e gere um resumo executivo.\n\n${messagesContext}\n\nREGRAS:\n1. O titulo DEVE ser exatamente: Resumo do Grupo "${nome_do_grupo}"\n2. Inclua: quantidade de mensagens, principais assuntos discutidos, problemas/pendencias, tom geral\n3. Se nao houver mensagens hoje, responda apenas: Resumo do Grupo "${nome_do_grupo}"\nNenhuma mensagem encontrada hoje neste grupo.\nEste resumo foi gerado automaticamente pela IAzinha\n4. DEVE terminar com: Este resumo foi gerado automaticamente pela IAzinha`
+                content: `Analise as mensagens do grupo "${nome_do_grupo}" abaixo e gere um resumo no formato EXATO:\n\nResumo do Grupo "${nome_do_grupo}"\n• Quantidade de mensagens: [numero]\n• Principais assuntos: [liste os topicos ESPECIFICOS usando as proprias palavras das mensagens]\n• Problemas/Pendencias: [descreva problemas CONCRETOS citados com as palavras usadas, ou "Nenhum problema identificado"]\n• Tom geral: [Urgente/Tranquilo/Insatisfeito/Satisfeito/Neutro - com breve justificativa]\n• Informacoes sugeridas: [liste o que o grupo ainda precisa definir ou verificar para resolver pendencias abertas - se tudo estiver resolvido, escreva "Nenhuma"]\n\nEste resumo foi gerado automaticamente pela IAzinha\n\n${messagesContext}\n\nSe nao houver mensagens hoje, retorne:\nResumo do Grupo "${nome_do_grupo}"\nNenhuma mensagem encontrada hoje neste grupo.\nEste resumo foi gerado automaticamente pela IAzinha\n\nIMPORTANTE: Use o formato de bullet points acima. Cite palavras EXATAS das mensagens nos assuntos e problemas.`
               }
             ],
-            temperature: 0.3,
+            temperature: 0.2,
             max_tokens: 1024,
           })
         })
@@ -364,6 +364,270 @@ serve(async (req) => {
       } catch (error: any) {
         console.error('[AI Group Summary] Error:', error.message)
         return new Response(JSON.stringify({ success: false, error: error.message || 'Erro interno' }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
+    // ── AI Conversation Summary (Conversas & E-mails) ────────────────────────
+    if (path === '/ai/conversation-summary' && method === 'POST') {
+      try {
+        const body = await req.json()
+        const { account_id, api_key, conv_id, conv_name, tipo, group_id, company_id } = body
+
+        if (!account_id || !api_key || !conv_id) {
+          return new Response(JSON.stringify({ success: false, error: 'account_id, api_key e conv_id sao obrigatorios' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        const groqApiKey = Deno.env.get('GROQ_API_KEY')
+        if (!groqApiKey) {
+          return new Response(JSON.stringify({ success: false, error: 'GROQ_API_KEY nao configurada no servidor' }), {
+            status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        const WISEAPP_API = 'https://chat.wiseapp360.com/api'
+        const wiseHeaders = { 'api_access_token': api_key, 'Content-Type': 'application/json' }
+
+        const now = new Date()
+        const brasiliaMs = now.getTime() + (now.getTimezoneOffset() + (-3 * 60)) * 60000
+        const brasiliaDate = new Date(brasiliaMs)
+        const todayStr = brasiliaDate.toISOString().split('T')[0]
+        const todayFormatted = `${todayStr.split('-')[2]}/${todayStr.split('-')[1]}/${todayStr.split('-')[0]}`
+
+        let todayMessages: { time: string; sender: string; content: string }[] = []
+        let beforeId: number | null = null
+        for (let _page = 0; _page < 50; _page++) {
+          const msgsUrl = `${WISEAPP_API}/v1/accounts/${account_id}/conversations/${conv_id}/messages` +
+            (beforeId ? `?before=${beforeId}` : '')
+          const msgsResp = await fetch(msgsUrl, { headers: wiseHeaders })
+          if (!msgsResp.ok) break
+          const msgsData = await msgsResp.json()
+          const batch: any[] = msgsData?.payload || []
+          if (!batch.length) break
+
+          let hitYesterday = false
+          let oldestId: number | null = null
+          for (const msg of batch) {
+            const createdAt = msg.created_at
+            if (!createdAt) continue
+            let msgDate: Date
+            if (typeof createdAt === 'number') {
+              msgDate = new Date(createdAt * 1000)
+            } else {
+              msgDate = new Date(createdAt)
+            }
+            const msgBrasiliaMs = msgDate.getTime() + (msgDate.getTimezoneOffset() + (-3 * 60)) * 60000
+            const msgBrasiliaDate = new Date(msgBrasiliaMs).toISOString().split('T')[0]
+
+            if (oldestId === null || (msg.id as number) < oldestId) oldestId = msg.id as number
+
+            if (msgBrasiliaDate !== todayStr) { hitYesterday = true; continue }
+
+            const senderInfo = msg.sender
+            let senderName = senderInfo?.name || 'Desconhecido'
+            if (msg.message_type === 1) senderName = 'Atendente'
+
+            let content = msg.content || ''
+            const contentType = msg.content_type || 'text'
+            if (contentType === 'image') content = '[Imagem enviada]'
+            else if (contentType === 'audio') content = '[Audio enviado]'
+            else if (contentType === 'video') content = '[Video enviado]'
+            else if (contentType === 'file') content = '[Arquivo enviado]'
+            else if (!content) content = '[Mensagem sem texto]'
+
+            const msgBrasiliaTime = new Date(msgBrasiliaMs)
+            const timeStr = `${String(msgBrasiliaTime.getUTCHours()).padStart(2,'0')}:${String(msgBrasiliaTime.getUTCMinutes()).padStart(2,'0')}`
+            todayMessages.push({ time: timeStr, sender: senderName, content })
+          }
+
+          if (hitYesterday || batch.length < 20) break
+          beforeId = oldestId
+        }
+        todayMessages.reverse()
+
+        const tipoLabel = tipo === 'email' ? 'E-mail' : 'Conversa'
+        const displayName = conv_name || 'Desconhecido'
+
+        let messagesContext: string
+        if (todayMessages.length === 0) {
+          messagesContext = `Nenhuma mensagem encontrada hoje (${todayFormatted}) na ${tipoLabel.toLowerCase()}.`
+        } else {
+          messagesContext = `MENSAGENS DO DIA - ${tipoLabel}: ${displayName}\nData: ${todayFormatted}\nTotal de mensagens hoje: ${todayMessages.length}\n${'─'.repeat(40)}\n`
+          messagesContext += todayMessages.slice(-80).map(m => `[${m.time}] ${m.sender}: ${m.content}`).join('\n')
+        }
+
+        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${groqApiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'llama-3.1-8b-instant',
+            messages: [
+              {
+                role: 'system',
+                content: `Voce e um assistente especializado em suporte ao cliente que gera resumos concisos e uteis de conversas. Regras absolutas: (1) Cite palavras EXATAS das mensagens - nunca generalize. Se o cliente disse "tela travou", escreva "tela travou". (2) Para conversas curtas ou com pouca informacao, liste SEMPRE o que ainda precisa ser descoberto para resolver o problema. (3) Tom: baseie-se no conteudo real das mensagens para classificar.`
+              },
+              {
+                role: 'user',
+                content: `Analise as mensagens da ${tipoLabel.toLowerCase()} "${displayName}" abaixo e gere um resumo no formato EXATO:\n\nResumo da ${tipoLabel} "${displayName}"\n• Quantidade de mensagens: [numero]\n• Principais assuntos: [cite os topicos ESPECIFICOS usando as palavras exatas das mensagens]\n• Problemas/Pendencias: [descreva o problema CONCRETO relatado com as palavras do cliente, ou "Nenhum problema identificado"]\n• Tom geral: [Urgente/Insatisfeito/Satisfeito/Neutro/Tranquilo - com breve justificativa]\n• Informacoes sugeridas: [liste as perguntas que o atendente AINDA deve fazer para entender e resolver melhor o problema, ex: "Qual tela travou?", "Qual dispositivo?", "Quando ocorreu?", "Ja tentou reiniciar?" - se o problema ja esta completamente resolvido e nao falta informacao, escreva "Nenhuma"]\n\nEste resumo foi gerado automaticamente pela IAzinha\n\n${messagesContext}\n\nSe nao houver mensagens hoje, retorne:\nResumo da ${tipoLabel} "${displayName}"\nNenhuma mensagem encontrada hoje.\nEste resumo foi gerado automaticamente pela IAzinha\n\nIMPORTANTE: Mesmo que a conversa tenha poucas mensagens, extraia tudo que puder e sugira informacoes relevantes.`
+              }
+            ],
+            temperature: 0.2,
+            max_tokens: 1024,
+          })
+        })
+
+        let summaryText: string
+        if (!groqResp.ok) {
+          const errText = await groqResp.text()
+          console.error('[AI Conversation Summary] Groq error:', groqResp.status, errText)
+          summaryText = `Resumo da ${tipoLabel} "${displayName}"\n\nErro ao gerar resumo com IA. Tente novamente mais tarde.\n\nEste resumo foi gerado automaticamente pela IAzinha`
+        } else {
+          const groqData = await groqResp.json()
+          summaryText = groqData?.choices?.[0]?.message?.content || `Resumo da ${tipoLabel} "${displayName}"\n\nNao foi possivel gerar o resumo.\n\nEste resumo foi gerado automaticamente pela IAzinha`
+        }
+
+        let messageSent = false
+        let sendError: string | null = null
+        const sendResp = await fetch(`${WISEAPP_API}/v1/accounts/${account_id}/conversations/${conv_id}/messages`, {
+          method: 'POST',
+          headers: wiseHeaders,
+          body: JSON.stringify({ content: summaryText, message_type: 'outgoing', private: true })
+        })
+        if (sendResp.ok) {
+          messageSent = true
+        } else {
+          sendError = await sendResp.text()
+          console.error('[AI Conversation Summary] Failed to send to WiseApp:', sendError)
+        }
+
+        await supabase.from('envio_resumo').insert({
+          grupo_id: group_id,
+          company_id,
+          data_envio: todayStr,
+          status: messageSent,
+          mensagem: messageSent ? 'Resumo gerado e enviado com sucesso' : `Resumo gerado mas falha no envio: ${sendError}`,
+          resumo_grupo: summaryText.substring(0, 5000),
+          tipo: tipo || 'conversa'
+        })
+
+        return new Response(JSON.stringify({
+          success: true,
+          summary: summaryText,
+          group_id,
+          conv_name: displayName,
+          message_sent: messageSent,
+          send_error: sendError
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+      } catch (error: any) {
+        console.error('[AI Conversation Summary] Error:', error.message)
+        return new Response(JSON.stringify({ success: false, error: error.message || 'Erro interno' }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
+    // ── WiseApp Contacts Search by Name ─────────────────────────────────────
+    if (path.match(/^\/wiseapp\/(\d+)\/contacts-search$/) && method === 'GET') {
+      try {
+        const match = path.match(/^\/wiseapp\/(\d+)\/contacts-search$/)
+        const accountId = match![1]
+        const url = new URL(req.url)
+        const query = url.searchParams.get('q') || ''
+        const page = url.searchParams.get('page') || '1'
+
+        const freshToken = await fetchFreshToken(supabase, accountId)
+        if (!freshToken) {
+          return new Response(JSON.stringify({ error: 'Token nao encontrado' }), {
+            status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        const searchUrl = query
+          ? `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${encodeURIComponent(query)}&page=${page}`
+          : `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=&page=${page}`
+
+        const response = await wiseAppFetchWithRetry(supabase, accountId, searchUrl, {
+          method: 'GET', headers: { 'Content-Type': 'application/json' }
+        }, freshToken.token)
+
+        const data = await response.json()
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      } catch (error: any) {
+        return new Response(JSON.stringify({ error: 'Erro ao buscar contatos', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
+    // ── WiseApp Contact Conversations ───────────────────────────────────────
+    if (path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/conversations$/) && method === 'GET') {
+      try {
+        const match = path.match(/^\/wiseapp\/(\d+)\/contacts\/(\d+)\/conversations$/)
+        const accountId = match![1]
+        const contactId = match![2]
+
+        const freshToken = await fetchFreshToken(supabase, accountId)
+        if (!freshToken) {
+          return new Response(JSON.stringify({ error: 'Token nao encontrado' }), {
+            status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        const convUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/conversations`
+        const response = await wiseAppFetchWithRetry(supabase, accountId, convUrl, {
+          method: 'GET', headers: { 'Content-Type': 'application/json' }
+        }, freshToken.token)
+
+        const data = await response.json()
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      } catch (error: any) {
+        return new Response(JSON.stringify({ error: 'Erro ao buscar conversas do contato', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
+    // ── WiseApp Conversations by Inbox ──────────────────────────────────────
+    if (path.match(/^\/wiseapp\/(\d+)\/conversations$/) && method === 'GET') {
+      try {
+        const match = path.match(/^\/wiseapp\/(\d+)\/conversations$/)
+        const accountId = match![1]
+        const url = new URL(req.url)
+        const inboxId = url.searchParams.get('inbox_id') || ''
+        const page = url.searchParams.get('page') || '1'
+
+        if (!inboxId) {
+          return new Response(JSON.stringify({ error: 'inbox_id e obrigatorio' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        const freshToken = await fetchFreshToken(supabase, accountId)
+        if (!freshToken) {
+          return new Response(JSON.stringify({ error: 'Token nao encontrado' }), {
+            status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        const convUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/conversations?inbox_id=${inboxId}&page=${page}`
+        const response = await wiseAppFetchWithRetry(supabase, accountId, convUrl, {
+          method: 'GET', headers: { 'Content-Type': 'application/json' }
+        }, freshToken.token)
+
+        const data = await response.json()
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      } catch (error: any) {
+        return new Response(JSON.stringify({ error: 'Erro ao buscar conversas', details: error.message }), {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }

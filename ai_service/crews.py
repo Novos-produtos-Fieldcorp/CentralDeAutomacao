@@ -14,27 +14,39 @@ def create_group_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
         - api_key: {api_key}
         - inbox_id: {inbox_id}
         
-        REGRAS IMPORTANTES:
+        REGRAS ABSOLUTAS:
         1. Baseie seu resumo APENAS nas mensagens REAIS que voce encontrar
         2. NAO invente informacoes ou use textos genericos
-        3. O titulo DEVE ser exatamente: Resumo do Grupo "{group_name}"
-        4. DEVE terminar com a frase: Este resumo foi gerado automaticamente pela IAzinha
+        3. Trate as conversas como comunicacao NORMAL do dia a dia - nao force tom negativo
+        4. Use as palavras EXATAS das mensagens ao descrever os assuntos
+        5. O titulo DEVE ser exatamente: Resumo do Grupo "{group_name}"
+        6. DEVE terminar com a frase: Este resumo foi gerado automaticamente pela IAzinha
         
-        O resumo deve incluir:
-        - Quantidade de mensagens encontradas hoje
-        - Principais assuntos ESPECIFICOS discutidos (cite nomes, termos das mensagens reais)
-        - Problemas ou pendencias identificadas
-        - Tom geral das conversas
+        O resumo deve seguir EXATAMENTE este formato:
+        
+        Resumo do Grupo "{group_name}"
+        • Quantidade de mensagens: [numero]
+        • O que foi discutido: [descricao natural dos assuntos, usando as palavras das mensagens]
+        • Tom geral: [Tranquilo/Ativo/Urgente/Neutro - com breve justificativa baseada nas mensagens reais]
+        [SOMENTE se houver problemas ou pendencias reais identificadas nas mensagens:]
+        • Problemas/Pendencias: [cite os problemas concretos com as palavras usadas nas mensagens]
+        
+        Este resumo foi gerado automaticamente pela IAzinha
+        
+        IMPORTANTE: A secao "Problemas/Pendencias" deve aparecer SOMENTE se houver problemas ou pendencias reais nas mensagens. Se a conversa for normal/rotineira, NAO inclua essa secao.
         
         Se nao houver mensagens hoje, responda apenas:
         Resumo do Grupo "{group_name}"
         Nenhuma mensagem encontrada hoje neste grupo.
         Este resumo foi gerado automaticamente pela IAzinha""",
-        expected_output=f"""FORMATO OBRIGATORIO:
+        expected_output=f"""FORMATO com bullet points:
 
 Resumo do Grupo "{group_name}"
-
-[conteudo do resumo baseado nas mensagens reais]
+• Quantidade de mensagens: [numero]
+• O que foi discutido: [descricao natural dos assuntos com palavras exatas]
+• Tom geral: [classificacao com justificativa]
+[apenas se houver problemas reais:]
+• Problemas/Pendencias: [problemas concretos com palavras das mensagens]
 
 Este resumo foi gerado automaticamente pela IAzinha""",
         agent=analyst

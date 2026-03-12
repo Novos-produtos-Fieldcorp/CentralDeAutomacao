@@ -5311,6 +5311,236 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Conversation Summary proxy route (Conversas & E-mails)
+  app.post("/api/ai/conversation-summary", async (req, res) => {
+    try {
+      const { account_id, api_key, conv_id, conv_name, tipo, group_id, company_id, horario_execucao_utc } = req.body;
+
+      if (!account_id || !api_key || !conv_id) {
+        return res.status(400).json({ success: false, error: 'account_id, api_key e conv_id sao obrigatorios' });
+      }
+
+      const GROQ_API_KEY = process.env.GROQ_API_KEY;
+      if (!GROQ_API_KEY) {
+        return res.status(500).json({ success: false, error: 'GROQ_API_KEY nao configurada' });
+      }
+
+      const WISEAPP_API = 'https://chat.wiseapp360.com/api';
+      const wiseHeaders: Record<string, string> = { 'api_access_token': api_key, 'Content-Type': 'application/json' };
+
+      const now = new Date();
+      const brasiliaMs = now.getTime() + (now.getTimezoneOffset() + (-3 * 60)) * 60000;
+      const brasiliaDate = new Date(brasiliaMs);
+      const todayStr = brasiliaDate.toISOString().split('T')[0];
+      const todayFormatted = `${todayStr.split('-')[2]}/${todayStr.split('-')[1]}/${todayStr.split('-')[0]}`;
+
+      let todayMessages: { time: string; sender: string; content: string }[] = [];
+      let beforeId: number | null = null;
+      for (let _page = 0; _page < 50; _page++) {
+        const msgsUrl = `${WISEAPP_API}/v1/accounts/${account_id}/conversations/${conv_id}/messages` +
+          (beforeId ? `?before=${beforeId}` : '');
+        const msgsResp = await fetch(msgsUrl, { headers: wiseHeaders });
+        if (!msgsResp.ok) break;
+        const msgsData = await msgsResp.json() as any;
+        const batch: any[] = msgsData?.payload || [];
+        if (!batch.length) break;
+
+        let hitYesterday = false;
+        let oldestId: number | null = null;
+        for (const msg of batch) {
+          const createdAt = msg.created_at;
+          if (!createdAt) continue;
+          let msgDate: Date;
+          if (typeof createdAt === 'number') { msgDate = new Date(createdAt * 1000); }
+          else { msgDate = new Date(createdAt); }
+          const msgBrasiliaMs = msgDate.getTime() + (msgDate.getTimezoneOffset() + (-3 * 60)) * 60000;
+          const msgBrasiliaDate = new Date(msgBrasiliaMs).toISOString().split('T')[0];
+          if (oldestId === null || (msg.id as number) < oldestId) oldestId = msg.id as number;
+          if (msgBrasiliaDate !== todayStr) { hitYesterday = true; continue; }
+          const senderInfo = msg.sender;
+          let senderName = senderInfo?.name || 'Desconhecido';
+          if (msg.message_type === 1) senderName = 'Atendente';
+          let content = msg.content || '';
+          const contentType = msg.content_type || 'text';
+          if (contentType === 'image') content = '[Imagem enviada]';
+          else if (contentType === 'audio') content = '[Audio enviado]';
+          else if (contentType === 'video') content = '[Video enviado]';
+          else if (contentType === 'file') content = '[Arquivo enviado]';
+          else if (!content) content = '[Mensagem sem texto]';
+          const msgBrasiliaTime = new Date(msgBrasiliaMs);
+          const timeStr = `${String(msgBrasiliaTime.getUTCHours()).padStart(2,'0')}:${String(msgBrasiliaTime.getUTCMinutes()).padStart(2,'0')}`;
+          todayMessages.push({ time: timeStr, sender: senderName, content });
+        }
+        if (hitYesterday || batch.length < 20) break;
+        beforeId = oldestId;
+      }
+      todayMessages.reverse();
+
+      const tipoLabel = tipo === 'email' ? 'E-mail' : 'Conversa';
+      const displayName = conv_name || 'Desconhecido';
+
+      let messagesContext: string;
+      if (todayMessages.length === 0) {
+        messagesContext = `Nenhuma mensagem encontrada hoje (${todayFormatted}) na ${tipoLabel.toLowerCase()}.`;
+      } else {
+        messagesContext = `MENSAGENS DO DIA - ${tipoLabel}: ${displayName}\nData: ${todayFormatted}\nTotal de mensagens hoje: ${todayMessages.length}\n${'─'.repeat(40)}\n`;
+        messagesContext += todayMessages.slice(-80).map(m => `[${m.time}] ${m.sender}: ${m.content}`).join('\n');
+      }
+
+      const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages: [
+            { role: 'system', content: 'Voce e um analista que gera resumos de conversas do dia a dia. Trate as mensagens como comunicacao normal - nao force tom negativo. Baseie-se APENAS nas mensagens fornecidas. NAO invente informacoes.' },
+            { role: 'user', content: `Analise as mensagens da ${tipoLabel.toLowerCase()} "${displayName}" e gere um resumo.\n\n${messagesContext}\n\nREGRAS:\n1. O titulo DEVE ser: Resumo da ${tipoLabel} "${displayName}"\n2. Use EXATAMENTE este formato:\n• Quantidade de mensagens: [numero]\n• O que foi discutido: [descricao natural dos assuntos com palavras exatas das mensagens]\n• Tom geral: [Tranquilo/Ativo/Urgente/Neutro - com breve justificativa]\n[Inclua esta linha SOMENTE se houver problemas ou pendencias reais:]\n• Problemas/Pendencias: [cite os problemas com as palavras usadas nas mensagens]\n3. NAO inclua a secao Problemas/Pendencias se a conversa for normal/rotineira\n4. Se nao houver mensagens hoje, responda: Resumo da ${tipoLabel} "${displayName}"\nNenhuma mensagem encontrada hoje.\nEste resumo foi gerado automaticamente pela IAzinha\n5. DEVE terminar com: Este resumo foi gerado automaticamente pela IAzinha` }
+          ],
+          temperature: 0.3,
+          max_tokens: 1024,
+        })
+      });
+
+      let summaryText: string;
+      if (!groqResp.ok) {
+        const errText = await groqResp.text();
+        console.error('[AI Conversation Summary] Groq error:', groqResp.status, errText);
+        summaryText = `Resumo da ${tipoLabel} "${displayName}"\n\nErro ao gerar resumo. Tente novamente.\n\nEste resumo foi gerado automaticamente pela IAzinha`;
+      } else {
+        const groqData = await groqResp.json() as any;
+        summaryText = groqData?.choices?.[0]?.message?.content || `Resumo da ${tipoLabel} "${displayName}"\n\nNao foi possivel gerar o resumo.\n\nEste resumo foi gerado automaticamente pela IAzinha`;
+      }
+
+      let messageSent = false;
+      let sendError: string | null = null;
+      const sendResp = await fetch(`${WISEAPP_API}/v1/accounts/${account_id}/conversations/${conv_id}/messages`, {
+        method: 'POST',
+        headers: wiseHeaders,
+        body: JSON.stringify({ content: summaryText, message_type: 'outgoing', private: true })
+      });
+      if (sendResp.ok) { messageSent = true; }
+      else { sendError = await sendResp.text(); console.error('[AI Conversation Summary] Send failed:', sendError); }
+
+      const logData: Record<string, any> = {
+        grupo_id: group_id,
+        company_id,
+        data_envio: todayStr,
+        status: messageSent,
+        mensagem: messageSent ? 'Resumo gerado e enviado com sucesso' : `Resumo gerado mas falha no envio: ${sendError}`,
+        resumo_grupo: summaryText.substring(0, 5000),
+        tipo: tipo || 'conversa'
+      };
+      if (horario_execucao_utc) logData.horario_execucao_utc = horario_execucao_utc;
+      await supabaseBackend.from('envio_resumo').insert(logData);
+
+      res.json({ success: true, summary: summaryText, group_id, conv_name: displayName, message_sent: messageSent, send_error: sendError });
+    } catch (error: any) {
+      console.error('[AI Conversation Summary] Error:', error.message);
+      res.status(500).json({ success: false, error: error.message || 'Erro ao processar resumo' });
+    }
+  });
+
+  // WiseApp Contacts Search by Name
+  app.get("/api/wiseapp/:accountId/contacts-search", async (req, res) => {
+    try {
+      const { accountId } = req.params;
+      const query = (req.query.q as string) || '';
+      const page = (req.query.page as string) || '1';
+
+      const { data: tokenData } = await supabaseBackend
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('id_conta_wiseapp', accountId)
+        .not('access_token_wiseapp', 'is', null)
+        .limit(1)
+        .single();
+
+      if (!tokenData?.access_token_wiseapp) {
+        return res.status(401).json({ error: 'Token nao encontrado' });
+      }
+
+      const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${encodeURIComponent(query)}&page=${page}`;
+      const response = await fetch(searchUrl, {
+        headers: { 'api_access_token': tokenData.access_token_wiseapp, 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: 'Erro ao buscar contatos', details: error.message });
+    }
+  });
+
+  // WiseApp Contact Conversations
+  app.get("/api/wiseapp/:accountId/contacts/:contactId/conversations", async (req, res) => {
+    try {
+      const { accountId, contactId } = req.params;
+
+      const { data: tokenData } = await supabaseBackend
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('id_conta_wiseapp', accountId)
+        .not('access_token_wiseapp', 'is', null)
+        .limit(1)
+        .single();
+
+      if (!tokenData?.access_token_wiseapp) {
+        return res.status(401).json({ error: 'Token nao encontrado' });
+      }
+
+      const convUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contactId}/conversations`;
+      const response = await fetch(convUrl, {
+        headers: { 'api_access_token': tokenData.access_token_wiseapp, 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+      console.log(`[contacts/conversations] accountId=${accountId} contactId=${contactId} status=${response.status} keys=${Object.keys(data||{}).join(',')}`);
+      if (Array.isArray(data?.payload) && data.payload.length > 0) {
+        const first = data.payload[0];
+        console.log(`[contacts/conversations] payload count=${data.payload.length}, first conv keys=${Object.keys(first).join(',')}`);
+        console.log(`[contacts/conversations] first conv: id=${first.id} status=${first.status} messages_count=${first.messages_count} meta=${JSON.stringify(first.meta)}`);
+      }
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: 'Erro ao buscar conversas do contato', details: error.message });
+    }
+  });
+
+  // WiseApp Conversations by Inbox (for email conversations)
+  app.get("/api/wiseapp/:accountId/conversations", async (req, res) => {
+    try {
+      const { accountId } = req.params;
+      const inboxId = req.query.inbox_id as string;
+      const page = (req.query.page as string) || '1';
+
+      if (!inboxId) {
+        return res.status(400).json({ error: 'inbox_id e obrigatorio' });
+      }
+
+      const { data: tokenData } = await supabaseBackend
+        .from('wiseapp_acesso')
+        .select('access_token_wiseapp')
+        .eq('id_conta_wiseapp', accountId)
+        .not('access_token_wiseapp', 'is', null)
+        .limit(1)
+        .single();
+
+      if (!tokenData?.access_token_wiseapp) {
+        return res.status(401).json({ error: 'Token nao encontrado' });
+      }
+
+      const convUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/conversations?inbox_id=${inboxId}&page=${page}`;
+      const response = await fetch(convUrl, {
+        headers: { 'api_access_token': tokenData.access_token_wiseapp, 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: 'Erro ao buscar conversas', details: error.message });
+    }
+  });
+
   // AI Service health check
   app.get("/api/ai/health", async (req, res) => {
     try {
@@ -5778,6 +6008,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
         sada: "operacao_sada",
         superterminais: "operacao_superterminais",
         tegma: "operacao_tegma",
+        vammo: "operacao_vammo",
       };
 
       const tableName = validTables[operacao.toLowerCase()];
@@ -6002,6 +6233,11 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
             opRecord.p2_placa_veiculo = strVal(row["P2 Placa Veiculo"]);
             opRecord.p2_nr_cautela = strVal(row["P2 Nr Cautela"]);
             opRecord.p2_data_hora = strVal(row["P2 Data/Hora"]);
+          } else if (opKey === "vammo") {
+            opRecord.origem = strVal(row["Origem"]);
+            opRecord.destino = strVal(row["Destino"]);
+            opRecord.qtd_motos = parseIntVal(row["Qtd Motos"]);
+            opRecord.nr_cte = strVal(row["Nr CTE"]);
           }
 
           Object.keys(opRecord).forEach((key) => {

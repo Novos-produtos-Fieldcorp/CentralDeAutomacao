@@ -14,6 +14,9 @@ interface GrupoResumo {
   company_id: number;
   inbox_id?: string;
   account_id?: number;
+  tipo?: string;
+  conv_id?: number;
+  contact_name?: string;
 }
 
 function getCurrentUTCTime(): string {
@@ -64,15 +67,27 @@ async function processScheduledSummaries() {
     
     console.log(`[CRON] Encontrados ${grupos.length} grupo(s) para processar`);
     
-    // Deduplicate: skip groups that share the same (inbox_id, account_id) already processed this run
+    // Deduplicate: for groups (tipo=grupo), skip if same (account_id, inbox_id) already processed
+    // For conversa/email, deduplicate by conv_id instead
     const processedInboxes = new Set<string>();
+    const processedConvIds = new Set<string>();
     for (const grupo of grupos as GrupoResumo[]) {
-      const inboxKey = `${grupo.account_id ?? 'x'}_${grupo.inbox_id ?? 'x'}`;
-      if (grupo.inbox_id && processedInboxes.has(inboxKey)) {
-        console.log(`[CRON] Pulando grupo ${grupo.id} (${grupo.nome_grupo}) - inbox ${grupo.inbox_id} já processado neste ciclo`);
-        continue;
+      const tipo = grupo.tipo || 'grupo';
+      if (tipo === 'conversa' || tipo === 'email') {
+        const convKey = `${grupo.account_id ?? 'x'}_${grupo.conv_id ?? 'x'}`;
+        if (grupo.conv_id && processedConvIds.has(convKey)) {
+          console.log(`[CRON] Pulando ${tipo} ${grupo.id} (${grupo.nome_grupo}) - conv_id ${grupo.conv_id} já processado neste ciclo`);
+          continue;
+        }
+        if (grupo.conv_id) processedConvIds.add(convKey);
+      } else {
+        const inboxKey = `${grupo.account_id ?? 'x'}_${grupo.inbox_id ?? 'x'}`;
+        if (grupo.inbox_id && processedInboxes.has(inboxKey)) {
+          console.log(`[CRON] Pulando grupo ${grupo.id} (${grupo.nome_grupo}) - inbox ${grupo.inbox_id} já processado neste ciclo`);
+          continue;
+        }
+        if (grupo.inbox_id) processedInboxes.add(inboxKey);
       }
-      processedInboxes.add(inboxKey);
       await processGroup(grupo, currentTimeUTC);
     }
   } catch (error) {
@@ -84,7 +99,8 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
   console.log(`[CRON] Processando grupo: ${grupo.nome_grupo} (ID: ${grupo.id})`);
   
   try {
-    // Guard: skip if a successful summary was already sent today for this group
+    // Guard: skip if cron already ran successfully for this group at this exact UTC time today
+    // (checking by horario_execucao_utc so manual sends do NOT block the scheduled run)
     const today = getCurrentBrasiliaDate();
     const { data: existingLog } = await supabase
       .from('envio_resumo')
@@ -92,12 +108,67 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
       .eq('grupo_id', grupo.id)
       .eq('data_envio', today)
       .eq('status', true)
+      .eq('horario_execucao_utc', currentTimeUTC)
       .limit(1)
       .single();
     
     if (existingLog) {
-      console.log(`[CRON] Grupo ${grupo.id} já recebeu resumo com sucesso hoje — pulando`);
+      console.log(`[CRON] Grupo ${grupo.id} já recebeu resumo agendado às ${currentTimeUTC} UTC hoje — pulando`);
       return;
+    }
+
+    // Guard: skip if another group record pointing to the same destination already sent today
+    const tipo = grupo.tipo || 'grupo';
+    if (tipo === 'conversa' || tipo === 'email') {
+      if (grupo.conv_id && grupo.account_id) {
+        const { data: sameConvGroups } = await supabase
+          .from('grupo_resumo')
+          .select('id')
+          .eq('conv_id', grupo.conv_id)
+          .eq('account_id', grupo.account_id)
+          .neq('id', grupo.id);
+        if (sameConvGroups && sameConvGroups.length > 0) {
+          const sameConvIds = sameConvGroups.map((g: any) => g.id);
+          const { data: convLog } = await supabase
+            .from('envio_resumo')
+            .select('id')
+            .in('grupo_id', sameConvIds)
+            .eq('data_envio', today)
+            .eq('status', true)
+            .eq('horario_execucao_utc', currentTimeUTC)
+            .limit(1)
+            .single();
+          if (convLog) {
+            console.log(`[CRON] Conv_id ${grupo.conv_id} já recebeu resumo às ${currentTimeUTC} UTC hoje (outro registro) — pulando grupo ${grupo.id}`);
+            return;
+          }
+        }
+      }
+    } else {
+      if (grupo.inbox_id && grupo.account_id) {
+        // Find all group IDs that share the same inbox+account
+        const { data: sameInboxGroups } = await supabase
+          .from('grupo_resumo')
+          .select('id')
+          .eq('inbox_id', grupo.inbox_id)
+          .eq('account_id', grupo.account_id)
+          .neq('id', grupo.id);
+        if (sameInboxGroups && sameInboxGroups.length > 0) {
+          const sameInboxIds = sameInboxGroups.map((g: any) => g.id);
+          const { data: inboxLog } = await supabase
+            .from('envio_resumo')
+            .select('id')
+            .in('grupo_id', sameInboxIds)
+            .eq('data_envio', today)
+            .eq('status', true)
+            .limit(1)
+            .single();
+          if (inboxLog) {
+            console.log(`[CRON] Inbox ${grupo.inbox_id} já recebeu resumo hoje (outro grupo) — pulando grupo ${grupo.id}`);
+            return;
+          }
+        }
+      }
     }
 
     // Use account_id stored directly on the group if available; otherwise fall back to company default
@@ -131,18 +202,35 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
       return;
     }
     
-    console.log(`[CRON] Grupo ${grupo.id}: Enviando para IA (account_id: ${accountId})`);
+    const tipoLabel = grupo.tipo || 'grupo';
+    console.log(`[CRON] ${tipoLabel} ${grupo.id}: Enviando para IA (account_id: ${accountId})`);
     
-    const response = await axios.post('http://localhost:8000/api/group-summary', {
-      nome_do_grupo: grupo.nome_grupo,
-      company_id: grupo.company_id,
-      group_id: grupo.id,
-      account_id: accountId,
-      api_key: apiKey,
-      inbox_id: grupo.inbox_id
-    }, {
-      timeout: 120000
-    });
+    let response;
+    if (tipoLabel === 'conversa' || tipoLabel === 'email') {
+      response = await axios.post('http://localhost:5000/api/ai/conversation-summary', {
+        account_id: accountId,
+        api_key: apiKey,
+        conv_id: grupo.conv_id,
+        conv_name: grupo.contact_name || grupo.nome_grupo,
+        tipo: tipoLabel,
+        group_id: grupo.id,
+        company_id: grupo.company_id,
+        horario_execucao_utc: currentTimeUTC
+      }, {
+        timeout: 120000
+      });
+    } else {
+      response = await axios.post('http://localhost:8000/api/group-summary', {
+        nome_do_grupo: grupo.nome_grupo,
+        company_id: grupo.company_id,
+        group_id: grupo.id,
+        account_id: accountId,
+        api_key: apiKey,
+        inbox_id: grupo.inbox_id
+      }, {
+        timeout: 120000
+      });
+    }
     
     if (response.data.success) {
       console.log(`[CRON] Grupo ${grupo.id}: Resumo gerado com sucesso!`);
@@ -170,7 +258,8 @@ async function recordLog(grupo: GrupoResumo, status: boolean, mensagem: string, 
       data_envio: today,
       status,
       mensagem,
-      horario_execucao_utc: horarioUTC
+      horario_execucao_utc: horarioUTC,
+      tipo: grupo.tipo || 'grupo'
     });
   } catch (error) {
     console.error('[CRON] Erro ao registrar log:', error);

@@ -81,6 +81,7 @@ const OPERACAO_OPTIONS = [
   { value: 'sada', label: 'Sada' },
   { value: 'superterminais', label: 'Superterminais' },
   { value: 'tegma', label: 'Tegma' },
+  { value: 'vammo', label: 'Vammo' },
 ];
 
 const ImportExportModal: React.FC<ImportExportModalProps> = ({ isOpen, onClose }) => {
