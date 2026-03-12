@@ -9,6 +9,7 @@ export interface FilterTagsProps {
   tagFilter?: string[];
   tipoVeiculoFilter?: string[];
   bauFilter?: string[];
+  areaAtuacaoFilter?: string[];
   dateFilter?: string;
   customDateRange?: {
     startDate: string | null;
@@ -21,6 +22,7 @@ export interface FilterTagsProps {
   onRemoveTag?: (tag: string) => void;
   onRemoveTipoVeiculo?: (tipo: string) => void;
   onRemoveBau?: (bau: string) => void;
+  onRemoveAreaAtuacao?: (area: string) => void;
   onRemoveDate?: () => void;
   onClearAll?: () => void;
   
@@ -29,6 +31,7 @@ export interface FilterTagsProps {
   tags?: Array<{ id: number; nome: string; cor?: string }>;
   cidades?: string[];
   tiposVeiculo?: string[];
+  areasAtuacao?: string[];
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -58,6 +61,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
   tagFilter = [],
   tipoVeiculoFilter = [],
   bauFilter = [],
+  areaAtuacaoFilter = [],
   dateFilter = 'all',
   customDateRange,
   onRemoveStatus,
@@ -67,12 +71,14 @@ const FilterTags: React.FC<FilterTagsProps> = ({
   onRemoveTag,
   onRemoveTipoVeiculo,
   onRemoveBau,
+  onRemoveAreaAtuacao,
   onRemoveDate,
   onClearAll,
   clientes = [],
   tags = [],
   cidades = [],
-  tiposVeiculo = []
+  tiposVeiculo = [],
+  areasAtuacao = []
 }) => {
   const hasFilters = 
     statusFilter.length > 0 ||
@@ -82,6 +88,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
     tagFilter.length > 0 ||
     tipoVeiculoFilter.length > 0 ||
     bauFilter.length > 0 ||
+    areaAtuacaoFilter.length > 0 ||
     (dateFilter !== 'all' && dateFilter !== '');
 
   if (!hasFilters) {
@@ -180,6 +187,27 @@ const FilterTags: React.FC<FilterTagsProps> = ({
                 onClick={() => onRemoveCliente(clienteId)}
                 className="hover:bg-black/10 dark:hover:bg-white/10 rounded-sm p-0.5 transition-colors"
                 data-testid={`remove-cliente-${clienteId}`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        ))}
+
+        {/* Área de Atuação Filters */}
+        {areaAtuacaoFilter.map((area) => (
+          <div
+            key={`area-${area}`}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300"
+            data-testid={`filter-tag-area-atuacao-${area}`}
+          >
+            <MapPin className="h-3 w-3" />
+            <span>Região: {area}</span>
+            {onRemoveAreaAtuacao && (
+              <button
+                onClick={() => onRemoveAreaAtuacao(area)}
+                className="hover:bg-black/10 dark:hover:bg-white/10 rounded-sm p-0.5 transition-colors"
+                data-testid={`remove-area-atuacao-${area}`}
               >
                 <X className="h-3 w-3" />
               </button>

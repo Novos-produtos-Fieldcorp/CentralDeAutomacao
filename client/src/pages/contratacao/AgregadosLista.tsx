@@ -87,6 +87,7 @@ export interface ViewContratado {
   bau?: string | null;
   ajudantes?: string[];
   // Campos de endereço do join com as tabelas de endereço
+  area?: string | null;
   end_motorista?: Array<{
     id_end_motorista: number;
     id_motorista: number;
@@ -197,6 +198,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [showAreaAtuacaoDropdown, setShowAreaAtuacaoDropdown] = useState(false);
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [tagFilterMode, setTagFilterMode] = useState<'contains' | 'not_contains'>('contains');
 
@@ -207,6 +209,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const bauDropdownRef = useRef<HTMLDivElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const ativoDropdownRef = useRef<HTMLDivElement>(null);
+  const areaAtuacaoDropdownRef = useRef<HTMLDivElement>(null);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -688,6 +691,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const [clienteFilter, setClienteFilter] = useState<string[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
   const [cidades, setCidades] = useState<string[]>([]);
+  const [areaAtuacaoFilter, setAreaAtuacaoFilter] = useState<string[]>([]);
+  const [areasAtuacao, setAreasAtuacao] = useState<string[]>([]);
   const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
   const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
   const [bauFilter, setBauFilter] = useState<string[]>([]);
@@ -724,6 +729,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (showAtivoDropdown && ativoDropdownRef.current && !ativoDropdownRef.current.contains(target)) {
         setShowAtivoDropdown(false);
         setAtivoDropdownPosition(null);
+      }
+      if (showAreaAtuacaoDropdown && areaAtuacaoDropdownRef.current && !areaAtuacaoDropdownRef.current.contains(target)) {
+        setShowAreaAtuacaoDropdown(false);
       }
     };
 
@@ -1074,10 +1082,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   useEffect(() => {
     fetchContratados(serverPage, pageSize);
-  }, [serverPage, pageSize, debouncedSearch, statusFilter, cidadeFilter, bauFilter, clienteFilter, dateFilter, customDateRange, companyId]);
+  }, [serverPage, pageSize, debouncedSearch, statusFilter, cidadeFilter, bauFilter, clienteFilter, dateFilter, customDateRange, areaAtuacaoFilter, companyId]);
 
   useEffect(() => {
     fetchClientes();
+    fetchAreasAtuacaoFromMotorista();
   }, [companyId]);
 
   useEffect(() => {
@@ -1149,13 +1158,22 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   // Funções auxiliares para filtros
   const hasActiveFilters = () => {
     return statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 ||
-      ativoFilter !== '' || tipoVeiculoFilter.length > 0 || bauFilter.length > 0 || dateFilter !== 'all' || tagFilter.length > 0;
+      ativoFilter !== '' || tipoVeiculoFilter.length > 0 || bauFilter.length > 0 || dateFilter !== 'all' ||
+      tagFilter.length > 0 || areaAtuacaoFilter.length > 0;
   };
 
   const getActiveFiltersCount = () => {
-    return [statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0,
-    ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, bauFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0,
-    tagFilter.length > 0 ? 1 : 0].reduce((a, b) => a + b, 0);
+    return [
+      statusFilter.length > 0 ? 1 : 0,
+      cidadeFilter.length > 0 ? 1 : 0,
+      clienteFilter.length > 0 ? 1 : 0,
+      ativoFilter !== '' ? 1 : 0,
+      tipoVeiculoFilter.length > 0 ? 1 : 0,
+      bauFilter.length > 0 ? 1 : 0,
+      dateFilter !== 'all' ? 1 : 0,
+      tagFilter.length > 0 ? 1 : 0,
+      areaAtuacaoFilter.length > 0 ? 1 : 0
+    ].reduce((a, b) => a + b, 0);
   };
 
   useEffect(() => {
@@ -1267,12 +1285,46 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     if (!companyId) return;
     try {
       setLoading(true);
+
+      // Pré-filtrar por áreas de atuação via tabela relacional
+      let motoristaIdsByArea: number[] | null = null;
+      if (areaAtuacaoFilter.length > 0) {
+        const { data: areaRows, error: areaError } = await supabase
+          .from('motorista_area_atuacao')
+          .select('motorista_id')
+          .eq('company_id', companyId)
+          .in('area', areaAtuacaoFilter);
+
+        if (areaError) {
+          console.error('Erro ao filtrar por áreas de atuação:', areaError);
+        } else {
+          motoristaIdsByArea = Array.from(
+            new Set(
+              (areaRows || [])
+                .map((row: any) => row.motorista_id)
+                .filter((id: any) => typeof id === 'number')
+            )
+          );
+
+          // Se não houver nenhum motorista correspondente, evitamos a query principal
+          if (motoristaIdsByArea.length === 0) {
+            setContratados([]);
+            setTotalCount(0);
+            setLoading(false);
+            return;
+          }
+        }
+      }
       // Buscar os agregados da view vw_agregados_completo que já inclui dados de endereço
       let query = supabase
         .from('vw_agregados_completo')
         .select('*', { count: 'exact' })
         .eq('company_id', companyId)
         .eq('funcao', 'Agregado');
+
+      if (motoristaIdsByArea && motoristaIdsByArea.length > 0) {
+        query = query.in('motorista_id', motoristaIdsByArea);
+      }
 
       // Server-side search
       if (debouncedSearch.trim()) {
@@ -1402,25 +1454,45 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         };
       }) || [];
 
-      // Agrupar ajudantes por motorista_id
-      const agregadosAgrupadosMap = new Map();
+      // Agrupar ajudantes e áreas de atuação por motorista_id
+      const agregadosAgrupadosMap = new Map<number, any>();
       processedData.forEach(agregado => {
-        // Cities will be loaded separately
-        // No city extraction needed here anymore
+        if (!agregado.motorista_id) return;
 
-        if (!agregadosAgrupadosMap.has(agregado.motorista_id)) {
+        const existente = agregadosAgrupadosMap.get(agregado.motorista_id);
+
+        if (!existente) {
           agregadosAgrupadosMap.set(agregado.motorista_id, {
             ...agregado,
             ajudantes: agregado.nome_ajudante ? [agregado.nome_ajudante] : [],
+            areas: agregado.area ? [agregado.area] : [],
           });
         } else {
-          const existente = agregadosAgrupadosMap.get(agregado.motorista_id);
+          // Ajudantes
           if (agregado.nome_ajudante && !existente.ajudantes.includes(agregado.nome_ajudante)) {
             existente.ajudantes.push(agregado.nome_ajudante);
           }
+
+          // Áreas de atuação (evitar duplicadas ignorando maiúsculas/minúsculas)
+          if (agregado.area && typeof agregado.area === 'string') {
+            const nova = agregado.area.trim();
+            if (nova) {
+              const keyNova = nova.toLowerCase();
+              const jaExiste = (existente.areas || []).some(
+                (a: string) => a.trim().toLowerCase() === keyNova
+              );
+              if (!jaExiste) {
+                existente.areas = [...(existente.areas || []), nova];
+              }
+            }
+          }
         }
       });
-      const agregadosAgrupados = Array.from(agregadosAgrupadosMap.values());
+
+      const agregadosAgrupados = Array.from(agregadosAgrupadosMap.values()).map((item: any) => ({
+        ...item,
+        area: item.areas && item.areas.length > 0 ? item.areas.join(', ') : null,
+      }));
 
       // As cidades já foram carregadas pela função separada
       // Não precisamos fazer nada aqui
@@ -1574,6 +1646,41 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       setBauTypes(bauTypesSorted);
     } catch (error) {
       console.error('Erro ao buscar tipos de baú:', error);
+    }
+  };
+
+  const fetchAreasAtuacaoFromMotorista = async () => {
+    try {
+      if (!companyId) return;
+
+      const { data, error } = await supabase
+        .from('motorista_area_atuacao')
+        .select('area')
+        .eq('company_id', companyId);
+
+      if (error) {
+        console.error('Erro ao buscar áreas de atuação:', error);
+        return;
+      }
+
+      const areasMap = new Map<string, string>();
+      (data || []).forEach((row: any) => {
+        if (row.area && typeof row.area === 'string') {
+          const raw = row.area.trim();
+          if (!raw) return;
+          const key = raw.toLowerCase();
+          if (!areasMap.has(key)) {
+            areasMap.set(key, raw);
+          }
+        }
+      });
+
+      const areasUnicas = Array.from(areasMap.values()).sort((a, b) =>
+        a.localeCompare(b, 'pt-BR')
+      );
+      setAreasAtuacao(areasUnicas);
+    } catch (err) {
+      console.error('Erro ao processar áreas de atuação:', err);
     }
   };
 
@@ -1795,11 +1902,43 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const handleSelectAllResults = async () => {
     setSelectAllResultsLoading(true);
     try {
+      let motoristaIdsByArea: number[] | null = null;
+      if (areaAtuacaoFilter.length > 0) {
+        const { data: areaRows, error: areaError } = await supabase
+          .from('motorista_area_atuacao')
+          .select('motorista_id')
+          .eq('company_id', companyId)
+          .in('area', areaAtuacaoFilter);
+
+        if (areaError) {
+          console.error('Erro ao filtrar por áreas de atuação (selecionar todos):', areaError);
+        } else {
+          motoristaIdsByArea = Array.from(
+            new Set(
+              (areaRows || [])
+                .map((row: any) => row.motorista_id)
+                .filter((id: any) => typeof id === 'number')
+            )
+          );
+
+          if (motoristaIdsByArea.length === 0) {
+            setSelectedItems(new Set());
+            setSelectAllResults(false);
+            setSelectAllResultsLoading(false);
+            return;
+          }
+        }
+      }
+
       let q = supabase
         .from('vw_agregados_completo')
         .select('motorista_id')
         .eq('company_id', companyId)
         .eq('funcao', 'Agregado');
+
+      if (motoristaIdsByArea && motoristaIdsByArea.length > 0) {
+        q = q.in('motorista_id', motoristaIdsByArea);
+      }
 
       if (debouncedSearch.trim()) {
         const term = debouncedSearch.trim();
@@ -2241,6 +2380,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 tagFilter={tagFilter}
                 tipoVeiculoFilter={tipoVeiculoFilter}
                 bauFilter={bauFilter}
+                areaAtuacaoFilter={areaAtuacaoFilter}
                 dateFilter={dateFilter}
                 customDateRange={customDateRange}
                 onRemoveStatus={(status) => {
@@ -2264,6 +2404,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 onRemoveBau={(bau) => {
                   setBauFilter(bauFilter.filter(b => b !== bau));
                 }}
+                onRemoveAreaAtuacao={(area) => {
+                  setAreaAtuacaoFilter(areaAtuacaoFilter.filter(a => a !== area));
+                }}
                 onRemoveDate={() => {
                   setDateFilter('all');
                 }}
@@ -2275,12 +2418,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   setTagFilter([]);
                   setTipoVeiculoFilter([]);
                   setBauFilter([]);
+                  setAreaAtuacaoFilter([]);
                   setDateFilter('all');
                 }}
                 clientes={clientes}
                 tags={tags}
                 cidades={cidades}
                 tiposVeiculo={tiposVeiculo}
+                areasAtuacao={areasAtuacao}
               />
               {/* Filtros modernos */}
               <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
@@ -2529,6 +2674,77 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                               </div>
                             ))
                           }
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Área de Atuação Filter */}
+                  <div className="relative" style={{ position: 'relative' }}>
+                    <div className="relative group" ref={areaAtuacaoDropdownRef}>
+                      <button
+                        type="button"
+                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                        onClick={() => setShowAreaAtuacaoDropdown(!showAreaAtuacaoDropdown)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          <span>
+                            {areaAtuacaoFilter.length === 0 ? 'Área de atuação' : `Área (${areaAtuacaoFilter.length})`}
+                          </span>
+                        </div>
+                      </button>
+
+                      {showAreaAtuacaoDropdown && (
+                        <div
+                          className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                          style={{
+                            position: 'absolute',
+                            bottom: '100%',
+                            left: 0,
+                            marginBottom: '4px',
+                            zIndex: 999999
+                          }}>
+                          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar áreas</span>
+                              <button
+                                type="button"
+                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAreaAtuacaoFilter([]);
+                                }}
+                              >
+                                Limpar
+                              </button>
+                            </div>
+                          </div>
+                          {areasAtuacao.map((area) => (
+                            <div key={area} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                              <label className="flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                                  checked={areaAtuacaoFilter.includes(area)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setAreaAtuacaoFilter([...areaAtuacaoFilter, area]);
+                                    } else {
+                                      setAreaAtuacaoFilter(areaAtuacaoFilter.filter(a => a !== area));
+                                    }
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <span className="text-sm text-gray-700 dark:text-gray-200">{area}</span>
+                              </label>
+                            </div>
+                          ))}
+                          {areasAtuacao.length === 0 && (
+                            <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                              Nenhuma área cadastrada.
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -3017,6 +3233,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 w-[130px]">Cliente</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Área de Atuação</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Marcadores</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
@@ -3160,6 +3377,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 dark:text-white">
                             {getMotoristaCity(motorista) || '-'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {motorista.area || '-'}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
