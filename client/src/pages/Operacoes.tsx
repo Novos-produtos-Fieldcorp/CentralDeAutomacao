@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef, BarChart3 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 import { useState as useStateReact } from 'react';
 import { supabase } from '../lib/supabase';
 import { API_BASE_URL, supabaseAnonKey } from '@/lib/api-config-supabase';
@@ -743,6 +744,7 @@ type StatsModalType = 'total' | 'hoje' | 'emAndamento' | 'concluidas' | 'operaco
 
 const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
+  const chartColors = useChartTextColor();
   const [histogramaPeriodo, setHistogramaPeriodo] = useState<HistogramaPeriodo>('30d');
   const [histogramaDataInicio, setHistogramaDataInicio] = useState<string>('');
   const [histogramaDataFim, setHistogramaDataFim] = useState<string>('');
@@ -1485,73 +1487,79 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
         <div className="p-6">
           {(() => {
             const totalViagens = viagensHistograma.reduce((acc, d) => acc + d.total, 0);
-            const maxValue = Math.max(...viagensHistograma.map(d => d.total), 1);
             
             if (totalViagens === 0) {
               return (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <Map className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Nenhuma viagem no período selecionado</p>
-                </div>
+                <EmptyState
+                  icon={Map}
+                  title="Nenhuma viagem no período"
+                  subtitle="Selecione um período diferente ou verifique os filtros aplicados"
+                />
               );
             }
             
+            const chartData = viagensHistograma.map((dia, index) => {
+              const isWeekend = dia.diaSemana === 'Sáb' || dia.diaSemana === 'Dom';
+              const isToday = index === viagensHistograma.length - 1;
+              return {
+                data: dia.data,
+                diaSemana: dia.diaSemana,
+                total: dia.total,
+                fill: isToday ? '#f59e0b' : isWeekend ? '#fb7185' : '#14b8a6',
+              };
+            });
+
             return (
               <div className="space-y-4">
-                <div className="flex items-end justify-between gap-1 h-48">
-                  {viagensHistograma.map((dia, index) => {
-                    const heightPercent = (dia.total / maxValue) * 100;
-                    const isWeekend = dia.diaSemana === 'Sáb' || dia.diaSemana === 'Dom';
-                    const isToday = index === viagensHistograma.length - 1;
-                    
-                    return (
-                      <div 
-                        key={index} 
-                        className="flex-1 flex flex-col items-center group relative"
-                        title={`${dia.data} (${dia.diaSemana}): ${dia.total} viagens`}
-                      >
-                        <div className="w-full flex flex-col items-center justify-end h-40">
-                          <div 
-                            className={`w-full max-w-[20px] rounded-t-sm transition-all duration-300 ${
-                              isToday 
-                                ? 'bg-amber-500 dark:bg-amber-400' 
-                                : isWeekend 
-                                  ? 'bg-rose-400 dark:bg-rose-500' 
-                                  : 'bg-teal-500 dark:bg-teal-400'
-                            } group-hover:opacity-70`}
-                            style={{ height: `${Math.max(heightPercent, dia.total > 0 ? 8 : 2)}%` }}
-                          />
-                        </div>
-                        
-                        <div className="invisible group-hover:visible absolute -top-8 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-2 py-1 rounded whitespace-nowrap z-10">
-                          {dia.data}: {dia.total} viagens
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-2">
-                  <span>{viagensHistograma[0]?.data}</span>
-                  {viagensHistograma.length > 2 && (
-                    <span className="text-center">
-                      {Math.floor(viagensHistograma.length / 2)} dias atrás
-                    </span>
-                  )}
-                  <span>{viagensHistograma[viagensHistograma.length - 1]?.data}</span>
-                </div>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                    <XAxis
+                      dataKey="data"
+                      tick={{ fontSize: 10, fill: chartColors.tick }}
+                      tickLine={false}
+                      axisLine={false}
+                      interval={Math.max(0, Math.floor(chartData.length / 8))}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: chartColors.tick }}
+                      tickLine={false}
+                      axisLine={false}
+                      allowDecimals={false}
+                    />
+                    <RechartsTooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const d = payload[0].payload;
+                          return (
+                            <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-2 rounded-lg shadow-lg" data-testid="histogram-tooltip">
+                              <p className="font-semibold">{d.data} ({d.diaSemana})</p>
+                              <p>{d.total} viagens</p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar dataKey="total" radius={[4, 4, 0, 0]} animationDuration={800}>
+                      {chartData.map((entry, index) => (
+                        <Cell key={index} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
                 
                 <div className="flex items-center justify-center gap-6 pt-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-teal-500 dark:bg-teal-400" />
+                    <div className="w-3 h-3 rounded-sm bg-teal-500" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Dias úteis</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-rose-400 dark:bg-rose-500" />
+                    <div className="w-3 h-3 rounded-sm bg-rose-400" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Fim de semana</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-sm bg-amber-500 dark:bg-amber-400" />
+                    <div className="w-3 h-3 rounded-sm bg-amber-500" />
                     <span className="text-xs text-gray-500 dark:text-gray-400">Hoje</span>
                   </div>
                 </div>
@@ -1589,80 +1597,165 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
   );
 };
 
-// Componente de gráfico de barras horizontais reutilizável
+const useChartTextColor = () => {
+  const [color, setColor] = useState({ tick: '#6b7280', label: '#6b7280', grid: '#e5e7eb' });
+  useEffect(() => {
+    const update = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setColor({
+        tick: isDark ? '#9ca3af' : '#6b7280',
+        label: isDark ? '#d1d5db' : '#6b7280',
+        grid: isDark ? '#374151' : '#e5e7eb',
+      });
+    };
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+  return color;
+};
+
+const OPERATION_COLORS: Record<string, { bar: string; gradient: [string, string]; text: string; bg: string; iconBg: string }> = {
+  sada: { bar: '#eab308', gradient: ['#fbbf24', '#f59e0b'], text: 'text-yellow-600 dark:text-yellow-400', bg: 'from-yellow-50 to-white dark:from-yellow-900/10 dark:to-gray-800', iconBg: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400' },
+  tegma: { bar: '#f97316', gradient: ['#fb923c', '#ea580c'], text: 'text-orange-600 dark:text-orange-400', bg: 'from-orange-50 to-white dark:from-orange-900/10 dark:to-gray-800', iconBg: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' },
+  superterminais: { bar: '#8b5cf6', gradient: ['#a78bfa', '#7c3aed'], text: 'text-purple-600 dark:text-purple-400', bg: 'from-purple-50 to-white dark:from-purple-900/10 dark:to-gray-800', iconBg: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' },
+  cesari: { bar: '#22c55e', gradient: ['#4ade80', '#16a34a'], text: 'text-green-600 dark:text-green-400', bg: 'from-green-50 to-white dark:from-green-900/10 dark:to-gray-800', iconBg: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' },
+  mitsubishi: { bar: '#ef4444', gradient: ['#f87171', '#dc2626'], text: 'text-red-600 dark:text-red-400', bg: 'from-red-50 to-white dark:from-red-900/10 dark:to-gray-800', iconBg: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
+  autoservice: { bar: '#ec4899', gradient: ['#f472b6', '#db2777'], text: 'text-pink-600 dark:text-pink-400', bg: 'from-pink-50 to-white dark:from-pink-900/10 dark:to-gray-800', iconBg: 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400' },
+  vammo: { bar: '#6366f1', gradient: ['#818cf8', '#4f46e5'], text: 'text-indigo-600 dark:text-indigo-400', bg: 'from-indigo-50 to-white dark:from-indigo-900/10 dark:to-gray-800', iconBg: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' },
+  default: { bar: '#14b8a6', gradient: ['#2dd4bf', '#0d9488'], text: 'text-teal-600 dark:text-teal-400', bg: 'from-teal-50 to-white dark:from-teal-900/10 dark:to-gray-800', iconBg: 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400' },
+};
+
+const EmptyState = ({ icon: Icon, title, subtitle }: { icon: any; title: string; subtitle?: string }) => (
+  <div className="flex flex-col items-center justify-center py-12 text-center" data-testid="empty-state">
+    <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center mb-4">
+      <Icon className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+    </div>
+    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{title}</p>
+    {subtitle && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-xs">{subtitle}</p>}
+  </div>
+);
+
 const HorizontalBarChart = ({ 
   title, 
   data, 
-  valueKey = 'value',
-  labelKey = 'label',
-  color = 'bg-teal-500'
+  operationKey = 'default'
 }: { 
   title: string; 
   data: Array<{ label: string; value: number }>; 
-  valueKey?: string;
-  labelKey?: string;
-  color?: string;
+  operationKey?: string;
 }) => {
-  const maxValue = Math.max(...data.map(d => d.value), 1);
+  const opColor = OPERATION_COLORS[operationKey] || OPERATION_COLORS.default;
+  const chartColors = useChartTextColor();
+  const gradientId = `gradient-${operationKey}-${title.replace(/\s/g, '')}`;
+  const chartData = data.slice(0, 15).map((item, index) => ({
+    name: `${index + 1}. ${item.label}`,
+    value: item.value,
+    rank: index + 1,
+  }));
   
   if (data.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
         <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">{title}</h4>
-        <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
-          Sem dados disponíveis
-        </div>
+        <EmptyState icon={BarChart3} title="Sem dados disponíveis" subtitle="Nenhum registro encontrado para este indicador" />
       </div>
     );
   }
   
+  const chartHeight = Math.max(chartData.length * 32, 120);
+  
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid={`chart-${title.toLowerCase().replace(/\s/g, '-')}`}>
       <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">{title}</h4>
-      <div className="space-y-2 max-h-80 overflow-y-auto">
-        {data.slice(0, 15).map((item, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <div className="w-24 text-xs text-gray-600 dark:text-gray-400 truncate" title={item.label}>
-              {item.label}
-            </div>
-            <div className="flex-1 h-6 bg-gray-50 dark:bg-gray-700/50 rounded overflow-hidden">
-              <div 
-                className={`h-full ${color} rounded-md transition-all duration-300`}
-                style={{ width: `${(item.value / maxValue) * 100}%` }}
+      <div className="max-h-80 overflow-y-auto">
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 60, left: 10, bottom: 0 }}>
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor={opColor.gradient[0]} stopOpacity={0.8} />
+                <stop offset="100%" stopColor={opColor.gradient[1]} stopOpacity={1} />
+              </linearGradient>
+            </defs>
+            <XAxis type="number" hide />
+            <YAxis
+              type="category"
+              dataKey="name"
+              tick={{ fontSize: 10, fill: chartColors.tick }}
+              tickLine={false}
+              axisLine={false}
+              width={100}
+            />
+            <RechartsTooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const d = payload[0].payload;
+                  return (
+                    <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-2 rounded-lg shadow-lg">
+                      <p className="font-semibold">{d.name}</p>
+                      <p>{d.value.toLocaleString('pt-BR')}</p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Bar
+              dataKey="value"
+              fill={`url(#${gradientId})`}
+              radius={[0, 4, 4, 0]}
+              animationDuration={600}
+              barSize={18}
+            >
+              <LabelList
+                dataKey="value"
+                position="right"
+                formatter={(v: number) => v.toLocaleString('pt-BR')}
+                style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }}
               />
-            </div>
-            <div className="w-16 text-right text-xs font-medium text-gray-700 dark:text-gray-300">
-              {item.value.toLocaleString('pt-BR')}
-            </div>
-          </div>
-        ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
 };
 
-// Card de estatística
 const StatCard = ({ 
   label, 
   value, 
   icon: Icon,
-  color = 'text-primary'
+  operationKey = 'default'
 }: { 
   label: string; 
   value: string | number; 
   icon?: any;
-  color?: string;
-}) => (
-  <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-    <p className={`text-xl font-bold ${color}`}>
-      {typeof value === 'number' ? value.toLocaleString('pt-BR') : value}
-    </p>
-  </div>
-);
+  operationKey?: string;
+}) => {
+  const opColor = OPERATION_COLORS[operationKey] || OPERATION_COLORS.default;
+  return (
+    <div className={`bg-gradient-to-br ${opColor.bg} rounded-lg border border-gray-200 dark:border-gray-700 p-4`} data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}>
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium uppercase tracking-wide">{label}</p>
+          <p className={`text-xl font-bold ${opColor.text}`}>
+            {typeof value === 'number' ? value.toLocaleString('pt-BR') : value}
+          </p>
+        </div>
+        {Icon && (
+          <div className={`w-9 h-9 rounded-lg ${opColor.iconBg} flex items-center justify-center flex-shrink-0`}>
+            <Icon className="w-4 h-4" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // Dashboard SADA
 const SadaDashboard = ({ companyId }: { companyId: number }) => {
+  const chartColors = useChartTextColor();
   const { data: sadaPricing } = useQuery({
     queryKey: ['faturamento-sada', companyId],
     queryFn: async () => {
@@ -1826,52 +1919,45 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="sada"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="sada"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="sada"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
-                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-                    {stats.viagensPorMes.map((item, index) => {
-                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                      const heightPercent = (item.value / maxVal) * 100;
-                      return (
-                        <div key={index} className="flex flex-col items-center min-w-[60px]">
-                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
-                          <div 
-                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
-                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                          />
-                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={stats.viagensPorMes.map(item => ({ ...item, mesLabel: `${item.label.substring(5)}/${item.label.substring(2, 4)}` }))} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                    <XAxis dataKey="mesLabel" tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <RechartsTooltip content={({ active, payload }) => active && payload?.length ? <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-2 rounded-lg shadow-lg"><p className="font-semibold">{payload[0].payload.label}</p><p>{payload[0].value} viagens</p></div> : null} />
+                    <Bar dataKey="value" fill={OPERATION_COLORS.sada.bar} radius={[4, 4, 0, 0]} animationDuration={600}>
+                      <LabelList dataKey="value" position="top" style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+                <EmptyState icon={BarChart3} title="Sem dados disponíveis" subtitle="Nenhum registro de viagem por mês encontrado" />
               )}
             </div>
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Comissão - SADA" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Viagens" value={stats.totalViagens} icon={Truck} operationKey="sada" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} icon={Navigation} operationKey="sada" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} icon={Moon} operationKey="sada" />
+            <StatCard label="Comissão - SADA" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} icon={DollarSign} operationKey="sada" />
           </div>
         </div>
       </div>
@@ -1881,6 +1967,7 @@ const SadaDashboard = ({ companyId }: { companyId: number }) => {
 
 // Dashboard TEGMA
 const TegmaDashboard = ({ companyId }: { companyId: number }) => {
+  const chartColors = useChartTextColor();
   const { data: tegmaPricing } = useQuery({
     queryKey: ['faturamento-tegma', companyId],
     queryFn: async () => {
@@ -2042,52 +2129,45 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="tegma"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="tegma"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="tegma"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
-                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-                    {stats.viagensPorMes.map((item, index) => {
-                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                      const heightPercent = (item.value / maxVal) * 100;
-                      return (
-                        <div key={index} className="flex flex-col items-center min-w-[60px]">
-                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
-                          <div 
-                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
-                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                          />
-                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={stats.viagensPorMes.map(item => ({ ...item, mesLabel: `${item.label.substring(5)}/${item.label.substring(2, 4)}` }))} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                    <XAxis dataKey="mesLabel" tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <RechartsTooltip content={({ active, payload }) => active && payload?.length ? <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-2 rounded-lg shadow-lg"><p className="font-semibold">{payload[0].payload.label}</p><p>{payload[0].value} viagens</p></div> : null} />
+                    <Bar dataKey="value" fill={OPERATION_COLORS.tegma.bar} radius={[4, 4, 0, 0]} animationDuration={600}>
+                      <LabelList dataKey="value" position="top" style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+                <EmptyState icon={BarChart3} title="Sem dados disponíveis" subtitle="Nenhum registro de viagem por mês encontrado" />
               )}
             </div>
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Comissão - TEGMA" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Viagens" value={stats.totalViagens} icon={Truck} operationKey="tegma" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} icon={Navigation} operationKey="tegma" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} icon={Moon} operationKey="tegma" />
+            <StatCard label="Comissão - TEGMA" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} icon={DollarSign} operationKey="tegma" />
           </div>
         </div>
       </div>
@@ -2097,6 +2177,7 @@ const TegmaDashboard = ({ companyId }: { companyId: number }) => {
 
 // Dashboard SUPERTERMINAIS
 const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
+  const chartColors = useChartTextColor();
   const { data: superPricing } = useQuery({
     queryKey: ['faturamento-superterminais', companyId],
     queryFn: async () => {
@@ -2243,47 +2324,40 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="Containers por Motorista" 
                 data={stats.containersPorMotorista}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="superterminais"
               />
               <HorizontalBarChart 
                 title="Containers por Cavalo" 
                 data={stats.containersPorCavalo}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="superterminais"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Volume de Viagens - Super Terminais por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
-                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-                    {stats.viagensPorMes.map((item, index) => {
-                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                      const heightPercent = (item.value / maxVal) * 100;
-                      return (
-                        <div key={index} className="flex flex-col items-center min-w-[60px]">
-                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
-                          <div 
-                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
-                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                          />
-                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={stats.viagensPorMes.map(item => ({ ...item, mesLabel: `${item.label.substring(5)}/${item.label.substring(2, 4)}` }))} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                    <XAxis dataKey="mesLabel" tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <RechartsTooltip content={({ active, payload }) => active && payload?.length ? <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-2 rounded-lg shadow-lg"><p className="font-semibold">{payload[0].payload.label}</p><p>{payload[0].value} viagens</p></div> : null} />
+                    <Bar dataKey="value" fill={OPERATION_COLORS.superterminais.bar} radius={[4, 4, 0, 0]} animationDuration={600}>
+                      <LabelList dataKey="value" position="top" style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+                <EmptyState icon={BarChart3} title="Sem dados disponíveis" subtitle="Nenhum registro de viagem por mês encontrado" />
               )}
             </div>
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Volume de Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Containers Cheio" value={stats.containersCheio} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Containers Vazio" value={stats.containersVazio} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Comissão - Super Terminais" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Volume de Viagens" value={stats.totalViagens} icon={Ship} operationKey="superterminais" />
+            <StatCard label="Containers Cheio" value={stats.containersCheio} icon={Container} operationKey="superterminais" />
+            <StatCard label="Containers Vazio" value={stats.containersVazio} icon={Boxes} operationKey="superterminais" />
+            <StatCard label="Comissão - Super Terminais" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} icon={DollarSign} operationKey="superterminais" />
           </div>
         </div>
       </div>
@@ -2293,6 +2367,7 @@ const SuperterminaisDashboard = ({ companyId }: { companyId: number }) => {
 
 // Dashboard CESARI
 const CesariDashboard = ({ companyId }: { companyId: number }) => {
+  const chartColors = useChartTextColor();
   const { data: cesariData = [], isLoading } = useQuery({
     queryKey: ['cesari-dashboard', companyId],
     queryFn: async () => {
@@ -2455,38 +2530,31 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="cesari"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="cesari"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens - CESARI por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
-                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-                    {stats.viagensPorMes.map((item, index) => {
-                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                      const heightPercent = (item.value / maxVal) * 100;
-                      return (
-                        <div key={index} className="flex flex-col items-center min-w-[60px]">
-                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
-                          <div 
-                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
-                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                          />
-                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={stats.viagensPorMes.map(item => ({ ...item, mesLabel: `${item.label.substring(5)}/${item.label.substring(2, 4)}` }))} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                    <XAxis dataKey="mesLabel" tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <RechartsTooltip content={({ active, payload }) => active && payload?.length ? <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-2 rounded-lg shadow-lg"><p className="font-semibold">{payload[0].payload.label}</p><p>{payload[0].value} viagens</p></div> : null} />
+                    <Bar dataKey="value" fill={OPERATION_COLORS.cesari.bar} radius={[4, 4, 0, 0]} animationDuration={600}>
+                      <LabelList dataKey="value" position="top" style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+                <EmptyState icon={BarChart3} title="Sem dados disponíveis" subtitle="Nenhum registro de viagem por mês encontrado" />
               )}
             </div>
 
@@ -2496,28 +2564,19 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
                 <span className="text-xs text-gray-500 dark:text-gray-400">Dias trabalhados: {stats.diasTrabalhados}</span>
               </div>
               {stats.comissaoPorMotorista.length > 0 ? (
-                <div className="flex items-end gap-3 h-48 overflow-x-auto pb-2">
-                  {stats.comissaoPorMotorista.map((item, index) => {
-                    const maxVal = Math.max(...stats.comissaoPorMotorista.map(v => v.value), 1);
-                    const heightPercent = (item.value / maxVal) * 100;
-                    return (
-                      <div key={index} className="flex flex-col items-center min-w-[80px]">
-                        <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1 whitespace-nowrap">
-                          R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                        </span>
-                        <div 
-                          className="w-14 bg-teal-500 dark:bg-teal-400 rounded-t transition-all duration-300"
-                          style={{ height: `${Math.max(heightPercent, 5)}%`, minHeight: '8px' }}
-                        />
-                        <span className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center leading-tight max-w-[80px] truncate" title={item.label}>
-                          {item.label.split(' ')[0]}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={stats.comissaoPorMotorista.map(item => ({ ...item, shortLabel: item.label.split(' ')[0] }))} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                    <XAxis dataKey="shortLabel" tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} />
+                    <RechartsTooltip content={({ active, payload }) => active && payload?.length ? <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-2 rounded-lg shadow-lg"><p className="font-semibold">{payload[0].payload.label}</p><p>R$ {(payload[0].value as number).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p></div> : null} />
+                    <Bar dataKey="value" fill={OPERATION_COLORS.cesari.bar} radius={[4, 4, 0, 0]} animationDuration={600}>
+                      <LabelList dataKey="value" position="top" formatter={(v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} style={{ fontSize: 9, fontWeight: 600, fill: chartColors.label }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+                <EmptyState icon={BarChart3} title="Sem dados disponíveis" subtitle="Nenhuma comissão encontrada" />
               )}
             </div>
 
@@ -2527,34 +2586,27 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
                 <span className="text-xs text-gray-500 dark:text-gray-400">Dias trabalhados: {stats.diasTrabalhados}</span>
               </div>
               {stats.viagensPorData.length > 0 ? (
-                <div className="flex items-end gap-2 h-40 overflow-x-auto pb-2">
-                  {stats.viagensPorData.map((item, index) => {
-                    const maxVal = Math.max(...stats.viagensPorData.map(v => v.value), 1);
-                    const heightPercent = (item.value / maxVal) * 100;
-                    const parts = item.label.split('-');
-                    const dateLabel = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                    return (
-                      <div key={index} className="flex flex-col items-center min-w-[55px]">
-                        <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
-                        <div 
-                          className="w-10 bg-teal-500 dark:bg-teal-400 rounded-t transition-all duration-300"
-                          style={{ height: `${Math.max(heightPercent, 5)}%`, minHeight: '8px' }}
-                        />
-                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-nowrap">{dateLabel}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={stats.viagensPorData.map(item => { const parts = item.label.split('-'); return { ...item, dateLabel: `${parts[2]}/${parts[1]}/${parts[0]}` }; })} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                    <XAxis dataKey="dateLabel" tick={{ fontSize: 9, fill: chartColors.tick }} tickLine={false} axisLine={false} interval={Math.max(0, Math.floor(stats.viagensPorData.length / 10))} />
+                    <YAxis tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <RechartsTooltip content={({ active, payload }) => active && payload?.length ? <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-2 rounded-lg shadow-lg"><p className="font-semibold">{payload[0].payload.dateLabel}</p><p>{payload[0].value} viagens</p></div> : null} />
+                    <Bar dataKey="value" fill={OPERATION_COLORS.cesari.bar} radius={[4, 4, 0, 0]} animationDuration={600}>
+                      <LabelList dataKey="value" position="top" style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+                <EmptyState icon={BarChart3} title="Sem dados disponíveis" subtitle="Nenhum registro de viagem por data encontrado" />
               )}
             </div>
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(2)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Comissão - CESARI" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Viagens" value={stats.totalViagens} icon={Truck} operationKey="cesari" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(2)} Mil` : stats.kmTotal} icon={Navigation} operationKey="cesari" />
+            <StatCard label="Comissão - CESARI" value={`R$ ${stats.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} icon={DollarSign} operationKey="cesari" />
           </div>
         </div>
       </div>
@@ -2564,6 +2616,7 @@ const CesariDashboard = ({ companyId }: { companyId: number }) => {
 
 // Dashboard MITSUBISHI
 const MitsubishiDashboard = ({ companyId }: { companyId: number }) => {
+  const chartColors = useChartTextColor();
   const { data: mitsubishiData = [], isLoading } = useQuery({
     queryKey: ['mitsubishi-dashboard', companyId],
     queryFn: async () => {
@@ -2707,52 +2760,45 @@ const MitsubishiDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="mitsubishi"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="mitsubishi"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="mitsubishi"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
-                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-                    {stats.viagensPorMes.map((item, index) => {
-                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                      const heightPercent = (item.value / maxVal) * 100;
-                      return (
-                        <div key={index} className="flex flex-col items-center min-w-[60px]">
-                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
-                          <div 
-                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
-                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                          />
-                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={stats.viagensPorMes.map(item => ({ ...item, mesLabel: `${item.label.substring(5)}/${item.label.substring(2, 4)}` }))} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                    <XAxis dataKey="mesLabel" tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <RechartsTooltip content={({ active, payload }) => active && payload?.length ? <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-2 rounded-lg shadow-lg"><p className="font-semibold">{payload[0].payload.label}</p><p>{payload[0].value} viagens</p></div> : null} />
+                    <Bar dataKey="value" fill={OPERATION_COLORS.mitsubishi.bar} radius={[4, 4, 0, 0]} animationDuration={600}>
+                      <LabelList dataKey="value" position="top" style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+                <EmptyState icon={BarChart3} title="Sem dados disponíveis" subtitle="Nenhum registro de viagem por mês encontrado" />
               )}
             </div>
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Total Carros" value={stats.totalCarros} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Viagens" value={stats.totalViagens} icon={Truck} operationKey="mitsubishi" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} icon={Navigation} operationKey="mitsubishi" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} icon={Moon} operationKey="mitsubishi" />
+            <StatCard label="Total Carros" value={stats.totalCarros} icon={Car} operationKey="mitsubishi" />
           </div>
         </div>
       </div>
@@ -2762,6 +2808,7 @@ const MitsubishiDashboard = ({ companyId }: { companyId: number }) => {
 
 // Dashboard AUTOSERVICE
 const AutoserviceDashboard = ({ companyId }: { companyId: number }) => {
+  const chartColors = useChartTextColor();
   const { data: autoserviceData = [], isLoading } = useQuery({
     queryKey: ['autoservice-dashboard', companyId],
     queryFn: async () => {
@@ -2890,7 +2937,7 @@ const AutoserviceDashboard = ({ companyId }: { companyId: number }) => {
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-8 bg-orange-600 rounded-full"></div>
+          <div className="w-1 h-8 bg-pink-500 dark:bg-pink-400 rounded-full"></div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Autoservice</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">Análise detalhada da operação</p>
@@ -2905,52 +2952,45 @@ const AutoserviceDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="autoservice"
               />
               <HorizontalBarChart 
                 title="Carros por Motorista" 
                 data={stats.carrosPorMotorista}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="autoservice"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="autoservice"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
-                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-                    {stats.viagensPorMes.map((item, index) => {
-                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                      const heightPercent = (item.value / maxVal) * 100;
-                      return (
-                        <div key={index} className="flex flex-col items-center min-w-[60px]">
-                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
-                          <div 
-                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
-                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                          />
-                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={stats.viagensPorMes.map(item => ({ ...item, mesLabel: `${item.label.substring(5)}/${item.label.substring(2, 4)}` }))} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                    <XAxis dataKey="mesLabel" tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <RechartsTooltip content={({ active, payload }) => active && payload?.length ? <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-2 rounded-lg shadow-lg"><p className="font-semibold">{payload[0].payload.label}</p><p>{payload[0].value} viagens</p></div> : null} />
+                    <Bar dataKey="value" fill={OPERATION_COLORS.autoservice.bar} radius={[4, 4, 0, 0]} animationDuration={600}>
+                      <LabelList dataKey="value" position="top" style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+                <EmptyState icon={BarChart3} title="Sem dados disponíveis" subtitle="Nenhum registro de viagem por mês encontrado" />
               )}
             </div>
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Total Carros" value={stats.totalCarros} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Viagens" value={stats.totalViagens} icon={Truck} operationKey="autoservice" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} icon={Navigation} operationKey="autoservice" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} icon={Moon} operationKey="autoservice" />
+            <StatCard label="Total Carros" value={stats.totalCarros} icon={Car} operationKey="autoservice" />
           </div>
         </div>
       </div>
@@ -2960,6 +3000,7 @@ const AutoserviceDashboard = ({ companyId }: { companyId: number }) => {
 
 // Dashboard VAMMO
 const VammoDashboard = ({ companyId }: { companyId: number }) => {
+  const chartColors = useChartTextColor();
   const { data: vammoData = [], isLoading } = useQuery({
     queryKey: ['vammo-dashboard', companyId],
     queryFn: async () => {
@@ -3108,53 +3149,46 @@ const VammoDashboard = ({ companyId }: { companyId: number }) => {
               <HorizontalBarChart 
                 title="KM por Motorista" 
                 data={stats.kmPorMotorista}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="vammo"
               />
               <HorizontalBarChart 
                 title="Motos por Motorista" 
                 data={stats.motosPorMotorista}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="vammo"
               />
               <HorizontalBarChart 
                 title="KM por Cavalo" 
                 data={stats.kmPorCavalo}
-                color="bg-teal-500 dark:bg-teal-400"
+                operationKey="vammo"
               />
             </div>
             
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Total de Viagens por Ano e Mês</h4>
               {stats.viagensPorMes.length > 0 ? (
-                <div className="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4">
-                  <div className="flex items-end gap-3 h-40 overflow-x-auto pb-2">
-                    {stats.viagensPorMes.map((item, index) => {
-                      const maxVal = Math.max(...stats.viagensPorMes.map(v => v.value), 1);
-                      const heightPercent = (item.value / maxVal) * 100;
-                      return (
-                        <div key={index} className="flex flex-col items-center min-w-[60px]">
-                          <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 mb-1">{item.value}</span>
-                          <div 
-                            className="w-12 bg-teal-500 dark:bg-teal-400 rounded-t rounded-md transition-all duration-300"
-                            style={{ height: `${Math.max(heightPercent, 8)}%`, minHeight: '8px' }}
-                          />
-                          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.label.substring(5)}/{item.label.substring(2, 4)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={stats.viagensPorMes.map(item => ({ ...item, mesLabel: `${item.label.substring(5)}/${item.label.substring(2, 4)}` }))} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                    <XAxis dataKey="mesLabel" tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: chartColors.tick }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <RechartsTooltip content={({ active, payload }) => active && payload?.length ? <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-3 py-2 rounded-lg shadow-lg"><p className="font-semibold">{payload[0].payload.label}</p><p>{payload[0].value} viagens</p></div> : null} />
+                    <Bar dataKey="value" fill={OPERATION_COLORS.vammo.bar} radius={[4, 4, 0, 0]} animationDuration={600}>
+                      <LabelList dataKey="value" position="top" style={{ fontSize: 10, fontWeight: 600, fill: chartColors.label }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               ) : (
-                <div className="text-center py-8 text-gray-400 text-sm">Sem dados disponíveis</div>
+                <EmptyState icon={BarChart3} title="Sem dados disponíveis" subtitle="Nenhum registro de viagem por mês encontrado" />
               )}
             </div>
           </div>
           
           <div className="space-y-4">
-            <StatCard label="Viagens" value={stats.totalViagens} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Volume de Jantas" value={stats.volumeJantas} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Total Motos" value={stats.totalMotos} color="text-blue-600 dark:text-blue-400" />
-            <StatCard label="Rotas" value={stats.rotas} color="text-blue-600 dark:text-blue-400" />
+            <StatCard label="Viagens" value={stats.totalViagens} icon={Truck} operationKey="vammo" />
+            <StatCard label="KM Total" value={stats.kmTotal > 1000 ? `${(stats.kmTotal / 1000).toFixed(1)} Mil` : stats.kmTotal} icon={Navigation} operationKey="vammo" />
+            <StatCard label="Volume de Jantas" value={stats.volumeJantas} icon={Moon} operationKey="vammo" />
+            <StatCard label="Total Motos" value={stats.totalMotos} icon={Car} operationKey="vammo" />
+            <StatCard label="Rotas" value={stats.rotas} icon={MapPin} operationKey="vammo" />
           </div>
         </div>
       </div>
