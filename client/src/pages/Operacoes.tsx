@@ -4115,14 +4115,52 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     return 0;
   };
 
+  const FinanceiroSkeleton = ({ cards = 4 }: { cards?: number }) => (
+    <div className="space-y-6 animate-pulse" data-testid="financeiro-skeleton">
+      <div className={`grid grid-cols-1 gap-4 ${cards === 3 ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
+        {Array.from({ length: cards }).map((_, i) => (
+          <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+              <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700" />
+            </div>
+            <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded mt-2" />
+            <div className="h-3 w-20 bg-gray-100 dark:bg-gray-700/50 rounded mt-3" />
+          </div>
+        ))}
+      </div>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-700">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <th key={i} className="px-4 py-3">
+                    <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-b border-gray-100 dark:border-gray-700/50">
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <td key={j} className="px-4 py-3.5">
+                      <div className={`h-4 bg-gray-200 dark:bg-gray-700 rounded ${j === 0 ? 'w-20' : j === 4 ? 'w-16' : 'w-24'}`} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderSadaFinanceiro = () => {
     if (isLoadingSada) {
-      return (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando...</span>
-        </div>
-      );
+      return <FinanceiroSkeleton cards={4} />;
     }
 
     if (isErrorSada) {
@@ -4262,12 +4300,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
   // Função de renderização para SUPERTERMINAIS
   const renderSuperterminaisFinanceiro = () => {
     if (isLoadingSuperterminais) {
-      return (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando viagens...</span>
-        </div>
-      );
+      return <FinanceiroSkeleton cards={4} />;
     }
 
     if (isErrorSuperterminais) {
@@ -4373,12 +4406,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 
   const renderMitsubishiFinanceiro = () => {
     if (isLoadingMitsubishiViagens) {
-      return (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <span className="ml-2 text-gray-600 dark:text-gray-400" data-testid="text-loading-mitsubishi">Carregando viagens...</span>
-        </div>
-      );
+      return <FinanceiroSkeleton cards={4} />;
     }
 
     if (isErrorMitsubishiViagens) {
@@ -4510,12 +4538,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 
   const renderAutoserviceFinanceiro = () => {
     if (isLoadingAutoserviceViagens) {
-      return (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <span className="ml-2 text-gray-600 dark:text-gray-400" data-testid="text-loading-autoservice">Carregando viagens...</span>
-        </div>
-      );
+      return <FinanceiroSkeleton cards={4} />;
     }
 
     if (isErrorAutoserviceViagens) {
@@ -4649,12 +4672,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 
   const renderTegmaFinanceiro = () => {
     if (isLoadingTegmaViagens) {
-      return (
-        <div className="flex items-center justify-center py-12" data-testid="tegma-loading">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando viagens TEGMA...</span>
-        </div>
-      );
+      return <FinanceiroSkeleton cards={3} />;
     }
 
     if (isErrorTegmaViagens) {
@@ -4770,12 +4788,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 
   const renderCesariFinanceiro = () => {
     if (isLoadingCesariViagens) {
-      return (
-        <div className="flex items-center justify-center py-12" data-testid="cesari-loading">
-          <Loader2 className="w-8 h-8 animate-spin text-green-500" />
-          <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando viagens CESARI...</span>
-        </div>
-      );
+      return <FinanceiroSkeleton cards={4} />;
     }
 
     if (isErrorCesariViagens) {
