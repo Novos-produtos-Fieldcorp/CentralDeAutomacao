@@ -47,6 +47,7 @@ const VIAGEM_OPERATION_HEADERS: Record<string, string[]> = {
   sada: ['Origem', 'Destino', 'Destino 2', 'Tipo Carreta', 'Tipo Carga', 'Frota', 'Nr Viagem', 'Qtd Carros', 'Modelo'],
   superterminais: ['Embarque/Desembarque', 'Nome Navio', 'Capacidade', 'Nr Container', 'Fim de Semana'],
   tegma: ['Tipo Viagem', 'Origem', 'Destino', 'Placa Carreta', 'Nr Cautela', 'Nr Viagem', 'Empresa', 'Qtd Carros', 'Veiculo Transportado', 'Placa Veiculo Transportado', 'Retorno', 'P2 Origem', 'P2 Destino', 'P2 Placa Veiculo', 'P2 Nr Cautela', 'P2 Data/Hora'],
+  vammo: ['Origem', 'Destino', 'Qtd Motos', 'Nr CTE'],
 };
 
 export const getViagemHeaders = (operacao: string): string[] => {
@@ -62,6 +63,7 @@ export const getViagemRequiredColumns = (operacao: string): string[] => {
     sada: ['Origem', 'Destino'],
     superterminais: ['Embarque/Desembarque'],
     tegma: ['Tipo Viagem', 'Origem', 'Destino'],
+    vammo: ['Origem', 'Destino'],
   };
   return [...base, ...(opRequired[operacao.toLowerCase()] || [])];
 };

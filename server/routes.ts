@@ -6008,6 +6008,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
         sada: "operacao_sada",
         superterminais: "operacao_superterminais",
         tegma: "operacao_tegma",
+        vammo: "operacao_vammo",
       };
 
       const tableName = validTables[operacao.toLowerCase()];
@@ -6232,6 +6233,11 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
             opRecord.p2_placa_veiculo = strVal(row["P2 Placa Veiculo"]);
             opRecord.p2_nr_cautela = strVal(row["P2 Nr Cautela"]);
             opRecord.p2_data_hora = strVal(row["P2 Data/Hora"]);
+          } else if (opKey === "vammo") {
+            opRecord.origem = strVal(row["Origem"]);
+            opRecord.destino = strVal(row["Destino"]);
+            opRecord.qtd_motos = parseIntVal(row["Qtd Motos"]);
+            opRecord.nr_cte = strVal(row["Nr CTE"]);
           }
 
           Object.keys(opRecord).forEach((key) => {
