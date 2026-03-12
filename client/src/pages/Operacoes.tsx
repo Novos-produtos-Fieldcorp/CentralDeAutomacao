@@ -1667,9 +1667,9 @@ const HorizontalBarChart = ({
   const chartHeight = Math.max(chartData.length * 32, 120);
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" data-testid={`chart-${title.toLowerCase().replace(/\s/g, '-')}`}>
+    <div className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 overflow-visible [&:hover]:z-50" data-testid={`chart-${title.toLowerCase().replace(/\s/g, '-')}`}>
       <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">{title}</h4>
-      <div className="max-h-80 overflow-y-auto">
+      <div className="overflow-visible">
         <ResponsiveContainer width="100%" height={chartHeight}>
           <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 60, left: 10, bottom: 0 }}>
             <defs>
@@ -1688,6 +1688,8 @@ const HorizontalBarChart = ({
               width={100}
             />
             <RechartsTooltip
+              allowEscapeViewBox={{ x: true, y: true }}
+              wrapperStyle={{ zIndex: 1000, pointerEvents: 'none' }}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const d = payload[0].payload;
