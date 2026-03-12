@@ -24,6 +24,7 @@ export interface Motorista {
   telefone: number | null;
   email: string | null;
   funcao: string;
+  area_atuacao?: string | null;
   nome: string;
   origem_usuario: string;
   st_cadastro: string;
