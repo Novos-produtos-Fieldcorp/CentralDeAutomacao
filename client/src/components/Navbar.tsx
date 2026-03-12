@@ -120,7 +120,7 @@ const Navbar = ({ onToggle }: NavbarProps) => {
     { path: '/hodometros', icon: Gauge, label: 'Hodômetros', needsAccess: true, enabled: moduleAccess.hodometros },
     { path: '/clientes', icon: Store, label: 'Clientes', needsAccess: false, enabled: moduleAccess.clientes },
     { path: '/comprovantes', icon: FileText, label: 'Comprovantes', needsAccess: true, enabled: moduleAccess.comprovantes },
-    { path: '/resumos-grupo', icon: MessagesSquare, label: 'Resumos em Grupo', needsAccess: true, enabled: moduleAccess.resumos },
+    { path: '/resumos-grupo', icon: MessagesSquare, label: 'Resumo de Conversas', needsAccess: true, enabled: moduleAccess.resumos },
     { path: '/tags-admin', icon: Tags, label: 'Marcadores', needsAccess: true, enabled: moduleAccess.tags },
     { path: '/operacoes', icon: Route, label: 'Acompanhamento de Viagem', needsAccess: true, enabled: moduleAccess.operacoes },
     { path: '/logs', icon: ScrollText, label: 'Logs de Auditoria', needsAccess: false, enabled: true },
