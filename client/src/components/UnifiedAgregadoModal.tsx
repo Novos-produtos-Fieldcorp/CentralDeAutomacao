@@ -603,6 +603,58 @@ const UnifiedAgregadoModal = ({ isOpen, onClose, motorista, onSuccess }: Unified
                             {motoristaForDisplay.email || 'Não informado'}
                           </dd>
                         </div>
+                        <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            Áreas de Atuação
+                          </dt>
+                          <dd className="mt-1 text-sm text-gray-900 dark:text-gray-100 sm:mt-0 sm:col-span-2">
+                            {(() => {
+                              const raw = (motoristaDetails as any)?.area_atuacao || (motorista as any)?.area_atuacao || '';
+                              if (!raw) return 'Não informado';
+                              const areas = String(raw)
+                                .split(',')
+                                .map((a: string) => a.trim())
+                                .filter((a: string) => a.length > 0);
+                              if (areas.length === 0) return 'Não informado';
+                            const formatToken = (s: string) => {
+                              let letters = 0;
+                              let result = '';
+                              let blockLen = 0;
+                              for (let i = 0; i < s.length; i++) {
+                                const ch = s[i];
+                                if (/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(ch)) {
+                                  letters++;
+                                }
+                                result += ch;
+                                blockLen++;
+
+                                // se o usuário inseriu um espaço manualmente, reinicia o bloco
+                                if (ch === ' ') {
+                                  blockLen = 0;
+                                }
+
+                                // insere espaço a cada 15 caracteres do token
+                                if (blockLen === 15 && i !== s.length - 1) {
+                                  result += ' ';
+                                  blockLen = 0;
+                                }
+
+                                // limite global de 28 letras ou 32 caracteres (incluindo espaços)
+                                if (letters >= 28 || result.length >= 32) {
+                                  break;
+                                }
+                              }
+                              return result;
+                            };
+
+                              const formatted = areas.map(formatToken);
+                              const display =
+                                formatted.slice(0, 3).join(', ') +
+                                (formatted.length > 3 ? '...' : '');
+                              return display;
+                            })()}
+                          </dd>
+                        </div>
                         {/* Endereço */}
                         <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
