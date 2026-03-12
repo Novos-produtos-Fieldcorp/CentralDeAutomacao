@@ -17,34 +17,36 @@ def create_group_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
         REGRAS ABSOLUTAS:
         1. Baseie seu resumo APENAS nas mensagens REAIS que voce encontrar
         2. NAO invente informacoes ou use textos genericos
-        3. Use SEMPRE as palavras EXATAS das mensagens - nunca generalize. Se a mensagem diz "entrega atrasada", escreva "entrega atrasada". Se diz "motorista nao apareceu", escreva "motorista nao apareceu"
-        4. Para grupos com poucas mensagens ou informacoes incompletas, liste o que ainda precisa ser verificado
+        3. Trate as conversas como comunicacao NORMAL do dia a dia - nao force tom negativo
+        4. Use as palavras EXATAS das mensagens ao descrever os assuntos
         5. O titulo DEVE ser exatamente: Resumo do Grupo "{group_name}"
         6. DEVE terminar com a frase: Este resumo foi gerado automaticamente pela IAzinha
         
-        O resumo deve seguir EXATAMENTE este formato com bullet points:
+        O resumo deve seguir EXATAMENTE este formato:
         
         Resumo do Grupo "{group_name}"
         • Quantidade de mensagens: [numero]
-        • Principais assuntos: [topicos ESPECIFICOS usando as proprias palavras das mensagens]
-        • Problemas/Pendencias: [problemas CONCRETOS citados com as palavras usadas, ou "Nenhum problema identificado"]
-        • Tom geral: [Urgente/Tranquilo/Insatisfeito/Satisfeito/Neutro - com breve justificativa]
-        • Informacoes sugeridas: [liste o que o grupo ainda precisa definir ou verificar para resolver pendencias abertas - se tudo estiver resolvido, escreva "Nenhuma"]
+        • O que foi discutido: [descricao natural dos assuntos, usando as palavras das mensagens]
+        • Tom geral: [Tranquilo/Ativo/Urgente/Neutro - com breve justificativa baseada nas mensagens reais]
+        [SOMENTE se houver problemas ou pendencias reais identificadas nas mensagens:]
+        • Problemas/Pendencias: [cite os problemas concretos com as palavras usadas nas mensagens]
         
         Este resumo foi gerado automaticamente pela IAzinha
+        
+        IMPORTANTE: A secao "Problemas/Pendencias" deve aparecer SOMENTE se houver problemas ou pendencias reais nas mensagens. Se a conversa for normal/rotineira, NAO inclua essa secao.
         
         Se nao houver mensagens hoje, responda apenas:
         Resumo do Grupo "{group_name}"
         Nenhuma mensagem encontrada hoje neste grupo.
         Este resumo foi gerado automaticamente pela IAzinha""",
-        expected_output=f"""FORMATO OBRIGATORIO com bullet points:
+        expected_output=f"""FORMATO com bullet points:
 
 Resumo do Grupo "{group_name}"
 • Quantidade de mensagens: [numero]
-• Principais assuntos: [topicos especificos com palavras exatas das mensagens]
-• Problemas/Pendencias: [problemas concretos ou "Nenhum problema identificado"]
+• O que foi discutido: [descricao natural dos assuntos com palavras exatas]
 • Tom geral: [classificacao com justificativa]
-• Informacoes sugeridas: [perguntas/verificacoes pendentes ou "Nenhuma"]
+[apenas se houver problemas reais:]
+• Problemas/Pendencias: [problemas concretos com palavras das mensagens]
 
 Este resumo foi gerado automaticamente pela IAzinha""",
         agent=analyst
