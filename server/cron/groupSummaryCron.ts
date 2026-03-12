@@ -99,7 +99,8 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
   console.log(`[CRON] Processando grupo: ${grupo.nome_grupo} (ID: ${grupo.id})`);
   
   try {
-    // Guard: skip if a successful summary was already sent today for this group (by grupo_id)
+    // Guard: skip if cron already ran successfully for this group at this exact UTC time today
+    // (checking by horario_execucao_utc so manual sends do NOT block the scheduled run)
     const today = getCurrentBrasiliaDate();
     const { data: existingLog } = await supabase
       .from('envio_resumo')
@@ -107,11 +108,12 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
       .eq('grupo_id', grupo.id)
       .eq('data_envio', today)
       .eq('status', true)
+      .eq('horario_execucao_utc', currentTimeUTC)
       .limit(1)
       .single();
     
     if (existingLog) {
-      console.log(`[CRON] Grupo ${grupo.id} já recebeu resumo com sucesso hoje — pulando`);
+      console.log(`[CRON] Grupo ${grupo.id} já recebeu resumo agendado às ${currentTimeUTC} UTC hoje — pulando`);
       return;
     }
 
@@ -133,10 +135,11 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
             .in('grupo_id', sameConvIds)
             .eq('data_envio', today)
             .eq('status', true)
+            .eq('horario_execucao_utc', currentTimeUTC)
             .limit(1)
             .single();
           if (convLog) {
-            console.log(`[CRON] Conv_id ${grupo.conv_id} já recebeu resumo hoje (outro registro) — pulando grupo ${grupo.id}`);
+            console.log(`[CRON] Conv_id ${grupo.conv_id} já recebeu resumo às ${currentTimeUTC} UTC hoje (outro registro) — pulando grupo ${grupo.id}`);
             return;
           }
         }
@@ -211,7 +214,8 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
         conv_name: grupo.contact_name || grupo.nome_grupo,
         tipo: tipoLabel,
         group_id: grupo.id,
-        company_id: grupo.company_id
+        company_id: grupo.company_id,
+        horario_execucao_utc: currentTimeUTC
       }, {
         timeout: 120000
       });

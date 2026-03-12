@@ -5314,7 +5314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Conversation Summary proxy route (Conversas & E-mails)
   app.post("/api/ai/conversation-summary", async (req, res) => {
     try {
-      const { account_id, api_key, conv_id, conv_name, tipo, group_id, company_id } = req.body;
+      const { account_id, api_key, conv_id, conv_name, tipo, group_id, company_id, horario_execucao_utc } = req.body;
 
       if (!account_id || !api_key || !conv_id) {
         return res.status(400).json({ success: false, error: 'account_id, api_key e conv_id sao obrigatorios' });
@@ -5421,7 +5421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (sendResp.ok) { messageSent = true; }
       else { sendError = await sendResp.text(); console.error('[AI Conversation Summary] Send failed:', sendError); }
 
-      await supabaseBackend.from('envio_resumo').insert({
+      const logData: Record<string, any> = {
         grupo_id: group_id,
         company_id,
         data_envio: todayStr,
@@ -5429,7 +5429,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mensagem: messageSent ? 'Resumo gerado e enviado com sucesso' : `Resumo gerado mas falha no envio: ${sendError}`,
         resumo_grupo: summaryText.substring(0, 5000),
         tipo: tipo || 'conversa'
-      });
+      };
+      if (horario_execucao_utc) logData.horario_execucao_utc = horario_execucao_utc;
+      await supabaseBackend.from('envio_resumo').insert(logData);
 
       res.json({ success: true, summary: summaryText, group_id, conv_name: displayName, message_sent: messageSent, send_error: sendError });
     } catch (error: any) {

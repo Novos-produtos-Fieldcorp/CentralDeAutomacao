@@ -417,7 +417,8 @@ const ResumosGrupo = () => {
         icon_name: formData.icon_name,
         color_name: formData.color_name,
         company_id: effectiveCompanyId,
-        account_id: formData.account_id || (accountId ? Number(accountId) : null)
+        account_id: formData.account_id || (accountId ? Number(accountId) : null),
+        tipo: 'grupo'
       };
       
       // Add inbox_id if selected
