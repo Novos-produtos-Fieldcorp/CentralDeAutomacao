@@ -5292,7 +5292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const response = await axios.post(
         N8N_WEBHOOK_URL,
-        { nome_do_grupo, company_id, group_id, account_id, api_key },
+        { nome_do_grupo, company_id, group_id, account_id, api_key, force: true },
         {
           headers: {
             "Content-Type": "application/json",
