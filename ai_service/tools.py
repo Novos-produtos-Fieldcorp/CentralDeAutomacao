@@ -222,7 +222,8 @@ _BOT_SUMMARY_SIGNATURES = [
 def _is_bot_summary(content: str) -> bool:
     if not content:
         return False
-    return any(sig in content for sig in _BOT_SUMMARY_SIGNATURES)
+    lower = content.lower()
+    return any(sig.lower() in lower for sig in _BOT_SUMMARY_SIGNATURES)
 
 
 def fetch_today_messages_from_inbox(account_id, api_key, inbox_id, group_name):
@@ -334,9 +335,6 @@ def buscar_mensagens_grupo(group_name: str, account_id: str, api_key: str, limit
                 continue
 
             msg_type = msg.get("message_type")
-            if msg_type == 2:
-                print(f"[DEBUG] Ignorando activity message id={msg.get('id')}")
-                continue
 
             sender_info = msg.get("sender", {})
             sender_name = sender_info.get("name", "Desconhecido") if sender_info else "Desconhecido"
