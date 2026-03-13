@@ -220,26 +220,36 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
         timeout: 120000
       });
     } else {
-      response = await axios.post('http://localhost:8000/api/group-summary', {
+      const N8N_WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
+      response = await axios.post(N8N_WEBHOOK_URL, {
         nome_do_grupo: grupo.nome_grupo,
         company_id: grupo.company_id,
         group_id: grupo.id,
         account_id: accountId,
-        api_key: apiKey,
-        inbox_id: grupo.inbox_id
+        api_key: apiKey
       }, {
         timeout: 120000
       });
     }
     
-    if (response.data.success) {
-      console.log(`[CRON] Grupo ${grupo.id}: Resumo gerado com sucesso!`);
-      if (response.data.message_sent) {
-        console.log(`[CRON] Grupo ${grupo.id}: Mensagem enviada ao grupo!`);
+    if (tipoLabel === 'conversa' || tipoLabel === 'email') {
+      if (response.data.success) {
+        console.log(`[CRON] ${tipoLabel} ${grupo.id}: Resumo gerado com sucesso!`);
+        if (response.data.message_sent) {
+          console.log(`[CRON] ${tipoLabel} ${grupo.id}: Mensagem enviada!`);
+        }
+      } else {
+        console.error(`[CRON] ${tipoLabel} ${grupo.id}: Erro ao gerar resumo:`, response.data.error);
+        await recordLog(grupo, false, `Erro IA: ${response.data.error}`, currentTimeUTC);
       }
     } else {
-      console.error(`[CRON] Grupo ${grupo.id}: Erro ao gerar resumo:`, response.data.error);
-      await recordLog(grupo, false, `Erro IA: ${response.data.error}`, currentTimeUTC);
+      if (response.data.status === '200') {
+        console.log(`[CRON] Grupo ${grupo.id}: Webhook n8n respondeu: ${response.data.status} - ${response.data.message}`);
+      } else {
+        const errMsg = response.data.message || 'Erro desconhecido do webhook n8n';
+        console.error(`[CRON] Grupo ${grupo.id}: Webhook n8n erro: ${response.data.status} - ${errMsg}`);
+        await recordLog(grupo, false, `Erro n8n: ${errMsg}`, currentTimeUTC);
+      }
     }
     
   } catch (error: any) {
