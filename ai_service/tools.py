@@ -195,7 +195,7 @@ def is_message_from_today(message: dict) -> bool:
     """Verifica se uma mensagem foi enviada hoje (horario de Brasilia)"""
     try:
         created_at = message.get("created_at")
-        if not created_at:
+        if created_at is None:
             return False
 
         if isinstance(created_at, (int, float)):
@@ -263,6 +263,7 @@ def buscar_mensagens_grupo(group_name: str, account_id: str, api_key: str, limit
                     timeout=60
                 )
                 if msg_response.status_code != 200:
+                    print(f"[DEBUG] Erro ao buscar mensagens pagina {_page+1}: {msg_response.status_code}")
                     break
                 messages_data = msg_response.json()
                 batch = messages_data.get("payload", [])
@@ -272,10 +273,18 @@ def buscar_mensagens_grupo(group_name: str, account_id: str, api_key: str, limit
                 oldest_msg = min(batch, key=lambda m: m.get("id", 0))
                 if not is_message_from_today(oldest_msg):
                     break
-                if len(batch) < 20:
-                    break
                 before_id = oldest_msg.get("id")
             messages = all_messages
+
+            print(f"[DEBUG] Total de mensagens retornadas pela API: {len(messages)}")
+            for m in messages:
+                _ca = m.get("created_at")
+                _mt = m.get("message_type")
+                _priv = m.get("private")
+                _sender = (m.get("sender") or {}).get("name", "?")
+                _content_preview = str(m.get("content") or "")[:60]
+                _today = is_message_from_today(m)
+                print(f"[DEBUG] id={m.get('id')} type={_mt} private={_priv} today={_today} created_at={_ca} sender={_sender!r} content={_content_preview!r}")
 
             if not messages:
                 return f"Nenhuma mensagem encontrada na conversa do grupo '{contact_name}'."
