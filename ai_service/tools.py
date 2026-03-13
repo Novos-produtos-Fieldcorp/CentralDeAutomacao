@@ -267,7 +267,12 @@ def fetch_today_messages_from_inbox(account_id, api_key, inbox_id, group_name):
                 batch = r.json().get("payload", [])
                 if not batch:
                     break
-                today_in_batch = [m for m in batch if is_message_from_today(m)]
+                today_in_batch = [
+                    m for m in batch
+                    if is_message_from_today(m)
+                    and m.get("message_type") not in (1, 2)
+                    and not m.get("private", False)
+                ]
                 all_today.extend(today_in_batch)
                 oldest = min(batch, key=lambda m: m.get("id", 0))
                 if not is_message_from_today(oldest):
@@ -316,12 +321,15 @@ def buscar_mensagens_grupo(group_name: str, account_id: str, api_key: str, limit
 
         today_messages = []
         for msg in messages:
+            msg_type = msg.get("message_type")
+
+            # Skip outgoing (1), activity (2), and private messages — they are bot/system noise
+            if msg_type in (1, 2) or msg.get("private", False):
+                print(f"[DEBUG] Ignorando mensagem id={msg.get('id')} type={msg_type} private={msg.get('private')} (outgoing/activity/private)")
+                continue
+
             sender_info = msg.get("sender", {})
             sender_name = sender_info.get("name", "Desconhecido") if sender_info else "Desconhecido"
-
-            msg_type = msg.get("message_type")
-            if msg_type == 1:
-                sender_name = "Atendente"
 
             content = msg.get("content", "")
             content_type = msg.get("content_type", "text")
@@ -360,6 +368,9 @@ def buscar_mensagens_grupo(group_name: str, account_id: str, api_key: str, limit
                 "time": time_str,
                 "sort_ts": sort_ts
             })
+
+        if not today_messages:
+            return f"Nenhuma mensagem de usuarios encontrada HOJE no grupo '{contact_name}'. Mensagens do bot/sistema foram ignoradas."
 
         today_messages.sort(key=lambda m: m.get("sort_ts", 0))
         formatted = [f"MENSAGENS DO DIA - {contact_name}"]

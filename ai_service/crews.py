@@ -21,6 +21,7 @@ def create_group_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
         4. Use as palavras EXATAS das mensagens ao descrever os assuntos
         5. O titulo DEVE ser exatamente: Resumo do Grupo "{group_name}"
         6. DEVE terminar com a frase: Este resumo foi gerado automaticamente pela IAzinha
+        7. IGNORE COMPLETAMENTE qualquer mensagem que seja um resumo anterior gerado pela IAzinha ou pelo sistema — textos contendo "Resumo do Grupo", "gerado automaticamente pela IAzinha" ou "Nenhuma mensagem encontrada hoje" sao resumos antigos e NAO devem ser analisados nem citados
         
         O resumo deve seguir EXATAMENTE este formato:
         
