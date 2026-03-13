@@ -18,7 +18,7 @@ def create_group_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
         - inbox_id: {inbox_id}
 
         **PASSO 2: Triagem e Regras Absolutas**
-        - Aguarde o retorno da ferramenta. Se ela retornar vazio ou falhar, assuma que ha 0 mensagens.
+        - Aguarde o retorno da ferramenta. Se ela retornar vazio, assuma que ha 0 mensagens. Se ela falhar com erro, reporte o erro no resumo.
         - IGNORE QUALQUER mensagem que seja um resumo passado (mensagens que contenham "Resumo do Grupo" ou "gerado automaticamente pela IAzinha").
         - Baseie-se APENAS no texto literal retornado pela ferramenta. NAO alucine nem invente informacoes.
         - Analise o tom considerando que e um ambiente de trabalho informal.
@@ -60,9 +60,15 @@ def create_quick_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
     quick_task = Task(
         description=f"""Voce e um assistente encarregado de dar um panorama ultra-rapido do grupo "{group_name}".
 
-        Use sua ferramenta de busca com os parametros: inbox_id={inbox_id}, account_id={account_id}, api_key={api_key}.
+        **PASSO 1: Coleta de Dados**
+        Voce DEVE OBRIGATORIAMENTE usar a ferramenta "Buscar Mensagens do Grupo" com estes parametros:
+        - group_name: {group_name}
+        - account_id: {account_id}
+        - api_key: {api_key}
+        - inbox_id: {inbox_id}
 
-        Apos ler as mensagens, escreva um resumo de no MAXIMO 5 linhas focando apenas em:
+        **PASSO 2: Analise Rapida**
+        Apos ler as mensagens retornadas pela ferramenta, escreva um resumo de no MAXIMO 5 linhas focando apenas em:
         1. Volume de mensagens ativas hoje.
         2. Existencia de urgencias reais.
         3. Clima/Tom do grupo.
