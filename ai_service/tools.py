@@ -213,6 +213,18 @@ def is_message_from_today(message: dict) -> bool:
         return False
 
 
+_BOT_SUMMARY_SIGNATURES = [
+    "gerado automaticamente pela IAzinha",
+    "Resumo do Grupo",
+    "Nenhuma mensagem encontrada hoje neste grupo",
+]
+
+def _is_bot_summary(content: str) -> bool:
+    if not content:
+        return False
+    return any(sig in content for sig in _BOT_SUMMARY_SIGNATURES)
+
+
 def fetch_today_messages_from_inbox(account_id, api_key, inbox_id, group_name):
     """Coleta todas as mensagens de hoje de TODAS as conversas do inbox."""
     headers = {"api_access_token": api_key, "Content-Type": "application/json"}
@@ -267,12 +279,7 @@ def fetch_today_messages_from_inbox(account_id, api_key, inbox_id, group_name):
                 batch = r.json().get("payload", [])
                 if not batch:
                     break
-                today_in_batch = [
-                    m for m in batch
-                    if is_message_from_today(m)
-                    and m.get("message_type") not in (1, 2)
-                    and not m.get("private", False)
-                ]
+                today_in_batch = [m for m in batch if is_message_from_today(m)]
                 all_today.extend(today_in_batch)
                 oldest = min(batch, key=lambda m: m.get("id", 0))
                 if not is_message_from_today(oldest):
@@ -321,17 +328,23 @@ def buscar_mensagens_grupo(group_name: str, account_id: str, api_key: str, limit
 
         today_messages = []
         for msg in messages:
-            msg_type = msg.get("message_type")
+            content_raw = str(msg.get("content") or "")
+            if _is_bot_summary(content_raw):
+                print(f"[DEBUG] Ignorando resumo do bot id={msg.get('id')}: {content_raw[:80]!r}")
+                continue
 
-            # Skip outgoing (1), activity (2), and private messages — they are bot/system noise
-            if msg_type in (1, 2) or msg.get("private", False):
-                print(f"[DEBUG] Ignorando mensagem id={msg.get('id')} type={msg_type} private={msg.get('private')} (outgoing/activity/private)")
+            msg_type = msg.get("message_type")
+            if msg_type == 2:
+                print(f"[DEBUG] Ignorando activity message id={msg.get('id')}")
                 continue
 
             sender_info = msg.get("sender", {})
             sender_name = sender_info.get("name", "Desconhecido") if sender_info else "Desconhecido"
 
-            content = msg.get("content", "")
+            if msg_type == 1:
+                sender_name = "Atendente"
+
+            content = content_raw
             content_type = msg.get("content_type", "text")
 
             if content_type == "image":
