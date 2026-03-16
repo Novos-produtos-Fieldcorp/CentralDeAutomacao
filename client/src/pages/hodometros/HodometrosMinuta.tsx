@@ -249,6 +249,8 @@ const HodometrosMinuta: React.FC = () => {
   // moduleAccess removed — create modal removed
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days', false);
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [sortLabelMode, setSortLabelMode] = useState<'default' | 'asc' | 'desc'>('default');
   
   // Validate date is within acceptable range
   const validateDate = (dateString: string): boolean => {
@@ -795,16 +797,55 @@ const HodometrosMinuta: React.FC = () => {
         <div className="mb-6 space-y-3">
           <div className="flex items-center justify-between gap-4 text-xs text-gray-600 dark:text-gray-300">
             <span>Defina o período personalizado pelas datas abaixo.</span>
-            <button
-              type="button"
-              onClick={() => setSortDirection((prev) => (prev === 'desc' ? 'asc' : 'desc'))}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[11px] font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <ArrowUpDown className="w-3 h-3" />
-              <span>
-                {sortDirection === 'desc' ? 'Ordenar: mais recentes primeiro' : 'Ordenar: mais antigos primeiro'}
-              </span>
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setSortLabelMode('default');
+                  setShowSortDropdown((prev) => !prev);
+                }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-[11px] font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <ArrowUpDown className="w-3 h-3" />
+                <span>
+                  {sortLabelMode === 'default'
+                    ? 'Ordenar por'
+                    : sortLabelMode === 'desc'
+                    ? 'Mais recentes'
+                    : 'Mais antigos'}
+                </span>
+              </button>
+              {showSortDropdown && (
+                <div className="absolute right-0 mt-1 w-40 rounded-md shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 z-20">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSortDirection('desc');
+                      setSortLabelMode('desc');
+                      setShowSortDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                      sortDirection === 'desc' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-200'
+                    }`}
+                  >
+                    Mais recentes primeiro
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSortDirection('asc');
+                      setSortLabelMode('asc');
+                      setShowSortDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-gray-50 dark:hover:bg-gray-700 border-t border-gray-100 dark:border-gray-700 ${
+                      sortDirection === 'asc' ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-200'
+                    }`}
+                  >
+                    Mais antigos primeiro
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
