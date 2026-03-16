@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, Edit2, Plus, Trash2, Copy, Check, FilePen } from 'lucide-react';
+import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, Edit2, Plus, Trash2, Copy, Check, FilePen, ArrowLeftRight } from 'lucide-react';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
@@ -248,6 +248,7 @@ const HodometrosMinuta: React.FC = () => {
   const { companyId } = useCurrentAccount();
   // moduleAccess removed — create modal removed
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days', false);
+  const [customAnchor, setCustomAnchor] = useState<'start' | 'end'>('start');
   
   // Validate date is within acceptable range
   const validateDate = (dateString: string): boolean => {
@@ -791,8 +792,40 @@ const HodometrosMinuta: React.FC = () => {
 
       {/* Custom Date Range */}
       {periodType === 'custom' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
+        <div className="mb-6 space-y-3">
+          <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+            <ArrowLeftRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <span>Escolha a partir de qual data o período personalizado será definido:</span>
+            <div className="inline-flex rounded-md shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setCustomAnchor('start')}
+                className={`px-2.5 py-1 flex items-center gap-1 text-[11px] font-medium transition-colors ${
+                  customAnchor === 'start'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <span>↤</span>
+                <span>Data inicial</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCustomAnchor('end')}
+                className={`px-2.5 py-1 flex items-center gap-1 text-[11px] font-medium border-l border-gray-200 dark:border-gray-700 transition-colors ${
+                  customAnchor === 'end'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <span>Data final</span>
+                <span>↦</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Data inicial
             </label>
@@ -800,6 +833,7 @@ const HodometrosMinuta: React.FC = () => {
               type="date"
               data-testid="input-custom-start-date-hodometros-minuta"
               value={dateRange.startDate}
+              disabled={customAnchor === 'end'}
               onChange={(e) => {
                 const newDate = e.target.value;
                 if (validateDate(newDate)) {
@@ -810,10 +844,12 @@ const HodometrosMinuta: React.FC = () => {
               }}
               min="2020-01-01"
               max="2099-12-31"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                customAnchor === 'end' ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
             />
-          </div>
-          <div>
+            </div>
+            <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Data final
             </label>
@@ -821,6 +857,7 @@ const HodometrosMinuta: React.FC = () => {
               type="date"
               data-testid="input-custom-end-date-hodometros-minuta"
               value={dateRange.endDate}
+              disabled={customAnchor === 'start'}
               onChange={(e) => {
                 const newDate = e.target.value;
                 if (validateDate(newDate)) {
@@ -831,8 +868,11 @@ const HodometrosMinuta: React.FC = () => {
               }}
               min="2020-01-01"
               max="2099-12-31"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                customAnchor === 'start' ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
             />
+            </div>
           </div>
         </div>
       )}
