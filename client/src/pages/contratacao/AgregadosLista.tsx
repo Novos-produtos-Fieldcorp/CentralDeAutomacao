@@ -1,33 +1,60 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { Search, Edit2, FileText, MessageCircle, Filter, ChevronDown, X, User, Loader2, MapPin, FilePen, Truck, Plus, ArrowLeftRight, XCircle, AlertTriangle, Tag, CheckCircle, Calendar, Package } from 'lucide-react';
-import WhatsAppAvatar from '../../components/WhatsAppAvatar';
-import AddAgregadoModal from '../../components/AddAgregadoModal';
-import { useCompanyData } from '../../hooks/useCompanyData';
-import { useQuery } from '@tanstack/react-query';
-import type { Motorista, MotoristaWithAddress, DocumentoMotorista, EnderecoMotorista, Veiculo } from '../../types/database';
-import { formatCPF, formatPhone, formatDate } from '../../utils/format';
-import DocumentUploadModal from '../../components/DocumentUploadModal';
-import EditMotoristaModal from '../../components/EditMotoristaModal';
-import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
-import BulkActionsModal from '../../components/BulkActionsModal';
-import BulkDeleteConfirmationModal from '../../components/BulkDeleteConfirmationModal';
-import MassMessageModal from '../../components/MassMessageModal';
-import toast from 'react-hot-toast';
-import { useFloatingChat } from '../../hooks/useFloatingChat';
-import { supabase } from '../../lib/supabase';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import { useWiseAppAccess } from '../../context/WiseAppAccessContext';
-import { usePagination } from '../../hooks/usePagination';
-import Pagination from '../../components/Pagination';
-import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
-import ContextMenu from '../../components/ContextMenu';
-import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
-import { TableDropdown } from '../../components/TableDropdown';
-import { WiseAppBulkSyncPanel } from '../../components/WiseAppSyncButton';
-import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
-import FilterTags from '../../components/FilterTags';
-import { useModuleAccess } from '../../hooks/useModuleAccess';
+import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import {
+  Search,
+  Edit2,
+  FileText,
+  MessageCircle,
+  Filter,
+  ChevronDown,
+  X,
+  User,
+  Loader2,
+  MapPin,
+  FilePen,
+  Truck,
+  Plus,
+  ArrowLeftRight,
+  XCircle,
+  AlertTriangle,
+  Tag,
+  CheckCircle,
+  Calendar,
+  Package,
+} from "lucide-react";
+import WhatsAppAvatar from "../../components/WhatsAppAvatar";
+import AddAgregadoModal from "../../components/AddAgregadoModal";
+import { useCompanyData } from "../../hooks/useCompanyData";
+import { useQuery } from "@tanstack/react-query";
+import type {
+  Motorista,
+  MotoristaWithAddress,
+  DocumentoMotorista,
+  EnderecoMotorista,
+  Veiculo,
+} from "../../types/database";
+import { formatCPF, formatPhone, formatDate } from "../../utils/format";
+import DocumentUploadModal from "../../components/DocumentUploadModal";
+import EditMotoristaModal from "../../components/EditMotoristaModal";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
+import BulkActionsModal from "../../components/BulkActionsModal";
+import BulkDeleteConfirmationModal from "../../components/BulkDeleteConfirmationModal";
+import MassMessageModal from "../../components/MassMessageModal";
+import toast from "react-hot-toast";
+import { useFloatingChat } from "../../hooks/useFloatingChat";
+import { supabase } from "../../lib/supabase";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import { useWiseAppAccess } from "../../context/WiseAppAccessContext";
+import { usePagination } from "../../hooks/usePagination";
+import Pagination from "../../components/Pagination";
+import ScrollableTableIndicator from "../../components/ScrollableTableIndicator";
+import ContextMenu from "../../components/ContextMenu";
+import UnifiedAgregadoModal from "../../components/UnifiedAgregadoModal";
+import { TableDropdown } from "../../components/TableDropdown";
+import { WiseAppBulkSyncPanel } from "../../components/WiseAppSyncButton";
+import { API_BASE_URL, createApiUrl } from "@/lib/api-config-supabase";
+import FilterTags from "../../components/FilterTags";
+import { useModuleAccess } from "../../hooks/useModuleAccess";
 
 interface AgregadosListaProps {
   onSuccess?: () => void;
@@ -87,6 +114,7 @@ export interface ViewContratado {
   bau?: string | null;
   ajudantes?: string[];
   // Campos de endereço do join com as tabelas de endereço
+  area?: string | null;
   end_motorista?: Array<{
     id_end_motorista: number;
     id_motorista: number;
@@ -115,24 +143,29 @@ export interface ViewContratado {
   }>;
 }
 
-const checkVehicleTypeMatch = (motorista: ViewContratado, filters: string[]): boolean => {
+const checkVehicleTypeMatch = (
+  motorista: ViewContratado,
+  filters: string[],
+): boolean => {
   // Função auxiliar de normalização (igual à usada no filtro)
   const normalizeType = (type: string | undefined | null): string | null => {
-    if (!type || typeof type !== 'string') return null;
+    if (!type || typeof type !== "string") return null;
 
-    let normalized = type.trim().toUpperCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+    let normalized = type
+      .trim()
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
 
     const typeMapping: Record<string, string> = {
-      'CAMINHAO': 'CAMINHÃO',
-      'CAMINHAO 3/4': 'CAMINHÃO 3/4',
-      'FURGAO': 'FURGÃO',
-      'MOTOCICLETA': 'MOTO',
-      'MOTORCYCLE': 'MOTO',
-      'TRACTOR': 'TRATOR',
-      'AUTOMOVEL': 'AUTOMOVEL',
-      'UTILITARIO': 'UTILITARIO'
+      CAMINHAO: "CAMINHÃO",
+      "CAMINHAO 3/4": "CAMINHÃO 3/4",
+      FURGAO: "FURGÃO",
+      MOTOCICLETA: "MOTO",
+      MOTORCYCLE: "MOTO",
+      TRACTOR: "TRATOR",
+      AUTOMOVEL: "AUTOMOVEL",
+      UTILITARIO: "UTILITARIO",
     };
 
     return typeMapping[normalized] || normalized;
@@ -151,15 +184,18 @@ const checkVehicleTypeMatch = (motorista: ViewContratado, filters: string[]): bo
 
   // Check veiculo array if it exists (tipologia and tipo fields) - usando normalização
   if (motorista.veiculo && motorista.veiculo.length > 0) {
-    return motorista.veiculo.some((veiculo: { tipologia?: string; tipo?: string }) => {
-      const normalizedVeiculoTipologia = normalizeType(veiculo.tipologia);
-      const normalizedVeiculoTipo = normalizeType(veiculo.tipo);
+    return motorista.veiculo.some(
+      (veiculo: { tipologia?: string; tipo?: string }) => {
+        const normalizedVeiculoTipologia = normalizeType(veiculo.tipologia);
+        const normalizedVeiculoTipo = normalizeType(veiculo.tipo);
 
-      return (
-        (normalizedVeiculoTipologia && filters.includes(normalizedVeiculoTipologia)) ||
-        (normalizedVeiculoTipo && filters.includes(normalizedVeiculoTipo))
-      );
-    });
+        return (
+          (normalizedVeiculoTipologia &&
+            filters.includes(normalizedVeiculoTipologia)) ||
+          (normalizedVeiculoTipo && filters.includes(normalizedVeiculoTipo))
+        );
+      },
+    );
   }
 
   return false;
@@ -167,14 +203,46 @@ const checkVehicleTypeMatch = (motorista: ViewContratado, filters: string[]): bo
 
 // Status options for dropdown
 const STATUS_OPTIONS = [
-  { value: 'Cadastrado', label: 'Cadastrado', color: 'bg-gray-100 dark:bg-gray-700' },
-  { value: 'qualificado', label: 'Qualificado', color: 'bg-blue-100 dark:bg-blue-900/30' },
-  { value: 'documentacao', label: 'Documentação', color: 'bg-yellow-100 dark:bg-yellow-900/30' },
-  { value: 'contrato_enviado', label: 'Contrato Enviado', color: 'bg-purple-100 dark:bg-purple-900/30' },
-  { value: 'contratado', label: 'Contratado', color: 'bg-green-100 dark:bg-green-900/30' },
-  { value: 'repescagem', label: 'Repescagem', color: 'bg-orange-100 dark:bg-orange-900/30' },
-  { value: 'gestao_risco', label: 'Gestão de Risco', color: 'bg-rose-100 dark:bg-rose-900/30' },
-  { value: 'rejeitado', label: 'Rejeitado', color: 'bg-red-100 dark:bg-red-900/30' }
+  {
+    value: "Cadastrado",
+    label: "Cadastrado",
+    color: "bg-gray-100 dark:bg-gray-700",
+  },
+  {
+    value: "qualificado",
+    label: "Qualificado",
+    color: "bg-blue-100 dark:bg-blue-900/30",
+  },
+  {
+    value: "documentacao",
+    label: "Documentação",
+    color: "bg-yellow-100 dark:bg-yellow-900/30",
+  },
+  {
+    value: "contrato_enviado",
+    label: "Contrato Enviado",
+    color: "bg-purple-100 dark:bg-purple-900/30",
+  },
+  {
+    value: "contratado",
+    label: "Contratado",
+    color: "bg-green-100 dark:bg-green-900/30",
+  },
+  {
+    value: "repescagem",
+    label: "Repescagem",
+    color: "bg-orange-100 dark:bg-orange-900/30",
+  },
+  {
+    value: "gestao_risco",
+    label: "Gestão de Risco",
+    color: "bg-rose-100 dark:bg-rose-900/30",
+  },
+  {
+    value: "rejeitado",
+    label: "Rejeitado",
+    color: "bg-red-100 dark:bg-red-900/30",
+  },
 ];
 
 const Contratados = ({ onSuccess }: AgregadosListaProps) => {
@@ -185,20 +253,23 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { moduleAccess } = useModuleAccess();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [pageSize, setPageSize] = useState(50);
   const [serverPage, setServerPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
-  const [ativoFilter, setAtivoFilter] = useState<string>('');
+  const [ativoFilter, setAtivoFilter] = useState<string>("");
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showCidadeDropdown, setShowCidadeDropdown] = useState(false);
   const [showTipoVeiculoDropdown, setShowTipoVeiculoDropdown] = useState(false);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [showAreaAtuacaoDropdown, setShowAreaAtuacaoDropdown] = useState(false);
   const [tagFilter, setTagFilter] = useState<string[]>([]);
-  const [tagFilterMode, setTagFilterMode] = useState<'contains' | 'not_contains'>('contains');
+  const [tagFilterMode, setTagFilterMode] = useState<
+    "contains" | "not_contains"
+  >("contains");
 
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const cidadeDropdownRef = useRef<HTMLDivElement>(null);
@@ -207,15 +278,20 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const bauDropdownRef = useRef<HTMLDivElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const ativoDropdownRef = useRef<HTMLDivElement>(null);
+  const areaAtuacaoDropdownRef = useRef<HTMLDivElement>(null);
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isBulkActionsModalOpen, setIsBulkActionsModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isMassMessageModalOpen, setIsMassMessageModalOpen] = useState(false);
-  const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] = useState(false);
-  const [bulkActionType, setBulkActionType] = useState<'status' | 'client' | 'tags'>('status');
-  const [selectedMotorista, setSelectedMotorista] = useState<ViewContratado | null>(null);
+  const [isUnifiedAgregadoModalOpen, setIsUnifiedAgregadoModalOpen] =
+    useState(false);
+  const [bulkActionType, setBulkActionType] = useState<
+    "status" | "client" | "tags"
+  >("status");
+  const [selectedMotorista, setSelectedMotorista] =
+    useState<ViewContratado | null>(null);
   const [selectAllResults, setSelectAllResults] = useState(false);
   const [selectAllResultsLoading, setSelectAllResultsLoading] = useState(false);
   const [documento] = useState<DocumentoMotorista | null>(null);
@@ -240,7 +316,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     ds_complemento_end?: string | null;
   }
 
-
   const [endereco, setEndereco] = useState<EnderecoState | null>(null);
 
   // Função para controlar que apenas um dropdown fique aberto
@@ -251,29 +326,29 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     setShowTipoVeiculoDropdown(false);
     setShowBauDropdown(false);
     setShowTagDropdown(false);
-    setCidadeSearchTerm(''); // Limpa o termo de busca das cidades
+    setCidadeSearchTerm(""); // Limpa o termo de busca das cidades
   };
 
   const toggleDropdown = (dropdownType: string) => {
     closeAllDropdowns();
     switch (dropdownType) {
-      case 'status':
+      case "status":
         setShowStatusDropdown(true);
         break;
-      case 'cliente':
+      case "cliente":
         setShowClienteDropdown(true);
         break;
-      case 'cidade':
+      case "cidade":
         setShowCidadeDropdown(true);
-        setCidadeSearchTerm(''); // Limpa o termo de busca ao abrir
+        setCidadeSearchTerm(""); // Limpa o termo de busca ao abrir
         break;
-      case 'tipoVeiculo':
+      case "tipoVeiculo":
         setShowTipoVeiculoDropdown(true);
         break;
-      case 'bau':
+      case "bau":
         setShowBauDropdown(true);
         break;
-      case 'tag':
+      case "tag":
         setShowTagDropdown(true);
         break;
     }
@@ -293,22 +368,32 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       // Only add properties if they exist and are not null/undefined
       if (selectedMotorista.logradouro || selectedMotorista.nr_cep) {
-        const logradouro: EnderecoState['logradouro'] = {};
+        const logradouro: EnderecoState["logradouro"] = {};
 
-        if (selectedMotorista.logradouro) logradouro.logradouro = selectedMotorista.logradouro;
-        if (selectedMotorista.nr_cep) logradouro.nr_cep = selectedMotorista.nr_cep;
+        if (selectedMotorista.logradouro)
+          logradouro.logradouro = selectedMotorista.logradouro;
+        if (selectedMotorista.nr_cep)
+          logradouro.nr_cep = selectedMotorista.nr_cep;
 
-        if (selectedMotorista.nome_bairro || selectedMotorista.nome_cidade || selectedMotorista.sigla_estado) {
+        if (
+          selectedMotorista.nome_bairro ||
+          selectedMotorista.nome_cidade ||
+          selectedMotorista.sigla_estado
+        ) {
           logradouro.bairro = {};
 
-          if (selectedMotorista.nome_bairro) logradouro.bairro.bairro = selectedMotorista.nome_bairro;
+          if (selectedMotorista.nome_bairro)
+            logradouro.bairro.bairro = selectedMotorista.nome_bairro;
 
-          const cidade: NonNullable<NonNullable<EnderecoState['logradouro']>['bairro']>['cidade'] = {};
-          if (selectedMotorista.nome_cidade) cidade.cidade = selectedMotorista.nome_cidade;
+          const cidade: NonNullable<
+            NonNullable<EnderecoState["logradouro"]>["bairro"]
+          >["cidade"] = {};
+          if (selectedMotorista.nome_cidade)
+            cidade.cidade = selectedMotorista.nome_cidade;
 
           if (selectedMotorista.sigla_estado) {
             cidade.estado = {
-              sigla_estado: selectedMotorista.sigla_estado
+              sigla_estado: selectedMotorista.sigla_estado,
             };
           }
 
@@ -322,7 +407,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         }
       }
 
-      if (selectedMotorista.nr_end !== undefined && selectedMotorista.nr_end !== null) {
+      if (
+        selectedMotorista.nr_end !== undefined &&
+        selectedMotorista.nr_end !== null
+      ) {
         enderecoData.nr_end = selectedMotorista.nr_end;
       }
 
@@ -345,7 +433,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const fetchMotoristaTags = async (motoristas: ViewContratado[]) => {
     try {
       const motoristaIds = motoristas
-        .map(m => m.motorista_id)
+        .map((m) => m.motorista_id)
         .filter((id): id is number => id !== undefined && id !== null);
 
       if (motoristaIds.length === 0) {
@@ -364,8 +452,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
         try {
           const { data: chunkAssociations, error: chunkError } = await supabase
-            .from('associacao_tags')
-            .select(`
+            .from("associacao_tags")
+            .select(
+              `
               motorista_id,
               tag:tag_id (
                 id,
@@ -376,8 +465,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 created_at,
                 updated_at
               )
-            `)
-            .in('motorista_id', chunk);
+            `,
+            )
+            .in("motorista_id", chunk);
 
           if (chunkError) {
             // Error fetching chunk, continuing with next
@@ -400,7 +490,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const newMotoristaTags: { [key: number]: any[] } = {};
 
       // Inicializar todos os motoristas com array vazio
-      motoristaIds.forEach(id => {
+      motoristaIds.forEach((id) => {
         newMotoristaTags[id] = [];
       });
 
@@ -413,19 +503,25 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       setMotoristaTags(newMotoristaTags);
     } catch (error) {
-      console.error('Erro ao carregar marcadores dos agregados:', error);
-      toast.error('Erro ao carregar marcadores dos agregados');
+      console.error("Erro ao carregar marcadores dos agregados:", error);
+      toast.error("Erro ao carregar marcadores dos agregados");
     }
   };
 
   // Verificar limite de associados por tag
-  const checkTagLimit = async (tagId: number): Promise<{ canAdd: boolean; currentCount: number; limit: number | null }> => {
+  const checkTagLimit = async (
+    tagId: number,
+  ): Promise<{
+    canAdd: boolean;
+    currentCount: number;
+    limit: number | null;
+  }> => {
     try {
       // Buscar informações da tag
       const { data: tagData, error: tagError } = await supabase
-        .from('tag')
-        .select('limite_max')
-        .eq('id', tagId)
+        .from("tag")
+        .select("limite_max")
+        .eq("id", tagId)
         .single();
 
       if (tagError) throw tagError;
@@ -437,9 +533,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       // Contar associados atuais da tag
       const { count, error: countError } = await supabase
-        .from('associacao_tags')
-        .select('*', { count: 'exact', head: true })
-        .eq('tag_id', tagId);
+        .from("associacao_tags")
+        .select("*", { count: "exact", head: true })
+        .eq("tag_id", tagId);
 
       if (countError) throw countError;
 
@@ -448,13 +544,16 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       return { canAdd, currentCount, limit };
     } catch (error) {
-      console.error('Erro ao verificar limite da tag:', error);
+      console.error("Erro ao verificar limite da tag:", error);
       return { canAdd: true, currentCount: 0, limit: null };
     }
   };
 
   // Adicionar marcador a um motorista
-  const handleAddTag = async (motoristaId: number | undefined, tagId: number) => {
+  const handleAddTag = async (
+    motoristaId: number | undefined,
+    tagId: number,
+  ) => {
     if (!motoristaId) return;
 
     setUpdatingMotoristaTag(motoristaId);
@@ -463,7 +562,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const { canAdd, currentCount, limit } = await checkTagLimit(tagId);
 
       if (!canAdd) {
-        toast.error(`Limite máximo de ${limit} associados atingido para este marcador. Atual: ${currentCount}`);
+        toast.error(
+          `Limite máximo de ${limit} associados atingido para este marcador. Atual: ${currentCount}`,
+        );
         return;
       }
 
@@ -471,110 +572,124 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       let existingAssociation = null;
       try {
         const { data } = await supabase
-          .from('associacao_tags')
-          .select('id')
-          .eq('motorista_id', motoristaId)
-          .eq('tag_id', tagId)
+          .from("associacao_tags")
+          .select("id")
+          .eq("motorista_id", motoristaId)
+          .eq("tag_id", tagId)
           .single();
         existingAssociation = data;
       } catch (error: any) {
         // Ignorar erros RLS (406/PGRST301) - continuar com a operação
-        if (error?.code === 'PGRST301' || error?.status === 406) {
+        if (error?.code === "PGRST301" || error?.status === 406) {
           // RLS error ignored, continuing with tag association
         } else {
-          console.warn('Error checking existing association (non-critical):', error);
+          console.warn(
+            "Error checking existing association (non-critical):",
+            error,
+          );
         }
       }
 
       if (existingAssociation) {
-        toast.error('Marcador já está associado a este agregado');
+        toast.error("Marcador já está associado a este agregado");
         return;
       }
 
-      const { error } = await supabase
-        .from('associacao_tags')
-        .insert({
-          motorista_id: motoristaId,
-          tag_id: tagId
-        });
+      const { error } = await supabase.from("associacao_tags").insert({
+        motorista_id: motoristaId,
+        tag_id: tagId,
+      });
 
       if (error) throw error;
 
       // Buscar a tag completa para atualizar o estado local
       const { data: tagData, error: tagError } = await supabase
-        .from('tag')
-        .select('*')
-        .eq('id', tagId)
+        .from("tag")
+        .select("*")
+        .eq("id", tagId)
         .single();
 
       if (tagError) throw tagError;
 
       // Atualizar estado local
       if (tagData) {
-        setMotoristaTags(prev => ({
+        setMotoristaTags((prev) => ({
           ...prev,
-          [motoristaId]: [...(prev[motoristaId] || []), tagData]
+          [motoristaId]: [...(prev[motoristaId] || []), tagData],
         }));
       }
 
       // Fechar dropdown
-      setTagDropdownOpen(prev => ({ ...prev, [motoristaId]: false }));
+      setTagDropdownOpen((prev) => ({ ...prev, [motoristaId]: false }));
 
       // Sincronizar com WiseApp se disponível
       if (accountId && wiseAppToken) {
         try {
           await syncTagWithWiseApp(motoristaId, tagData);
         } catch (wiseAppError) {
-          console.error('Erro ao sincronizar com WiseApp:', wiseAppError);
+          console.error("Erro ao sincronizar com WiseApp:", wiseAppError);
           // Não falhar a operação se o WiseApp falhar
         }
       }
 
       // Verificar se atingiu o limite após adicionar
-      const { canAdd: canStillAdd, currentCount: newCount, limit: tagLimit } = await checkTagLimit(tagId);
+      const {
+        canAdd: canStillAdd,
+        currentCount: newCount,
+        limit: tagLimit,
+      } = await checkTagLimit(tagId);
       if (!canStillAdd && tagLimit) {
-        toast.error(`Atenção: Marcador "${tagData.nome}" atingiu o limite máximo de ${tagLimit} associados!`);
+        toast.error(
+          `Atenção: Marcador "${tagData.nome}" atingiu o limite máximo de ${tagLimit} associados!`,
+        );
       } else {
-        toast.success('Marcador adicionado com sucesso!');
+        toast.success("Marcador adicionado com sucesso!");
       }
     } catch (error) {
-      console.error('Erro ao adicionar marcador:', error);
-      toast.error('Erro ao adicionar marcador');
+      console.error("Erro ao adicionar marcador:", error);
+      toast.error("Erro ao adicionar marcador");
     } finally {
       setUpdatingMotoristaTag(null);
     }
   };
 
   // Remover tag de um motorista
-  const handleRemoveTag = async (motoristaId: number | undefined, tagId: number) => {
-    console.log('[handleRemoveTag] Chamado:', { motoristaId, tagId });
+  const handleRemoveTag = async (
+    motoristaId: number | undefined,
+    tagId: number,
+  ) => {
+    console.log("[handleRemoveTag] Chamado:", { motoristaId, tagId });
     if (!motoristaId) {
-      console.log('[handleRemoveTag] motoristaId undefined, retornando');
+      console.log("[handleRemoveTag] motoristaId undefined, retornando");
       return;
     }
 
     try {
       // Buscar dados da tag para remoção
-      const tagToRemove = motoristaTags[motoristaId]?.find((tag: any) => tag.id === tagId);
+      const tagToRemove = motoristaTags[motoristaId]?.find(
+        (tag: any) => tag.id === tagId,
+      );
 
       // Remover da base de dados local (ignora erros RLS)
       const { error } = await supabase
-        .from('associacao_tags')
+        .from("associacao_tags")
         .delete()
-        .eq('motorista_id', motoristaId)
-        .eq('tag_id', tagId);
+        .eq("motorista_id", motoristaId)
+        .eq("tag_id", tagId);
 
       // Ignorar erros RLS mas ainda mostrar outros erros
-      if (error && error.code !== 'PGRST301') {
+      if (error && error.code !== "PGRST301") {
         throw error;
       } else if (error) {
         // RLS error ignored during tag removal
       }
 
       // Atualizar estado local
-      setMotoristaTags(prev => ({
+      setMotoristaTags((prev) => ({
         ...prev,
-        [motoristaId]: (prev[motoristaId] || []).filter((tag: any) => tag.id !== tagId)
+        [motoristaId]: (prev[motoristaId] || []).filter(
+          (tag: any) => tag.id !== tagId,
+        ),
       }));
 
       // Sincronizar remoção se disponível
@@ -582,15 +697,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         try {
           await removeTagFromWiseApp(motoristaId, tagToRemove);
         } catch (wiseAppError) {
-          console.error('Erro ao remover tag:', wiseAppError);
+          console.error("Erro ao remover tag:", wiseAppError);
           // Não falhar a operação local
         }
       }
 
-      toast.success('Marcador removido com sucesso!');
+      toast.success("Marcador removido com sucesso!");
     } catch (error) {
-      console.error('Erro ao remover marcador:', error);
-      toast.error('Erro ao remover marcador');
+      console.error("Erro ao remover marcador:", error);
+      toast.error("Erro ao remover marcador");
     }
   };
   const handleToggleStatusDropdown = (e: React.MouseEvent) => {
@@ -620,7 +735,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const handleToggleAtivoDropdown = (e: React.MouseEvent) => {
     e.stopPropagation();
     const isOpening = !showAtivoDropdown;
-  
+
     if (isOpening) {
       // Calcular posição do dropdown
       const buttonElement = e.currentTarget as HTMLElement;
@@ -628,7 +743,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       setAtivoDropdownPosition({
         top: rect.bottom + 4,
         left: rect.left,
-        width: 192 // w-48 = 192px
+        width: 192, // w-48 = 192px
       });
     } else {
       setAtivoDropdownPosition(null);
@@ -647,7 +762,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     setShowAtivoDropdown(false);
 
     // Carregar tags dos motoristas apenas quando abrir o dropdown pela primeira vez
-    if (isOpening && Object.keys(motoristaTags).length === 0 && contratados.length > 0) {
+    if (
+      isOpening &&
+      Object.keys(motoristaTags).length === 0 &&
+      contratados.length > 0
+    ) {
       await fetchMotoristaTags(contratados);
     }
   };
@@ -655,12 +774,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   // Fechar dropdown quando clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const isClickInsideButton = Object.values(motoristaTagDropdownRefs.current).some(ref =>
-        ref && ref.contains(event.target as Node)
-      );
-      const isClickInsidePortal = Object.values(motoristaTagPortalRefs.current).some(ref =>
-        ref && ref.contains(event.target as Node)
-      );
+      const isClickInsideButton = Object.values(
+        motoristaTagDropdownRefs.current,
+      ).some((ref) => ref && ref.contains(event.target as Node));
+      const isClickInsidePortal = Object.values(
+        motoristaTagPortalRefs.current,
+      ).some((ref) => ref && ref.contains(event.target as Node));
 
       if (!isClickInsideButton && !isClickInsidePortal) {
         setTagDropdownOpen({});
@@ -671,67 +790,108 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
     const handleScroll = (event: Event) => {
       // Só fechar dropdown se for scroll da janela principal, não scroll interno de elementos
-      if (event.target === document || event.target === document.documentElement || event.target === document.body) {
+      if (
+        event.target === document ||
+        event.target === document.documentElement ||
+        event.target === document.body
+      ) {
         setTagDropdownOpen({});
         setTagDropdownPosition({});
         setTagSearchTerm({});
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('scroll', handleScroll);
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleScroll);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
   const [clienteFilter, setClienteFilter] = useState<string[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState<string[]>([]);
   const [cidades, setCidades] = useState<string[]>([]);
+  const [areaAtuacaoFilter, setAreaAtuacaoFilter] = useState<string[]>([]);
+  const [areasAtuacao, setAreasAtuacao] = useState<string[]>([]);
   const [tipoVeiculoFilter, setTipoVeiculoFilter] = useState<string[]>([]);
   const [tiposVeiculo, setTiposVeiculo] = useState<string[]>([]);
   const [bauFilter, setBauFilter] = useState<string[]>([]);
   const [bauTypes, setBauTypes] = useState<string[]>([]);
   const [showBauDropdown, setShowBauDropdown] = useState(false);
-  const [cidadeSearchTerm, setCidadeSearchTerm] = useState<string>('');
+  const [cidadeSearchTerm, setCidadeSearchTerm] = useState<string>("");
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
-
-
 
   // Efeito para fechar dropdowns ao clicar fora deles
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
 
-      if (showStatusDropdown && statusDropdownRef.current && !statusDropdownRef.current.contains(target)) {
+      if (
+        showStatusDropdown &&
+        statusDropdownRef.current &&
+        !statusDropdownRef.current.contains(target)
+      ) {
         setShowStatusDropdown(false);
       }
-      if (showClienteDropdown && clienteDropdownRef.current && !clienteDropdownRef.current.contains(target)) {
+      if (
+        showClienteDropdown &&
+        clienteDropdownRef.current &&
+        !clienteDropdownRef.current.contains(target)
+      ) {
         setShowClienteDropdown(false);
       }
-      if (showCidadeDropdown && cidadeDropdownRef.current && !cidadeDropdownRef.current.contains(target)) {
+      if (
+        showCidadeDropdown &&
+        cidadeDropdownRef.current &&
+        !cidadeDropdownRef.current.contains(target)
+      ) {
         setShowCidadeDropdown(false);
-        setCidadeSearchTerm(''); // Limpa o termo de busca ao fechar
+        setCidadeSearchTerm(""); // Limpa o termo de busca ao fechar
       }
-      if (showTipoVeiculoDropdown && tipoVeiculoDropdownRef.current && !tipoVeiculoDropdownRef.current.contains(target)) {
+      if (
+        showTipoVeiculoDropdown &&
+        tipoVeiculoDropdownRef.current &&
+        !tipoVeiculoDropdownRef.current.contains(target)
+      ) {
         setShowTipoVeiculoDropdown(false);
       }
-      if (showBauDropdown && bauDropdownRef.current && !bauDropdownRef.current.contains(target)) {
+      if (
+        showBauDropdown &&
+        bauDropdownRef.current &&
+        !bauDropdownRef.current.contains(target)
+      ) {
         setShowBauDropdown(false);
       }
       // Verifica se o clique foi fora do dropdown de ativo/inativo
-      if (showAtivoDropdown && ativoDropdownRef.current && !ativoDropdownRef.current.contains(target)) {
+      if (
+        showAtivoDropdown &&
+        ativoDropdownRef.current &&
+        !ativoDropdownRef.current.contains(target)
+      ) {
         setShowAtivoDropdown(false);
         setAtivoDropdownPosition(null);
       }
+      if (
+        showAreaAtuacaoDropdown &&
+        areaAtuacaoDropdownRef.current &&
+        !areaAtuacaoDropdownRef.current.contains(target)
+      ) {
+        setShowAreaAtuacaoDropdown(false);
+      }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showStatusDropdown, showClienteDropdown, showCidadeDropdown, showTipoVeiculoDropdown, showBauDropdown]);
+  }, [
+    showStatusDropdown,
+    showClienteDropdown,
+    showCidadeDropdown,
+    showTipoVeiculoDropdown,
+    showBauDropdown,
+  ]);
 
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -747,21 +907,23 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   const [isUnifiedModalOpen, setIsUnifiedModalOpen] = useState(false);
 
-  const convertToMotorista = (contratado: ViewContratado): MotoristaWithAddress | null => {
+  const convertToMotorista = (
+    contratado: ViewContratado,
+  ): MotoristaWithAddress | null => {
     if (!contratado) return null;
 
     const motoristaBase: Motorista = {
       motorista_id: contratado.motorista_id || 0,
-      cpf: contratado.cpf || '',
-      dt_nascimento: contratado.dt_nascimento || '',
-      genero: contratado.genero || '',
+      cpf: contratado.cpf || "",
+      dt_nascimento: contratado.dt_nascimento || "",
+      genero: contratado.genero || "",
       telefone: contratado.telefone ? Number(contratado.telefone) : null,
       email: contratado.email || null,
-      funcao: contratado.funcao || '',
-      nome: contratado.nome_motorista || 'Nome não informado',
-      origem_usuario: contratado.origem_usuario || '',
-      st_cadastro: contratado.st_cadastro || 'cadastrado',
-      autorizacao_lgpd: contratado.autorizacao_lgpd || '',
+      funcao: contratado.funcao || "",
+      nome: contratado.nome_motorista || "Nome não informado",
+      origem_usuario: contratado.origem_usuario || "",
+      st_cadastro: contratado.st_cadastro || "cadastrado",
+      autorizacao_lgpd: contratado.autorizacao_lgpd || "",
       company_id: contratado.company_id || 0,
       data_cadastro: contratado.data_cadastro || new Date().toISOString(),
       cliente_id: contratado.cliente_id || 0,
@@ -769,74 +931,83 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       conversation_id: contratado.conversation_id || undefined,
       cidade: contratado.nome_cidade || undefined,
       documento_motorista: [],
-      documento_ajudante: []
+      documento_ajudante: [],
     };
 
     // Criando o objeto de endereço se houver informações disponíveis
     const endereco: EnderecoMotorista | undefined =
-      (contratado.logradouro || contratado.nr_cep || contratado.nome_bairro || contratado.nome_cidade || contratado.sigla_estado)
+      contratado.logradouro ||
+      contratado.nr_cep ||
+      contratado.nome_bairro ||
+      contratado.nome_cidade ||
+      contratado.sigla_estado
         ? {
-          id_end_motorista: contratado.id_end_motorista || 0,
-          nr_end: contratado.nr_end || null,
-          ds_complemento_end: contratado.ds_complemento_end || null,
-          st_end: contratado.st_end || null,
-          logradouro: contratado.logradouro || null,
-          nr_cep: contratado.nr_cep || null,
-          bairro: contratado.nome_bairro || null,
-          cidade: contratado.nome_cidade || null,
-          estado: contratado.nome_estado || null,
-          sigla_estado: contratado.sigla_estado || null
-        }
+            id_end_motorista: contratado.id_end_motorista || 0,
+            nr_end: contratado.nr_end || null,
+            ds_complemento_end: contratado.ds_complemento_end || null,
+            st_end: contratado.st_end || null,
+            logradouro: contratado.logradouro || null,
+            nr_cep: contratado.nr_cep || null,
+            bairro: contratado.nome_bairro || null,
+            cidade: contratado.nome_cidade || null,
+            estado: contratado.nome_estado || null,
+            sigla_estado: contratado.sigla_estado || null,
+          }
         : undefined;
 
     // Criando o objeto de veículo se houver informações disponíveis
-    const veiculo: Veiculo | undefined = contratado.veiculo_id || contratado.placa || contratado.tipo_veiculo
-      ? {
-        veiculo_id: contratado.veiculo_id || 0,
-        placa: contratado.placa || '',
-        status_veiculo: contratado.status_veiculo || false,
-        marca: contratado.marca || '',
-        tipo: contratado.tipo_veiculo || '',
-        tipologia: contratado.tipologia || '',
-        ano: contratado.ano || '',
-        combustivel: contratado.combustivel || '',
-        peso: contratado.peso || '',
-        cubagem: contratado.cubagem || '',
-        possui_rastreador: contratado.possui_rastreador || false,
-        marca_rastreador: contratado.marca_rastreador || '',
-        motorista_id: contratado.motorista_id || 0,
-        cor: contratado.cor || '',
-      }
-      : undefined;
+    const veiculo: Veiculo | undefined =
+      contratado.veiculo_id || contratado.placa || contratado.tipo_veiculo
+        ? {
+            veiculo_id: contratado.veiculo_id || 0,
+            placa: contratado.placa || "",
+            status_veiculo: contratado.status_veiculo || false,
+            marca: contratado.marca || "",
+            tipo: contratado.tipo_veiculo || "",
+            tipologia: contratado.tipologia || "",
+            ano: contratado.ano || "",
+            combustivel: contratado.combustivel || "",
+            peso: contratado.peso || "",
+            cubagem: contratado.cubagem || "",
+            possui_rastreador: contratado.possui_rastreador || false,
+            marca_rastreador: contratado.marca_rastreador || "",
+            motorista_id: contratado.motorista_id || 0,
+            cor: contratado.cor || "",
+          }
+        : undefined;
 
     // Retornando o objeto MotoristaWithAddress
     return {
       ...motoristaBase,
       ...(endereco && { endereco }),
-      ...(veiculo && { veiculo })
+      ...(veiculo && { veiculo }),
     };
   };
 
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(null);
-  const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(null);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState<number | null>(
+    null,
+  );
+  const [clienteDropdownOpen, setClienteDropdownOpen] = useState<number | null>(
+    null,
+  );
   const [updatingCliente, setUpdatingCliente] = useState<number | null>(null);
-  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>("all");
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(true);
 
   // Query para buscar tags da empresa
   const { data: tags = [], isLoading: tagsLoading } = useQuery<any[]>({
-    queryKey: ['local-tags', companyId],
+    queryKey: ["local-tags", companyId],
     queryFn: async () => {
       if (!companyId) return [];
 
       const { data, error } = await supabase
-        .from('tag')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('nome');
+        .from("tag")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("nome");
 
       if (error) throw error;
       return data || [];
@@ -844,11 +1015,21 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     enabled: !!companyId,
   });
 
-  const [motoristaTags, setMotoristaTags] = useState<{ [key: number]: any[] }>({});
-  const [tagDropdownOpen, setTagDropdownOpen] = useState<{ [key: number]: boolean }>({});
-  const [tagDropdownPosition, setTagDropdownPosition] = useState<{ [key: number]: { top: number, left: number, width: number } }>({});
-  const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<number | null>(null);
-  const [tagSearchTerm, setTagSearchTerm] = useState<{ [key: number]: string }>({});
+  const [motoristaTags, setMotoristaTags] = useState<{ [key: number]: any[] }>(
+    {},
+  );
+  const [tagDropdownOpen, setTagDropdownOpen] = useState<{
+    [key: number]: boolean;
+  }>({});
+  const [tagDropdownPosition, setTagDropdownPosition] = useState<{
+    [key: number]: { top: number; left: number; width: number };
+  }>({});
+  const [updatingMotoristaTag, setUpdatingMotoristaTag] = useState<
+    number | null
+  >(null);
+  const [tagSearchTerm, setTagSearchTerm] = useState<{ [key: number]: string }>(
+    {},
+  );
 
   // Função para sincronizar tag via proxy backend
   const syncTagWithWiseApp = async (motoristaId: number, tagData: any) => {
@@ -856,14 +1037,17 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
     try {
       // 1. Buscar todas as tags existentes
-      const labelsResponse = await fetch(createApiUrl(`wiseapp/${accountId}/labels`), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId || '',
-          'wiseapp-token': wiseAppToken || ''
-        }
-      });
+      const labelsResponse = await fetch(
+        createApiUrl(`wiseapp/${accountId}/labels`),
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "wiseapp-account-id": accountId || "",
+            "wiseapp-token": wiseAppToken || "",
+          },
+        },
+      );
 
       if (!labelsResponse.ok) {
         // Erro ao buscar tags
@@ -871,8 +1055,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
 
       const labels = await labelsResponse.json();
-      const existingTag = labels.find((label: any) =>
-        label.name.toLowerCase() === tagData.nome.toLowerCase()
+      const existingTag = labels.find(
+        (label: any) => label.name.toLowerCase() === tagData.nome.toLowerCase(),
       );
 
       if (!existingTag) {
@@ -881,24 +1065,27 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
 
       // 2. Buscar o motorista para obter o telefone
-      const motorista = contratados.find(m => m.motorista_id === motoristaId);
+      const motorista = contratados.find((m) => m.motorista_id === motoristaId);
       if (!motorista?.telefone) {
-        console.warn('Telefone do motorista não encontrado para sincronização');
+        console.warn("Telefone do motorista não encontrado para sincronização");
         return;
       }
 
       // 3. Buscar o contato pelo telefone (sem +55 como funciona na individual)
       const phoneStr = String(motorista.telefone);
-      const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
+      const formattedPhone = phoneStr.replace(/^\+55/, ""); // Remove +55 se existir
 
-      const searchContactResponse = await fetch(`${API_BASE_URL}/wiseapp/${accountId}/contacts/search?phone=${formattedPhone}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId || '',
-          'wiseapp-token': wiseAppToken || ''
-        }
-      });
+      const searchContactResponse = await fetch(
+        `${API_BASE_URL}/wiseapp/${accountId}/contacts/search?phone=${formattedPhone}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "wiseapp-account-id": accountId || "",
+            "wiseapp-token": wiseAppToken || "",
+          },
+        },
+      );
 
       if (!searchContactResponse.ok) {
         // Erro ao buscar contato
@@ -914,25 +1101,29 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
 
       // 4. Aplicar a tag existente ao contato específico
-      const applyTagResponse = await fetch(createApiUrl(`wiseapp/${accountId}/contacts/${contactId}/labels`), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId || '',
-          'wiseapp-token': wiseAppToken || ''
+      const applyTagResponse = await fetch(
+        createApiUrl(`wiseapp/${accountId}/contacts/${contactId}/labels`),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "wiseapp-account-id": accountId || "",
+            "wiseapp-token": wiseAppToken || "",
+          },
+          body: JSON.stringify({
+            tagName: existingTag.name,
+          }),
         },
-        body: JSON.stringify({
-          tagName: existingTag.name
-        })
-      });
+      );
 
       if (applyTagResponse.ok) {
         // Tag aplicada com sucesso
       } else {
         const errorText = await applyTagResponse.text();
-        console.error(`Erro ao aplicar tag ao contato: ${applyTagResponse.status} - ${errorText}`);
+        console.error(
+          `Erro ao aplicar tag ao contato: ${applyTagResponse.status} - ${errorText}`,
+        );
       }
-
     } catch (error) {
       // Erro não crítico na sincronização
     }
@@ -944,23 +1135,28 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
     try {
       // 1. Buscar o motorista para obter o telefone
-      const motorista = contratados.find(m => m.motorista_id === motoristaId);
+      const motorista = contratados.find((m) => m.motorista_id === motoristaId);
       if (!motorista?.telefone) {
-        console.warn('Telefone do motorista não encontrado para remoção da tag');
+        console.warn(
+          "Telefone do motorista não encontrado para remoção da tag",
+        );
         return;
       }
 
       // 2. Buscar o contato pelo telefone (sem +55 como funciona na individual)
       const phoneStr = String(motorista.telefone);
-      const formattedPhone = phoneStr.replace(/^\+55/, ''); // Remove +55 se existir
-      const searchContactResponse = await fetch(`${API_BASE_URL}/wiseapp/${accountId}/contacts/search?phone=${formattedPhone}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId || '',
-          'wiseapp-token': wiseAppToken || ''
-        }
-      });
+      const formattedPhone = phoneStr.replace(/^\+55/, ""); // Remove +55 se existir
+      const searchContactResponse = await fetch(
+        `${API_BASE_URL}/wiseapp/${accountId}/contacts/search?phone=${formattedPhone}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "wiseapp-account-id": accountId || "",
+            "wiseapp-token": wiseAppToken || "",
+          },
+        },
+      );
 
       if (!searchContactResponse.ok) {
         // Erro ao buscar contato
@@ -976,17 +1172,22 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
 
       // 3. Buscar labels atuais do contato
-      const getLabelsResponse = await fetch(createApiUrl(`wiseapp/${accountId}/contacts/${contactId}/labels`), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId || '',
-          'wiseapp-token': wiseAppToken || ''
-        }
-      });
+      const getLabelsResponse = await fetch(
+        createApiUrl(`wiseapp/${accountId}/contacts/${contactId}/labels`),
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "wiseapp-account-id": accountId || "",
+            "wiseapp-token": wiseAppToken || "",
+          },
+        },
+      );
 
       if (!getLabelsResponse.ok) {
-        console.warn(`Erro ao buscar labels do contato: ${getLabelsResponse.status}`);
+        console.warn(
+          `Erro ao buscar labels do contato: ${getLabelsResponse.status}`,
+        );
         return;
       }
 
@@ -994,41 +1195,49 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const currentLabels = labelsData.payload || [];
 
       // 4. Remover a tag específica das labels (preservando as outras)
-      const updatedLabels = currentLabels.filter((label: string) =>
-        label.toLowerCase() !== tagData.nome.toLowerCase()
+      const updatedLabels = currentLabels.filter(
+        (label: string) => label.toLowerCase() !== tagData.nome.toLowerCase(),
       );
 
       // 5. Aplicar as labels atualizadas (sem a tag removida)
-      const updateLabelsResponse = await fetch(createApiUrl(`wiseapp/${accountId}/contacts/${contactId}/labels`), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'wiseapp-account-id': accountId || '',
-          'wiseapp-token': wiseAppToken || ''
+      const updateLabelsResponse = await fetch(
+        createApiUrl(`wiseapp/${accountId}/contacts/${contactId}/labels`),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "wiseapp-account-id": accountId || "",
+            "wiseapp-token": wiseAppToken || "",
+          },
+          body: JSON.stringify({
+            labels: updatedLabels,
+          }),
         },
-        body: JSON.stringify({
-          labels: updatedLabels
-        })
-      });
+      );
 
       if (updateLabelsResponse.ok) {
         // Tag removida com sucesso
       } else {
         const errorText = await updateLabelsResponse.text();
-        console.error(`Erro ao remover tag do contato: ${updateLabelsResponse.status} - ${errorText}`);
+        console.error(
+          `Erro ao remover tag do contato: ${updateLabelsResponse.status} - ${errorText}`,
+        );
       }
-
     } catch (error) {
       // Erro não crítico
     }
   };
 
-  const motoristaTagDropdownRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
-  const motoristaTagPortalRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const motoristaTagDropdownRefs = useRef<{
+    [key: number]: HTMLDivElement | null;
+  }>({});
+  const motoristaTagPortalRefs = useRef<{
+    [key: number]: HTMLDivElement | null;
+  }>({});
   const [roleChangeModal, setRoleChangeModal] = useState<{
     isOpen: boolean;
     motorista: ViewContratado | null;
-    newRole: 'Motorista' | 'Agregado' | null;
+    newRole: "Motorista" | "Agregado" | null;
     isLoading: boolean;
   }>({
     isOpen: false,
@@ -1040,8 +1249,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     startDate: string;
     endDate: string;
   }>({
-    startDate: '',
-    endDate: '',
+    startDate: "",
+    endDate: "",
   });
 
   // Debounce search term to avoid excessive queries
@@ -1058,7 +1267,14 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     setServerPage(0);
     setSelectedItems(new Set());
     setSelectAllResults(false);
-  }, [statusFilter, cidadeFilter, bauFilter, clienteFilter, dateFilter, customDateRange]);
+  }, [
+    statusFilter,
+    cidadeFilter,
+    bauFilter,
+    clienteFilter,
+    dateFilter,
+    customDateRange,
+  ]);
 
   // Reset selection when search changes
   useEffect(() => {
@@ -1074,10 +1290,23 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   useEffect(() => {
     fetchContratados(serverPage, pageSize);
-  }, [serverPage, pageSize, debouncedSearch, statusFilter, cidadeFilter, bauFilter, clienteFilter, dateFilter, customDateRange, companyId]);
+  }, [
+    serverPage,
+    pageSize,
+    debouncedSearch,
+    statusFilter,
+    cidadeFilter,
+    bauFilter,
+    clienteFilter,
+    dateFilter,
+    customDateRange,
+    areaAtuacaoFilter,
+    companyId,
+  ]);
 
   useEffect(() => {
     fetchClientes();
+    fetchAreasAtuacaoFromMotorista();
   }, [companyId]);
 
   useEffect(() => {
@@ -1096,20 +1325,25 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
   }, [contratados]);
 
-
   // Sistema de aplicação automática de tags
   useEffect(() => {
-    if (tags.length > 0 && contratados.length > 0 && Object.keys(motoristaTags).length > 0) {
+    if (
+      tags.length > 0 &&
+      contratados.length > 0 &&
+      Object.keys(motoristaTags).length > 0
+    ) {
       applyAutomaticTags();
     }
   }, [tags, contratados, motoristaTags]);
 
   const applyAutomaticTags = async () => {
-    const vipTag = tags.find(tag => tag.nome.toLowerCase().includes('vip'));
+    const vipTag = tags.find((tag) => tag.nome.toLowerCase().includes("vip"));
     if (vipTag) {
       for (const agregado of contratados) {
         const hasVeiculo = agregado.veiculo_id && agregado.placa;
-        const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some((tag: any) => tag.id === vipTag.id);
+        const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some(
+          (tag: any) => tag.id === vipTag.id,
+        );
 
         if (hasVeiculo && !alreadyHasTag && agregado.motorista_id) {
           await handleAddTag(agregado.motorista_id, vipTag.id);
@@ -1118,12 +1352,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
 
     // Critério 2: Aplicar tag "Novo" para agregados cadastrados nos últimos 7 dias
-    const novoTag = tags.find(tag => tag.nome.toLowerCase().includes('novo'));
+    const novoTag = tags.find((tag) => tag.nome.toLowerCase().includes("novo"));
     if (novoTag) {
       for (const agregado of contratados) {
-        const cadastroDate = new Date(agregado.data_cadastro || '');
-        const daysSinceCadastro = (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
-        const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some((tag: any) => tag.id === novoTag.id);
+        const cadastroDate = new Date(agregado.data_cadastro || "");
+        const daysSinceCadastro =
+          (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
+        const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some(
+          (tag: any) => tag.id === novoTag.id,
+        );
 
         if (daysSinceCadastro <= 7 && !alreadyHasTag && agregado.motorista_id) {
           await handleAddTag(agregado.motorista_id, novoTag.id);
@@ -1132,14 +1369,23 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
 
     // Critério 3: Aplicar tag "Experiente" para agregados com mais de 6 meses
-    const experienteTag = tags.find(tag => tag.nome.toLowerCase().includes('experiente'));
+    const experienteTag = tags.find((tag) =>
+      tag.nome.toLowerCase().includes("experiente"),
+    );
     if (experienteTag) {
       for (const agregado of contratados) {
-        const cadastroDate = new Date(agregado.data_cadastro || '');
-        const daysSinceCadastro = (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
-        const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some((tag: any) => tag.id === experienteTag.id);
+        const cadastroDate = new Date(agregado.data_cadastro || "");
+        const daysSinceCadastro =
+          (Date.now() - cadastroDate.getTime()) / (1000 * 60 * 60 * 24);
+        const alreadyHasTag = motoristaTags[agregado.motorista_id || 0]?.some(
+          (tag: any) => tag.id === experienteTag.id,
+        );
 
-        if (daysSinceCadastro > 180 && !alreadyHasTag && agregado.motorista_id) {
+        if (
+          daysSinceCadastro > 180 &&
+          !alreadyHasTag &&
+          agregado.motorista_id
+        ) {
           await handleAddTag(agregado.motorista_id, experienteTag.id);
         }
       }
@@ -1148,14 +1394,31 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   // Funções auxiliares para filtros
   const hasActiveFilters = () => {
-    return statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 ||
-      ativoFilter !== '' || tipoVeiculoFilter.length > 0 || bauFilter.length > 0 || dateFilter !== 'all' || tagFilter.length > 0;
+    return (
+      statusFilter.length > 0 ||
+      cidadeFilter.length > 0 ||
+      clienteFilter.length > 0 ||
+      ativoFilter !== "" ||
+      tipoVeiculoFilter.length > 0 ||
+      bauFilter.length > 0 ||
+      dateFilter !== "all" ||
+      tagFilter.length > 0 ||
+      areaAtuacaoFilter.length > 0
+    );
   };
 
   const getActiveFiltersCount = () => {
-    return [statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0,
-    ativoFilter !== '' ? 1 : 0, tipoVeiculoFilter.length > 0 ? 1 : 0, bauFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0,
-    tagFilter.length > 0 ? 1 : 0].reduce((a, b) => a + b, 0);
+    return [
+      statusFilter.length > 0 ? 1 : 0,
+      cidadeFilter.length > 0 ? 1 : 0,
+      clienteFilter.length > 0 ? 1 : 0,
+      ativoFilter !== "" ? 1 : 0,
+      tipoVeiculoFilter.length > 0 ? 1 : 0,
+      bauFilter.length > 0 ? 1 : 0,
+      dateFilter !== "all" ? 1 : 0,
+      tagFilter.length > 0 ? 1 : 0,
+      areaAtuacaoFilter.length > 0 ? 1 : 0,
+    ].reduce((a, b) => a + b, 0);
   };
 
   useEffect(() => {
@@ -1176,9 +1439,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
     };
 
-    document.addEventListener('click', handleClick);
+    document.addEventListener("click", handleClick);
     return () => {
-      document.removeEventListener('click', handleClick);
+      document.removeEventListener("click", handleClick);
     };
   }, [contextMenu.visible, statusDropdownOpen, clienteDropdownOpen]);
 
@@ -1186,27 +1449,30 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     if (!roleChangeModal.motorista || !roleChangeModal.newRole) return;
 
     try {
-      setRoleChangeModal(prev => ({ ...prev, isLoading: true }));
+      setRoleChangeModal((prev) => ({ ...prev, isLoading: true }));
 
       const { error } = await supabase
-        .from('motorista')
+        .from("motorista")
         .update({ funcao: roleChangeModal.newRole })
-        .eq('motorista_id', roleChangeModal.motorista.motorista_id);
+        .eq("motorista_id", roleChangeModal.motorista.motorista_id);
 
       if (error) throw error;
 
       // Atualiza o estado local
-      setContratados(prev =>
-        prev.map(m =>
+      setContratados((prev) =>
+        prev.map((m) =>
           m.motorista_id === roleChangeModal.motorista?.motorista_id
-            ? { ...m, funcao: roleChangeModal.newRole as 'Motorista' | 'Agregado' }
-            : m
-        )
+            ? {
+                ...m,
+                funcao: roleChangeModal.newRole as "Motorista" | "Agregado",
+              }
+            : m,
+        ),
       );
 
       toast.success(
-        `Função alterada com sucesso para ${roleChangeModal.newRole === 'Motorista' ? 'Motorista' : 'Agregado'}!`,
-        { duration: 3000 }
+        `Função alterada com sucesso para ${roleChangeModal.newRole === "Motorista" ? "Motorista" : "Agregado"}!`,
+        { duration: 3000 },
       );
 
       // Se estiver em uma visualização filtrada, atualiza a lista
@@ -1215,26 +1481,34 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
 
       // Fecha o modal
-      setRoleChangeModal({ isOpen: false, motorista: null, newRole: null, isLoading: false });
+      setRoleChangeModal({
+        isOpen: false,
+        motorista: null,
+        newRole: null,
+        isLoading: false,
+      });
     } catch (error) {
-      console.error('Erro ao alterar função:', error);
+      console.error("Erro ao alterar função:", error);
       toast.error(
         <div className="flex items-center space-x-2">
           <XCircle className="w-5 h-5 text-red-500" />
           <span>Erro ao alterar função do motorista</span>
         </div>,
-        { duration: 3000 }
+        { duration: 3000 },
       );
-      setRoleChangeModal(prev => ({ ...prev, isLoading: false }));
+      setRoleChangeModal((prev) => ({ ...prev, isLoading: false }));
     }
   };
 
-  const openRoleChangeModal = (motorista: ViewContratado, newRole: 'Motorista' | 'Agregado') => {
+  const openRoleChangeModal = (
+    motorista: ViewContratado,
+    newRole: "Motorista" | "Agregado",
+  ) => {
     setRoleChangeModal({
       isOpen: true,
       motorista,
       newRole,
-      isLoading: false
+      isLoading: false,
     });
   };
 
@@ -1243,100 +1517,159 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     try {
       // Buscar todas as cidades únicas diretamente da tabela cidade
       const { data: cidadesData, error } = await supabase
-        .from('cidade')
-        .select('cidade')
-        .order('cidade');
+        .from("cidade")
+        .select("cidade")
+        .order("cidade");
 
       if (error) {
-        console.error('Erro ao buscar cidades:', error);
+        console.error("Erro ao buscar cidades:", error);
         return;
       }
 
-      const cidadesTemp = cidadesData?.map(c => c.cidade).filter(Boolean) || [];
+      const cidadesTemp =
+        cidadesData?.map((c) => c.cidade).filter(Boolean) || [];
       // Remover duplicatas e ordenar
       const cidadesUnicas = [...new Set(cidadesTemp)].sort();
-      console.log('✅ Cidades encontradas para filtro:', cidadesUnicas);
+      console.log("✅ Cidades encontradas para filtro:", cidadesUnicas);
       setCidades(cidadesUnicas);
     } catch (error) {
-      console.error('Erro ao buscar cidades:', error);
+      console.error("Erro ao buscar cidades:", error);
     }
   };
-
 
   const fetchContratados = async (page = 0, size = pageSize) => {
     if (!companyId) return;
     try {
       setLoading(true);
+
+      // Pré-filtrar por áreas de atuação via tabela relacional
+      let motoristaIdsByArea: number[] | null = null;
+      if (areaAtuacaoFilter.length > 0) {
+        const { data: areaRows, error: areaError } = await supabase
+          .from("motorista_area_atuacao")
+          .select("motorista_id")
+          .eq("company_id", companyId)
+          .in("area", areaAtuacaoFilter);
+
+        if (areaError) {
+          console.error("Erro ao filtrar por áreas de atuação:", areaError);
+        } else {
+          motoristaIdsByArea = Array.from(
+            new Set(
+              (areaRows || [])
+                .map((row: any) => row.motorista_id)
+                .filter((id: any) => typeof id === "number"),
+            ),
+          );
+
+          // Se não houver nenhum motorista correspondente, evitamos a query principal
+          if (motoristaIdsByArea.length === 0) {
+            setContratados([]);
+            setTotalCount(0);
+            setLoading(false);
+            return;
+          }
+        }
+      }
       // Buscar os agregados da view vw_agregados_completo que já inclui dados de endereço
       let query = supabase
-        .from('vw_agregados_completo')
-        .select('*', { count: 'exact' })
-        .eq('company_id', companyId)
-        .eq('funcao', 'Agregado');
+        .from("vw_agregados_completo")
+        .select("*", { count: "exact" })
+        .eq("company_id", companyId)
+        .eq("funcao", "Agregado");
+
+      if (motoristaIdsByArea && motoristaIdsByArea.length > 0) {
+        query = query.in("motorista_id", motoristaIdsByArea);
+      }
 
       // Server-side search
       if (debouncedSearch.trim()) {
         const term = debouncedSearch.trim();
         query = query.or(
-          `nome_motorista.ilike.%${term}%,cpf.ilike.%${term}%,placa.ilike.%${term}%,telefone.ilike.%${term}%`
+          `nome_motorista.ilike.%${term}%,cpf.ilike.%${term}%,placa.ilike.%${term}%,telefone.ilike.%${term}%`,
         );
       }
 
       // Server-side status filter
       if (statusFilter.length > 0) {
-        query = query.in('st_cadastro', statusFilter);
+        query = query.in("st_cadastro", statusFilter);
       }
 
       // Server-side cidade filter
       if (cidadeFilter.length > 0) {
-        query = query.in('nome_cidade', cidadeFilter);
+        query = query.in("nome_cidade", cidadeFilter);
       }
 
       // Server-side baú filter (skip complex 'sem_bau' logic — keep client-side)
-      const bauFiltrosReais = bauFilter.filter(b => b !== 'sem_bau');
-      if (bauFiltrosReais.length > 0 && !bauFilter.includes('sem_bau')) {
-        query = query.in('bau', bauFiltrosReais);
+      const bauFiltrosReais = bauFilter.filter((b) => b !== "sem_bau");
+      if (bauFiltrosReais.length > 0 && !bauFilter.includes("sem_bau")) {
+        query = query.in("bau", bauFiltrosReais);
       }
 
       // Server-side cliente filter
-      const clientesFiltros = clienteFilter.filter(c => c !== 'sem_cliente');
-      if (clientesFiltros.length > 0 && !clienteFilter.includes('sem_cliente')) {
-        query = query.in('cliente_id', clientesFiltros.map(Number));
-      } else if (clienteFilter.includes('sem_cliente') && clienteFilter.length === 1) {
-        query = query.is('cliente_id', null);
+      const clientesFiltros = clienteFilter.filter((c) => c !== "sem_cliente");
+      if (
+        clientesFiltros.length > 0 &&
+        !clienteFilter.includes("sem_cliente")
+      ) {
+        query = query.in("cliente_id", clientesFiltros.map(Number));
+      } else if (
+        clienteFilter.includes("sem_cliente") &&
+        clienteFilter.length === 1
+      ) {
+        query = query.is("cliente_id", null);
       }
 
       // Apply date filter
-      if (dateFilter !== 'all') {
+      if (dateFilter !== "all") {
         const today = new Date();
         let startDate = new Date();
 
-        if (dateFilter === 'today') {
+        if (dateFilter === "today") {
           // Today only
           startDate = new Date(today.setHours(0, 0, 0, 0));
-          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
-          query = query.lte('data_cadastro', new Date().toISOString().split('T')[0]);
-        } else if (dateFilter === '2days') {
+          query = query.gte(
+            "data_cadastro",
+            startDate.toISOString().split("T")[0],
+          );
+          query = query.lte(
+            "data_cadastro",
+            new Date().toISOString().split("T")[0],
+          );
+        } else if (dateFilter === "2days") {
           // Last 2 days
           startDate.setDate(today.getDate() - 2);
-          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
-        } else if (dateFilter === '15days') {
+          query = query.gte(
+            "data_cadastro",
+            startDate.toISOString().split("T")[0],
+          );
+        } else if (dateFilter === "15days") {
           // Last 15 days
           startDate.setDate(today.getDate() - 15);
-          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
-        } else if (dateFilter === '30days') {
+          query = query.gte(
+            "data_cadastro",
+            startDate.toISOString().split("T")[0],
+          );
+        } else if (dateFilter === "30days") {
           // Last 30 days
           startDate.setDate(today.getDate() - 30);
-          query = query.gte('data_cadastro', startDate.toISOString().split('T')[0]);
-        } else if (dateFilter === 'custom' && customDateRange.startDate && customDateRange.endDate) {
+          query = query.gte(
+            "data_cadastro",
+            startDate.toISOString().split("T")[0],
+          );
+        } else if (
+          dateFilter === "custom" &&
+          customDateRange.startDate &&
+          customDateRange.endDate
+        ) {
           // Custom date range
-          query = query.gte('data_cadastro', customDateRange.startDate);
-          query = query.lte('data_cadastro', customDateRange.endDate);
+          query = query.gte("data_cadastro", customDateRange.startDate);
+          query = query.lte("data_cadastro", customDateRange.endDate);
         }
       }
 
       // Order by data_cadastro (newest first) then paginate server-side
-      query = query.order('data_cadastro', { ascending: false });
+      query = query.order("data_cadastro", { ascending: false });
       query = query.range(page * size, (page + 1) * size - 1);
 
       const { data, error, count } = await query;
@@ -1345,10 +1678,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       if (error) throw error;
 
-
-
       // Primeiro, vamos buscar os status ativos dos motoristas e suas fotos
-      const motoristaIds = data?.map(m => m.motorista_id).filter((id): id is number => id !== undefined && id !== null) || [];
+      const motoristaIds =
+        data
+          ?.map((m) => m.motorista_id)
+          .filter((id): id is number => id !== undefined && id !== null) || [];
       let ativosStatus: Record<number, boolean> = {};
       let fotosWhatsApp: Record<number, string | null> = {};
 
@@ -1365,12 +1699,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           const allMotoristas = [];
           for (const chunk of chunks) {
             const { data: motoristas, error: motoristasError } = await supabase
-              .from('motorista')
-              .select('motorista_id, ativo, foto_whatsapp')
-              .in('motorista_id', chunk);
+              .from("motorista")
+              .select("motorista_id, ativo, foto_whatsapp")
+              .in("motorista_id", chunk);
 
             if (motoristasError) {
-              console.error('Erro ao buscar status dos motoristas (chunk):', motoristasError);
+              console.error(
+                "Erro ao buscar status dos motoristas (chunk):",
+                motoristasError,
+              );
               continue; // Continue com o próximo chunk
             }
 
@@ -1380,47 +1717,73 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           }
 
           // Criar um mapa de motorista_id para status ativo e fotos
-          allMotoristas.forEach(m => {
+          allMotoristas.forEach((m) => {
             ativosStatus[m.motorista_id] = m.ativo === true;
             fotosWhatsApp[m.motorista_id] = m.foto_whatsapp || null;
           });
-
         } catch (error) {
-          console.error('Erro ao buscar status dos motoristas:', error);
+          console.error("Erro ao buscar status dos motoristas:", error);
           // Continue sem os dados de status se houver erro
         }
       }
 
       // Processar os dados com os status ativos e fotos
-      const processedData = data?.map(motorista => {
-        const ativo = ativosStatus[motorista.motorista_id] === true;
-        const foto_whatsapp = fotosWhatsApp[motorista.motorista_id] || null;
-        return {
-          ...motorista,
-          ativo: ativo,
-          foto_whatsapp: foto_whatsapp
-        };
-      }) || [];
+      const processedData =
+        data?.map((motorista) => {
+          const ativo = ativosStatus[motorista.motorista_id] === true;
+          const foto_whatsapp = fotosWhatsApp[motorista.motorista_id] || null;
+          return {
+            ...motorista,
+            ativo: ativo,
+            foto_whatsapp: foto_whatsapp,
+          };
+        }) || [];
 
-      // Agrupar ajudantes por motorista_id
-      const agregadosAgrupadosMap = new Map();
-      processedData.forEach(agregado => {
-        // Cities will be loaded separately
-        // No city extraction needed here anymore
+      // Agrupar ajudantes e áreas de atuação por motorista_id
+      const agregadosAgrupadosMap = new Map<number, any>();
+      processedData.forEach((agregado) => {
+        if (!agregado.motorista_id) return;
 
-        if (!agregadosAgrupadosMap.has(agregado.motorista_id)) {
+        const existente = agregadosAgrupadosMap.get(agregado.motorista_id);
+
+        if (!existente) {
           agregadosAgrupadosMap.set(agregado.motorista_id, {
             ...agregado,
             ajudantes: agregado.nome_ajudante ? [agregado.nome_ajudante] : [],
+            areas: agregado.area ? [agregado.area] : [],
           });
         } else {
-          const existente = agregadosAgrupadosMap.get(agregado.motorista_id);
-          if (agregado.nome_ajudante && !existente.ajudantes.includes(agregado.nome_ajudante)) {
+          // Ajudantes
+          if (
+            agregado.nome_ajudante &&
+            !existente.ajudantes.includes(agregado.nome_ajudante)
+          ) {
             existente.ajudantes.push(agregado.nome_ajudante);
+          }
+
+          // Áreas de atuação (evitar duplicadas ignorando maiúsculas/minúsculas)
+          if (agregado.area && typeof agregado.area === "string") {
+            const nova = agregado.area.trim();
+            if (nova) {
+              const keyNova = nova.toLowerCase();
+              const jaExiste = (existente.areas || []).some(
+                (a: string) => a.trim().toLowerCase() === keyNova,
+              );
+              if (!jaExiste) {
+                existente.areas = [...(existente.areas || []), nova];
+              }
+            }
           }
         }
       });
-      const agregadosAgrupados = Array.from(agregadosAgrupadosMap.values());
+
+      const agregadosAgrupados = Array.from(agregadosAgrupadosMap.values()).map(
+        (item: any) => ({
+          ...item,
+          area:
+            item.areas && item.areas.length > 0 ? item.areas.join(", ") : null,
+        }),
+      );
 
       // As cidades já foram carregadas pela função separada
       // Não precisamos fazer nada aqui
@@ -1430,8 +1793,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       // Tags serão carregadas apenas quando necessário (filtro, ações em massa, etc.)
       // Para melhor performance, não carregar automaticamente
     } catch (error) {
-      console.error('Error fetching contratados:', error);
-      toast.error('Erro ao carregar contratados');
+      console.error("Error fetching contratados:", error);
+      toast.error("Erro ao carregar contratados");
     } finally {
       setLoading(false);
     }
@@ -1447,13 +1810,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
 
       const { data, error } = await supabase
-        .from('veiculo')
-        .select('tipo, tipologia')
-        .eq('status_veiculo', true) // Apenas veículos ativos
-        .eq('company_id', companyId); // Filtrar pela empresa atual
+        .from("veiculo")
+        .select("tipo, tipologia")
+        .eq("status_veiculo", true) // Apenas veículos ativos
+        .eq("company_id", companyId); // Filtrar pela empresa atual
 
       if (error) {
-        console.error('Erro ao buscar tipos de veículos:', error);
+        console.error("Erro ao buscar tipos de veículos:", error);
         return;
       }
 
@@ -1462,27 +1825,47 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       // Lista canônica de tipos válidos - apenas categorias gerais de veículos
       const VALID_VEHICLE_TYPES = [
-        'FIORINO', 'VAN', 'CAMINHÃO', 'CAMINHÃO 3/4', 'HR', 'CAVALO', 'PASSEIO',
-        'FURGÃO', 'OUTROS', 'DUCATO', 'DOBLO', 'H100', 'BESTA', 'BOXER',
-        'CAMINHONETE', 'CARRETA', 'MOTO', 'VUC', 'AUTOMOVEL', 'UTILITARIO',
-        'KOMBI', 'TRACTOR', 'PICKUP', 'MOTORCYCLE'
+        "FIORINO",
+        "VAN",
+        "CAMINHÃO",
+        "CAMINHÃO 3/4",
+        "HR",
+        "CAVALO",
+        "PASSEIO",
+        "FURGÃO",
+        "OUTROS",
+        "DUCATO",
+        "DOBLO",
+        "H100",
+        "BESTA",
+        "BOXER",
+        "CAMINHONETE",
+        "CARRETA",
+        "MOTO",
+        "VUC",
+        "AUTOMOVEL",
+        "UTILITARIO",
+        "KOMBI",
+        "TRACTOR",
+        "PICKUP",
+        "MOTORCYCLE",
       ];
 
       // Função para normalizar tipo de veículo
       const normalizeVehicleType = (type: string): string | null => {
-        if (!type || typeof type !== 'string') return null;
+        if (!type || typeof type !== "string") return null;
 
         const normalized = type.trim().toUpperCase();
 
         // Mapear algumas variações comuns
         const typeMapping: Record<string, string> = {
-          'CAMINHAO': 'CAMINHÃO',
-          'FURGAO': 'FURGÃO',
-          'MOTOCICLETA': 'MOTO',
-          'MOTORCYCLE': 'MOTO',
-          'TRACTOR': 'TRATOR',
-          'AUTOMÓVEL': 'AUTOMOVEL',
-          'UTILITÁRIO': 'UTILITARIO'
+          CAMINHAO: "CAMINHÃO",
+          FURGAO: "FURGÃO",
+          MOTOCICLETA: "MOTO",
+          MOTORCYCLE: "MOTO",
+          TRACTOR: "TRATOR",
+          AUTOMÓVEL: "AUTOMOVEL",
+          UTILITÁRIO: "UTILITARIO",
         };
 
         const mappedType = typeMapping[normalized] || normalized;
@@ -1494,10 +1877,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const debugInfo = {
         tipo: [] as string[],
         tipologia: [] as string[],
-        rejeitados: [] as string[]
+        rejeitados: [] as string[],
       };
 
-      data?.forEach(veiculo => {
+      data?.forEach((veiculo) => {
         // Processar campo tipo
         const normalizedTipo = normalizeVehicleType(veiculo.tipo);
         if (normalizedTipo) {
@@ -1522,9 +1905,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       // Vehicle types processing completed for company
       // Debug info: rejected types processed
-
     } catch (error) {
-      console.error('Erro ao buscar tipos de veículos:', error);
+      console.error("Erro ao buscar tipos de veículos:", error);
     }
   };
 
@@ -1537,24 +1919,28 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       // Buscar da view vw_agregados_completo que contém os dados de veículos dos agregados
       const { data, error } = await supabase
-        .from('vw_agregados_completo')
-        .select('bau')
-        .eq('company_id', companyId)
-        .eq('funcao', 'Agregado');
+        .from("vw_agregados_completo")
+        .select("bau")
+        .eq("company_id", companyId)
+        .eq("funcao", "Agregado");
 
       if (error) {
-        console.error('Erro ao buscar tipos de baú:', error);
+        console.error("Erro ao buscar tipos de baú:", error);
         return;
       }
 
       const uniqueBauTypes = new Set<string>();
       let hasSemBau = false;
-      
-      data?.forEach(agregado => {
-        if (agregado.bau && typeof agregado.bau === 'string' && agregado.bau.trim()) {
+
+      data?.forEach((agregado) => {
+        if (
+          agregado.bau &&
+          typeof agregado.bau === "string" &&
+          agregado.bau.trim()
+        ) {
           const bauNormalized = agregado.bau.trim().toUpperCase();
           // Trata "SEM BAÚ" ou similar como flag para mostrar opção "Sem baú"
-          if (bauNormalized === 'SEM BAÚ' || bauNormalized === 'SEM BAU') {
+          if (bauNormalized === "SEM BAÚ" || bauNormalized === "SEM BAU") {
             hasSemBau = true;
           } else {
             uniqueBauTypes.add(bauNormalized);
@@ -1568,48 +1954,85 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       // Sempre inclui a opção "sem_bau" se houver agregados sem baú
       const bauTypesSorted = Array.from(uniqueBauTypes).sort();
       if (hasSemBau) {
-        bauTypesSorted.unshift('sem_bau');
+        bauTypesSorted.unshift("sem_bau");
       }
-      
+
       setBauTypes(bauTypesSorted);
     } catch (error) {
-      console.error('Erro ao buscar tipos de baú:', error);
+      console.error("Erro ao buscar tipos de baú:", error);
+    }
+  };
+
+  const fetchAreasAtuacaoFromMotorista = async () => {
+    try {
+      if (!companyId) return;
+
+      const { data, error } = await supabase
+        .from("motorista_area_atuacao")
+        .select("area")
+        .eq("company_id", companyId);
+
+      if (error) {
+        console.error("Erro ao buscar áreas de atuação:", error);
+        return;
+      }
+
+      const areasMap = new Map<string, string>();
+      (data || []).forEach((row: any) => {
+        if (row.area && typeof row.area === "string") {
+          const raw = row.area.trim();
+          if (!raw) return;
+          const key = raw.toLowerCase();
+          if (!areasMap.has(key)) {
+            areasMap.set(key, raw);
+          }
+        }
+      });
+
+      const areasUnicas = Array.from(areasMap.values()).sort((a, b) =>
+        a.localeCompare(b, "pt-BR"),
+      );
+      setAreasAtuacao(areasUnicas);
+    } catch (err) {
+      console.error("Erro ao processar áreas de atuação:", err);
     }
   };
 
   // Cores padrão para os clientes (apenas fundo, sem borda)
   const defaultClientColors = [
-    'bg-blue-100 dark:bg-blue-900/30',
-    'bg-green-100 dark:bg-green-900/30',
-    'bg-yellow-100 dark:bg-yellow-900/30',
-    'bg-red-100 dark:bg-red-900/30',
-    'bg-purple-100 dark:bg-purple-900/30',
-    'bg-pink-100 dark:bg-pink-900/30',
-    'bg-indigo-100 dark:bg-indigo-900/30',
+    "bg-blue-100 dark:bg-blue-900/30",
+    "bg-green-100 dark:bg-green-900/30",
+    "bg-yellow-100 dark:bg-yellow-900/30",
+    "bg-red-100 dark:bg-red-900/30",
+    "bg-purple-100 dark:bg-purple-900/30",
+    "bg-pink-100 dark:bg-pink-900/30",
+    "bg-indigo-100 dark:bg-indigo-900/30",
   ];
 
   const fetchClientes = async () => {
     if (!companyId) return;
     try {
       const { data, error } = await supabase
-        .from('cliente')
-        .select('*')
-        .eq('company_id', companyId)
-        .eq('st_cliente', true)
-        .order('nome');
+        .from("cliente")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("st_cliente", true)
+        .order("nome");
 
       if (error) throw error;
 
       // Adiciona uma cor a cada cliente
       const clientesComCor = (data || []).map((cliente, index) => ({
         ...cliente,
-        cor: defaultClientColors[index % defaultClientColors.length] || 'bg-gray-100 dark:bg-gray-700',
+        cor:
+          defaultClientColors[index % defaultClientColors.length] ||
+          "bg-gray-100 dark:bg-gray-700",
       }));
 
       setClientes(clientesComCor);
     } catch (error) {
-      console.error('Error fetching clientes:', error);
-      toast.error('Erro ao carregar clientes');
+      console.error("Error fetching clientes:", error);
+      toast.error("Erro ao carregar clientes");
     }
   };
 
@@ -1618,8 +2041,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       setSelectedMotorista(motorista);
       setIsUnifiedAgregadoModalOpen(true);
     } catch (error) {
-      console.error('Error opening agregado details:', error);
-      toast.error('Erro ao abrir detalhes do agregado');
+      console.error("Error opening agregado details:", error);
+      toast.error("Erro ao abrir detalhes do agregado");
     }
   };
 
@@ -1633,24 +2056,26 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     setIsUnifiedModalOpen(true);
   };
 
-
-
   const confirmDelete = async () => {
     if (!selectedMotorista) return;
 
     try {
-      const { error } = await query('motorista')
+      const { error } = await query("motorista")
         .delete()
-        .eq('motorista_id', selectedMotorista.motorista_id);
+        .eq("motorista_id", selectedMotorista.motorista_id);
 
       if (error) throw error;
 
-      setContratados(contratados.filter(m => m.motorista_id !== selectedMotorista.motorista_id));
-      toast.success('Motorista excluído com sucesso');
+      setContratados(
+        contratados.filter(
+          (m) => m.motorista_id !== selectedMotorista.motorista_id,
+        ),
+      );
+      toast.success("Motorista excluído com sucesso");
       setIsDeleteModalOpen(false);
     } catch (error) {
-      console.error('Error deleting motorista:', error);
-      toast.error('Erro ao excluir motorista');
+      console.error("Error deleting motorista:", error);
+      toast.error("Erro ao excluir motorista");
     }
   };
 
@@ -1666,128 +2091,143 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   };
 
   // Funções para manipular filtros de múltipla seleção
-  const toggleFilterOption = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'tag', value: string | null | undefined) => {
+  const toggleFilterOption = (
+    filterType: "status" | "cliente" | "cidade" | "tipoVeiculo" | "tag",
+    value: string | null | undefined,
+  ) => {
     // Skip if value is null or undefined
     if (value == null) return;
     switch (filterType) {
-      case 'status':
-        setStatusFilter(prev =>
+      case "status":
+        setStatusFilter((prev) =>
           prev.includes(value)
-            ? prev.filter(v => v !== value)
-            : [...prev, value]
+            ? prev.filter((v) => v !== value)
+            : [...prev, value],
         );
         break;
-      case 'cliente':
-        setClienteFilter(prev =>
+      case "cliente":
+        setClienteFilter((prev) =>
           prev.includes(value)
-            ? prev.filter(v => v !== value)
-            : [...prev, value]
+            ? prev.filter((v) => v !== value)
+            : [...prev, value],
         );
         break;
-      case 'cidade':
-        setCidadeFilter(prev =>
+      case "cidade":
+        setCidadeFilter((prev) =>
           prev.includes(value)
-            ? prev.filter(v => v !== value)
-            : [...prev, value]
+            ? prev.filter((v) => v !== value)
+            : [...prev, value],
         );
         break;
-      case 'tipoVeiculo':
-        setTipoVeiculoFilter(prev =>
+      case "tipoVeiculo":
+        setTipoVeiculoFilter((prev) =>
           prev.includes(value)
-            ? prev.filter(v => v !== value)
-            : [...prev, value]
+            ? prev.filter((v) => v !== value)
+            : [...prev, value],
         );
         break;
-      case 'tag':
-        setTagFilter(prev =>
+      case "tag":
+        setTagFilter((prev) =>
           prev.includes(value)
-            ? prev.filter(v => v !== value)
-            : [...prev, value]
+            ? prev.filter((v) => v !== value)
+            : [...prev, value],
         );
         break;
     }
   };
 
-  const clearFilter = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'tag') => {
+  const clearFilter = (
+    filterType: "status" | "cliente" | "cidade" | "tipoVeiculo" | "tag",
+  ) => {
     switch (filterType) {
-      case 'status':
+      case "status":
         setStatusFilter([]);
         break;
-      case 'cliente':
+      case "cliente":
         setClienteFilter([]);
         break;
-      case 'cidade':
+      case "cidade":
         setCidadeFilter([]);
         break;
-      case 'tipoVeiculo':
+      case "tipoVeiculo":
         setTipoVeiculoFilter([]);
         break;
-      case 'tag':
+      case "tag":
         setTagFilter([]);
-        setTagFilterMode('contains');
+        setTagFilterMode("contains");
         break;
     }
   };
 
-  const getFilterButtonText = (filterType: 'status' | 'cliente' | 'cidade' | 'tipoVeiculo' | 'tag') => {
+  const getFilterButtonText = (
+    filterType: "status" | "cliente" | "cidade" | "tipoVeiculo" | "tag",
+  ) => {
     const filterMap = {
       status: {
-        label: 'Status',
+        label: "Status",
         filter: statusFilter,
-        allText: 'Todos os status'
+        allText: "Todos os status",
       },
       cliente: {
-        label: 'Cliente',
+        label: "Cliente",
         filter: clienteFilter,
-        allText: 'Todos os clientes'
+        allText: "Todos os clientes",
       },
       cidade: {
-        label: 'Cidade',
+        label: "Cidade",
         filter: cidadeFilter,
-        allText: 'Todas as cidades'
+        allText: "Todas as cidades",
       },
       tipoVeiculo: {
-        label: 'Tipo de Veículo',
+        label: "Tipo de Veículo",
         filter: tipoVeiculoFilter,
-        allText: 'Todos os tipos de veículo'
+        allText: "Todos os tipos de veículo",
       },
       tag: {
-        label: 'Marcadores',
+        label: "Marcadores",
         filter: tagFilter,
-        allText: tagFilterMode === 'contains' ? 'Contém marcadores' : 'Não contém marcadores'
-      }
+        allText:
+          tagFilterMode === "contains"
+            ? "Contém marcadores"
+            : "Não contém marcadores",
+      },
     };
 
     const { filter, allText } = filterMap[filterType];
 
     if (filter.length === 0) return allText;
-    if (filterType === 'tag') {
-      const modeText = tagFilterMode === 'contains' ? 'Contém' : 'Não contém';
+    if (filterType === "tag") {
+      const modeText = tagFilterMode === "contains" ? "Contém" : "Não contém";
       if (filter.length === 1) {
-        const tagName = tags.find(t => t.id.toString() === filter[0])?.nome || filter[0];
+        const tagName =
+          tags.find((t) => t.id.toString() === filter[0])?.nome || filter[0];
         return `${modeText}: ${tagName}`;
       }
-      return `${modeText}: ${filter.length} marcador${filter.length !== 1 ? 'es' : ''}`;
+      return `${modeText}: ${filter.length} marcador${filter.length !== 1 ? "es" : ""}`;
     }
     if (filter.length === 1) {
-      if (filter[0] === 'sem_cliente') return 'Sem cliente';
-      if (filter[0] === 'sem_veiculo') return 'Sem veículo';
+      if (filter[0] === "sem_cliente") return "Sem cliente";
+      if (filter[0] === "sem_veiculo") return "Sem veículo";
       return `${filter[0]}`;
     }
     return `${filter.length} selecionado(s)`;
   };
 
   const handleSelectAll = () => {
-    const currentPageIds = filteredContratados.map(m => m.motorista_id || 0).filter(Boolean);
-    const allCurrentSelected = currentPageIds.length > 0 && currentPageIds.every(id => selectedItems.has(id));
+    const currentPageIds = filteredContratados
+      .map((m) => m.motorista_id || 0)
+      .filter(Boolean);
+    const allCurrentSelected =
+      currentPageIds.length > 0 &&
+      currentPageIds.every((id) => selectedItems.has(id));
     const newSelectedItems = new Set(selectedItems);
     if (allCurrentSelected) {
       // Desmarcar itens da página atual
-      currentPageIds.forEach(id => newSelectedItems.delete(id));
+      currentPageIds.forEach((id) => newSelectedItems.delete(id));
       setSelectAllResults(false);
     } else {
       // Adicionar itens da página atual ao set existente
-      currentPageIds.forEach(id => newSelectedItems.add(id));
+      currentPageIds.forEach((id) => newSelectedItems.add(id));
     }
     setSelectedItems(newSelectedItems);
   };
@@ -1795,54 +2235,108 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const handleSelectAllResults = async () => {
     setSelectAllResultsLoading(true);
     try {
+      let motoristaIdsByArea: number[] | null = null;
+      if (areaAtuacaoFilter.length > 0) {
+        const { data: areaRows, error: areaError } = await supabase
+          .from("motorista_area_atuacao")
+          .select("motorista_id")
+          .eq("company_id", companyId)
+          .in("area", areaAtuacaoFilter);
+
+        if (areaError) {
+          console.error(
+            "Erro ao filtrar por áreas de atuação (selecionar todos):",
+            areaError,
+          );
+        } else {
+          motoristaIdsByArea = Array.from(
+            new Set(
+              (areaRows || [])
+                .map((row: any) => row.motorista_id)
+                .filter((id: any) => typeof id === "number"),
+            ),
+          );
+
+          if (motoristaIdsByArea.length === 0) {
+            setSelectedItems(new Set());
+            setSelectAllResults(false);
+            setSelectAllResultsLoading(false);
+            return;
+          }
+        }
+      }
+
       let q = supabase
-        .from('vw_agregados_completo')
-        .select('motorista_id')
-        .eq('company_id', companyId)
-        .eq('funcao', 'Agregado');
+        .from("vw_agregados_completo")
+        .select("motorista_id")
+        .eq("company_id", companyId)
+        .eq("funcao", "Agregado");
+
+      if (motoristaIdsByArea && motoristaIdsByArea.length > 0) {
+        q = q.in("motorista_id", motoristaIdsByArea);
+      }
 
       if (debouncedSearch.trim()) {
         const term = debouncedSearch.trim();
-        q = q.or(`nome_motorista.ilike.%${term}%,cpf.ilike.%${term}%,placa.ilike.%${term}%,telefone.ilike.%${term}%`);
+        q = q.or(
+          `nome_motorista.ilike.%${term}%,cpf.ilike.%${term}%,placa.ilike.%${term}%,telefone.ilike.%${term}%`,
+        );
       }
-      if (statusFilter.length > 0) q = q.in('st_cadastro', statusFilter);
-      if (cidadeFilter.length > 0) q = q.in('nome_cidade', cidadeFilter);
-      const bauFiltrosReais = bauFilter.filter(b => b !== 'sem_bau');
-      if (bauFiltrosReais.length > 0 && !bauFilter.includes('sem_bau')) q = q.in('bau', bauFiltrosReais);
-      const clientesFiltros = clienteFilter.filter(c => c !== 'sem_cliente');
-      if (clientesFiltros.length > 0 && !clienteFilter.includes('sem_cliente')) {
-        q = q.in('cliente_id', clientesFiltros.map(Number));
-      } else if (clienteFilter.includes('sem_cliente') && clienteFilter.length === 1) {
-        q = q.is('cliente_id', null);
+      if (statusFilter.length > 0) q = q.in("st_cadastro", statusFilter);
+      if (cidadeFilter.length > 0) q = q.in("nome_cidade", cidadeFilter);
+      const bauFiltrosReais = bauFilter.filter((b) => b !== "sem_bau");
+      if (bauFiltrosReais.length > 0 && !bauFilter.includes("sem_bau"))
+        q = q.in("bau", bauFiltrosReais);
+      const clientesFiltros = clienteFilter.filter((c) => c !== "sem_cliente");
+      if (
+        clientesFiltros.length > 0 &&
+        !clienteFilter.includes("sem_cliente")
+      ) {
+        q = q.in("cliente_id", clientesFiltros.map(Number));
+      } else if (
+        clienteFilter.includes("sem_cliente") &&
+        clienteFilter.length === 1
+      ) {
+        q = q.is("cliente_id", null);
       }
-      if (dateFilter !== 'all') {
+      if (dateFilter !== "all") {
         const today = new Date();
         let startDate = new Date();
-        if (dateFilter === 'today') {
+        if (dateFilter === "today") {
           startDate = new Date(today.setHours(0, 0, 0, 0));
-          q = q.gte('data_cadastro', startDate.toISOString().split('T')[0]).lte('data_cadastro', new Date().toISOString().split('T')[0]);
-        } else if (dateFilter === '2days') {
+          q = q
+            .gte("data_cadastro", startDate.toISOString().split("T")[0])
+            .lte("data_cadastro", new Date().toISOString().split("T")[0]);
+        } else if (dateFilter === "2days") {
           startDate.setDate(today.getDate() - 2);
-          q = q.gte('data_cadastro', startDate.toISOString().split('T')[0]);
-        } else if (dateFilter === '15days') {
+          q = q.gte("data_cadastro", startDate.toISOString().split("T")[0]);
+        } else if (dateFilter === "15days") {
           startDate.setDate(today.getDate() - 15);
-          q = q.gte('data_cadastro', startDate.toISOString().split('T')[0]);
-        } else if (dateFilter === '30days') {
+          q = q.gte("data_cadastro", startDate.toISOString().split("T")[0]);
+        } else if (dateFilter === "30days") {
           startDate.setDate(today.getDate() - 30);
-          q = q.gte('data_cadastro', startDate.toISOString().split('T')[0]);
-        } else if (dateFilter === 'custom' && customDateRange.startDate && customDateRange.endDate) {
-          q = q.gte('data_cadastro', customDateRange.startDate).lte('data_cadastro', customDateRange.endDate);
+          q = q.gte("data_cadastro", startDate.toISOString().split("T")[0]);
+        } else if (
+          dateFilter === "custom" &&
+          customDateRange.startDate &&
+          customDateRange.endDate
+        ) {
+          q = q
+            .gte("data_cadastro", customDateRange.startDate)
+            .lte("data_cadastro", customDateRange.endDate);
         }
       }
 
       const { data, error } = await q;
       if (error) throw error;
 
-      const allIds = new Set((data ?? []).map(r => r.motorista_id).filter(Boolean) as number[]);
+      const allIds = new Set(
+        (data ?? []).map((r) => r.motorista_id).filter(Boolean) as number[],
+      );
       setSelectedItems(allIds);
       setSelectAllResults(true);
     } catch {
-      toast.error('Erro ao selecionar todos os resultados');
+      toast.error("Erro ao selecionar todos os resultados");
     } finally {
       setSelectAllResultsLoading(false);
     }
@@ -1852,39 +2346,44 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     try {
       // Delete all selected items
       for (const id of Array.from(selectedItems)) {
-        const { error } = await query('motorista')
+        const { error } = await query("motorista")
           .delete()
-          .eq('motorista_id', id);
+          .eq("motorista_id", id);
 
         if (error) throw error;
       }
 
       // Update the list
-      setContratados(contratados.filter(m => !selectedItems.has(m.motorista_id || 0)));
-      toast.success(`${selectedItems.size} motorista${selectedItems.size !== 1 ? 's' : ''} excluído${selectedItems.size !== 1 ? 's' : ''} com sucesso`);
+      setContratados(
+        contratados.filter((m) => !selectedItems.has(m.motorista_id || 0)),
+      );
+      toast.success(
+        `${selectedItems.size} motorista${selectedItems.size !== 1 ? "s" : ""} excluído${selectedItems.size !== 1 ? "s" : ""} com sucesso`,
+      );
 
       // Reset selection
       setSelectedItems(new Set());
       setSelectAllResults(false);
       setIsBulkDeleteModalOpen(false);
     } catch (error) {
-      console.error('Error deleting motoristas:', error);
-      toast.error('Erro ao excluir motoristas');
+      console.error("Error deleting motoristas:", error);
+      toast.error("Erro ao excluir motoristas");
     }
   };
 
-  const handleBulkAction = (type: 'status' | 'client' | 'tags') => {
+  const handleBulkAction = (type: "status" | "client" | "tags") => {
     setBulkActionType(type);
     setIsBulkActionsModalOpen(true);
   };
-
-
 
   const handleMassMessage = () => {
     setIsMassMessageModalOpen(true);
   };
 
-  const handleContextMenu = (e: React.MouseEvent, motorista: ViewContratado) => {
+  const handleContextMenu = (
+    e: React.MouseEvent,
+    motorista: ViewContratado,
+  ) => {
     e.preventDefault();
     setContextMenu({
       visible: true,
@@ -1912,76 +2411,91 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     }
   };
 
-  const handleUpdateStatus = async (e: React.MouseEvent | null, motorista: ViewContratado, newStatus: string) => {
+  const handleUpdateStatus = async (
+    e: React.MouseEvent | null,
+    motorista: ViewContratado,
+    newStatus: string,
+  ) => {
     if (e) e.stopPropagation();
     try {
       setUpdatingStatus(motorista.motorista_id || 0);
 
       // Update the status in the database
       const { error } = await supabase
-        .from('motorista')
+        .from("motorista")
         .update({ st_cadastro: newStatus })
-        .eq('motorista_id', motorista.motorista_id || 0);
+        .eq("motorista_id", motorista.motorista_id || 0);
 
       if (error) throw error;
 
       // Update the local state
-      setContratados(prev =>
-        prev.map(m =>
+      setContratados((prev) =>
+        prev.map((m) =>
           m.motorista_id === motorista.motorista_id
             ? { ...m, st_cadastro: newStatus }
-            : m
-        )
+            : m,
+        ),
       );
-      toast.success('Status atualizado com sucesso');
+      toast.success("Status atualizado com sucesso");
     } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Erro ao atualizar status');
+      console.error("Error updating status:", error);
+      toast.error("Erro ao atualizar status");
     } finally {
       setUpdatingStatus(null);
       setStatusDropdownOpen(null);
     }
   };
 
-  const handleUpdateCliente = async (e: React.MouseEvent | null, motorista: ViewContratado, clienteId: number | null) => {
+  const handleUpdateCliente = async (
+    e: React.MouseEvent | null,
+    motorista: ViewContratado,
+    clienteId: number | null,
+  ) => {
     if (e) e.stopPropagation();
     try {
       setUpdatingCliente(motorista.motorista_id || 0);
 
       // Update the cliente_id in the database
       const { error } = await supabase
-        .from('motorista')
+        .from("motorista")
         .update({ cliente_id: clienteId })
-        .eq('motorista_id', motorista.motorista_id || 0);
+        .eq("motorista_id", motorista.motorista_id || 0);
 
       if (error) throw error;
 
       // Update the local state
-      setContratados(prev =>
-        prev.map(m =>
+      setContratados((prev) =>
+        prev.map((m) =>
           m.motorista_id === motorista.motorista_id
             ? {
-              ...m,
-              cliente_id: clienteId,
-              cliente: clienteId
-                ? clientes.find(c => c.cliente_id === clienteId)
-                : null
-            }
-            : m
-        )
+                ...m,
+                cliente_id: clienteId,
+                cliente: clienteId
+                  ? clientes.find((c) => c.cliente_id === clienteId)
+                  : null,
+              }
+            : m,
+        ),
       );
 
-      toast.success(clienteId ? 'Cliente atualizado com sucesso' : 'Cliente removido com sucesso');
+      toast.success(
+        clienteId
+          ? "Cliente atualizado com sucesso"
+          : "Cliente removido com sucesso",
+      );
     } catch (error) {
-      console.error('Error updating cliente:', error);
-      toast.error('Erro ao atualizar cliente');
+      console.error("Error updating cliente:", error);
+      toast.error("Erro ao atualizar cliente");
     } finally {
       setUpdatingCliente(null);
       setClienteDropdownOpen(null);
     }
   };
 
-  const handleToggleStatus = async (e: React.MouseEvent, motorista: ViewContratado) => {
+  const handleToggleStatus = async (
+    e: React.MouseEvent,
+    motorista: ViewContratado,
+  ) => {
     e.stopPropagation();
     try {
       setUpdatingStatus(motorista.motorista_id || 0);
@@ -1990,25 +2504,27 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const newAtivo = !motorista.ativo;
 
       const { error } = await supabase
-        .from('motorista')
+        .from("motorista")
         .update({ ativo: newAtivo })
-        .eq('motorista_id', motorista.motorista_id || 0);
+        .eq("motorista_id", motorista.motorista_id || 0);
 
       if (error) throw error;
 
       // Update the local state
-      setContratados(prev =>
-        prev.map(m =>
+      setContratados((prev) =>
+        prev.map((m) =>
           m.motorista_id === motorista.motorista_id
             ? { ...m, ativo: newAtivo }
-            : m
-        )
+            : m,
+        ),
       );
 
-      toast.success(`Motorista ${newAtivo ? 'ativado' : 'desativado'} com sucesso`);
+      toast.success(
+        `Motorista ${newAtivo ? "ativado" : "desativado"} com sucesso`,
+      );
     } catch (error) {
-      console.error('Error updating ativo status:', error);
-      toast.error('Erro ao atualizar status do motorista');
+      console.error("Error updating ativo status:", error);
+      toast.error("Erro ao atualizar status do motorista");
     } finally {
       setUpdatingStatus(null);
     }
@@ -2016,9 +2532,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   const getMotoristaCity = (motorista: ViewContratado): string => {
     // Usar diretamente o campo nome_cidade da view vw_agregados_completo
-    return motorista.nome_cidade ?? '';
+    return motorista.nome_cidade ?? "";
   };
-
 
   const filteredContratados = contratados.filter((motorista): boolean => {
     const searchLower = searchTerm.toLowerCase();
@@ -2029,12 +2544,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     let tipoVeiculoMatch = true;
     if (tipoVeiculoFilter.length > 0) {
       // Check for 'sem_veiculo' filter
-      if (tipoVeiculoFilter.includes('sem_veiculo')) {
+      if (tipoVeiculoFilter.includes("sem_veiculo")) {
         tipoVeiculoMatch = !motorista.veiculo || motorista.veiculo.length === 0;
 
         // If other filters are also selected, we need to check them too
         if (tipoVeiculoFilter.length > 1) {
-          const hasMatchingVehicle = checkVehicleTypeMatch(motorista, tipoVeiculoFilter.filter(t => t !== 'sem_veiculo'));
+          const hasMatchingVehicle = checkVehicleTypeMatch(
+            motorista,
+            tipoVeiculoFilter.filter((t) => t !== "sem_veiculo"),
+          );
           tipoVeiculoMatch = tipoVeiculoMatch || hasMatchingVehicle;
         }
       } else {
@@ -2046,17 +2564,20 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     // Lógica para filtro de baú (multiseleção)
     let bauMatch = true;
     if (bauFilter.length > 0) {
-      const motoristaBau = motorista.bau?.trim().toUpperCase() || '';
+      const motoristaBau = motorista.bau?.trim().toUpperCase() || "";
       // Considera "SEM BAÚ" ou vazio como veículo sem baú
-      const isSemBau = !motoristaBau || motoristaBau === 'SEM BAÚ' || motoristaBau === 'SEM BAU';
-      
+      const isSemBau =
+        !motoristaBau ||
+        motoristaBau === "SEM BAÚ" ||
+        motoristaBau === "SEM BAU";
+
       // Check for 'sem_bau' filter
-      if (bauFilter.includes('sem_bau')) {
+      if (bauFilter.includes("sem_bau")) {
         bauMatch = isSemBau;
 
         // Se outros filtros estão selecionados, combina os resultados
         if (bauFilter.length > 1) {
-          const otherBauFilters = bauFilter.filter(b => b !== 'sem_bau');
+          const otherBauFilters = bauFilter.filter((b) => b !== "sem_bau");
           const hasMatchingBau = otherBauFilters.includes(motoristaBau);
           bauMatch = bauMatch || hasMatchingBau;
         }
@@ -2072,48 +2593,60 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       const motoristaId = motorista.motorista_id;
       if (motoristaId) {
         const motoristaTagsList = motoristaTags[motoristaId] || [];
-        const motoristaTagIds = motoristaTagsList.map((tag: any) => tag.id.toString());
+        const motoristaTagIds = motoristaTagsList.map((tag: any) =>
+          tag.id.toString(),
+        );
 
-        if (tagFilterMode === 'contains') {
+        if (tagFilterMode === "contains") {
           // Modo "contém": motorista deve ter pelo menos uma das tags selecionadas
-          tagMatch = tagFilter.some(tagId => motoristaTagIds.includes(tagId));
+          tagMatch = tagFilter.some((tagId) => motoristaTagIds.includes(tagId));
         } else {
           // Modo "não contém": motorista NÃO deve ter nenhuma das tags selecionadas
-          tagMatch = !tagFilter.some(tagId => motoristaTagIds.includes(tagId));
+          tagMatch = !tagFilter.some((tagId) =>
+            motoristaTagIds.includes(tagId),
+          );
         }
-
       } else {
         // Se não tem ID, no modo "contém" não passa, no modo "não contém" passa
-        tagMatch = tagFilterMode === 'not_contains';
+        tagMatch = tagFilterMode === "not_contains";
       }
     }
 
-    const ativoMatch = ativoFilter === '' ? true :
-    ativoFilter === 'ativo' ? motorista.ativo === true :
-      ativoFilter === 'inativo' ? motorista.ativo === false : true;
+    const ativoMatch =
+      ativoFilter === ""
+        ? true
+        : ativoFilter === "ativo"
+          ? motorista.ativo === true
+          : ativoFilter === "inativo"
+            ? motorista.ativo === false
+            : true;
 
     // Client-side search is a no-op when server-side search is active
     // (already filtered by server). Only needed for email which isn't in the view OR
     // when debouncedSearch is empty.
-    const searchMatch = !debouncedSearch.trim() ? Boolean(
-      (motorista.nome_motorista && motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
-      (motorista.cpf && motorista.cpf.includes(searchLower)) ||
-      (typeof motorista.email === 'string' && motorista.email.toLowerCase().includes(searchLower)) ||
-      (motorista.telefone && motorista.telefone.toString().includes(searchLower))
-    ) : true;
+    const searchMatch = !debouncedSearch.trim()
+      ? Boolean(
+          (motorista.nome_motorista &&
+            motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
+          (motorista.cpf && motorista.cpf.includes(searchLower)) ||
+          (typeof motorista.email === "string" &&
+            motorista.email.toLowerCase().includes(searchLower)) ||
+          (motorista.telefone &&
+            motorista.telefone.toString().includes(searchLower)),
+        )
+      : true;
 
     return Boolean(
-      tipoVeiculoMatch &&
-      bauMatch &&
-      tagMatch &&
-      ativoMatch &&
-      searchMatch
+      tipoVeiculoMatch && bauMatch && tagMatch && ativoMatch && searchMatch,
     );
   });
 
   // selectAll is derived: true when every item on the current page is selected
-  const selectAll = filteredContratados.length > 0 &&
-    filteredContratados.every(m => m.motorista_id != null && selectedItems.has(m.motorista_id));
+  const selectAll =
+    filteredContratados.length > 0 &&
+    filteredContratados.every(
+      (m) => m.motorista_id != null && selectedItems.has(m.motorista_id),
+    );
 
   // Server-side pagination — paginatedData is already the current page from the server
   // serverPage is 0-indexed; Pagination component expects 1-indexed currentPage
@@ -2133,12 +2666,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   return (
     <div className="space-y-6">
-
       <div className="flex justify-between items-center">
         <div className="flex items-center">
           {selectedItems.size > 0 && (
             <span className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 rounded-full text-sm">
-              {selectedItems.size} selecionado{selectedItems.size !== 1 ? 's' : ''}
+              {selectedItems.size} selecionado
+              {selectedItems.size !== 1 ? "s" : ""}
             </span>
           )}
         </div>
@@ -2147,7 +2680,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             <>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handleBulkAction('status')}
+                  onClick={() => handleBulkAction("status")}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
                             transition-colors flex items-center gap-2"
@@ -2155,16 +2688,24 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   <Edit2 className="w-5 h-5" />
                   Atualizar Status
                 </button>
-
-
               </div>
               <button
-                onClick={() => handleBulkAction('client')}
+                onClick={() => handleBulkAction("client")}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
                           transition-colors flex items-center gap-2"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                   <circle cx="9" cy="7" r="4"></circle>
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -2173,7 +2714,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 Atribuir Cliente
               </button>
               <button
-                onClick={() => handleBulkAction('tags')}
+                onClick={() => handleBulkAction("tags")}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 
                           focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 
                           transition-colors flex items-center gap-2"
@@ -2196,7 +2737,17 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 
                           transition-colors flex items-center gap-2"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M3 6h18"></path>
                   <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                   <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
@@ -2208,478 +2759,702 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         </div>
       </div>
 
-
       <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 p-6 rounded-xl shadow-lg border border-gray-200/70 dark:border-gray-700/70 backdrop-blur-sm">
-            {/* Search bar */}
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Buscar por nome, CPF, email ou telefone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-              />
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
+        {/* Search bar */}
+        <div className="relative flex-1">
+          <input
+            type="text"
+            placeholder="Buscar por nome, CPF, email ou telefone..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+          />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
         <div className="p-4">
           {/* Compact header with search and add button */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">        
-              {/* Filter Tags - Filtros aplicados como tags removíveis */}
-              <FilterTags
-                statusFilter={statusFilter}
-                ativoFilter={ativoFilter === 'ativo' ? 'true' : ativoFilter === 'inativo' ? 'false' : ''}
-                clienteFilter={clienteFilter}
-                cidadeFilter={cidadeFilter}
-                tagFilter={tagFilter}
-                tipoVeiculoFilter={tipoVeiculoFilter}
-                bauFilter={bauFilter}
-                dateFilter={dateFilter}
-                customDateRange={customDateRange}
-                onRemoveStatus={(status) => {
-                  setStatusFilter(statusFilter.filter(s => s !== status));
-                }}
-                onRemoveAtivo={() => {
-                  setAtivoFilter('');
-                }}
-                onRemoveCliente={(clienteId) => {
-                  setClienteFilter(clienteFilter.filter(c => c !== clienteId));
-                }}
-                onRemoveCidade={(cidade) => {
-                  setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
-                }}
-                onRemoveTag={(tagId) => {
-                  setTagFilter(tagFilter.filter(t => t !== tagId));
-                }}
-                onRemoveTipoVeiculo={(tipo) => {
-                  setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== tipo));
-                }}
-                onRemoveBau={(bau) => {
-                  setBauFilter(bauFilter.filter(b => b !== bau));
-                }}
-                onRemoveDate={() => {
-                  setDateFilter('all');
-                }}
-                onClearAll={() => {
-                  setStatusFilter([]);
-                  setCidadeFilter([]);
-                  setClienteFilter([]);
-                  setAtivoFilter('');
-                  setTagFilter([]);
-                  setTipoVeiculoFilter([]);
-                  setBauFilter([]);
-                  setDateFilter('all');
-                }}
-                clientes={clientes}
-                tags={tags}
-                cidades={cidades}
-                tiposVeiculo={tiposVeiculo}
-              />
-              {/* Filtros modernos */}
-              <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
-                <div className="flex flex-wrap gap-2">
-                  {/* Status Filter */}
-                  <div className="relative" style={{ position: 'relative' }}>
-                    <div className="relative group" ref={statusDropdownRef}>
-                      <button
-                        type="button"
-                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                        onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            {/* Filter Tags - Filtros aplicados como tags removíveis */}
+            <FilterTags
+              statusFilter={statusFilter}
+              ativoFilter={
+                ativoFilter === "ativo"
+                  ? "true"
+                  : ativoFilter === "inativo"
+                    ? "false"
+                    : ""
+              }
+              clienteFilter={clienteFilter}
+              cidadeFilter={cidadeFilter}
+              tagFilter={tagFilter}
+              tipoVeiculoFilter={tipoVeiculoFilter}
+              bauFilter={bauFilter}
+              areaAtuacaoFilter={areaAtuacaoFilter}
+              dateFilter={dateFilter}
+              customDateRange={customDateRange}
+              onRemoveStatus={(status) => {
+                setStatusFilter(statusFilter.filter((s) => s !== status));
+              }}
+              onRemoveAtivo={() => {
+                setAtivoFilter("");
+              }}
+              onRemoveCliente={(clienteId) => {
+                setClienteFilter(clienteFilter.filter((c) => c !== clienteId));
+              }}
+              onRemoveCidade={(cidade) => {
+                setCidadeFilter(cidadeFilter.filter((c) => c !== cidade));
+              }}
+              onRemoveTag={(tagId) => {
+                setTagFilter(tagFilter.filter((t) => t !== tagId));
+              }}
+              onRemoveTipoVeiculo={(tipo) => {
+                setTipoVeiculoFilter(
+                  tipoVeiculoFilter.filter((t) => t !== tipo),
+                );
+              }}
+              onRemoveBau={(bau) => {
+                setBauFilter(bauFilter.filter((b) => b !== bau));
+              }}
+              onRemoveAreaAtuacao={(area) => {
+                setAreaAtuacaoFilter(
+                  areaAtuacaoFilter.filter((a) => a !== area),
+                );
+              }}
+              onRemoveDate={() => {
+                setDateFilter("all");
+              }}
+              onClearAll={() => {
+                setStatusFilter([]);
+                setCidadeFilter([]);
+                setClienteFilter([]);
+                setAtivoFilter("");
+                setTagFilter([]);
+                setTipoVeiculoFilter([]);
+                setBauFilter([]);
+                setAreaAtuacaoFilter([]);
+                setDateFilter("all");
+              }}
+              clientes={clientes}
+              tags={tags}
+              cidades={cidades}
+              tiposVeiculo={tiposVeiculo}
+              areasAtuacao={areasAtuacao}
+            />
+            {/* Filtros modernos */}
+            <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
+              <div className="flex flex-wrap gap-2">
+                {/* Status Filter */}
+                <div className="relative" style={{ position: "relative" }}>
+                  <div className="relative group" ref={statusDropdownRef}>
+                    <button
+                      type="button"
+                      className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                      onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4" />
+                        <span>
+                          {statusFilter.length === 0
+                            ? "Status"
+                            : `Status (${statusFilter.length})`}
+                        </span>
+                      </div>
+                    </button>
+
+                    {showStatusDropdown && (
+                      <div
+                        className="bg-white dark:bg-gray-700 shadow-2xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                        style={{
+                          position: "absolute",
+                          bottom: "100%",
+                          left: 0,
+                          marginBottom: "4px",
+                          zIndex: 999999,
+                        }}
                       >
-                        <div className="flex items-center gap-2">
-                          <Filter className="h-4 w-4" />
-                          <span>
-                            {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
-                          </span>
-                        </div>
-                      </button>
-
-                      {showStatusDropdown && (
-                        <div
-                          className="bg-white dark:bg-gray-700 shadow-2xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
-                          style={{
-                            position: 'absolute',
-                            bottom: '100%',
-                            left: 0,
-                            marginBottom: '4px',
-                            zIndex: 999999
-                          }}>
-                          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
-                              <button
-                                type="button"
-                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setStatusFilter([]);
-                                }}
-                              >
-                                Limpar
-                              </button>
-                            </div>
-                          </div>
-                          {[
-                            { value: 'cadastrado', label: 'Cadastrado' },
-                            { value: 'qualificado', label: 'Qualificado' },
-                            { value: 'documentacao', label: 'Documentação' },
-                            { value: 'gestao_risco', label: 'Gestão de Risco' },
-                            { value: 'contrato_enviado', label: 'Contrato Enviado' },
-                            { value: 'contratado', label: 'Contratado' },
-                            { value: 'repescagem', label: 'Repescagem' },
-                            { value: 'rejeitado', label: 'Rejeitado' }
-                          ].map(({ value, label }) => (
-                            <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                              <label className="flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                                  checked={statusFilter.includes(value)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setStatusFilter([...statusFilter, value]);
-                                    } else {
-                                      setStatusFilter(statusFilter.filter(s => s !== value));
-                                    }
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                                <span className="text-sm text-gray-700 dark:text-gray-200">{label}</span>
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-
-
-                  {/* Cliente Filter */}
-                  <div className="relative" style={{ position: 'relative' }}>
-                    <div className="relative group" ref={clienteDropdownRef}>
-                      <button
-                        type="button"
-                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                        onClick={() => setShowClienteDropdown(!showClienteDropdown)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                          </svg>
-                          <span>
-                            {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
-                          </span>
-                        </div>
-                      </button>
-                      {showClienteDropdown && (
-                        <div
-                          className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
-                          style={{
-                            position: 'absolute',
-                            bottom: '100%',
-                            left: 0,
-                            marginBottom: '4px',
-                            zIndex: 999999
-                          }}>
-                          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
-                              <button
-                                type="button"
-                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setClienteFilter([]);
-                                }}
-                              >
-                                Limpar
-                              </button>
-                            </div>
-                          </div>
-                          <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                            <label className="flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                                checked={clienteFilter.includes('sem_cliente')}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setClienteFilter([...clienteFilter, 'sem_cliente']);
-                                  } else {
-                                    setClienteFilter(clienteFilter.filter(id => id !== 'sem_cliente'));
-                                  }
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <span className="text-sm text-gray-700 dark:text-gray-200">Sem cliente</span>
-                            </label>
-                          </div>
-                          {clientes.map(cliente => (
-                            <div key={cliente.cliente_id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                              <label className="flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                                  checked={clienteFilter.includes(cliente.cliente_id.toString())}
-                                  onChange={(e) => {
-                                    const clienteId = cliente.cliente_id.toString();
-                                    if (e.target.checked) {
-                                      setClienteFilter([...clienteFilter, clienteId]);
-                                    } else {
-                                      setClienteFilter(clienteFilter.filter(id => id !== clienteId));
-                                    }
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                                <span className="text-sm text-gray-700 dark:text-gray-200">{cliente.nome}</span>
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Cidade Filter */}
-                  <div className="relative" style={{ position: 'relative' }}>
-                    <div className="relative group" ref={cidadeDropdownRef}>
-                      <button
-                        type="button"
-                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                        onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          <span>
-                            {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
-                          </span>
-                        </div>
-                      </button>
-
-                      {showCidadeDropdown && (
-                        <div
-                          className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
-                          style={{
-                            position: 'absolute',
-                            bottom: '100%',
-                            left: 0,
-                            marginBottom: '4px',
-                            zIndex: 999999
-                          }}>
-                          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
-                              <button
-                                type="button"
-                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCidadeFilter([]);
-                                }}
-                              >
-                                Limpar
-                              </button>
-                            </div>
-                            <div className="relative">
-                              <input
-                                type="text"
-                                placeholder="Pesquisar cidade..."
-                                value={cidadeSearchTerm}
-                                onChange={(e) => setCidadeSearchTerm(e.target.value)}
-                                className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </div>
-                          </div>
-                          {cidades
-                            .filter((cidade): cidade is string => cidade != null)
-                            .filter((cidade) =>
-                              cidadeSearchTerm === '' ||
-                              cidade.toLowerCase().includes(cidadeSearchTerm.toLowerCase())
-                            )
-                            .map((cidade) => (
-                              <div key={cidade} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                <label className="flex items-center cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                                    checked={cidadeFilter.includes(cidade)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setCidadeFilter([...cidadeFilter, cidade]);
-                                      } else {
-                                        setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
-                                      }
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                  <span className="text-sm text-gray-700 dark:text-gray-200">{cidade}</span>
-                                </label>
-                              </div>
-                            ))
-                          }
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Tipo Veículo Filter */}
-                  <div className="relative" style={{ position: 'relative' }}>
-                    <div className="relative group" ref={tipoVeiculoDropdownRef}>
-                      <button
-                        type="button"
-                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                        onClick={() => setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Truck className="h-4 w-4" />
-                          <span>
-                            {tipoVeiculoFilter.length === 0 ? 'Veículo' : `Veículo (${tipoVeiculoFilter.length})`}
-                          </span>
-                        </div>
-                      </button>
-
-                      {showTipoVeiculoDropdown && (
-                        <div
-                          className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
-                          style={{
-                            position: 'absolute',
-                            bottom: '100%',
-                            left: 0,
-                            marginBottom: '4px',
-                            zIndex: 999999
-                          }}>
-                          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar tipos</span>
-                              <button
-                                type="button"
-                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setTipoVeiculoFilter([]);
-                                }}
-                              >
-                                Limpar
-                              </button>
-                            </div>
-                          </div>
-                          <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                            <label className="flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                                checked={tipoVeiculoFilter.includes('sem_veiculo')}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setTipoVeiculoFilter([...tipoVeiculoFilter, 'sem_veiculo']);
-                                  } else {
-                                    setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== 'sem_veiculo'));
-                                  }
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <span className="text-sm text-gray-700 dark:text-gray-200">Sem veículo</span>
-                            </label>
-                          </div>
-                          {tiposVeiculo.map((tipo) => (
-                            <div key={tipo} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                              <label className="flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                                  checked={tipoVeiculoFilter.includes(tipo)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setTipoVeiculoFilter([...tipoVeiculoFilter, tipo]);
-                                    } else {
-                                      setTipoVeiculoFilter(tipoVeiculoFilter.filter(t => t !== tipo));
-                                    }
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                                <span className="text-sm text-gray-700 dark:text-gray-200">{tipo}</span>
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Baú Filter - Only show when company has bau_access enabled */}
-                  {moduleAccess.bau && (
-                    <div className="relative" style={{ position: 'relative' }}>
-                      <div className="relative group" ref={bauDropdownRef}>
-                        <button
-                          type="button"
-                          className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                          onClick={() => showBauDropdown ? closeAllDropdowns() : toggleDropdown('bau')}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4" />
-                            <span>
-                              {bauFilter.length === 0 ? 'Baú' : `Baú (${bauFilter.length})`}
+                        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Selecionar status
                             </span>
+                            <button
+                              type="button"
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setStatusFilter([]);
+                              }}
+                            >
+                              Limpar
+                            </button>
                           </div>
-                        </button>
-
-                        {showBauDropdown && (
+                        </div>
+                        {[
+                          { value: "cadastrado", label: "Cadastrado" },
+                          { value: "qualificado", label: "Qualificado" },
+                          { value: "documentacao", label: "Documentação" },
+                          { value: "gestao_risco", label: "Gestão de Risco" },
+                          {
+                            value: "contrato_enviado",
+                            label: "Contrato Enviado",
+                          },
+                          { value: "contratado", label: "Contratado" },
+                          { value: "repescagem", label: "Repescagem" },
+                          { value: "rejeitado", label: "Rejeitado" },
+                        ].map(({ value, label }) => (
                           <div
-                            className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-48 animate-in slide-in-from-bottom-2 fade-in duration-200"
-                            style={{
-                              position: 'absolute',
-                              bottom: '100%',
-                              left: 0,
-                              marginBottom: '4px',
-                              zIndex: 999999
-                            }}>
-                            <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar baú</span>
-                                <button
-                                  type="button"
-                                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setBauFilter([]);
-                                  }}
-                                >
-                                  Limpar
-                                </button>
-                              </div>
-                            </div>
-                            <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                            key={value}
+                            className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600"
+                          >
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                                checked={statusFilter.includes(value)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setStatusFilter([...statusFilter, value]);
+                                  } else {
+                                    setStatusFilter(
+                                      statusFilter.filter((s) => s !== value),
+                                    );
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-200">
+                                {label}
+                              </span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cliente Filter */}
+                <div className="relative" style={{ position: "relative" }}>
+                  <div className="relative group" ref={clienteDropdownRef}>
+                    <button
+                      type="button"
+                      className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                      onClick={() =>
+                        setShowClienteDropdown(!showClienteDropdown)
+                      }
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="9" cy="7" r="4"></circle>
+                          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <span>
+                          {clienteFilter.length === 0
+                            ? "Cliente"
+                            : `Cliente (${clienteFilter.length})`}
+                        </span>
+                      </div>
+                    </button>
+                    {showClienteDropdown && (
+                      <div
+                        className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                        style={{
+                          position: "absolute",
+                          bottom: "100%",
+                          left: 0,
+                          marginBottom: "4px",
+                          zIndex: 999999,
+                        }}
+                      >
+                        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Selecionar clientes
+                            </span>
+                            <button
+                              type="button"
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setClienteFilter([]);
+                              }}
+                            >
+                              Limpar
+                            </button>
+                          </div>
+                        </div>
+                        <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                              checked={clienteFilter.includes("sem_cliente")}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setClienteFilter([
+                                    ...clienteFilter,
+                                    "sem_cliente",
+                                  ]);
+                                } else {
+                                  setClienteFilter(
+                                    clienteFilter.filter(
+                                      (id) => id !== "sem_cliente",
+                                    ),
+                                  );
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-200">
+                              Sem cliente
+                            </span>
+                          </label>
+                        </div>
+                        {clientes.map((cliente) => (
+                          <div
+                            key={cliente.cliente_id}
+                            className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600"
+                          >
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                                checked={clienteFilter.includes(
+                                  cliente.cliente_id.toString(),
+                                )}
+                                onChange={(e) => {
+                                  const clienteId =
+                                    cliente.cliente_id.toString();
+                                  if (e.target.checked) {
+                                    setClienteFilter([
+                                      ...clienteFilter,
+                                      clienteId,
+                                    ]);
+                                  } else {
+                                    setClienteFilter(
+                                      clienteFilter.filter(
+                                        (id) => id !== clienteId,
+                                      ),
+                                    );
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-200">
+                                {cliente.nome}
+                              </span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cidade Filter */}
+                <div className="relative" style={{ position: "relative" }}>
+                  <div className="relative group" ref={cidadeDropdownRef}>
+                    <button
+                      type="button"
+                      className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                      onClick={() => setShowCidadeDropdown(!showCidadeDropdown)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        <span>
+                          {cidadeFilter.length === 0
+                            ? "Cidade"
+                            : `Cidade (${cidadeFilter.length})`}
+                        </span>
+                      </div>
+                    </button>
+
+                    {showCidadeDropdown && (
+                      <div
+                        className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                        style={{
+                          position: "absolute",
+                          bottom: "100%",
+                          left: 0,
+                          marginBottom: "4px",
+                          zIndex: 999999,
+                        }}
+                      >
+                        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Selecionar cidades
+                            </span>
+                            <button
+                              type="button"
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCidadeFilter([]);
+                              }}
+                            >
+                              Limpar
+                            </button>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Pesquisar cidade..."
+                              value={cidadeSearchTerm}
+                              onChange={(e) =>
+                                setCidadeSearchTerm(e.target.value)
+                              }
+                              className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        </div>
+                        {cidades
+                          .filter((cidade): cidade is string => cidade != null)
+                          .filter(
+                            (cidade) =>
+                              cidadeSearchTerm === "" ||
+                              cidade
+                                .toLowerCase()
+                                .includes(cidadeSearchTerm.toLowerCase()),
+                          )
+                          .map((cidade) => (
+                            <div
+                              key={cidade}
+                              className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600"
+                            >
                               <label className="flex items-center cursor-pointer">
                                 <input
                                   type="checkbox"
                                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                                  checked={bauFilter.includes('sem_bau')}
+                                  checked={cidadeFilter.includes(cidade)}
                                   onChange={(e) => {
                                     if (e.target.checked) {
-                                      setBauFilter([...bauFilter, 'sem_bau']);
+                                      setCidadeFilter([
+                                        ...cidadeFilter,
+                                        cidade,
+                                      ]);
                                     } else {
-                                      setBauFilter(bauFilter.filter(b => b !== 'sem_bau'));
+                                      setCidadeFilter(
+                                        cidadeFilter.filter(
+                                          (c) => c !== cidade,
+                                        ),
+                                      );
                                     }
                                   }}
                                   onClick={(e) => e.stopPropagation()}
                                 />
-                                <span className="text-sm text-gray-700 dark:text-gray-200">Sem baú</span>
+                                <span className="text-sm text-gray-700 dark:text-gray-200">
+                                  {cidade}
+                                </span>
                               </label>
                             </div>
-                            {bauTypes.filter(bau => bau !== 'sem_bau').map((bau) => (
-                              <div key={bau} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Área de Atuação Filter */}
+                <div className="relative" style={{ position: "relative" }}>
+                  <div className="relative group" ref={areaAtuacaoDropdownRef}>
+                    <button
+                      type="button"
+                      className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                      onClick={() =>
+                        setShowAreaAtuacaoDropdown(!showAreaAtuacaoDropdown)
+                      }
+                    >
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        <span>
+                          {areaAtuacaoFilter.length === 0
+                            ? "Área de atuação"
+                            : `Área (${areaAtuacaoFilter.length})`}
+                        </span>
+                      </div>
+                    </button>
+
+                    {showAreaAtuacaoDropdown && (
+                      <div
+                        className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                        style={{
+                          position: "absolute",
+                          bottom: "100%",
+                          left: 0,
+                          marginBottom: "4px",
+                          zIndex: 999999,
+                        }}
+                      >
+                        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Selecionar áreas
+                            </span>
+                            <button
+                              type="button"
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAreaAtuacaoFilter([]);
+                              }}
+                            >
+                              Limpar
+                            </button>
+                          </div>
+                        </div>
+                        {areasAtuacao.map((area) => (
+                          <div
+                            key={area}
+                            className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600"
+                          >
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                                checked={areaAtuacaoFilter.includes(area)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setAreaAtuacaoFilter([
+                                      ...areaAtuacaoFilter,
+                                      area,
+                                    ]);
+                                  } else {
+                                    setAreaAtuacaoFilter(
+                                      areaAtuacaoFilter.filter(
+                                        (a) => a !== area,
+                                      ),
+                                    );
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-200">
+                                {area}
+                              </span>
+                            </label>
+                          </div>
+                        ))}
+                        {areasAtuacao.length === 0 && (
+                          <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                            Nenhuma área cadastrada.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tipo Veículo Filter */}
+                <div className="relative" style={{ position: "relative" }}>
+                  <div className="relative group" ref={tipoVeiculoDropdownRef}>
+                    <button
+                      type="button"
+                      className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                      onClick={() =>
+                        setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)
+                      }
+                    >
+                      <div className="flex items-center gap-2">
+                        <Truck className="h-4 w-4" />
+                        <span>
+                          {tipoVeiculoFilter.length === 0
+                            ? "Veículo"
+                            : `Veículo (${tipoVeiculoFilter.length})`}
+                        </span>
+                      </div>
+                    </button>
+
+                    {showTipoVeiculoDropdown && (
+                      <div
+                        className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-64 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                        style={{
+                          position: "absolute",
+                          bottom: "100%",
+                          left: 0,
+                          marginBottom: "4px",
+                          zIndex: 999999,
+                        }}
+                      >
+                        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Selecionar tipos
+                            </span>
+                            <button
+                              type="button"
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTipoVeiculoFilter([]);
+                              }}
+                            >
+                              Limpar
+                            </button>
+                          </div>
+                        </div>
+                        <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                              checked={tipoVeiculoFilter.includes(
+                                "sem_veiculo",
+                              )}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setTipoVeiculoFilter([
+                                    ...tipoVeiculoFilter,
+                                    "sem_veiculo",
+                                  ]);
+                                } else {
+                                  setTipoVeiculoFilter(
+                                    tipoVeiculoFilter.filter(
+                                      (t) => t !== "sem_veiculo",
+                                    ),
+                                  );
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-200">
+                              Sem veículo
+                            </span>
+                          </label>
+                        </div>
+                        {tiposVeiculo.map((tipo) => (
+                          <div
+                            key={tipo}
+                            className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600"
+                          >
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                                checked={tipoVeiculoFilter.includes(tipo)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setTipoVeiculoFilter([
+                                      ...tipoVeiculoFilter,
+                                      tipo,
+                                    ]);
+                                  } else {
+                                    setTipoVeiculoFilter(
+                                      tipoVeiculoFilter.filter(
+                                        (t) => t !== tipo,
+                                      ),
+                                    );
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-200">
+                                {tipo}
+                              </span>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Baú Filter - Only show when company has bau_access enabled */}
+                {moduleAccess.bau && (
+                  <div className="relative" style={{ position: "relative" }}>
+                    <div className="relative group" ref={bauDropdownRef}>
+                      <button
+                        type="button"
+                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                        onClick={() =>
+                          showBauDropdown
+                            ? closeAllDropdowns()
+                            : toggleDropdown("bau")
+                        }
+                      >
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4" />
+                          <span>
+                            {bauFilter.length === 0
+                              ? "Baú"
+                              : `Baú (${bauFilter.length})`}
+                          </span>
+                        </div>
+                      </button>
+
+                      {showBauDropdown && (
+                        <div
+                          className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-48 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                          style={{
+                            position: "absolute",
+                            bottom: "100%",
+                            left: 0,
+                            marginBottom: "4px",
+                            zIndex: 999999,
+                          }}
+                        >
+                          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                Selecionar baú
+                              </span>
+                              <button
+                                type="button"
+                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setBauFilter([]);
+                                }}
+                              >
+                                Limpar
+                              </button>
+                            </div>
+                          </div>
+                          <div className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                                checked={bauFilter.includes("sem_bau")}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setBauFilter([...bauFilter, "sem_bau"]);
+                                  } else {
+                                    setBauFilter(
+                                      bauFilter.filter((b) => b !== "sem_bau"),
+                                    );
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-200">
+                                Sem baú
+                              </span>
+                            </label>
+                          </div>
+                          {bauTypes
+                            .filter((bau) => bau !== "sem_bau")
+                            .map((bau) => (
+                              <div
+                                key={bau}
+                                className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600"
+                              >
                                 <label className="flex items-center cursor-pointer">
                                   <input
                                     type="checkbox"
@@ -2689,912 +3464,1231 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                                       if (e.target.checked) {
                                         setBauFilter([...bauFilter, bau]);
                                       } else {
-                                        setBauFilter(bauFilter.filter(b => b !== bau));
+                                        setBauFilter(
+                                          bauFilter.filter((b) => b !== bau),
+                                        );
                                       }
                                     }}
                                     onClick={(e) => e.stopPropagation()}
                                   />
-                                  <span className="text-sm text-gray-700 dark:text-gray-200">{bau}</span>
+                                  <span className="text-sm text-gray-700 dark:text-gray-200">
+                                    {bau}
+                                  </span>
                                 </label>
                               </div>
                             ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tag Filter */}
-                  <div className="relative" style={{ position: 'relative' }}>
-                    <div className="relative group" ref={tagDropdownRef}>
-                      <button
-                        type="button"
-                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                        onClick={handleToggleTagDropdown}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Tag className="h-4 w-4" />
-                          <span>
-                            {tagFilter.length === 0 ? 'Marcadores' : `Marcadores (${tagFilter.length})`}
-                          </span>
-                        </div>
-                      </button>
-
-                      {showTagDropdown && (
-                        <div
-                          className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-72 animate-in slide-in-from-bottom-2 fade-in duration-200"
-                          style={{
-                            position: 'absolute',
-                            bottom: '100%',
-                            left: 0,
-                            marginBottom: '4px',
-                            zIndex: 999999
-                          }}>
-                          {/* Header com abas */}
-                          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-xs text-gray-500 dark:text-gray-400">Filtro de marcadores</span>
-                              <button
-                                type="button"
-                                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setTagFilter([]);
-                                }}
-                              >
-                                Limpar
-                              </button>
-                            </div>
-
-                            {/* Abas Contém / Não Contém */}
-                            <div className="flex bg-gray-100 dark:bg-gray-800 rounded-md p-1">
-                              <button
-                                type="button"
-                                className={`flex-1 text-xs px-2 py-1 rounded transition-colors ${tagFilterMode === 'contains'
-                                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                                  }`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setTagFilterMode('contains');
-                                }}
-                              >
-                                Contém
-                              </button>
-                              <button
-                                type="button"
-                                className={`flex-1 text-xs px-2 py-1 rounded transition-colors ${tagFilterMode === 'not_contains'
-                                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                                  }`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setTagFilterMode('not_contains');
-                                }}
-                              >
-                                Não contém
-                              </button>
-                            </div>
-                          </div>
-                          {tags.map((tag) => (
-                            <div key={tag.id} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
-                              <label className="flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                                  checked={tagFilter.includes(tag.id.toString())}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setTagFilter([...tagFilter, tag.id.toString()]);
-                                    } else {
-                                      setTagFilter(tagFilter.filter(id => id !== tag.id.toString()));
-                                    }
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="w-3 h-3 rounded-full"
-                                    style={{ backgroundColor: tag.cor || '#3B82F6' }}
-                                  />
-                                  <span className="text-sm text-gray-700 dark:text-gray-200">{tag.nome}</span>
-                                </div>
-                              </label>
-                            </div>
-                          ))}
                         </div>
                       )}
                     </div>
                   </div>
-
-            {/* Status Ativo Filter */}
-            <div className="relative z-[50]">
-              <div className="relative group" ref={ativoDropdownRef}>
-                <button
-                  type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
-                  onClick={handleToggleAtivoDropdown}
-                >
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    <span>
-                      {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
-                    </span>
-                  </div>
-                </button>
-
-                {/* Dropdown usando createPortal */}
-                {showAtivoDropdown && ativoDropdownPosition && 
-                  createPortal(
-                    <div 
-                      className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600"
-                      style={{
-                        position: 'fixed',
-                        top: ativoDropdownPosition.top,
-                        left: ativoDropdownPosition.left,
-                        width: ativoDropdownPosition.width,
-                        zIndex: 9999
-                      }}
-                    >
-                      <div 
-                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                        onClick={() => {
-                          setAtivoFilter('');
-                          setShowAtivoDropdown(false);
-                          setAtivoDropdownPosition(null);
-                        }}
-                      >
-                        Todos
-                      </div>
-                      <div 
-                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'ativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                        onClick={() => {
-                          setAtivoFilter('ativo');
-                          setShowAtivoDropdown(false);
-                          setAtivoDropdownPosition(null);
-                        }}
-                      >
-                        Somente Ativos
-                      </div>
-                      <div 
-                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === 'inativo' ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-                        onClick={() => {
-                          setAtivoFilter('inativo');
-                          setShowAtivoDropdown(false);
-                          setAtivoDropdownPosition(null);
-                        }}
-                      >
-                        Somente Desativos
-                      </div>
-                    </div>,
-                    document.body
-                  )
-                }
-              </div>
-            </div>
-
-
-                  {/* Período Filter */}
-                  <div className="relative z-[20]">
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <select
-                      value={dateFilter}
-                      onChange={(e) => setDateFilter(e.target.value)}
-                      className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[120px]"
-                    >
-                      <option value="all">Período</option>
-                      <option value="today">Hoje</option>
-                      <option value="2days">2 dias</option>
-                      <option value="15days">15 dias</option>
-                      <option value="30days">30 dias</option>
-                      <option value="custom">Personalizado</option>
-                    </select>
-                  </div>
-
-                </div>
-
-            {/* Filter toggle and add button */}
-            <div className="flex gap-2">
-
-
-              <button
-                onClick={() => {
-                  setShowAddModal(true);
-                  setSelectedMotorista(null);
-                  setIsUnifiedModalOpen(true);
-                }}
-                className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm"
-                title="Adicionar agregado"
-                data-testid="button-add-agregado"
-              >
-                <Plus size={18} />
-                <span>Adicionar Agregado</span>
-              </button>
-            </div>
-          </div>
-          </div>
-
-
-                {dateFilter === 'custom' && (
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Data inicial
-                      </label>
-                      <input
-                        type="date"
-                        value={customDateRange.startDate}
-                        onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Data final
-                      </label>
-                      <input
-                        type="date"
-                        value={customDateRange.endDate}
-                        onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
-                  </div>
                 )}
-              
-            </div>
-          
-      </div>
 
+                {/* Tag Filter */}
+                <div className="relative" style={{ position: "relative" }}>
+                  <div className="relative group" ref={tagDropdownRef}>
+                    <button
+                      type="button"
+                      className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                      onClick={handleToggleTagDropdown}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4" />
+                        <span>
+                          {tagFilter.length === 0
+                            ? "Marcadores"
+                            : `Marcadores (${tagFilter.length})`}
+                        </span>
+                      </div>
+                    </button>
 
-
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
-          <div className="overflow-visible">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={selectAll}
-                  onChange={handleSelectAll}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {selectedItems.size > 0
-                    ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? 's' : ''}${selectAllResults ? ` de ${totalCount}` : ''}`
-                    : `Selecionar todos (${filteredContratados.length} registro${filteredContratados.length !== 1 ? 's' : ''})`}
-                </span>
-              </div>
-
-              {/* Banner: todos da página selecionados — oferecer selecionar tudo */}
-              {(() => {
-                const hasClientSideFilters = tipoVeiculoFilter.length > 0 || ativoFilter !== '' || tagFilter.length > 0;
-                if (!selectAll || selectAllResults || totalCount <= filteredContratados.length) return null;
-                return (
-                  <div className="mt-2 text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1 flex-wrap">
-                    <span>Todos os {filteredContratados.length} da página selecionados.</span>
-                    {hasClientSideFilters ? (
-                      <span className="text-gray-500 dark:text-gray-400">(Filtros adicionais ativos — navegue pelas páginas para selecionar mais.)</span>
-                    ) : (
-                      <button
-                        onClick={handleSelectAllResults}
-                        disabled={selectAllResultsLoading}
-                        className="underline hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-60 flex items-center gap-1"
+                    {showTagDropdown && (
+                      <div
+                        className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-72 animate-in slide-in-from-bottom-2 fade-in duration-200"
+                        style={{
+                          position: "absolute",
+                          bottom: "100%",
+                          left: 0,
+                          marginBottom: "4px",
+                          zIndex: 999999,
+                        }}
                       >
-                        {selectAllResultsLoading && <span className="inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
-                        {selectAllResultsLoading ? 'Carregando...' : `Selecionar todos os ${totalCount} resultados`}
-                      </button>
+                        {/* Header com abas */}
+                        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Filtro de marcadores
+                            </span>
+                            <button
+                              type="button"
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTagFilter([]);
+                              }}
+                            >
+                              Limpar
+                            </button>
+                          </div>
+
+                          {/* Abas Contém / Não Contém */}
+                          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-md p-1">
+                            <button
+                              type="button"
+                              className={`flex-1 text-xs px-2 py-1 rounded transition-colors ${
+                                tagFilterMode === "contains"
+                                  ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTagFilterMode("contains");
+                              }}
+                            >
+                              Contém
+                            </button>
+                            <button
+                              type="button"
+                              className={`flex-1 text-xs px-2 py-1 rounded transition-colors ${
+                                tagFilterMode === "not_contains"
+                                  ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTagFilterMode("not_contains");
+                              }}
+                            >
+                              Não contém
+                            </button>
+                          </div>
+                        </div>
+                        {tags.map((tag) => (
+                          <div
+                            key={tag.id}
+                            className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600"
+                          >
+                            <label className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
+                                checked={tagFilter.includes(tag.id.toString())}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setTagFilter([
+                                      ...tagFilter,
+                                      tag.id.toString(),
+                                    ]);
+                                  } else {
+                                    setTagFilter(
+                                      tagFilter.filter(
+                                        (id) => id !== tag.id.toString(),
+                                      ),
+                                    );
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{
+                                    backgroundColor: tag.cor || "#3B82F6",
+                                  }}
+                                />
+                                <span className="text-sm text-gray-700 dark:text-gray-200">
+                                  {tag.nome}
+                                </span>
+                              </div>
+                            </label>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                );
-              })()}
-
-              {/* Banner: todos os resultados selecionados */}
-              {selectAllResults && (
-                <div className="mt-2 text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                  <span>Todos os {selectedItems.size} resultados selecionados.</span>
-                  <button
-                    onClick={() => { setSelectedItems(new Set()); setSelectAllResults(false); }}
-                    className="underline hover:text-blue-800 dark:hover:text-blue-300"
-                  >
-                    Limpar seleção
-                  </button>
                 </div>
-              )}
+
+                {/* Status Ativo Filter */}
+                <div className="relative z-[50]">
+                  <div className="relative group" ref={ativoDropdownRef}>
+                    <button
+                      type="button"
+                      className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                      onClick={handleToggleAtivoDropdown}
+                    >
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        <span>
+                          {!ativoFilter
+                            ? "Ativo"
+                            : ativoFilter === "ativo"
+                              ? "Ativo (Sim)"
+                              : "Ativo (Não)"}
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* Dropdown usando createPortal */}
+                    {showAtivoDropdown &&
+                      ativoDropdownPosition &&
+                      createPortal(
+                        <div
+                          className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600"
+                          style={{
+                            position: "fixed",
+                            top: ativoDropdownPosition.top,
+                            left: ativoDropdownPosition.left,
+                            width: ativoDropdownPosition.width,
+                            zIndex: 9999,
+                          }}
+                        >
+                          <div
+                            className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? "bg-blue-50 dark:bg-blue-900/30" : ""}`}
+                            onClick={() => {
+                              setAtivoFilter("");
+                              setShowAtivoDropdown(false);
+                              setAtivoDropdownPosition(null);
+                            }}
+                          >
+                            Todos
+                          </div>
+                          <div
+                            className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === "ativo" ? "bg-blue-50 dark:bg-blue-900/30" : ""}`}
+                            onClick={() => {
+                              setAtivoFilter("ativo");
+                              setShowAtivoDropdown(false);
+                              setAtivoDropdownPosition(null);
+                            }}
+                          >
+                            Somente Ativos
+                          </div>
+                          <div
+                            className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${ativoFilter === "inativo" ? "bg-blue-50 dark:bg-blue-900/30" : ""}`}
+                            onClick={() => {
+                              setAtivoFilter("inativo");
+                              setShowAtivoDropdown(false);
+                              setAtivoDropdownPosition(null);
+                            }}
+                          >
+                            Somente Desativos
+                          </div>
+                        </div>,
+                        document.body,
+                      )}
+                  </div>
+                </div>
+
+                {/* Período Filter */}
+                <div className="relative z-[20]">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
+                    <Calendar className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <select
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[120px]"
+                  >
+                    <option value="all">Período</option>
+                    <option value="today">Hoje</option>
+                    <option value="2days">2 dias</option>
+                    <option value="15days">15 dias</option>
+                    <option value="30days">30 dias</option>
+                    <option value="custom">Personalizado</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Filter toggle and add button */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowAddModal(true);
+                    setSelectedMotorista(null);
+                    setIsUnifiedModalOpen(true);
+                  }}
+                  className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm"
+                  title="Adicionar agregado"
+                  data-testid="button-add-agregado"
+                >
+                  <Plus size={18} />
+                  <span>Adicionar Agregado</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {dateFilter === "custom" && (
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Data inicial
+                </label>
+                <input
+                  type="date"
+                  value={customDateRange.startDate}
+                  onChange={(e) =>
+                    setCustomDateRange((prev) => ({
+                      ...prev,
+                      startDate: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Data final
+                </label>
+                <input
+                  type="date"
+                  value={customDateRange.endDate}
+                  onChange={(e) =>
+                    setCustomDateRange((prev) => ({
+                      ...prev,
+                      endDate: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
+        <div className="overflow-visible">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                checked={selectAll}
+                onChange={handleSelectAll}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+              />
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {selectedItems.size > 0
+                  ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? "s" : ""}${selectAllResults ? ` de ${totalCount}` : ""}`
+                  : `Selecionar todos (${filteredContratados.length} registro${filteredContratados.length !== 1 ? "s" : ""})`}
+              </span>
             </div>
 
-            <div className="overflow-x-auto" ref={tableContainerRef}>
-              <div className="w-full">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead>
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800"></th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Nome</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">CPF</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Contato</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 w-[130px]">Cliente</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Cidade</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Marcadores</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Data Cadastro</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {paginatedData.map((motorista, index) => (
-                      <tr
-                        key={`agregado-${motorista.motorista_id || ''}-${motorista.cpf || ''}-${index}`}
-                        className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${selectedItems.has(motorista.motorista_id || 0) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                          } ${motorista.ativo === false ? 'opacity-50 bg-gray-100/50 dark:bg-gray-900/50' : ''
-                          }`}
-                        onContextMenu={(e) => handleContextMenu(e, motorista)}
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            checked={selectedItems.has(motorista.motorista_id || 0)}
-                            onChange={() => handleSelectItem(motorista.motorista_id || 0)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                              <WhatsAppAvatar
-                                photoUrl={motorista.foto_whatsapp}
-                                name={motorista.nome}
-                                size="md"
-                              />
+            {/* Banner: todos da página selecionados — oferecer selecionar tudo */}
+            {(() => {
+              const hasClientSideFilters =
+                tipoVeiculoFilter.length > 0 ||
+                ativoFilter !== "" ||
+                tagFilter.length > 0;
+              if (
+                !selectAll ||
+                selectAllResults ||
+                totalCount <= filteredContratados.length
+              )
+                return null;
+              return (
+                <div className="mt-2 text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1 flex-wrap">
+                  <span>
+                    Todos os {filteredContratados.length} da página
+                    selecionados.
+                  </span>
+                  {hasClientSideFilters ? (
+                    <span className="text-gray-500 dark:text-gray-400">
+                      (Filtros adicionais ativos — navegue pelas páginas para
+                      selecionar mais.)
+                    </span>
+                  ) : (
+                    <button
+                      onClick={handleSelectAllResults}
+                      disabled={selectAllResultsLoading}
+                      className="underline hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-60 flex items-center gap-1"
+                    >
+                      {selectAllResultsLoading && (
+                        <span className="inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      )}
+                      {selectAllResultsLoading
+                        ? "Carregando..."
+                        : `Selecionar todos os ${totalCount} resultados`}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Banner: todos os resultados selecionados */}
+            {selectAllResults && (
+              <div className="mt-2 text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                <span>
+                  Todos os {selectedItems.size} resultados selecionados.
+                </span>
+                <button
+                  onClick={() => {
+                    setSelectedItems(new Set());
+                    setSelectAllResults(false);
+                  }}
+                  className="underline hover:text-blue-800 dark:hover:text-blue-300"
+                >
+                  Limpar seleção
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="overflow-x-auto" ref={tableContainerRef}>
+            <div className="w-full">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800"></th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">
+                      Nome
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">
+                      CPF
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">
+                      Contato
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">
+                      Status
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 w-[130px]">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">
+                      Cidade
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">
+                      Área de Atuação
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">
+                      Veículo
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">
+                      Marcadores
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">
+                      Data Cadastro
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {paginatedData.map((motorista, index) => (
+                    <tr
+                      key={`agregado-${motorista.motorista_id || ""}-${motorista.cpf || ""}-${index}`}
+                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+                        selectedItems.has(motorista.motorista_id || 0)
+                          ? "bg-blue-50 dark:bg-blue-900/20"
+                          : ""
+                      } ${
+                        motorista.ativo === false
+                          ? "opacity-50 bg-gray-100/50 dark:bg-gray-900/50"
+                          : ""
+                      }`}
+                      onContextMenu={(e) => handleContextMenu(e, motorista)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.has(
+                            motorista.motorista_id || 0,
+                          )}
+                          onChange={() =>
+                            handleSelectItem(motorista.motorista_id || 0)
+                          }
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0">
+                            <WhatsAppAvatar
+                              photoUrl={motorista.foto_whatsapp}
+                              name={motorista.nome}
+                              size="md"
+                            />
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {motorista.nome_motorista || motorista.nome || ""}
                             </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {motorista.nome_motorista || motorista.nome || ''}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                                <span>Agregado</span>
-                                {motorista.ajudantes && motorista.ajudantes.length > 0 && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                              <span>Agregado</span>
+                              {motorista.ajudantes &&
+                                motorista.ajudantes.length > 0 && (
                                   <span className="group/ajudantes relative inline-block cursor-help">
                                     <span className="text-blue-600 dark:text-blue-400">
-                                      {motorista.ajudantes.length} Ajudante{motorista.ajudantes.length > 1 ? 's' : ''}
+                                      {motorista.ajudantes.length} Ajudante
+                                      {motorista.ajudantes.length > 1
+                                        ? "s"
+                                        : ""}
                                     </span>
                                     <div className="invisible group-hover/ajudantes:visible absolute left-0 top-full z-50 mt-1 w-max max-w-xs rounded-md bg-gray-900 dark:bg-gray-700 px-3 py-2 text-xs text-white shadow-lg">
-                                      <div className="font-medium mb-1">Ajudantes:</div>
-                                      {motorista.ajudantes.map((ajudante, index) => (
-                                        <div key={index} className="py-0.5">
-                                          {index + 1}. {ajudante}
-                                        </div>
-                                      ))}
+                                      <div className="font-medium mb-1">
+                                        Ajudantes:
+                                      </div>
+                                      {motorista.ajudantes.map(
+                                        (ajudante, index) => (
+                                          <div key={index} className="py-0.5">
+                                            {index + 1}. {ajudante}
+                                          </div>
+                                        ),
+                                      )}
                                     </div>
+                                  </span>
+                                )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {formatCPF(motorista.cpf || "")}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {motorista.telefone
+                              ? formatPhone(motorista.telefone.toString())
+                              : "-"}
+                          </div>
+                          {motorista.telefone && (
+                            <button
+                              onClick={() =>
+                                startChat(
+                                  motorista.telefone?.toString() || "",
+                                  motorista.nome || "",
+                                  motorista.motorista_id,
+                                )
+                              }
+                              className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
+                              title="Iniciar chat"
+                            >
+                              <MessageCircle size={16} />
+                            </button>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {motorista.email || "-"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="relative">
+                          <TableDropdown
+                            value={motorista.st_cadastro || "cadastrado"}
+                            options={STATUS_OPTIONS}
+                            onSelect={(value) =>
+                              handleUpdateStatus(
+                                null,
+                                motorista,
+                                value as string,
+                              )
+                            }
+                            placeholder="Selecionar Status"
+                            disabled={updatingStatus === motorista.motorista_id}
+                            buttonClassName={
+                              motorista.st_cadastro === "contratado"
+                                ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
+                                : motorista.st_cadastro === "rejeitado"
+                                  ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
+                                  : motorista.st_cadastro === "documentacao"
+                                    ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200"
+                                    : motorista.st_cadastro === "qualificado"
+                                      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
+                                      : motorista.st_cadastro ===
+                                          "contrato_enviado"
+                                        ? "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200"
+                                        : motorista.st_cadastro === "repescagem"
+                                          ? "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200"
+                                          : motorista.st_cadastro ===
+                                              "gestao_risco"
+                                            ? "bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200"
+                                            : motorista.st_cadastro ===
+                                                  "cadastrado" ||
+                                                motorista.st_cadastro ===
+                                                  "Cadastrado"
+                                              ? "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                              : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                            }
+                          />
+
+                          {updatingStatus === motorista.motorista_id && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap w-[130px] max-w-[130px]">
+                        <div className="relative">
+                          <TableDropdown
+                            value={motorista.cliente_id}
+                            options={[
+                              {
+                                value: null,
+                                label: "Sem cliente",
+                                color: "bg-gray-100 dark:bg-gray-700",
+                              },
+                              ...clientes.map((cliente) => ({
+                                value: cliente.cliente_id,
+                                label: cliente.nome,
+                                color:
+                                  cliente.cor || "bg-gray-100 dark:bg-gray-700",
+                              })),
+                            ]}
+                            onSelect={(value) =>
+                              handleUpdateCliente(
+                                null,
+                                motorista,
+                                value === null ? null : (value as number),
+                              )
+                            }
+                            placeholder="Sem cliente"
+                            disabled={
+                              updatingCliente === motorista.motorista_id
+                            }
+                            dropdownMinWidth={180}
+                            buttonClassName={
+                              motorista.cliente_id
+                                ? clientes.find(
+                                    (c) =>
+                                      c.cliente_id === motorista.cliente_id,
+                                  )?.cor ||
+                                  "bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
+                                : "bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
+                            }
+                          />
+
+                          {updatingCliente === motorista.motorista_id && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {getMotoristaCity(motorista) || "-"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {(() => {
+                            if (!motorista.area) return "-";
+                            const areas = motorista.area
+                              .split(",")
+                              .map((a) => a.trim())
+                              .filter(Boolean);
+                            if (areas.length === 0) return "-";
+
+                            const formatToken = (s: string) => {
+                              let letters = 0;
+                              let result = "";
+                              let blockLen = 0;
+                              for (let i = 0; i < s.length; i++) {
+                                const ch = s[i];
+                                if (/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(ch)) {
+                                  letters++;
+                                }
+                                result += ch;
+                                blockLen++;
+
+                                // se o usuário inseriu um espaço manualmente, reinicia o bloco
+                                if (ch === " ") {
+                                  blockLen = 0;
+                                }
+
+                                // insere espaço a cada 15 caracteres do token
+                                if (blockLen === 15 && i !== s.length - 1) {
+                                  result += " ";
+                                  blockLen = 0;
+                                }
+
+                                // limite global de 28 letras ou 32 caracteres (incluindo espaços)
+                                if (letters >= 28 || result.length >= 32) {
+                                  break;
+                                }
+                              }
+                              return result;
+                            };
+
+                            const formatted = areas.map(formatToken);
+                            const display =
+                              formatted.slice(0, 3).join(", ") +
+                              (formatted.length > 3 ? "..." : "");
+                            return display;
+                          })()}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {motorista.placa ? (
+                            <div>
+                              <div className="font-medium">
+                                {motorista.placa}
+                              </div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {motorista.tipologia && (
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    {motorista.tipologia}
+                                  </span>
+                                )}
+                                {moduleAccess.bau && motorista.bau && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                    {motorista.bau}
                                   </span>
                                 )}
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {formatCPF(motorista.cpf || '')}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="text-sm text-gray-900 dark:text-white">
-                              {motorista.telefone ? formatPhone(motorista.telefone.toString()) : '-'}
-                            </div>
-                            {motorista.telefone && (
-                              <button
-                                onClick={() => startChat(motorista.telefone?.toString() || '', motorista.nome || '', motorista.motorista_id)}
-                                className="ml-2 p-1 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 rounded-full hover:bg-green-50 dark:hover:bg-green-900/20"
-                                title="Iniciar chat"
-                              >
-                                <MessageCircle size={16} />
-                              </button>
-                            )}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {motorista.email || '-'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="relative">
-                            <TableDropdown
-                              value={motorista.st_cadastro || 'cadastrado'}
-                              options={STATUS_OPTIONS}
-                              onSelect={(value) => handleUpdateStatus(null, motorista, value as string)}
-                              placeholder="Selecionar Status"
-                              disabled={updatingStatus === motorista.motorista_id}
-                              buttonClassName={
-                                motorista.st_cadastro === 'contratado' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' :
-                                  motorista.st_cadastro === 'rejeitado' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200' :
-                                    motorista.st_cadastro === 'documentacao' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200' :
-                                      motorista.st_cadastro === 'qualificado' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' :
-                                        motorista.st_cadastro === 'contrato_enviado' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200' :
-                                          motorista.st_cadastro === 'repescagem' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200' :
-                                            motorista.st_cadastro === 'gestao_risco' ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200' :
-                                              motorista.st_cadastro === 'cadastrado' || motorista.st_cadastro === 'Cadastrado' ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200' :
-                                                'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                              }
-                            />
-
-                            {updatingStatus === motorista.motorista_id && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
-                                <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-3 py-4 whitespace-nowrap w-[130px] max-w-[130px]">
-                          <div className="relative">
-                            <TableDropdown
-                              value={motorista.cliente_id}
-                              options={[
-                                { value: null, label: 'Sem cliente', color: 'bg-gray-100 dark:bg-gray-700' },
-                                ...clientes.map(cliente => ({
-                                  value: cliente.cliente_id,
-                                  label: cliente.nome,
-                                  color: cliente.cor || 'bg-gray-100 dark:bg-gray-700'
-                                }))
-                              ]}
-                              onSelect={(value) => handleUpdateCliente(null, motorista, value === null ? null : value as number)}
-                              placeholder="Sem cliente"
-                              disabled={updatingCliente === motorista.motorista_id}
-                              dropdownMinWidth={180}
-                              buttonClassName={
-                                motorista.cliente_id
-                                  ? clientes.find(c => c.cliente_id === motorista.cliente_id)?.cor ||
-                                  'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
-                                  : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200'
-                              }
-                            />
-
-                            {updatingCliente === motorista.motorista_id && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
-                                <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {getMotoristaCity(motorista) || '-'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {motorista.placa ? (
-                              <div>
-                                <div className="font-medium">{motorista.placa}</div>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {motorista.tipologia && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                      {motorista.tipologia}
-                                    </span>
-                                  )}
-                                  {moduleAccess.bau && motorista.bau && (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                                      {motorista.bau}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              '-'
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div 
-                            className="relative" 
-                            ref={(el) => {
+                          ) : (
+                            "-"
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div
+                          className="relative"
+                          ref={(el) => {
+                            if (motorista.motorista_id) {
+                              motoristaTagDropdownRefs.current[
+                                motorista.motorista_id
+                              ] = el;
+                            }
+                          }}
+                        >
+                          {/* Botão compacto estilo dropdown de clientes */}
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               if (motorista.motorista_id) {
-                                motoristaTagDropdownRefs.current[motorista.motorista_id] = el;
+                                const isOpening =
+                                  !tagDropdownOpen[motorista.motorista_id];
+                                if (isOpening) {
+                                  const buttonElement =
+                                    e.currentTarget as HTMLElement;
+                                  const rect =
+                                    buttonElement.getBoundingClientRect();
+                                  setTagDropdownPosition((prev) => ({
+                                    ...prev,
+                                    [motorista.motorista_id!]: {
+                                      top: rect.bottom + 4,
+                                      left: rect.left,
+                                      width: 280,
+                                    },
+                                  }));
+                                  setTagSearchTerm((prev) => ({
+                                    ...prev,
+                                    [motorista.motorista_id!]: "",
+                                  }));
+                                }
+                                setTagDropdownOpen((prev) => ({
+                                  ...prev,
+                                  [motorista.motorista_id!]: isOpening,
+                                }));
                               }
                             }}
+                            disabled={
+                              updatingMotoristaTag === motorista.motorista_id
+                            }
                           >
-                            {/* Botão compacto estilo dropdown de clientes */}
-                            <button
-                              type="button"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (motorista.motorista_id) {
-                                  const isOpening = !tagDropdownOpen[motorista.motorista_id];
-                                  if (isOpening) {
-                                    const buttonElement = e.currentTarget as HTMLElement;
-                                    const rect = buttonElement.getBoundingClientRect();
-                                    setTagDropdownPosition(prev => ({
-                                      ...prev,
-                                      [motorista.motorista_id!]: {
-                                        top: rect.bottom + 4,
-                                        left: rect.left,
-                                        width: 280
-                                      }
-                                    }));
-                                    setTagSearchTerm(prev => ({ ...prev, [motorista.motorista_id!]: '' }));
-                                  }
-                                  setTagDropdownOpen(prev => ({ ...prev, [motorista.motorista_id!]: isOpening }));
-                                }
-                              }}
-                              disabled={updatingMotoristaTag === motorista.motorista_id}
-                            >
-                              {updatingMotoristaTag === motorista.motorista_id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <>
-                                  {motorista.motorista_id && motoristaTags[motorista.motorista_id]?.length > 0 ? (
-                                    <>
-                                      <div className="flex items-center gap-0.5">
-                                        {motoristaTags[motorista.motorista_id].slice(0, 3).map((tag: any, idx: number) => (
-                                          <div 
+                            {updatingMotoristaTag === motorista.motorista_id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <>
+                                {motorista.motorista_id &&
+                                motoristaTags[motorista.motorista_id]?.length >
+                                  0 ? (
+                                  <>
+                                    <div className="flex items-center gap-0.5">
+                                      {motoristaTags[motorista.motorista_id]
+                                        .slice(0, 3)
+                                        .map((tag: any, idx: number) => (
+                                          <div
                                             key={tag.id}
                                             className="w-2.5 h-2.5 rounded-full"
-                                            style={{ backgroundColor: tag.cor, marginLeft: idx > 0 ? '-2px' : 0 }}
+                                            style={{
+                                              backgroundColor: tag.cor,
+                                              marginLeft: idx > 0 ? "-2px" : 0,
+                                            }}
                                           />
                                         ))}
-                                      </div>
-                                      <span>{motoristaTags[motorista.motorista_id].length}</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Tag className="w-3 h-3" />
-                                      <span>0</span>
-                                    </>
-                                  )}
-                                  <ChevronDown className="w-3 h-3" />
-                                </>
-                              )}
-                            </button>
-
-                            {/* Dropdown unificado - tags atuais + adicionar */}
-                            {motorista.motorista_id && tagDropdownOpen[motorista.motorista_id] && tagDropdownPosition[motorista.motorista_id] &&
-                              createPortal(
-                                <div 
-                                  ref={(el) => {
-                                    if (motorista.motorista_id) {
-                                      motoristaTagPortalRefs.current[motorista.motorista_id] = el;
-                                    }
-                                  }}
-                                  className="bg-white dark:bg-gray-800 shadow-xl rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
-                                  style={{
-                                    position: 'fixed',
-                                    top: tagDropdownPosition[motorista.motorista_id].top,
-                                    left: tagDropdownPosition[motorista.motorista_id].left,
-                                    width: tagDropdownPosition[motorista.motorista_id].width,
-                                    zIndex: 9999
-                                  }}
-                                >
-                                  {/* Tags atuais do motorista */}
-                                  {motoristaTags[motorista.motorista_id]?.length > 0 && (
-                                    <div className="p-2 border-b border-gray-200 dark:border-gray-700">
-                                      <div className="text-[10px] uppercase text-gray-500 dark:text-gray-400 font-semibold mb-1.5 px-1">Marcadores ativos</div>
-                                      <div className="flex flex-col gap-0.5 max-h-24 overflow-y-auto">
-                                        {motoristaTags[motorista.motorista_id].map((tag: any) => (
-                                          <div
-                                            key={tag.id}
-                                            className="flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                                          >
-                                            <div className="flex items-center gap-2 min-w-0">
-                                              <div 
-                                                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                                style={{ backgroundColor: tag.cor }}
-                                              />
-                                              <span className="text-xs text-gray-700 dark:text-gray-300 truncate">{tag.nome}</span>
-                                            </div>
-                                            <button
-                                              type="button"
-                                              className="p-0.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                              onMouseDown={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                handleRemoveTag(motorista.motorista_id, tag.id);
-                                              }}
-                                            >
-                                              <X className="w-3 h-3" />
-                                            </button>
-                                          </div>
-                                        ))}
-                                      </div>
                                     </div>
-                                  )}
+                                    <span>
+                                      {
+                                        motoristaTags[motorista.motorista_id]
+                                          .length
+                                      }
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Tag className="w-3 h-3" />
+                                    <span>0</span>
+                                  </>
+                                )}
+                                <ChevronDown className="w-3 h-3" />
+                              </>
+                            )}
+                          </button>
 
-                                  {/* Busca e lista de tags disponíveis */}
-                                  <div className="p-2">
-                                    <input
-                                      type="text"
-                                      placeholder="Buscar marcadores..."
-                                      className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
-                                      value={tagSearchTerm[motorista.motorista_id!] || ''}
-                                      onChange={(e) => setTagSearchTerm(prev => ({ ...prev, [motorista.motorista_id!]: e.target.value }))}
-                                      autoFocus
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
-                                    <div className="max-h-32 overflow-y-auto">
-                                      {tags
-                                        .filter(tag => {
-                                          const notAdded = !motorista.motorista_id || !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id);
-                                          const searchTerm = tagSearchTerm[motorista.motorista_id!] || '';
-                                          const matchesSearch = !searchTerm || tag.nome.toLowerCase().includes(searchTerm.toLowerCase());
-                                          return notAdded && matchesSearch;
-                                        })
-                                        .map((tag) => (
-                                          <div
-                                            key={tag.id}
-                                            className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                          {/* Dropdown unificado - tags atuais + adicionar */}
+                          {motorista.motorista_id &&
+                            tagDropdownOpen[motorista.motorista_id] &&
+                            tagDropdownPosition[motorista.motorista_id] &&
+                            createPortal(
+                              <div
+                                ref={(el) => {
+                                  if (motorista.motorista_id) {
+                                    motoristaTagPortalRefs.current[
+                                      motorista.motorista_id
+                                    ] = el;
+                                  }
+                                }}
+                                className="bg-white dark:bg-gray-800 shadow-xl rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+                                style={{
+                                  position: "fixed",
+                                  top: tagDropdownPosition[
+                                    motorista.motorista_id
+                                  ].top,
+                                  left: tagDropdownPosition[
+                                    motorista.motorista_id
+                                  ].left,
+                                  width:
+                                    tagDropdownPosition[motorista.motorista_id]
+                                      .width,
+                                  zIndex: 9999,
+                                }}
+                              >
+                                {/* Tags atuais do motorista */}
+                                {motoristaTags[motorista.motorista_id]?.length >
+                                  0 && (
+                                  <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                                    <div className="text-[10px] uppercase text-gray-500 dark:text-gray-400 font-semibold mb-1.5 px-1">
+                                      Marcadores ativos
+                                    </div>
+                                    <div className="flex flex-col gap-0.5 max-h-24 overflow-y-auto">
+                                      {motoristaTags[
+                                        motorista.motorista_id
+                                      ].map((tag: any) => (
+                                        <div
+                                          key={tag.id}
+                                          className="flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 group"
+                                        >
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            <div
+                                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                              style={{
+                                                backgroundColor: tag.cor,
+                                              }}
+                                            />
+                                            <span className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                                              {tag.nome}
+                                            </span>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            className="p-0.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                                             onMouseDown={(e) => {
                                               e.preventDefault();
                                               e.stopPropagation();
-                                              if (motorista.motorista_id && tag.id) {
-                                                handleAddTag(motorista.motorista_id, tag.id);
-                                              }
+                                              handleRemoveTag(
+                                                motorista.motorista_id,
+                                                tag.id,
+                                              );
                                             }}
                                           >
-                                            <div
-                                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                              style={{ backgroundColor: tag.cor }}
-                                            />
-                                            <span className="text-xs text-gray-700 dark:text-gray-300 truncate">{tag.nome}</span>
-                                          </div>
-                                        ))}
-                                      {tags.filter(tag => {
-                                        const notAdded = !motorista.motorista_id || !motoristaTags[motorista.motorista_id]?.some((mt: any) => mt.id === tag.id);
-                                        const searchTerm = tagSearchTerm[motorista.motorista_id!] || '';
-                                        const matchesSearch = !searchTerm || tag.nome.toLowerCase().includes(searchTerm.toLowerCase());
-                                        return notAdded && matchesSearch;
-                                      }).length === 0 && (
-                                        <div className="px-2 py-2 text-xs text-gray-500 dark:text-gray-400 text-center">
-                                          {tagSearchTerm[motorista.motorista_id!] ? 'Nenhum marcador encontrado' : (tags.length === 0 ? 'Nenhum marcador disponível' : 'Todos os marcadores adicionados')}
+                                            <X className="w-3 h-3" />
+                                          </button>
                                         </div>
-                                      )}
+                                      ))}
                                     </div>
                                   </div>
-                                </div>,
-                                document.body
-                              )
+                                )}
+
+                                {/* Busca e lista de tags disponíveis */}
+                                <div className="p-2">
+                                  <input
+                                    type="text"
+                                    placeholder="Buscar marcadores..."
+                                    className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
+                                    value={
+                                      tagSearchTerm[motorista.motorista_id!] ||
+                                      ""
+                                    }
+                                    onChange={(e) =>
+                                      setTagSearchTerm((prev) => ({
+                                        ...prev,
+                                        [motorista.motorista_id!]:
+                                          e.target.value,
+                                      }))
+                                    }
+                                    autoFocus
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <div className="max-h-32 overflow-y-auto">
+                                    {tags
+                                      .filter((tag) => {
+                                        const notAdded =
+                                          !motorista.motorista_id ||
+                                          !motoristaTags[
+                                            motorista.motorista_id
+                                          ]?.some(
+                                            (mt: any) => mt.id === tag.id,
+                                          );
+                                        const searchTerm =
+                                          tagSearchTerm[
+                                            motorista.motorista_id!
+                                          ] || "";
+                                        const matchesSearch =
+                                          !searchTerm ||
+                                          tag.nome
+                                            .toLowerCase()
+                                            .includes(searchTerm.toLowerCase());
+                                        return notAdded && matchesSearch;
+                                      })
+                                      .map((tag) => (
+                                        <div
+                                          key={tag.id}
+                                          className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                                          onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (
+                                              motorista.motorista_id &&
+                                              tag.id
+                                            ) {
+                                              handleAddTag(
+                                                motorista.motorista_id,
+                                                tag.id,
+                                              );
+                                            }
+                                          }}
+                                        >
+                                          <div
+                                            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                            style={{ backgroundColor: tag.cor }}
+                                          />
+                                          <span className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                                            {tag.nome}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    {tags.filter((tag) => {
+                                      const notAdded =
+                                        !motorista.motorista_id ||
+                                        !motoristaTags[
+                                          motorista.motorista_id
+                                        ]?.some((mt: any) => mt.id === tag.id);
+                                      const searchTerm =
+                                        tagSearchTerm[
+                                          motorista.motorista_id!
+                                        ] || "";
+                                      const matchesSearch =
+                                        !searchTerm ||
+                                        tag.nome
+                                          .toLowerCase()
+                                          .includes(searchTerm.toLowerCase());
+                                      return notAdded && matchesSearch;
+                                    }).length === 0 && (
+                                      <div className="px-2 py-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                                        {tagSearchTerm[motorista.motorista_id!]
+                                          ? "Nenhum marcador encontrado"
+                                          : tags.length === 0
+                                            ? "Nenhum marcador disponível"
+                                            : "Todos os marcadores adicionados"}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>,
+                              document.body,
+                            )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {formatDate(motorista.data_cadastro)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end space-x-3">
+                          <button
+                            onClick={() => handleViewDocument(motorista)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            title="Inspecionar agregado"
+                          >
+                            <FilePen size={18} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openRoleChangeModal(
+                                motorista,
+                                motorista.funcao === "Motorista"
+                                  ? "Agregado"
+                                  : "Motorista",
+                              );
+                            }}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            title={
+                              motorista.funcao === "Motorista"
+                                ? "Transformar em Agregado"
+                                : "Transformar em Motorista"
                             }
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {formatDate(motorista.data_cadastro)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-3">
-                            <button
-                              onClick={() => handleViewDocument(motorista)}
-                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                              title="Inspecionar agregado"
-                            >
-                              <FilePen size={18} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openRoleChangeModal(motorista, motorista.funcao === 'Motorista' ? 'Agregado' : 'Motorista');
-                              }}
-                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                              title={motorista.funcao === 'Motorista' ? 'Transformar em Agregado' : 'Transformar em Motorista'}
-                            >
-                              <ArrowLeftRight size={18} />
-                            </button>
-                            <button
-                              onClick={(e) => handleToggleStatus(e, motorista)}
-                              disabled={updatingStatus === motorista.motorista_id}
-                              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${motorista.ativo
-                                  ? 'bg-green-500 dark:bg-green-600'
-                                  : 'bg-gray-200 dark:bg-gray-700'
-                                } ${updatingStatus === motorista.motorista_id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                              role="switch"
-                              aria-checked={motorista.ativo}
-                              title={motorista.ativo ? "Desativar agregado" : "Ativar agregado"}
-                            >
-                              <span
-                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${motorista.ativo ? 'translate-x-5' : 'translate-x-0'
-                                  }`}
-                              />
-                              {updatingStatus === motorista.motorista_id && (
-                                <Loader2
-                                  className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin"
-                                />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <ScrollableTableIndicator
-                containerRef={tableContainerRef}
-                className="mr-2 ml-2"
-              />
+                          >
+                            <ArrowLeftRight size={18} />
+                          </button>
+                          <button
+                            onClick={(e) => handleToggleStatus(e, motorista)}
+                            disabled={updatingStatus === motorista.motorista_id}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                              motorista.ativo
+                                ? "bg-green-500 dark:bg-green-600"
+                                : "bg-gray-200 dark:bg-gray-700"
+                            } ${updatingStatus === motorista.motorista_id ? "opacity-50 cursor-not-allowed" : ""}`}
+                            role="switch"
+                            aria-checked={motorista.ativo}
+                            title={
+                              motorista.ativo
+                                ? "Desativar agregado"
+                                : "Ativar agregado"
+                            }
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                motorista.ativo
+                                  ? "translate-x-5"
+                                  : "translate-x-0"
+                              }`}
+                            />
+                            {updatingStatus === motorista.motorista_id && (
+                              <Loader2 className="absolute inset-0 m-auto w-4 h-4 text-white animate-spin" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
 
-          {filteredContratados.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">
-                Nenhum contratado encontrado
-              </p>
-            </div>
-          ) : (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              pageSize={pageSize}
-              totalItems={totalItems}
-              visibleItems={filteredContratados.length}
-              clientFiltersActive={tipoVeiculoFilter.length > 0 || ativoFilter !== '' || tagFilter.length > 0}
-              onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
+            <ScrollableTableIndicator
+              containerRef={tableContainerRef}
+              className="mr-2 ml-2"
             />
-          )}
+          </div>
         </div>
 
-        {/* Context Menu */}
-        {contextMenu.visible && contextMenu.motorista && (
-          <ContextMenu
-            x={contextMenu.x}
-            y={contextMenu.y}
-            onClose={() => setContextMenu({ ...contextMenu, visible: false })}
-            actions={[
-              {
-                icon: <User size={16} />,
-                label: 'Visualizar Detalhes' as const satisfies string,
-                onClick: () => handleViewDocument(contextMenu.motorista!),
-                color: 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
-              },
-              {
-                icon: <MessageCircle size={16} />,
-                label: 'Iniciar Chat',
-                onClick: () => startChat(contextMenu.motorista!.telefone?.toString() || '', contextMenu.motorista!.nome_motorista || '', contextMenu.motorista!.motorista_id),
-                color: 'text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300',
-                disabled: !contextMenu.motorista!.telefone
-              }
-            ]}
-          />
-        )}
-
-        {/* Modals */}
-        <DocumentUploadModal
-          isOpen={isDocumentUploadOpen}
-          onClose={() => setIsDocumentUploadOpen(false)}
-          motorista_id={selectedMotorista?.motorista_id || 0}
-          nome={selectedMotorista?.nome_motorista || ''}
-          onUploadSuccess={fetchContratados}
-        />
-
-        <EditMotoristaModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          motorista={selectedMotorista ? (() => {
-            const motoristaWithAddress: MotoristaWithAddress = {
-              ...selectedMotorista as unknown as Motorista,
-              nome: selectedMotorista.nome_motorista || '',
-              endereco: {
-                id_end_motorista: selectedMotorista.id_end_motorista || 0,
-                nr_end: selectedMotorista.nr_end ?? null,
-                ds_complemento_end: selectedMotorista.ds_complemento_end ?? null,
-                st_end: selectedMotorista.st_end ?? null,
-                logradouro: selectedMotorista.logradouro ?? null,
-                nr_cep: selectedMotorista.nr_cep ?? null,
-                bairro: selectedMotorista.nome_bairro ?? null,
-                cidade: selectedMotorista.nome_cidade ?? null,
-                estado: selectedMotorista.nome_estado ?? null,
-                sigla_estado: selectedMotorista.sigla_estado ?? null
-              },
-              veiculo: selectedMotorista.veiculo_id ? {
-                veiculo_id: selectedMotorista.veiculo_id,
-                placa: selectedMotorista.placa || '',
-                status_veiculo: selectedMotorista.status_veiculo || false,
-                marca: selectedMotorista.marca || '',
-                tipologia: selectedMotorista.tipologia || '',
-                ano: selectedMotorista.ano || '',
-                combustivel: selectedMotorista.combustivel || '',
-                peso: selectedMotorista.peso || '',
-                cubagem: selectedMotorista.cubagem || '',
-                possui_rastreador: selectedMotorista.possui_rastreador || false,
-                marca_rastreador: selectedMotorista.marca_rastreador || '',
-                motorista_id: selectedMotorista.motorista_id || 0,
-                cor: selectedMotorista.cor || '',
-                tipo: selectedMotorista.tipo || ''
-              } : undefined
-            };
-            return motoristaWithAddress;
-          })() : null}
-          onUpdate={fetchContratados}
-        />
-
-        <DeleteConfirmationModal
-          isOpen={isDeleteModalOpen}
-          onClose={() => setIsDeleteModalOpen(false)}
-          onConfirm={confirmDelete}
-          title="Excluir Motorista"
-          message={`Tem certeza que deseja excluir o motorista ${selectedMotorista?.nome_motorista || ''}?`}
-        />
-
-        {selectedMotorista && (
-          <UnifiedAgregadoModal
-            isOpen={isUnifiedAgregadoModalOpen}
-            onClose={() => setIsUnifiedAgregadoModalOpen(false)}
-            motorista={{
-              ...selectedMotorista,
-              motorista_id: selectedMotorista.motorista_id || 0,
-              nome: selectedMotorista.nome_motorista || '',
-              cpf: selectedMotorista.cpf || '',
-              telefone: selectedMotorista.telefone ? Number(selectedMotorista.telefone) : null,
-              email: selectedMotorista.email || null,
-              dt_nascimento: selectedMotorista.dt_nascimento || '',
-              genero: selectedMotorista.genero || '',
-              funcao: selectedMotorista.funcao || '',
-              origem_usuario: selectedMotorista.origem_usuario || '',
-              st_cadastro: selectedMotorista.st_cadastro || 'cadastrado',
-              autorizacao_lgpd: selectedMotorista.autorizacao_lgpd || 'N',
-              company_id: selectedMotorista.company_id || 0,
-              data_cadastro: selectedMotorista.data_cadastro || new Date().toISOString(),
-              cliente_id: selectedMotorista.cliente_id || 0,
-              ativo: selectedMotorista.ativo || false,
-              // Ensure all required properties are included with proper types
-              conversation_id: selectedMotorista.conversation_id || ''
-            }}
-          />
-        )}
-
-        <BulkActionsModal
-          isOpen={isBulkActionsModalOpen}
-          onClose={() => setIsBulkActionsModalOpen(false)}
-          selectedItems={selectedItems}
-          actionType={bulkActionType}
-          onSuccess={() => {
-            fetchContratados();
-            // Recarregar tags imediatamente após operação em massa
-            if (contratados && contratados.length > 0) {
-              fetchMotoristaTags(contratados);
+        {filteredContratados.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 dark:text-gray-400">
+              Nenhum contratado encontrado
+            </p>
+          </div>
+        ) : (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            visibleItems={filteredContratados.length}
+            clientFiltersActive={
+              tipoVeiculoFilter.length > 0 ||
+              ativoFilter !== "" ||
+              tagFilter.length > 0
             }
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        )}
+      </div>
+
+      {/* Context Menu */}
+      {contextMenu.visible && contextMenu.motorista && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu({ ...contextMenu, visible: false })}
+          actions={[
+            {
+              icon: <User size={16} />,
+              label: "Visualizar Detalhes" as const satisfies string,
+              onClick: () => handleViewDocument(contextMenu.motorista!),
+              color:
+                "text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300",
+            },
+            {
+              icon: <MessageCircle size={16} />,
+              label: "Iniciar Chat",
+              onClick: () =>
+                startChat(
+                  contextMenu.motorista!.telefone?.toString() || "",
+                  contextMenu.motorista!.nome_motorista || "",
+                  contextMenu.motorista!.motorista_id,
+                ),
+              color:
+                "text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300",
+              disabled: !contextMenu.motorista!.telefone,
+            },
+          ]}
+        />
+      )}
+
+      {/* Modals */}
+      <DocumentUploadModal
+        isOpen={isDocumentUploadOpen}
+        onClose={() => setIsDocumentUploadOpen(false)}
+        motorista_id={selectedMotorista?.motorista_id || 0}
+        nome={selectedMotorista?.nome_motorista || ""}
+        onUploadSuccess={fetchContratados}
+      />
+
+      <EditMotoristaModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        motorista={
+          selectedMotorista
+            ? (() => {
+                const motoristaWithAddress: MotoristaWithAddress = {
+                  ...(selectedMotorista as unknown as Motorista),
+                  nome: selectedMotorista.nome_motorista || "",
+                  endereco: {
+                    id_end_motorista: selectedMotorista.id_end_motorista || 0,
+                    nr_end: selectedMotorista.nr_end ?? null,
+                    ds_complemento_end:
+                      selectedMotorista.ds_complemento_end ?? null,
+                    st_end: selectedMotorista.st_end ?? null,
+                    logradouro: selectedMotorista.logradouro ?? null,
+                    nr_cep: selectedMotorista.nr_cep ?? null,
+                    bairro: selectedMotorista.nome_bairro ?? null,
+                    cidade: selectedMotorista.nome_cidade ?? null,
+                    estado: selectedMotorista.nome_estado ?? null,
+                    sigla_estado: selectedMotorista.sigla_estado ?? null,
+                  },
+                  veiculo: selectedMotorista.veiculo_id
+                    ? {
+                        veiculo_id: selectedMotorista.veiculo_id,
+                        placa: selectedMotorista.placa || "",
+                        status_veiculo:
+                          selectedMotorista.status_veiculo || false,
+                        marca: selectedMotorista.marca || "",
+                        tipologia: selectedMotorista.tipologia || "",
+                        ano: selectedMotorista.ano || "",
+                        combustivel: selectedMotorista.combustivel || "",
+                        peso: selectedMotorista.peso || "",
+                        cubagem: selectedMotorista.cubagem || "",
+                        possui_rastreador:
+                          selectedMotorista.possui_rastreador || false,
+                        marca_rastreador:
+                          selectedMotorista.marca_rastreador || "",
+                        motorista_id: selectedMotorista.motorista_id || 0,
+                        cor: selectedMotorista.cor || "",
+                        tipo: selectedMotorista.tipo || "",
+                      }
+                    : undefined,
+                };
+                return motoristaWithAddress;
+              })()
+            : null
+        }
+        onUpdate={fetchContratados}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Excluir Motorista"
+        message={`Tem certeza que deseja excluir o motorista ${selectedMotorista?.nome_motorista || ""}?`}
+      />
+
+      {selectedMotorista && (
+        <UnifiedAgregadoModal
+          isOpen={isUnifiedAgregadoModalOpen}
+          onClose={() => setIsUnifiedAgregadoModalOpen(false)}
+          motorista={{
+            ...selectedMotorista,
+            motorista_id: selectedMotorista.motorista_id || 0,
+            nome: selectedMotorista.nome_motorista || "",
+            cpf: selectedMotorista.cpf || "",
+            telefone: selectedMotorista.telefone
+              ? Number(selectedMotorista.telefone)
+              : null,
+            email: selectedMotorista.email || null,
+            dt_nascimento: selectedMotorista.dt_nascimento || "",
+            genero: selectedMotorista.genero || "",
+            funcao: selectedMotorista.funcao || "",
+            origem_usuario: selectedMotorista.origem_usuario || "",
+            st_cadastro: selectedMotorista.st_cadastro || "cadastrado",
+            autorizacao_lgpd: selectedMotorista.autorizacao_lgpd || "N",
+            company_id: selectedMotorista.company_id || 0,
+            data_cadastro:
+              selectedMotorista.data_cadastro || new Date().toISOString(),
+            cliente_id: selectedMotorista.cliente_id || 0,
+            ativo: selectedMotorista.ativo || false,
+            // Ensure all required properties are included with proper types
+            conversation_id: selectedMotorista.conversation_id || "",
           }}
-          clientes={clientes}
         />
+      )}
 
-        <BulkDeleteConfirmationModal
-          isOpen={isBulkDeleteModalOpen}
-          onClose={() => setIsBulkDeleteModalOpen(false)}
-          onConfirm={handleBulkDelete}
-          title="Confirmar Exclusão em Massa"
-          message="Tem certeza que deseja excluir todos os motoristas selecionados? Esta ação não pode ser desfeita."
-          itemCount={selectedItems.size}
-          itemType="motorista"
-        />
+      <BulkActionsModal
+        isOpen={isBulkActionsModalOpen}
+        onClose={() => setIsBulkActionsModalOpen(false)}
+        selectedItems={selectedItems}
+        actionType={bulkActionType}
+        onSuccess={() => {
+          fetchContratados();
+          // Recarregar tags imediatamente após operação em massa
+          if (contratados && contratados.length > 0) {
+            fetchMotoristaTags(contratados);
+          }
+        }}
+        clientes={clientes}
+      />
 
-        <MassMessageModal
-          isOpen={isMassMessageModalOpen}
-          onClose={() => setIsMassMessageModalOpen(false)}
-          numbers={Array.from(selectedItems)
-            .map(id => {
-              const motorista = contratados.find(m => m.motorista_id === id);
-              return motorista?.telefone ? motorista.telefone.toString() : '';
-            })
-            .filter(Boolean)}
-        />
+      <BulkDeleteConfirmationModal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => setIsBulkDeleteModalOpen(false)}
+        onConfirm={handleBulkDelete}
+        title="Confirmar Exclusão em Massa"
+        message="Tem certeza que deseja excluir todos os motoristas selecionados? Esta ação não pode ser desfeita."
+        itemCount={selectedItems.size}
+        itemType="motorista"
+      />
 
-        {/* Add Agregado Modal */}
-        <AddAgregadoModal
-          isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          onSuccess={() => {
-            setShowAddModal(false);
-            // Refresh the list after successful addition
-            fetchContratados();
-            if (onSuccess) onSuccess();
-          }}
-        />
+      <MassMessageModal
+        isOpen={isMassMessageModalOpen}
+        onClose={() => setIsMassMessageModalOpen(false)}
+        numbers={Array.from(selectedItems)
+          .map((id) => {
+            const motorista = contratados.find((m) => m.motorista_id === id);
+            return motorista?.telefone ? motorista.telefone.toString() : "";
+          })
+          .filter(Boolean)}
+      />
 
-        {/* Role Change Confirmation Modal */}
-        {roleChangeModal.isOpen && roleChangeModal.motorista && roleChangeModal.newRole && (
+      {/* Add Agregado Modal */}
+      <AddAgregadoModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={() => {
+          setShowAddModal(false);
+          // Refresh the list after successful addition
+          fetchContratados();
+          if (onSuccess) onSuccess();
+        }}
+      />
+
+      {/* Role Change Confirmation Modal */}
+      {roleChangeModal.isOpen &&
+        roleChangeModal.motorista &&
+        roleChangeModal.newRole && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
               <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
@@ -3602,7 +4696,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   Confirmar alteração de função
                 </h2>
                 <button
-                  onClick={() => setRoleChangeModal(prev => ({ ...prev, isOpen: false }))}
+                  onClick={() =>
+                    setRoleChangeModal((prev) => ({ ...prev, isOpen: false }))
+                  }
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   disabled={roleChangeModal.isLoading}
                 >
@@ -3618,7 +4714,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 </div>
 
                 <p className="text-sm text-gray-600 dark:text-gray-300 text-center mb-6">
-                  Tem certeza que deseja transformar <span className="font-semibold">{roleChangeModal.motorista.nome_motorista}</span> em um <span className="font-semibold">{roleChangeModal.newRole}</span>?
+                  Tem certeza que deseja transformar{" "}
+                  <span className="font-semibold">
+                    {roleChangeModal.motorista.nome_motorista}
+                  </span>{" "}
+                  em um{" "}
+                  <span className="font-semibold">
+                    {roleChangeModal.newRole}
+                  </span>
+                  ?
                 </p>
 
                 <div className="bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 mb-6">
@@ -3628,9 +4732,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                     </div>
                     <div className="ml-3">
                       <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                        {roleChangeModal.newRole === 'Agregado'
-                          ? 'Ao transformar em Agregado, o registro será ativado automaticamente.'
-                          : 'Ao transformar em Motorista, o registro será ativado automaticamente.'}
+                        {roleChangeModal.newRole === "Agregado"
+                          ? "Ao transformar em Agregado, o registro será ativado automaticamente."
+                          : "Ao transformar em Motorista, o registro será ativado automaticamente."}
                       </p>
                     </div>
                   </div>
@@ -3639,7 +4743,9 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     type="button"
-                    onClick={() => setRoleChangeModal(prev => ({ ...prev, isOpen: false }))}
+                    onClick={() =>
+                      setRoleChangeModal((prev) => ({ ...prev, isOpen: false }))
+                    }
                     disabled={roleChangeModal.isLoading}
                     className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -3657,7 +4763,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         Alterando...
                       </>
                     ) : (
-                      'Confirmar Alteração'
+                      "Confirmar Alteração"
                     )}
                   </button>
                 </div>
@@ -3665,8 +4771,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             </div>
           </div>
         )}
-      </div>
-    );
-  };
+    </div>
+  );
+};
 
-  export default Contratados;
+export default Contratados;
