@@ -50,6 +50,9 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
     complemento: ''
   });
 
+  const [areasAtuacaoSelecionadas, setAreasAtuacaoSelecionadas] = useState<string[]>([]);
+  const [areaAtuacaoInput, setAreaAtuacaoInput] = useState('');
+
   useEffect(() => {
     if (isOpen) {
       fetchEstados();
@@ -212,6 +215,10 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
       }
 
       // Insert motorista (agregado)
+      const areas = areasAtuacaoSelecionadas
+        .map(a => a.trim())
+        .filter((a, idx, arr) => a && arr.indexOf(a) === idx);
+
       const { data: motorista, error: motoristaError } = await supabase
         .from('motorista')
         .insert({
@@ -223,8 +230,9 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
           genero: formData.genero || null,
           funcao: 'Agregado',
           st_cadastro: formData.st_cadastro,
-         data_cadastro: formData.data_cadastro,
-         company_id: companyId
+          data_cadastro: formData.data_cadastro,
+          company_id: companyId,
+          area_atuacao: areas.length ? areas.join(', ') : null
         })
         .select()
         .single();
@@ -238,6 +246,24 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
 
       if (!motorista) {
         throw new Error('Erro ao cadastrar motorista: nenhum dado retornado');
+      }
+
+      // Inserir áreas de atuação na tabela relacional
+      if (areas.length > 0) {
+        const rows = areas.map(area => ({
+          motorista_id: motorista.motorista_id,
+          company_id: companyId,
+          area
+        }));
+
+        const { error: areaError } = await supabase
+          .from('motorista_area_atuacao')
+          .insert(rows);
+
+        if (areaError) {
+          console.error('Erro ao salvar áreas de atuação:', areaError);
+          toast.error('Erro ao salvar áreas de atuação, mas o agregado foi criado');
+        }
       }
 
       // Insert vehicle information
@@ -571,6 +597,53 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
                     <option value="repescagem">Repescagem</option>
                     <option value="rejeitado">Rejeitado</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Áreas de Atuação
+                  </label>
+                  <input
+                    type="text"
+                    name="area_atuacao"
+                    value={areaAtuacaoInput}
+                    onChange={(e) => setAreaAtuacaoInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && areaAtuacaoInput.trim()) {
+                        e.preventDefault();
+                        const value = areaAtuacaoInput.trim();
+                        setAreasAtuacaoSelecionadas((prev) =>
+                          prev.includes(value) ? prev : [...prev, value]
+                        );
+                        setAreaAtuacaoInput('');
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="Digite e pressione Enter para adicionar"
+                  />
+                  {areasAtuacaoSelecionadas.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {areasAtuacaoSelecionadas.map((area) => (
+                        <span
+                          key={area}
+                          className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
+                        >
+                          {area}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setAreasAtuacaoSelecionadas((prev) =>
+                                prev.filter((a) => a !== area)
+                              )
+                            }
+                            className="ml-1 text-emerald-700 hover:text-emerald-900 dark:text-emerald-300 dark:hover:text-emerald-100"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
