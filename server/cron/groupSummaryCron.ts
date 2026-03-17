@@ -220,7 +220,7 @@ async function processGroup(grupo: GrupoResumo, currentTimeUTC: string) {
         timeout: 120000
       });
     } else {
-      const N8N_WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook-test/64d5c5e7-0ad7-43bd-b89e-1109ae821ca2v';
+      const N8N_WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
       response = await axios.post(N8N_WEBHOOK_URL, {
         nome_do_grupo: grupo.nome_grupo,
         company_id: grupo.company_id,

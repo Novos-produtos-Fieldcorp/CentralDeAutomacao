@@ -5284,7 +5284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Summary Service proxy route
   app.post("/api/ai/group-summary", async (req, res) => {
     try {
-      const N8N_WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook-test/64d5c5e7-0ad7-43bd-b89e-1109ae821ca2v';
+      const N8N_WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
       const { nome_do_grupo, company_id, group_id, account_id, api_key } = req.body;
       
       console.log("[n8n Webhook] Enviando resumo de grupo para n8n");
