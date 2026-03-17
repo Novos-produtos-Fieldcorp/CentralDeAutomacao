@@ -5284,29 +5284,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Summary Service proxy route
   app.post("/api/ai/group-summary", async (req, res) => {
     try {
-      const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
+      const N8N_WEBHOOK_URL = 'https://n8nqp.wiseapp360.com/webhook/resumo-grupo';
+      const { nome_do_grupo, company_id, group_id, account_id, api_key } = req.body;
       
-      console.log("[AI Service] Proxying request to:", AI_SERVICE_URL);
-      console.log("[AI Service] Request body:", JSON.stringify(req.body, null, 2));
+      console.log("[n8n Webhook] Enviando resumo de grupo para n8n");
+      console.log("[n8n Webhook] Grupo:", nome_do_grupo, "| group_id:", group_id, "| company_id:", company_id);
       
       const response = await axios.post(
-        `${AI_SERVICE_URL}/api/group-summary`,
-        req.body,
+        N8N_WEBHOOK_URL,
+        { nome_do_grupo, company_id, group_id, account_id, api_key, force: true },
         {
           headers: {
             "Content-Type": "application/json",
           },
-          timeout: 120000, // 2 minutes timeout for AI processing
+          timeout: 120000,
         }
       );
       
-      console.log("[AI Service] Response:", JSON.stringify(response.data, null, 2));
-      res.json(response.data);
+      console.log("[n8n Webhook] Resposta:", JSON.stringify(response.data, null, 2));
+      
+      const isSuccess = response.data.status === '200';
+      res.json({
+        success: isSuccess,
+        message: response.data.message,
+        message_sent: isSuccess,
+        error: isSuccess ? null : response.data.message,
+      });
     } catch (error: any) {
-      console.error("[AI Service] Error:", error.message);
+      console.error("[n8n Webhook] Erro:", error.message);
       res.status(500).json({
         success: false,
-        error: error.message || "Erro ao processar resumo com IA",
+        error: error.message || "Erro ao processar resumo via n8n",
       });
     }
   });

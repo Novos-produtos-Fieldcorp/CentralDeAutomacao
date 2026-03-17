@@ -6,49 +6,44 @@ def create_group_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
     analyst = create_group_summary_analyst()
     
     summary_task = Task(
-        description=f"""Analise as conversas do grupo "{group_name}" e gere um resumo executivo.
-        
-        Use a ferramenta "Buscar Mensagens do Grupo" com os seguintes parametros:
+        description=f"""Voce e um analista de dados especialista em extrair insights de conversas.
+        Sua tarefa e gerar o resumo diario do grupo de WhatsApp "{group_name}".
+
+        **PASSO 1: Coleta de Dados**
+        Voce DEVE OBRIGATORIAMENTE usar a ferramenta "Buscar Mensagens do Grupo" para ler o historico.
+        Parametros para a ferramenta:
         - group_name: {group_name}
         - account_id: {account_id}
         - api_key: {api_key}
         - inbox_id: {inbox_id}
-        
-        REGRAS ABSOLUTAS:
-        1. Baseie seu resumo APENAS nas mensagens REAIS que voce encontrar
-        2. NAO invente informacoes ou use textos genericos
-        3. Trate as conversas como comunicacao NORMAL do dia a dia - nao force tom negativo
-        4. Use as palavras EXATAS das mensagens ao descrever os assuntos
-        5. O titulo DEVE ser exatamente: Resumo do Grupo "{group_name}"
-        6. DEVE terminar com a frase: Este resumo foi gerado automaticamente pela IAzinha
-        
-        O resumo deve seguir EXATAMENTE este formato:
-        
+
+        **PASSO 2: Triagem e Regras Absolutas**
+        - Aguarde o retorno da ferramenta. Se ela retornar vazio, assuma que ha 0 mensagens. Se ela falhar com erro, reporte o erro no resumo.
+        - IGNORE QUALQUER mensagem que seja um resumo passado (mensagens que contenham "Resumo do Grupo" ou "gerado automaticamente pela IAzinha").
+        - Baseie-se APENAS no texto literal retornado pela ferramenta. NAO alucine nem invente informacoes.
+        - Analise o tom considerando que e um ambiente de trabalho informal.
+        - Use as palavras EXATAS das mensagens ao descrever os assuntos.
+
+        **PASSO 3: Geracao do Resumo**
+        Se a ferramenta retornou mensagens validas (apos a triagem), gere o output EXATAMENTE neste formato:
+
         Resumo do Grupo "{group_name}"
-        • Quantidade de mensagens: [numero]
-        • O que foi discutido: [descricao natural dos assuntos, usando as palavras das mensagens]
-        • Tom geral: [Tranquilo/Ativo/Urgente/Neutro - com breve justificativa baseada nas mensagens reais]
-        [SOMENTE se houver problemas ou pendencias reais identificadas nas mensagens:]
-        • Problemas/Pendencias: [cite os problemas concretos com as palavras usadas nas mensagens]
-        
+        • Quantidade de mensagens: [Numero exato de mensagens analisadas]
+        • O que foi discutido: [Resumo natural dos assuntos, citando as palavras-chave originais]
+        • Tom geral: [Tranquilo / Ativo / Urgente / Neutro] - [Breve justificativa baseada nos textos]
+        [INCLUA ESTA LINHA APENAS SE HOUVER PROBLEMAS EXPLICITOS: • Problemas/Pendencias: [Descreva o problema real]]
+
         Este resumo foi gerado automaticamente pela IAzinha
-        
-        IMPORTANTE: A secao "Problemas/Pendencias" deve aparecer SOMENTE se houver problemas ou pendencias reais nas mensagens. Se a conversa for normal/rotineira, NAO inclua essa secao.
-        
-        Se nao houver mensagens hoje, responda apenas:
+
+        ---
+        **REGRA DE EXCECAO (FALLBACK)**
+        Se apos o Passo 1 e Passo 2 a quantidade de mensagens for ZERO, voce DEVE ignorar o formato acima e retornar UNICAMENTE o texto abaixo:
+
         Resumo do Grupo "{group_name}"
         Nenhuma mensagem encontrada hoje neste grupo.
-        Este resumo foi gerado automaticamente pela IAzinha""",
-        expected_output=f"""FORMATO com bullet points:
-
-Resumo do Grupo "{group_name}"
-• Quantidade de mensagens: [numero]
-• O que foi discutido: [descricao natural dos assuntos com palavras exatas]
-• Tom geral: [classificacao com justificativa]
-[apenas se houver problemas reais:]
-• Problemas/Pendencias: [problemas concretos com palavras das mensagens]
-
-Este resumo foi gerado automaticamente pela IAzinha""",
+        Este resumo foi gerado automaticamente pela IAzinha
+        """,
+        expected_output=f"""Um texto em bullet points seguindo a formatacao exata definida no PASSO 3, ou a mensagem de fallback caso nao existam dados.""",
         agent=analyst
     )
     
@@ -63,18 +58,24 @@ def create_quick_summary_crew(inbox_id: str, account_id: str, api_key: str, grou
     analyst = create_group_summary_analyst()
     
     quick_task = Task(
-        description=f"""Gere um resumo rapido do grupo "{group_name}".
-        
-        Use os seguintes parametros:
-        - inbox_id: {inbox_id}
+        description=f"""Voce e um assistente encarregado de dar um panorama ultra-rapido do grupo "{group_name}".
+
+        **PASSO 1: Coleta de Dados**
+        Voce DEVE OBRIGATORIAMENTE usar a ferramenta "Buscar Mensagens do Grupo" com estes parametros:
+        - group_name: {group_name}
         - account_id: {account_id}
         - api_key: {api_key}
-        
-        O resumo deve ser breve (maximo 5 linhas) e destacar apenas:
-        1. Quantidade de conversas ativas
-        2. Se ha algo urgente
-        3. Tom geral do grupo""",
-        expected_output="""Resumo curto em formato de mensagem para WhatsApp.""",
+        - inbox_id: {inbox_id}
+
+        **PASSO 2: Analise Rapida**
+        Apos ler as mensagens retornadas pela ferramenta, escreva um resumo de no MAXIMO 5 linhas focando apenas em:
+        1. Volume de mensagens ativas hoje.
+        2. Existencia de urgencias reais.
+        3. Clima/Tom do grupo.
+
+        Seja direto. Exemplo de tom desejado: "Grupo com 15 mensagens, clima tranquilo. Nenhuma urgencia pendente."
+        """,
+        expected_output="""Texto corrido curto (maximo 5 linhas) ideal para leitura rapida no WhatsApp.""",
         agent=analyst
     )
     

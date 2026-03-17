@@ -61,6 +61,18 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
   const [hasCheckedToken, setHasCheckedToken] = useState(false);
   const [searchParams] = useSearchParams();
 
+  const [urlAccountIdOnMount] = useState<string | null>(() => {
+    try {
+      const param = new URLSearchParams(window.location.search).get('account_id')?.trim() || null;
+      if (param) {
+        localStorage.setItem('account_id', param);
+      }
+      return param;
+    } catch {
+      return null;
+    }
+  });
+
   // Helper function to save session data with expiration (1 hour default)
   const saveSession = (data: {
     token: string;
@@ -224,9 +236,9 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
         return;
       }
 
-      // Get account_id from URL or localStorage
-      let accountId = searchParams.get('account_id')?.trim();
-      console.log('🔍 [WiseAppAccess] Account ID da URL:', accountId);
+      // Get account_id from URL (captured on mount), searchParams, or localStorage
+      let accountId = urlAccountIdOnMount || searchParams.get('account_id')?.trim();
+      console.log('🔍 [WiseAppAccess] Account ID (mount/URL):', accountId, '(mount:', urlAccountIdOnMount, ')');
       
       if (!accountId) {
         try {
@@ -346,7 +358,7 @@ export const WiseAppAccessProvider = ({ children }: { children: React.ReactNode 
         onTokenSaved={(newToken, newAttendantId, newAttendantName, email, wiseappAccountIdFromEmail) => {
           // IMPORTANT: Use the accountId from the email (wiseappAccountIdFromEmail) if available
           // This ensures we use the correct WiseApp account associated with the authenticated email
-          const fallbackAccountId = searchParams.get('account_id')?.trim() || localStorage?.getItem('account_id') || '';
+          const fallbackAccountId = urlAccountIdOnMount || searchParams.get('account_id')?.trim() || localStorage?.getItem('account_id') || '';
           const accountIdToUse = wiseappAccountIdFromEmail || fallbackAccountId;
           
           console.log('📧 [WiseAppAccess] Token salvo para email, usando accountId:', accountIdToUse, '(do email:', wiseappAccountIdFromEmail, ', fallback:', fallbackAccountId, ')');

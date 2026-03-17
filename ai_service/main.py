@@ -25,6 +25,25 @@ async def registrar_log_envio(
             print("Warning: Supabase nao configurado, log nao sera salvo")
             return
         
+        # Verificar se o grupo existe antes de inserir
+        async with httpx.AsyncClient() as client:
+            check_response = await client.get(
+                f"{config.SUPABASE_URL}/rest/v1/grupo_resumo",
+                headers={
+                    "apikey": config.SUPABASE_KEY,
+                    "Authorization": f"Bearer {config.SUPABASE_KEY}",
+                },
+                params={
+                    "id": f"eq.{grupo_id}",
+                    "select": "id"
+                },
+                timeout=10
+            )
+            
+            if check_response.status_code != 200 or not check_response.json():
+                print(f"⚠️ Grupo_id {grupo_id} não encontrado na tabela grupo_resumo. Log não será registrado.")
+                return
+        
         now_brasilia = datetime.now(BRASILIA_TZ)
         now_utc = datetime.now(timezone.utc)
         
@@ -33,9 +52,10 @@ async def registrar_log_envio(
             "company_id": company_id,
             "data_envio": now_brasilia.strftime("%Y-%m-%d"),
             "status": status,
-            "mensagem": mensagem[:1000] if mensagem else None,  # Limitar tamanho
+            "mensagem": mensagem[:1000] if mensagem else None,
             "horario_execucao_utc": now_utc.strftime("%H:%M"),
-            "resumo_grupo": resumo_grupo[:5000] if resumo_grupo else None  # Limitar tamanho
+            "resumo_grupo": resumo_grupo[:5000] if resumo_grupo else None,
+            "tipo": "grupo"
         }
         
         async with httpx.AsyncClient() as client:
@@ -52,12 +72,12 @@ async def registrar_log_envio(
             )
             
             if response.status_code in [200, 201, 204]:
-                print(f"Log de envio registrado com sucesso para grupo_id={grupo_id}")
+                print(f"✅ Log de envio registrado com sucesso para grupo_id={grupo_id}")
             else:
-                print(f"Erro ao registrar log: {response.status_code} - {response.text}")
+                print(f"❌ Erro ao registrar log: {response.status_code} - {response.text}")
                 
     except Exception as e:
-        print(f"Erro ao registrar log no Supabase: {str(e)}")
+        print(f"❌ Erro ao registrar log no Supabase: {str(e)}")
 
 
 app = FastAPI(
