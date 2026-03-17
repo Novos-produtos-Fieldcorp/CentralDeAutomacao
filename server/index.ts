@@ -201,8 +201,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Using port 5000 - configurado para aceitar conexões externas no Replit
-  const port = process.env.PORT || 5000;
+  // Using port 5001 - configurado para aceitar conexões externas no Replit
+  const port = process.env.PORT || 5001;
   const host = '0.0.0.0';
   
   console.log('🌐 Configuração do servidor:');

@@ -1,0 +1,2373 @@
+{
+  "name": "Resumo em grupos | Central de Automações",
+  "nodes": [
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "dca75ac2-8631-41bd-9d6f-8128806e1e34",
+      "name": "Agregar Todas Mensagens",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Recupera o texto de forma segura\nlet inputText = $json[\"output\"] || $json[\"outputText\"] || \"\";\n\n// 2. Remove TODOS os colchetes [ ] que a IA insere\nlet formattedText = inputText.replace(/[\\[\\]]/g, '');\n\n// 3. Converte negritos de **exemplo** para *exemplo* (WhatsApp)\nformattedText = formattedText.replace(/\\*\\*(.*?)\\*\\*/g, '*$1*');\n\n// 4. CORREÇÃO DAS QUEBRAS DE LINHA:\n// Substitui a sequência de texto \"\\n\" por quebras de linha reais do sistema\nformattedText = formattedText.replace(/\\\\n/g, '\\n');\n\n// 5. Garante que não existam quebras triplas e limpa espaços nas bordas\nformattedText = formattedText.replace(/\\n{3,}/g, '\\n\\n').trim();\n\n// 6. Captura os dados externos para montar o bloco final\nconst nomeGrupo = $('Webhook').first().json.body.nome_do_grupo || \"Grupo\";\nconst totalMsg = $('Pegar total de palavras').first().json.totalMensagens || 0;\n\n// Montagem final com as variáveis externas inseridas diretamente no texto\nconst mensagemFinal = `*RESUMO DO GRUPO: ${nomeGrupo}*\n\n${formattedText}\n\n*Estatísticas gerais:*\nTotal de mensagens hoje: ${totalMsg}`;\n\nreturn {\n  json: {\n    outputText: mensagemFinal\n  }\n};"
+      },
+      "id": "5b4847e0-a5d8-47ea-ad1d-530a959f3fcb",
+      "name": "Formatar Texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5136,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 20000
+      },
+      "id": "8839b838-44f5-49ac-a25d-11bda693d2f4",
+      "name": "Token Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
+      "typeVersion": 1,
+      "position": [
+        4400,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://chat.wiseapp360.com/api/v1/accounts/{{ $('Webhook').first().json.body.account_id }}/conversations/{{ $('pegar conversas do grupo').first().json.payload[0].messages[0].conversation_id }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_access_token",
+              "value": "={{ $('Webhook').first().json.body.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "={{ $json.outputText }}"
+            },
+            {
+              "name": "message_type",
+              "value": "outgoing"
+            },
+            {
+              "name": "private",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "756c2298-b8a3-4c60-84de-634b08a26c5d",
+      "name": "Enviar Resumo Grupo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5328,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-5.2",
+        "options": {}
+      },
+      "id": "b4a562df-10e1-48a8-a04d-ba2361223216",
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        4240,
+        1328
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "RwhPw23gIGdqPztt",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkingMode": "advanced",
+        "options": {
+          "summarizationMethodAndPrompts": {
+            "values": {
+              "combineMapPrompt": "=Tarefa: Escreva um resumo conciso da conversa fornecida.\n\nInstruções:\n\nSepare o conteúdo por tópicos claros e objetivos.\n\nAdicione TODOS os membros do grupo que enviaram alguma mensagem, não esqueça nenhum! Não confunda pessoas mencionadas com membros que enviaram alguma mensagem.\n\nMantenha o texto organizado e direto ao ponto.\n\nNão repita frases da conversa integralmente — reformule com clareza.\n\nO resumo deve facilitar a leitura em grupo e o entendimento rápido dos principais pontos abordados.\n\nConversa:\n\n{{ $json.texto_limpo_para_ia }}\n\nRESUMO CONCISO POR TÓPICOS: ",
+              "prompt": "=Tarefa: Escreva um resumo conciso da conversa fornecida.\n\nInstruções:\n\nSepare o conteúdo por tópicos claros e objetivos.\n\nAdicione todos os membros do grupo que enviaram alguma mensagem.\n\nMantenha o texto organizado e direto ao ponto.\n\nNão repita frases da conversa integralmente — reformule com clareza.\n\nO resumo deve facilitar a leitura em grupo e o entendimento rápido dos principais pontos abordados.\n\nConversa:\n{{ $json.texto_limpo_para_ia }}\n\nRESUMO CONCISO POR TÓPICOS: "
+            }
+          }
+        }
+      },
+      "id": "a88ad8dc-ac42-4c98-8725-1582f5bbd1c7",
+      "name": "Resumir Mensagens",
+      "type": "@n8n/n8n-nodes-langchain.chainSummarization",
+      "typeVersion": 2,
+      "position": [
+        4224,
+        1104
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "42478e7a-1573-4625-8f9a-fa7df206d02a",
+              "name": "data",
+              "value": "={{ $json.data.toJsonString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5b5a4872-f5b6-44e9-b597-4df80d9c040e",
+      "name": "Deixar tudo como texto",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        2624,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "64bf4d5d-9158-44c1-9609-38c723eea723",
+              "name": "inbox_id",
+              "value": "={{ $('Webhook').item.json.body.inbox_id }}",
+              "type": "string"
+            },
+            {
+              "id": "ec9bd8d2-ad7e-474b-9c12-51120a1d5ddf",
+              "name": "nome do grupo",
+              "value": "={{ $('Webhook').item.json.body.nome_do_grupo }}",
+              "type": "string"
+            },
+            {
+              "id": "25f40e9d-64b0-456b-824e-2753fb737963",
+              "name": "mensagens_maxima",
+              "value": "80",
+              "type": "string"
+            },
+            {
+              "id": "01530a70-6ef3-4141-a718-2ed7a9b1a559",
+              "name": "access_token",
+              "value": "={{ $('Webhook').item.json.body.token_atendente }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -624,
+        944
+      ],
+      "id": "30efc0c9-c252-4953-b3ed-3c8fd8725e9c",
+      "name": "\"Input\" do usuário"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "981090d0-5b8b-4456-ba68-1ad19b0f83b3",
+              "name": "Mensagem.name_user",
+              "value": "={{ $json.nome_usuario }}",
+              "type": "string"
+            },
+            {
+              "id": "3d479bb6-76d1-46c3-b9e4-ba4905759c8e",
+              "name": "Mensagem.audio",
+              "value": "={{ $json.url_original }}",
+              "type": "string"
+            },
+            {
+              "id": "ccf8d881-ed90-4e4c-bd84-580579e78542",
+              "name": "=Mensagem.Data",
+              "value": "={{ $json.data_envio }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "be012cfe-143a-4ce4-930a-56096801b654",
+      "name": "Map Dados1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1968,
+        1152
+      ],
+      "alwaysOutputData": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "maxItems": "=10"
+      },
+      "id": "0b5b4e63-afcc-4cc4-b444-9999fcdd3a59",
+      "name": "Limitar para 10 áudios",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        2208,
+        1072
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {
+          "language": "pt"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2784,
+        1072
+      ],
+      "id": "f368afb1-80d3-4cca-9022-e12d57b07ae2",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "RwhPw23gIGdqPztt",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.Mensagem.audio }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2592,
+        1072
+      ],
+      "id": "30982f1f-3ced-4c49-91c2-289c376b09d4",
+      "name": "Transformar em Binário",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        3264,
+        1136
+      ],
+      "id": "b8714cb5-6a9e-4fd8-93aa-6e60a55e5033",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "42478e7a-1573-4625-8f9a-fa7df206d02a",
+              "name": "data",
+              "value": "={{ $json.data.toJsonString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8ea50afa-e617-4158-8c6c-16d174fea8d5",
+      "name": "Deixar tudo como texto1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        3440,
+        1136
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "981090d0-5b8b-4456-ba68-1ad19b0f83b3",
+              "name": "Mensagem.name_user",
+              "value": "={{ $json.nome_usuario }}",
+              "type": "string"
+            },
+            {
+              "id": "3d479bb6-76d1-46c3-b9e4-ba4905759c8e",
+              "name": "Mensagem.imagem",
+              "value": "={{ $json.url_original }}",
+              "type": "string"
+            },
+            {
+              "id": "ccf8d881-ed90-4e4c-bd84-580579e78542",
+              "name": "Mensagem.Data",
+              "value": "={{ $json.data_envio }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "be121d7d-8d00-4b20-a251-3ebcbe057cd6",
+      "name": "Map Dados2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1968,
+        1424
+      ]
+    },
+    {
+      "parameters": {
+        "maxItems": "=10"
+      },
+      "id": "304e8956-2058-47be-ad1b-4a8fed88b4c4",
+      "name": "Limitar imagens",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        2304,
+        1328
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        3280,
+        1408
+      ],
+      "id": "adeb650b-f1dc-4a9e-93c5-e9a44bacc184",
+      "name": "juntar todas as imagens"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "42478e7a-1573-4625-8f9a-fa7df206d02a",
+              "name": "data",
+              "value": "={{ $json.data.toJsonString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2b2df8c3-c549-4705-8d8e-3f581aae9542",
+      "name": "Deixar tudo como texto2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        3504,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        3088,
+        1408
+      ],
+      "id": "71534ea9-3e8a-4a69-9459-58ba2a0e6992",
+      "name": "Adicionar Data na Imagem"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        3056,
+        1136
+      ],
+      "id": "84305f03-34ff-465f-b4dd-153f60eeb82c",
+      "name": "Adicionar Data no Áudio"
+    },
+    {
+      "parameters": {
+        "content": "## Texto",
+        "height": 344,
+        "width": 840,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1920,
+        688
+      ],
+      "typeVersion": 1,
+      "id": "8bbbf8d6-b090-48a7-ad78-294326156ea8",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "maxItems": "=300"
+      },
+      "id": "6315f167-57b7-466f-86c5-4c29d5081214",
+      "name": "Limitar Mensagens",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        2176,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Imagem - .png .jpg .webapp",
+        "height": 260,
+        "width": 1480,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1920,
+        1328
+      ],
+      "typeVersion": 1,
+      "id": "3a4d04ba-f870-42f7-8e80-ed8ccaa0d000",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Áudio",
+        "height": 216,
+        "width": 1676,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1920,
+        1072
+      ],
+      "typeVersion": 1,
+      "id": "49935456-6a1a-4ceb-95b4-b11b935f8e05",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini-2024-07-18",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI-2024-07-18"
+        },
+        "text": "What's in this image? Send a small description",
+        "imageUrls": "={{ $json.Mensagem.imagem }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2736,
+        1328
+      ],
+      "id": "7585b30b-9087-4113-a1e2-3b04d5ba8418",
+      "name": "Analisar imagem",
+      "credentials": {
+        "openAiApi": {
+          "id": "RwhPw23gIGdqPztt",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "981090d0-5b8b-4456-ba68-1ad19b0f83b3",
+              "name": "Mensagem.name_user",
+              "value": "={{ $json.pushName }}",
+              "type": "string"
+            },
+            {
+              "id": "3d479bb6-76d1-46c3-b9e4-ba4905759c8e",
+              "name": "Mensagem.name",
+              "value": "={{ $json.message.eventMessage.name }}",
+              "type": "string"
+            },
+            {
+              "id": "ccf8d881-ed90-4e4c-bd84-580579e78542",
+              "name": "Mensagem.Data",
+              "value": "={{ $json.messageTimestamp.toDateTime('s').format('yyyy-MM-dd TT') }}",
+              "type": "string"
+            },
+            {
+              "id": "7eada8bc-356b-41f8-833b-46c258aae2b9",
+              "name": "Mensagem.descricao",
+              "value": "={{ $json.message.eventMessage.description }}",
+              "type": "string"
+            },
+            {
+              "id": "81969714-2fb9-4452-bb32-2a82f677f489",
+              "name": "Mensagem.tipo",
+              "value": "reunião",
+              "type": "string"
+            },
+            {
+              "id": "07e16cd0-ceef-414d-9ffb-8c8701af9e47",
+              "name": "Mensagem.data_reuniao",
+              "value": "={{ $json.message.eventMessage.startTime }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e066b0b6-202f-4bb6-a87e-9bbcc5d579fc",
+      "name": "Map Dados3",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        2320,
+        2048
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2656,
+        2048
+      ],
+      "id": "fdc1c976-6d68-4a9c-b9f2-b9a49ddab977",
+      "name": "Juntar todos os eventos"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "42478e7a-1573-4625-8f9a-fa7df206d02a",
+              "name": "data",
+              "value": "={{ $json.data.toJsonString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a77b7a17-4c40-4347-a3ae-cb59b6b7f703",
+      "name": "Deixar tudo como texto3",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        2880,
+        2048
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const mensagem = item.json.Mensagem;\n\n  const timestamp = Number(mensagem.data_reuniao);\n\n  const dataUTC = new Date(timestamp * 1000);\n\n  const dataBR = new Date(dataUTC.getTime() - 3 * 60 * 60 * 1000);\n\n  const dataFormatada = dataBR.toISOString().replace(\"T\", \" \").substring(0, 19);\n\n  return {\n    json: {\n      Mensagem: {\n        ...mensagem,\n        data_reuniao: dataFormatada\n      }\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2496,
+        2048
+      ],
+      "id": "1c4fc9d8-d77b-4828-b204-31595ec415eb",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f89bde1c-2675-4343-9868-0e9f18633d51",
+              "leftValue": "={{ $json.messageType }}",
+              "rightValue": "eventMessage",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2096,
+        2048
+      ],
+      "id": "3e963d75-023a-453d-8233-a618847b5af3",
+      "name": "if = evento"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        3760,
+        1104
+      ],
+      "id": "cb2da768-c9dc-4409-9c87-6ef40b4a8787",
+      "name": "Merge",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "981090d0-5b8b-4456-ba68-1ad19b0f83b3",
+              "name": "Mensagem.name_user",
+              "value": "={{ $json.nome_usuario }}",
+              "type": "string"
+            },
+            {
+              "id": "3d479bb6-76d1-46c3-b9e4-ba4905759c8e",
+              "name": "mensagem_texto",
+              "value": "={{ $json.mensagem_texto }}",
+              "type": "string"
+            },
+            {
+              "id": "ccf8d881-ed90-4e4c-bd84-580579e78542",
+              "name": "Mensagem.Data",
+              "value": "={{ $json.data_envio }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c29b22a7-b716-47ed-b93a-be1631633bf5",
+      "name": "Map Dados4",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1968,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash-latest",
+        "options": {}
+      },
+      "id": "57234447-ec01-461c-83b1-e32f408cf018",
+      "name": "Modelo Google Gemini1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        4400,
+        1472
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "7BgZlJaQLLVkQrbU",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "e86d4cd7-d1f9-427d-80d7-7a471341721d",
+      "name": "OpenAI Chat Model2",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        4816,
+        1232
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "RwhPw23gIGdqPztt",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        4608,
+        1040
+      ],
+      "id": "c980a27a-d686-451b-b794-35de3e6e3ca7",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo_mensagem }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f199ef84-cffc-4c19-8f06-9c73dfe64758"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "4e10164b-638e-4608-b810-ed581b2d2deb",
+                    "leftValue": "={{ $json.tipo_mensagem }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "4fb45288-c3d7-4c27-afa4-66334859f0f8",
+                    "leftValue": "={{ $json.tipo_mensagem }}",
+                    "rightValue": "image",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "4eba75bd-74ad-48de-9f44-0468c49de1df",
+                    "leftValue": "={{ $json.tipo_mensagem }}",
+                    "rightValue": "file",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1296,
+        928
+      ],
+      "id": "c425ffc8-3ac6-44db-977c-8adfe02337b0",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "content": "## Evento",
+        "height": 260,
+        "width": 1320,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1936,
+        1968
+      ],
+      "typeVersion": 1,
+      "id": "08292d4b-3656-47a5-8ee7-3e2b313966b6",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resumo-grupo",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1808,
+        928
+      ],
+      "id": "fdbcf43b-ddfa-4a62-a6ba-4281b47b3573",
+      "name": "Webhook",
+      "webhookId": "26254d63-b40d-469a-b1d3-62ef2a624d7e"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  status: \"200\",\n  data: {\n    mensagem_enviada: $('Enviar Resumo Grupo').item.json.message\n  },\n  message: \"Resumo enviado com sucesso\"\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        5664,
+        1040
+      ],
+      "id": "e09c2633-ccaf-4b2a-99fb-ce75215d962c",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "tableId": "envio_resumo",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "data_envio",
+              "fieldValue": "={{ new Date().toISOString().split('T')[0] }}"
+            },
+            {
+              "fieldId": "mensagem",
+              "fieldValue": "Automação Iniciada"
+            },
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Webhook').item.json.body.company_id }}"
+            },
+            {
+              "fieldId": "grupo_id",
+              "fieldValue": "={{ $('Webhook').item.json.body.group_id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "TRUE"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -784,
+        944
+      ],
+      "id": "4f94d05e-cac7-475e-8cdc-510eff06749b",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VyDESN8sEHh3HB99",
+          "name": "Banco - automações"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "envio_resumo",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "data_envio",
+              "fieldValue": "={{ new Date().toISOString().split('T')[0] }}"
+            },
+            {
+              "fieldId": "mensagem",
+              "fieldValue": "Resumo em grupo enviado!"
+            },
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Webhook').first().json.body.company_id }}"
+            },
+            {
+              "fieldId": "grupo_id",
+              "fieldValue": "={{ $('Webhook').item.json.body.group_id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "TRUE"
+            },
+            {
+              "fieldId": "resumo_grupo",
+              "fieldValue": "={{ $json.content }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        5504,
+        1040
+      ],
+      "id": "dbe9a2ef-d3a0-478d-8096-36f07ce99e84",
+      "name": "Supabase2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "VyDESN8sEHh3HB99",
+          "name": "Banco - automações"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "292d3cc3-8919-4c67-b592-b536899354ff",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        576,
+        928
+      ],
+      "id": "4054d887-d1c4-4274-82c8-4f391bf3135b",
+      "name": "is empty?"
+    },
+    {
+      "parameters": {
+        "tableId": "envio_resumo",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "data_envio",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "mensagem",
+              "fieldValue": "Não foi encontrado nenhum grupo com esse nome, por favor, verifique se o nome inserido está correto."
+            },
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Webhook').item.json.body.company_id }}"
+            },
+            {
+              "fieldId": "grupo_id",
+              "fieldValue": "={{ $('Webhook').item.json.body.group_id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "FALSE"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        720,
+        1152
+      ],
+      "id": "f7a65f7c-7525-49a3-a2a6-8b86f2bf2c2b",
+      "name": "Supabase3",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VyDESN8sEHh3HB99",
+          "name": "Banco - automações"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"400\",\n  \"message\": \"Não foi enviado mensagens no dia de hoje\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        1152
+      ],
+      "id": "7631d935-a901-4e30-bae5-c941c317d24b",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "envio_resumo",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "grupo_id",
+              "condition": "=eq",
+              "keyValue": "={{ $('Webhook').item.json.body.group_id }}"
+            },
+            {
+              "keyName": "data_envio",
+              "condition": "eq",
+              "keyValue": "={{ new Date().toISOString() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1456,
+        928
+      ],
+      "id": "2530822e-aeb4-49ee-b47b-0cf84465b758",
+      "name": "Supabase4",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "VyDESN8sEHh3HB99",
+          "name": "Banco - automações"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"400\",\n  \"message\": \"O fluxo já foi enviado hoje.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -752,
+        784
+      ],
+      "id": "ee85c94f-5528-463c-a07a-1835c9ec3f8d",
+      "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "content": "Atualizações para fazer no Fluxo:\n- Escolher para onde enviar o resumo, no próprio grupo, no e-mail, ou para um contato em específico\n- Adicionar nome dos participantes do grupo em um bloco sozinho",
+        "height": 192,
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1136,
+        640
+      ],
+      "typeVersion": 1,
+      "id": "9e0ee496-b27e-454b-93f8-9e37057026ec",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d78e792d-90d1-48cb-af62-650e31380522",
+              "leftValue": "={{ $json.Mensagem.imagem }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2480,
+        1328
+      ],
+      "id": "0bd2a5d0-86fc-4bc2-98f3-05bbc118991d",
+      "name": "retirar nulos"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3639600c-0e3d-41fa-9e3d-e3a2a80d4c18",
+              "leftValue": "={{ $json.data_envio }}",
+              "rightValue": "={{ new Date().toISOString().split('T')[0] }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1072,
+        1040
+      ],
+      "id": "b13bec89-5085-4702-adb7-68ef2522ae0a",
+      "name": "já foi rodada hoje?"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.Mensagem.audio }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "7c1b4ca3-fa9a-45cd-87b1-05610094af22"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2400,
+        1072
+      ],
+      "id": "e0c90133-52b5-44c3-8d22-c58218ebfa16",
+      "name": "is null?"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "participante"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        864,
+        736
+      ],
+      "id": "8b3e22c6-c1c8-48a0-aea3-f4a40bafb57c",
+      "name": "Aggregate2"
+    },
+    {
+      "parameters": {
+        "url": "=https://chat.wiseapp360.com/api/v1/accounts/{{ $json.body.account_id }}/inboxes/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_access_token",
+              "value": "={{ $json.body.api_key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1632,
+        928
+      ],
+      "id": "0c64d992-8bd3-466f-bf35-0e19de3c0563",
+      "name": "GET inboxes details"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"400\",\n  \"message\": \"O nome do grupo está incorreto.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        16,
+        1120
+      ],
+      "id": "90e9f978-75f4-45bb-b9eb-1de573df6dfe",
+      "name": "Respond to Webhook5"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c7168b98-e6e6-41ac-8a4b-af4c2997b300",
+              "leftValue": "={{ $json.meta }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -320,
+        944
+      ],
+      "id": "d027ed7c-776b-493b-ac2e-5746c8c4f72b",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "payload",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        240,
+        928
+      ],
+      "id": "2ed46afa-f6ed-4074-ab94-f22b336560ff",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "tableId": "envio_resumo",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "data_envio",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "mensagem",
+              "fieldValue": "Não foi encontrado nenhum grupo com esse nome."
+            },
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Webhook').item.json.body.company_id }}"
+            },
+            {
+              "fieldId": "grupo_id",
+              "fieldValue": "={{ $('Webhook').item.json.body.group_id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "FALSE"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        1120
+      ],
+      "id": "7733efd4-f56f-41ba-aa95-dafca0a580c0",
+      "name": "Supabase5",
+      "credentials": {
+        "supabaseApi": {
+          "id": "VyDESN8sEHh3HB99",
+          "name": "Banco - automações"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://chat.wiseapp360.com/api/v1/accounts/{{ $('Webhook').item.json.body.account_id }}/contacts/search?q={{ $json[\"nome do grupo\"] }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_access_token",
+              "value": "={{ $('Webhook').item.json.body.api_key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ce3a402c-5e02-4480-9bcd-c442d76617ae",
+      "name": "Procurar grupo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -464,
+        944
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "=https://chat.wiseapp360.com/api/v1/accounts/{{ $('Webhook').item.json.body.account_id }}/contacts/{{ $json.payload[0].id }}/conversations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_access_token",
+              "value": "={{ $('Webhook').item.json.body.api_key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -96,
+        928
+      ],
+      "id": "c9f1b3f2-ac88-4488-ae8c-25f686d6c374",
+      "name": "pegar conversas do grupo"
+    },
+    {
+      "parameters": {
+        "url": "=https://chat.wiseapp360.com/api/v1/accounts/{{ $('Webhook').item.json.body.account_id }}/conversations/{{ $json.payload[0].messages[0].conversation_id }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api_access_token",
+              "value": "={{ $('Webhook').item.json.body.api_key }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        80,
+        928
+      ],
+      "id": "bb2af356-a6b6-4ff9-b3ff-026b70f36125",
+      "name": "pegar mensagens da conversa"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const msg = item.json;\n  let nomeExtraido = msg.nome_usuario || \"Desconhecido\";\n  let textoExtraido = msg.mensagem_texto || \"\";\n  let tipoFinal = msg.tipo_mensagem || \"text\";\n  let urlConteudo = msg.url_original || \"\";\n\n  // Se não houver data, usar data atual\n  const dataObjeto = msg.data_envio ? new Date(msg.data_envio) : new Date();\n  const dataFormatada = dataObjeto.toLocaleString('pt-BR', {\n    timeZone: 'America/Sao_Paulo',\n    day: '2-digit',\n    month: '2-digit',\n    year: 'numeric',\n    hour: '2-digit',\n    minute: '2-digit'\n  });\n\n  return {\n    json: {\n      id: msg.id,\n      nome_usuario: nomeExtraido,\n      mensagem_texto: textoExtraido,\n      tipo_mensagem: tipoFinal,\n      data_envio: dataFormatada,\n      url_original: urlConteudo\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        912
+      ],
+      "id": "85ad77cb-0d46-45cb-a542-e850e3ef99e1",
+      "name": "Separar dados da mensagem"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Contagem do total de mensagens processadas\nlet totalMensagens = items.length;\n\nreturn [{\n  json: {\n    totalMensagens: totalMensagens\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        720
+      ],
+      "id": "1345b038-ffb3-449e-9363-598e3ed4ac0a",
+      "name": "Pegar total de palavras"
+    },
+    {
+      "parameters": {
+        "content": "## Arquivo",
+        "height": 260,
+        "width": 1320,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1920,
+        1632
+      ],
+      "typeVersion": 1,
+      "id": "e07ab650-7e7f-4ca0-ad2d-17f175dfa94c",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "981090d0-5b8b-4456-ba68-1ad19b0f83b3",
+              "name": "Mensagem.name_user",
+              "value": "={{ $json.nome_usuario }}",
+              "type": "string"
+            },
+            {
+              "id": "3d479bb6-76d1-46c3-b9e4-ba4905759c8e",
+              "name": "Mensagem.imagem",
+              "value": "={{ $json.url_original }}",
+              "type": "string"
+            },
+            {
+              "id": "ccf8d881-ed90-4e4c-bd84-580579e78542",
+              "name": "Mensagem.Data",
+              "value": "={{ $json.data_envio }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1bfbf1d5-0e5f-4ace-ad21-e200fd741fa5",
+      "name": "Map Dados",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        1984,
+        1728
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "let todasMensagens = [];\n\n// 1. Extrair e achatar todas as mensagens de todos os blocos de dados\nfor (const item of items) {\n  if (item.json.data) {\n    const mensagensNoBloco = JSON.parse(item.json.data);\n    mensagensNoBloco.forEach(m => {\n      todasMensagens.push({\n        nome: m.Mensagem?.name_user || \"Sistema\",\n        dataStr: m.Mensagem?.Data || \"\",\n        // Converte a string \"DD/MM/YYYY, HH:mm\" para um objeto Date para ordenar\n        timestamp: new Date(m.Mensagem?.Data.replace(/(\\d{2})\\/(\\d{2})\\/(\\d{4})/, '$2/$1/$3')).getTime(),\n        conteudo: m.mensagem_texto || m.text || m.content || \"\"\n      });\n    });\n  }\n}\n\n// 2. Ordenar: Do menos atual (antigo) para o mais atual (recente)\ntodasMensagens.sort((a, b) => a.timestamp - b.timestamp);\n\n// 3. Montar o texto formatado para o prompt da IA\nlet textoFinal = todasMensagens.map(m => `[${m.dataStr}] ${m.nome}: ${m.conteudo}`).join('\\n\\n');\n\nreturn {\n  texto_limpo_para_ia: textoFinal\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3984,
+        1120
+      ],
+      "id": "8f93d5b9-edb2-46ae-a2a4-9da2ffdf1097",
+      "name": "Arrumar texto para IA em ordem cronológica"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8d8c2a23-931a-4923-a01d-ab89fdf6b581",
+              "leftValue": "={{ $('Webhook').first().json.body.force }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1280,
+        928
+      ],
+      "id": "16f14016-8508-4863-9d8c-f69a51fa85da",
+      "name": "Force"
+    },
+    {
+      "parameters": {
+        "jsCode": "const hoje = new Date().toISOString().split('T')[0];\n\nconst filtrados = $input.all().filter(item => {\n  const msg = item.json;\n\n  const dataMensagem = new Date(msg.created_at * 1000)\n    .toISOString()\n    .split('T')[0];\n\n  const eMesmoDia = dataMensagem === hoje;\n\n  const temAnexo = Array.isArray(msg.attachments) && msg.attachments.length > 0;\n  const temTextoBasico =\n    typeof msg.content === 'string' && msg.content.trim() !== \"\";\n\n  const temTranscricaoAudio =\n    temAnexo &&\n    msg.attachments[0].file_type === 'audio' &&\n    typeof msg.attachments[0].transcribed_text === 'string' &&\n    msg.attachments[0].transcribed_text.trim() !== \"\";\n\n  // Considera participantes (0), você e device/bot (1)\n  const eMensagemValida =\n    msg.message_type === 0 ||\n    msg.message_type === 1;\n\n  const temConteudo = temTextoBasico || temAnexo || temTranscricaoAudio;\n\n  return eMesmoDia && eMensagemValida && temConteudo;\n});\n\nreturn filtrados.map(item => {\n  const msg = item.json;\n\n  let nomeExtraido = \"Desconhecido\";\n  let textoExtraido = msg.content || \"\";\n  let tipoFinal = \"text\";\n  let urlConteudo = \"\";\n  let origem = \"desconhecido\";\n  let telefone = null;\n\n  // Origem\n  if (msg.sender && msg.sender.type === \"agent_bot\") {\n    origem = \"device\";\n  } else if (msg.sender && msg.sender.id === 46) {\n    // ajuste o ID se o seu user_id for outro\n    origem = \"voce\";\n  } else if (msg.message_type === 0) {\n    origem = \"participante\";\n  }\n\n  // Detecta tipo pelo file_type\n  if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {\n    const anexo = msg.attachments[0];\n    urlConteudo = anexo.data_url || \"\";\n\n    if (anexo.file_type === \"image\") {\n      tipoFinal = \"image\";\n    } else if (anexo.file_type === \"audio\") {\n      tipoFinal = \"audio\";\n      if (!textoExtraido && anexo.transcribed_text) {\n        textoExtraido = anexo.transcribed_text.trim();\n      }\n    } else if (anexo.file_type === \"file\" || anexo.file_type === \"plain\") {\n      tipoFinal = \"file\";\n    } else {\n      tipoFinal = \"outros\";\n    }\n  } else {\n    tipoFinal = \"text\";\n  }\n\n  // Extrai nome do padrão **nome:**\\n\n  if (textoExtraido.includes(':**\\n')) {\n    const partes = textoExtraido.split(':**\\n');\n    nomeExtraido = partes[0].replace(/\\*\\*/g, '').trim();\n    textoExtraido = (partes[1] || '').trim();\n  } else if (textoExtraido.startsWith('**')) {\n    nomeExtraido = textoExtraido.replace(/\\*\\*/g, '').replace(':', '').trim();\n    textoExtraido = \"\";\n  }\n\n  // Fallback: usa sender.name se ainda for Desconhecido\n  if (nomeExtraido === \"Desconhecido\" && msg.sender && msg.sender.name) {\n    nomeExtraido = msg.sender.name;\n  }\n\n  // Tenta extrair telefone do nome padrão \"+55 11 9.... - Nome\"\n  const matchTel = nomeExtraido.match(/\\+?\\d[\\d\\s\\-()]+/);\n  if (matchTel) {\n    telefone = matchTel[0].trim();\n  } else if (\n    msg.content_attributes &&\n    typeof msg.content_attributes.participant_alt_jid === \"string\"\n  ) {\n    // fallback do WA: 5511...@s.whatsapp.net\n    const jid = msg.content_attributes.participant_alt_jid;\n    const m = jid.match(/(\\d{10,15})/);\n    if (m) telefone = m[1];\n  }\n\n  // Se for image/audio/file, junta URL com texto (ou só URL)\n  if ([\"image\", \"audio\", \"file\"].includes(tipoFinal) && urlConteudo !== \"\") {\n    textoExtraido = textoExtraido\n      ? `${textoExtraido} (Link: ${urlConteudo})`\n      : urlConteudo;\n  }\n\n  const dataObjeto = new Date(msg.created_at * 1000);\n  const dataFormatada = dataObjeto.toLocaleString('pt-BR', {\n    timeZone: 'America/Sao_Paulo',\n    day: '2-digit',\n    month: '2-digit',\n    year: 'numeric',\n    hour: '2-digit',\n    minute: '2-digit'\n  });\n\n  return {\n    json: {\n      id: msg.id,\n      nome_usuario: nomeExtraido,\n      telefone,\n      mensagem_texto: textoExtraido,\n      tipo_mensagem: tipoFinal,\n      origem,\n      data_envio: dataFormatada,\n      url_original: urlConteudo\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        928
+      ],
+      "id": "469a4ca5-5d70-487e-9564-e8ac9f210fc5",
+      "name": "Filtro de data",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "agent": "conversationalAgent",
+        "promptType": "define",
+        "text": "=Nome do Grupo ou Identificação: {{ $('Webhook').first().json.body.nome_do_grupo }}\nData/Hora Agora: {{ $now.setZone('America/Sao_Paulo').format('dd/MM/yyyy HH:mm') }}\n\nResumo: {{ $json.response }}\n\nParticipantes ativos: Esta presente nesse texto: {{ $json.response.text }}\n\n*Estatísticas gerais:*\nTotal de mensagens hoje: {{ $json.totalMensagens }}",
+        "options": {
+          "systemMessage": "=\nFaça um resumo das mensagens enviadas no grupo seguindo esse padrao:\n\n*Resumo do Grupo – [Nome do Grupo]*\n*Período:* [Data/Hora] (formatar como DD/MM/AAAA HH:MM)\n\n*Participantes ativos:*\n\npessoas ativas na conversa\n\n*Principais assuntos discutidos:*\n\n[Resumo do tópico 1]\n\n[Resumo do tópico 2]\n\n[Resumo do tópico 3]\n\n*Destaques:*\n\n[Decisão ou encaminhamento importante]\n\n[Mensagem marcada ou informação relevante]\n\n[Solicitações ou mensagens urgentes]\n\n*Estatísticas gerais:*\n\n- Total de mensagens: x\n\n- Top 5 palavras mais usadas: x\n\nescreva sempre no final: Este resumo foi gerado automaticamente pela IAzinha"
+        }
+      },
+      "id": "4f41c213-6f5d-47a3-bdc8-756fc9a15d71",
+      "name": "Estruturar msg",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        4800,
+        1040
+      ]
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8nqp.wiseapp360.com",
+            "user-agent": "axios/1.12.2",
+            "content-length": "143",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "177.92.77.166",
+            "x-forwarded-host": "n8nqp.wiseapp360.com",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "36e7aa7a3228",
+            "x-real-ip": "177.92.77.166"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "nome_do_grupo": "Equipe Tech NP/Outr/WiseApp",
+            "company_id": 1,
+            "group_id": 15,
+            "account_id": "6",
+            "api_key": "yjjEZEKhPsfNcWLNBbgcsFxq",
+            "force": true
+          },
+          "webhookUrl": "https://n8nqp.wiseapp360.com/webhook/resumo-grupo",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Agregar Todas Mensagens": {
+      "main": [
+        [
+          {
+            "node": "Deixar tudo como texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Texto": {
+      "main": [
+        [
+          {
+            "node": "Enviar Resumo Grupo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Resumir Mensagens",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumir Mensagens": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Deixar tudo como texto": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Resumir Mensagens",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\"Input\" do usuário": {
+      "main": [
+        [
+          {
+            "node": "Procurar grupo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Dados1": {
+      "main": [
+        [
+          {
+            "node": "Limitar para 10 áudios",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Adicionar Data no Áudio",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Limitar para 10 áudios": {
+      "main": [
+        [
+          {
+            "node": "is null?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transformar em Binário": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Adicionar Data no Áudio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Deixar tudo como texto1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deixar tudo como texto1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Map Dados2": {
+      "main": [
+        [
+          {
+            "node": "Limitar imagens",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Adicionar Data na Imagem",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Limitar imagens": {
+      "main": [
+        [
+          {
+            "node": "retirar nulos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "juntar todas as imagens": {
+      "main": [
+        [
+          {
+            "node": "Deixar tudo como texto2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deixar tudo como texto2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Adicionar Data na Imagem": {
+      "main": [
+        [
+          {
+            "node": "juntar todas as imagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adicionar Data no Áudio": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limitar Mensagens": {
+      "main": [
+        [
+          {
+            "node": "Agregar Todas Mensagens",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Pegar total de palavras",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisar imagem": {
+      "main": [
+        [
+          {
+            "node": "Adicionar Data na Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Dados3": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Juntar todos os eventos": {
+      "main": [
+        [
+          {
+            "node": "Deixar tudo como texto3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deixar tudo como texto3": {
+      "main": [
+        []
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Juntar todos os eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if = evento": {
+      "main": [
+        [
+          {
+            "node": "Map Dados3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Map Dados4": {
+      "main": [
+        [
+          {
+            "node": "Limitar Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Estruturar msg",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Estruturar msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Map Dados4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Map Dados1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Map Dados2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Map Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Arrumar texto para IA em ordem cronológica",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "GET inboxes details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Resumo Grupo": {
+      "main": [
+        [
+          {
+            "node": "Supabase2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase": {
+      "main": [
+        [
+          {
+            "node": "\"Input\" do usuário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "is empty?": {
+      "main": [
+        [
+          {
+            "node": "Separar dados da mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase4": {
+      "main": [
+        [
+          {
+            "node": "Force",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "retirar nulos": {
+      "main": [
+        [
+          {
+            "node": "Analisar imagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "já foi rodada hoje?": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "is null?": {
+      "main": [
+        [
+          {
+            "node": "Transformar em Binário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate2": {
+      "main": [
+        []
+      ]
+    },
+    "GET inboxes details": {
+      "main": [
+        [
+          {
+            "node": "Supabase4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook3": {
+      "main": [
+        []
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "pegar conversas do grupo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Filtro de data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase5": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procurar grupo": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "pegar conversas do grupo": {
+      "main": [
+        [
+          {
+            "node": "pegar mensagens da conversa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "pegar mensagens da conversa": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar dados da mensagem": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pegar total de palavras": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Arrumar texto para IA em ordem cronológica": {
+      "main": [
+        [
+          {
+            "node": "Resumir Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Force": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "já foi rodada hoje?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtro de data": {
+      "main": [
+        [
+          {
+            "node": "is empty?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Estruturar msg": {
+      "main": [
+        [
+          {
+            "node": "Formatar Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "affd2ac1-79b1-44bd-931e-26c07e14e807",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3387d3a3860015a41902c21b0b60496c77f3ad5e1359a94fea74d557838f819a"
+  },
+  "id": "EXesr1KWCKNGDBnt",
+  "tags": [
+    {
+      "updatedAt": "2026-01-27T12:49:00.796Z",
+      "createdAt": "2025-02-24T20:36:56.703Z",
+      "id": "odgNtaAqOwCNEL4X",
+      "name": "automação - Central"
+    }
+  ]
+}
