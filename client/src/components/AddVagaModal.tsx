@@ -39,6 +39,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   const [newUnidadeName, setNewUnidadeName] = useState('');
   const [newOperacaoName, setNewOperacaoName] = useState('');
   const [newStatusName, setNewStatusName] = useState('');
+  const [diasSelecionados, setDiasSelecionados] = useState<string[]>([]);
   const [logradouros, setLogradouros] = useState<Logradouro[]>([]);
   const [logradouroSearchFilter, setLogradouroSearchFilter] = useState('');
   const [vagaId, setVagaId] = useState<number | null>(null);
@@ -122,7 +123,8 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     mutationFn: (vagaData: InsertVaga) => createVaga(vagaData),
     onSuccess: (newVaga) => {
       toast.success('Vaga criada com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['vagas', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['vagas'] });
+      setDiasSelecionados([]);
       reset();
       onSuccess();
       onClose();
@@ -189,13 +191,8 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   });
 
   const onSubmit = (data: InsertVaga) => {
-    // Get selected weekdays from checkboxes
-    const checkboxes = document.querySelectorAll('input[name="dias_trabalho"]:checked') as NodeListOf<HTMLInputElement>;
-    const diasSelecionados: string[] = Array.from(checkboxes).map(checkbox => checkbox.value);
-    
     const vagaData = {
       ...data,
-      dias_trabalho: diasSelecionados,
       company_id: companyId!,
     };
 
@@ -220,6 +217,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   const handleClose = () => {
     if (!createVagaMutation.isPending) {
       reset();
+      setDiasSelecionados([]);
       onClose();
     }
   };
@@ -500,8 +498,11 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Dias de Trabalho *
+                <span className="ml-2 text-xs font-normal text-gray-500 dark:text-gray-400">
+                  (clique para selecionar)
+                </span>
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="flex flex-wrap gap-2">
                 {[
                   { key: 'segunda', label: 'Segunda' },
                   { key: 'terca', label: 'Terça' },
@@ -509,19 +510,36 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                   { key: 'quinta', label: 'Quinta' },
                   { key: 'sexta', label: 'Sexta' },
                   { key: 'sabado', label: 'Sábado' },
-                  { key: 'domingo', label: 'Domingo' }
-                ].map((dia) => (
-                  <label key={dia.key} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      value={dia.key}
-                      {...register('dias_trabalho')}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{dia.label}</span>
-                  </label>
-                ))}
+                  { key: 'domingo', label: 'Domingo' },
+                ].map((dia) => {
+                  const selecionado = diasSelecionados.includes(dia.key);
+                  return (
+                    <button
+                      key={dia.key}
+                      type="button"
+                      onClick={() => {
+                        const nova = selecionado
+                          ? diasSelecionados.filter((d) => d !== dia.key)
+                          : [...diasSelecionados, dia.key];
+                        setDiasSelecionados(nova);
+                        setValue('dias_trabalho', nova, { shouldValidate: true });
+                      }}
+                      className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors select-none ${
+                        selecionado
+                          ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700'
+                          : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-400'
+                      }`}
+                    >
+                      {dia.label}
+                    </button>
+                  );
+                })}
               </div>
+              {diasSelecionados.length > 0 && (
+                <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                  {diasSelecionados.length} dia{diasSelecionados.length > 1 ? 's' : ''} selecionado{diasSelecionados.length > 1 ? 's' : ''}
+                </p>
+              )}
               {errors.dias_trabalho && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.dias_trabalho.message}</p>
               )}
