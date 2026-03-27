@@ -1212,10 +1212,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vagaData.dias_trabalho = vagaData.dias_trabalho.split(',').map((d: string) => d.trim());
       }
 
-      // Convert dt_limite to proper timestamp
-      if (vagaData.dt_limite) {
-        vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
-      }
+      // Convert dt_limite to proper timestamp, or null if empty
+      vagaData.dt_limite = vagaData.dt_limite ? new Date(vagaData.dt_limite).toISOString() : null;
 
       const { data: newVaga, error } = await supabaseBackend
         .from("vaga")
@@ -1269,10 +1267,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vagaData.dias_trabalho = vagaData.dias_trabalho.split(',').map((d: string) => d.trim());
       }
 
-      // Convert dt_limite to proper timestamp
-      if (vagaData.dt_limite) {
-        vagaData.dt_limite = new Date(vagaData.dt_limite).toISOString();
-      }
+      // Convert dt_limite to proper timestamp, or null if empty
+      vagaData.dt_limite = vagaData.dt_limite ? new Date(vagaData.dt_limite).toISOString() : null;
 
       const { data: updatedVaga, error } = await supabaseBackend
         .from("vaga")
