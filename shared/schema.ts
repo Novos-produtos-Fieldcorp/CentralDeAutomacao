@@ -658,7 +658,7 @@ export const insertVagaSchema = createInsertSchema(vaga).omit({
 }).extend({
   nome: z.string().min(1, "Nome da vaga é obrigatório"),
   descricao: z.string().min(1, "Descrição é obrigatória"),
-  quantidade: z.string().min(1, "Quantidade é obrigatória"),
+  quantidade: z.coerce.number().int().min(1, "Informe pelo menos 1 vaga"),
   dias_trabalho: z.array(z.string()).min(1, "Selecione pelo menos um dia de trabalho"),
   horario: z.string().min(1, "Horário é obrigatório"),
   company_id: z.number().min(1, "ID da empresa é obrigatório"),

@@ -108,6 +108,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     resolver: zodResolver(insertVagaSchema),
     defaultValues: {
       company_id: companyId || undefined,
+      dias_trabalho: [],
     },
   });
 
@@ -126,6 +127,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       queryClient.invalidateQueries({ queryKey: ['vagas'] });
       setDiasSelecionados([]);
       reset();
+      setValue('dias_trabalho', []);
       onSuccess();
       onClose();
       
@@ -217,6 +219,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   const handleClose = () => {
     if (!createVagaMutation.isPending) {
       reset();
+      setValue('dias_trabalho', []);
       setDiasSelecionados([]);
       onClose();
     }
