@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus, LayoutGrid, LayoutList, Briefcase } from 'lucide-react';
+import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus, LayoutGrid, LayoutList, Briefcase, AlertTriangle } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { Vaga } from '@shared/schema';
@@ -29,6 +29,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const { accountId } = useCurrentAccount();
   const [selectedVaga, setSelectedVaga] = useState<VagaWithRelations | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [vagaToDelete, setVagaToDelete] = useState<VagaWithRelations | null>(null);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -92,8 +93,8 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
       updateVagaStatus(vagaId, statusId, companyId!),
     onSuccess: () => {
       toast.success('Status atualizado com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['vagas', companyId] });
-      // Removed redundant onRefresh() - queryClient.invalidateQueries already refreshes data
+      queryClient.invalidateQueries({ queryKey: ['vagas'] });
+      onRefresh();
     },
     onError: (error) => {
       console.error('Error updating status:', error);
@@ -104,11 +105,13 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const deleteVagaMutation = useMutation({
     mutationFn: (vagaId: number) => deleteVaga(vagaId, companyId!),
     onSuccess: () => {
+      setVagaToDelete(null);
       toast.success('Vaga deletada com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['vagas', companyId] });
-      // Removed redundant onRefresh() - queryClient.invalidateQueries already refreshes data
+      queryClient.invalidateQueries({ queryKey: ['vagas'] });
+      onRefresh();
     },
     onError: (error) => {
+      setVagaToDelete(null);
       console.error('Error deleting vaga:', error);
       toast.error('Erro ao deletar vaga');
     },
@@ -283,36 +286,8 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
     updateStatusMutation.mutate({ vagaId, statusId: newStatusId });
   };
 
-  const handleDeleteVaga = (vagaId: number) => {
-    // Show confirmation toast
-    toast((t) => (
-      <div className="flex items-center space-x-3">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">Deletar vaga?</p>
-          <p className="text-xs text-gray-500">Esta ação não pode ser desfeita</p>
-        </div>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => {
-              toast.dismiss(t.id);
-              deleteVagaMutation.mutate(vagaId);
-            }}
-            className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700"
-          >
-            Deletar
-          </button>
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="bg-gray-200 text-gray-800 px-3 py-1 rounded text-xs hover:bg-gray-300"
-          >
-            Cancelar
-          </button>
-        </div>
-      </div>
-    ), {
-      duration: 5000,
-      position: 'top-center',
-    });
+  const handleDeleteVaga = (vaga: VagaWithRelations) => {
+    setVagaToDelete(vaga);
   };
 
   const getStatusColor = (status: string) => {
@@ -784,7 +759,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                         <Eye size={18} />
                       </button>
                       <button
-                        onClick={() => handleDeleteVaga(vaga.id)}
+                        onClick={() => handleDeleteVaga(vaga)}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                         title="Excluir"
                       >
@@ -810,10 +785,58 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
             setSelectedVaga(null);
           }}
           onUpdate={() => {
-            queryClient.invalidateQueries({ queryKey: ['vagas', companyId] });
+            queryClient.invalidateQueries({ queryKey: ['vagas'] });
             onRefresh();
           }}
         />
+      )}
+
+      {/* Diálogo de confirmação de exclusão */}
+      {vagaToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30">
+                <AlertTriangle size={20} className="text-red-600 dark:text-red-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                  Excluir vaga
+                </h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Tem certeza que deseja excluir a vaga{' '}
+                  <span className="font-medium text-gray-700 dark:text-gray-200">
+                    "{vagaToDelete.nome}"
+                  </span>
+                  ? Esta ação não pode ser desfeita.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                onClick={() => setVagaToDelete(null)}
+                disabled={deleteVagaMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => deleteVagaMutation.mutate(vagaToDelete.id)}
+                disabled={deleteVagaMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {deleteVagaMutation.isPending ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  'Excluir'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
