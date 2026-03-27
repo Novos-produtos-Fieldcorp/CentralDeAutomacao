@@ -104,7 +104,11 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
 
   const deleteVagaMutation = useMutation({
     mutationFn: (vagaId: number) => deleteVaga(vagaId, companyId!),
-    onSuccess: () => {
+    onSuccess: (_data, vagaId) => {
+      queryClient.setQueryData(
+        ['vagas', companyId],
+        (old: VagaWithRelations[] | undefined) => old ? old.filter(v => v.id !== vagaId) : []
+      );
       setVagaToDelete(null);
       toast.success('Vaga deletada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['vagas'] });
