@@ -349,12 +349,14 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                 </div>
               ) : (
                 <select
-                  {...register('unidade_id', { setValueAs: (value) => value ? Number(value) : null })}
+                  {...register('unidade_id')}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                   onChange={(e) => {
                     if (e.target.value === '__new__') {
                       setShowNewUnidadeInput(true);
-                      e.target.value = '';
+                      setValue('unidade_id', null);
+                    } else {
+                      setValue('unidade_id', e.target.value ? Number(e.target.value) : null);
                     }
                   }}
                 >
@@ -408,12 +410,14 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                 </div>
               ) : (
                 <select
-                  {...register('operacao_id', { setValueAs: (value) => value ? Number(value) : null })}
+                  {...register('operacao_id')}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                   onChange={(e) => {
                     if (e.target.value === '__new__') {
                       setShowNewOperacaoInput(true);
-                      e.target.value = '';
+                      setValue('operacao_id', null);
+                    } else {
+                      setValue('operacao_id', e.target.value ? Number(e.target.value) : null);
                     }
                   }}
                 >
@@ -465,12 +469,14 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                 </div>
               ) : (
                 <select
-                  {...register('st_vaga_id', { setValueAs: (value) => value ? Number(value) : null })}
+                  {...register('st_vaga_id')}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                   onChange={(e) => {
                     if (e.target.value === '__new__') {
                       setShowNewStatusInput(true);
-                      e.target.value = '';
+                      setValue('st_vaga_id', null);
+                    } else {
+                      setValue('st_vaga_id', e.target.value ? Number(e.target.value) : null);
                     }
                   }}
                 >
