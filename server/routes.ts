@@ -1267,8 +1267,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vagaData.dias_trabalho = vagaData.dias_trabalho.split(',').map((d: string) => d.trim());
       }
 
-      // Convert dt_limite to proper timestamp, or null if empty
-      vagaData.dt_limite = vagaData.dt_limite ? new Date(vagaData.dt_limite).toISOString() : null;
+      // Convert dt_limite to proper timestamp, or null if empty; skip if key not present (partial update)
+      if ('dt_limite' in vagaData) {
+        vagaData.dt_limite = vagaData.dt_limite ? new Date(vagaData.dt_limite).toISOString() : null;
+      }
 
       const { data: updatedVaga, error } = await supabaseBackend
         .from("vaga")
