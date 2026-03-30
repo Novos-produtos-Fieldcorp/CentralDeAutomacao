@@ -19,8 +19,8 @@ export const useDateRange = (initialPeriod: PeriodType = '30days', debounceCusto
     if (type === 'all') {
       start.setFullYear(start.getFullYear() - 20); // 20 years ago
       return {
-        startDate: start.toISOString().split('T')[0],
-        endDate: end.toISOString().split('T')[0]
+        startDate: start.toLocaleDateString('en-CA'),
+        endDate: end.toLocaleDateString('en-CA'),
       };
     }
 
@@ -38,17 +38,19 @@ export const useDateRange = (initialPeriod: PeriodType = '30days', debounceCusto
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
         break;
-      default:
-        // For custom, keep current dates
+      case 'custom': {
+        // Default to first day of current month → today
+        const firstOfMonth = new Date(end.getFullYear(), end.getMonth(), 1);
         return {
-          startDate: start.toISOString().split('T')[0],
-          endDate: end.toISOString().split('T')[0]
+          startDate: firstOfMonth.toLocaleDateString('en-CA'),
+          endDate: end.toLocaleDateString('en-CA'),
         };
+      }
     }
 
     return {
-      startDate: start.toISOString().split('T')[0],
-      endDate: end.toISOString().split('T')[0]
+      startDate: start.toLocaleDateString('en-CA'),
+      endDate: end.toLocaleDateString('en-CA'),
     };
   }, []);
 
@@ -56,12 +58,9 @@ export const useDateRange = (initialPeriod: PeriodType = '30days', debounceCusto
 
   const updatePeriod = useCallback((type: PeriodType) => {
     setPeriodType(type);
-    if (type !== 'custom') {
-      const newRange = calculateDateRange(type);
-      // Setting new date range for period type
-      setDateRange(newRange);
-      setPendingDateRange(null);
-    }
+    const newRange = calculateDateRange(type);
+    setDateRange(newRange);
+    setPendingDateRange(null);
   }, [calculateDateRange]);
 
   const updateDateRange = useCallback((newRange: DateRange) => {

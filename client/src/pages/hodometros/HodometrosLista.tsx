@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ptBR } from 'date-fns/locale';
+registerLocale('pt-BR', ptBR);
 import { Search, BarChart2, Download, X, Calendar, User, Truck, ChevronDown, ChevronUp, Eye, Clock, Camera, Gauge, Fuel } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
+import { useTheme } from '../../context/ThemeContext';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import { usePagination } from '../../hooks/usePagination';
@@ -75,6 +80,7 @@ const HodometrosLista = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('all', false);
+  const { isDark } = useTheme();
   const [vehicleData, setVehicleData] = useState<VehicleData[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleData | null>(null);
   const [showChartModal, setShowChartModal] = useState(false);
@@ -789,42 +795,42 @@ const HodometrosLista = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Data inicial
             </label>
-            <input
-              type="date"
-              data-testid="input-custom-start-date-lista"
-              value={dateRange.startDate}
-              onChange={(e) => {
-                const newDate = e.target.value;
-                if (validateDate(newDate)) {
-                  setDateRange({ ...dateRange, startDate: newDate });
-                } else {
-                  toast.error('Por favor selecione uma data entre 2020 e 2099');
+            <DatePicker
+              selected={dateRange.startDate ? new Date(dateRange.startDate + 'T00:00:00') : null}
+              onChange={(date: Date | null) => {
+                if (date) {
+                  setDateRange({ ...dateRange, startDate: date.toLocaleDateString('en-CA') });
                 }
               }}
-              min="2020-01-01"
-              max="2099-12-31"
+              dateFormat="dd/MM/yyyy"
+              locale="pt-BR"
+              calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+              minDate={new Date(2020, 0, 1)}
+              maxDate={new Date(2099, 11, 31)}
+              wrapperClassName="w-full"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              data-testid="input-custom-start-date-lista"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Data final
             </label>
-            <input
-              type="date"
-              data-testid="input-custom-end-date-lista"
-              value={dateRange.endDate}
-              onChange={(e) => {
-                const newDate = e.target.value;
-                if (validateDate(newDate)) {
-                  setDateRange({ ...dateRange, endDate: newDate });
-                } else {
-                  toast.error('Por favor selecione uma data entre 2020 e 2099');
+            <DatePicker
+              selected={dateRange.endDate ? new Date(dateRange.endDate + 'T00:00:00') : null}
+              onChange={(date: Date | null) => {
+                if (date) {
+                  setDateRange({ ...dateRange, endDate: date.toLocaleDateString('en-CA') });
                 }
               }}
-              min="2020-01-01"
-              max="2099-12-31"
+              dateFormat="dd/MM/yyyy"
+              locale="pt-BR"
+              calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+              minDate={new Date(2020, 0, 1)}
+              maxDate={new Date(2099, 11, 31)}
+              wrapperClassName="w-full"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              data-testid="input-custom-end-date-lista"
             />
           </div>
         </div>
