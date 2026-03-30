@@ -5,13 +5,13 @@ import { ptBR } from 'date-fns/locale';
 import { format, parse } from 'date-fns';
 registerLocale('pt-BR', ptBR);
 import { X, Edit2, Calendar, Users, Building, Clock, MapPin, User, Briefcase } from 'lucide-react';
-import { Vaga } from '@shared/schema';
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { useTheme } from '../context/ThemeContext';
+import { VagaWithRelations } from '../lib/vagasService';
 
 interface VagaDetailsModalProps {
-  vaga: Vaga;
+  vaga: VagaWithRelations;
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
@@ -60,22 +60,22 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
     statusVagas: []
   });
 
-  const initFormData = (vaga: any) => ({
+  const initFormData = (vaga: VagaWithRelations) => ({
     nome: vaga.nome || '',
     descricao: vaga.descricao || '',
     quantidade: vaga.quantidade || 0,
     dias_trabalho: Array.isArray(vaga.dias_trabalho) ? vaga.dias_trabalho :
-      typeof vaga.dias_trabalho === 'string' ? JSON.parse(vaga.dias_trabalho || '[]') : [],
+      typeof vaga.dias_trabalho === 'string' ? (JSON.parse(vaga.dias_trabalho || '[]') as string[]) : [] as string[],
     tipo_contrato: vaga.tipo_contrato || '',
-    unidade_id: vaga.unidade_id || '',
-    operacao_id: vaga.operacao_id || '',
-    st_vaga_id: vaga.st_vaga_id || '',
-    cliente_id: vaga.cliente_id || '',
+    unidade_id: vaga.unidade_id ?? '',
+    operacao_id: vaga.operacao_id ?? '',
+    st_vaga_id: vaga.st_vaga_id ?? '',
+    cliente_id: vaga.cliente_id ?? '',
   });
 
   const [formData, setFormData] = useState(initFormData(initialVaga));
   const [ativoEdit, setAtivoEdit] = useState<boolean>(initialVaga.ativo !== false);
-  const [distanciaKm, setDistanciaKm] = useState<number>(parseDistancia((initialVaga as any).distancia));
+  const [distanciaKm, setDistanciaKm] = useState<number>(parseDistancia(initialVaga.distancia));
   const [horarioDe, setHorarioDe] = useState<Date | null>(parseHorario(initialVaga.horario).de);
   const [horarioAte, setHorarioAte] = useState<Date | null>(parseHorario(initialVaga.horario).ate);
   const [dtLimitePicker, setDtLimitePicker] = useState<Date | null>(
@@ -112,7 +112,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
     setCurrentVaga(initialVaga);
     setFormData(initFormData(initialVaga));
     setAtivoEdit(initialVaga.ativo !== false);
-    setDistanciaKm(parseDistancia((initialVaga as any).distancia));
+    setDistanciaKm(parseDistancia(initialVaga.distancia));
     const parsedHorario = parseHorario(initialVaga.horario);
     setHorarioDe(parsedHorario.de);
     setHorarioAte(parsedHorario.ate);
@@ -681,7 +681,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                         Distância Limite
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {(currentVaga as any).distancia || 'Sem limite'}
+                        {currentVaga.distancia || 'Sem limite'}
                       </dd>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -722,7 +722,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                         Cliente
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {(currentVaga as any).cliente_nome || 'Não informado'}
+                        {currentVaga.cliente_nome || 'Não informado'}
                       </dd>
                     </div>
                     <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -731,7 +731,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                         Unidade
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {(currentVaga as any).unidade_nome || 'Não informado'}
+                        {currentVaga.unidade_nome || 'Não informado'}
                       </dd>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -739,7 +739,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                         Operação
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {(currentVaga as any).operacao_nome || 'Não informado'}
+                        {currentVaga.operacao_nome || 'Não informado'}
                       </dd>
                     </div>
                     <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -748,11 +748,11 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          (currentVaga as any).status_nome === 'Ativa' ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' :
-                          (currentVaga as any).status_nome === 'Em Andamento' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100' :
+                          currentVaga.status_nome === 'Ativa' ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' :
+                          currentVaga.status_nome === 'Em Andamento' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100' :
                           'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
                         }`}>
-                          {(currentVaga as any).status_nome || 'Não informado'}
+                          {currentVaga.status_nome || 'Não informado'}
                         </span>
                       </dd>
                     </div>

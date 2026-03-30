@@ -1358,12 +1358,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/vagas/:vagaId/ativo", async (req, res) => {
     try {
       const { vagaId } = req.params;
-      const { ativo } = req.body;
+      const { ativo, company_id } = req.body;
+
+      if (!company_id) {
+        return res.status(400).json({ error: "company_id é obrigatório" });
+      }
 
       const { data: updatedVaga, error } = await supabaseBackend
         .from("vaga")
         .update({ ativo: Boolean(ativo), updated_at: new Date().toISOString() })
         .eq("id", Number(vagaId))
+        .eq("company_id", Number(company_id))
         .select()
         .single();
 

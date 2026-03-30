@@ -141,7 +141,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
         fetch(`/api/vagas/${vaga.id}/ativo`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ativo: false }),
+          body: JSON.stringify({ ativo: false, company_id: companyId }),
         })
       )
     ).then(() => {
