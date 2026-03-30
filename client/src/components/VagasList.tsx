@@ -142,6 +142,11 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ativo: false, company_id: companyId }),
+        }).then(res => {
+          if (!res.ok) processedIdsRef.current.delete(vaga.id);
+          return res;
+        }).catch(() => {
+          processedIdsRef.current.delete(vaga.id);
         })
       )
     ).then(() => {

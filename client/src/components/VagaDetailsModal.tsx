@@ -82,6 +82,16 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
     initialVaga.dt_limite ? new Date(initialVaga.dt_limite) : null
   );
 
+  const resetEditState = (vaga: VagaWithRelations) => {
+    setFormData(initFormData(vaga));
+    setAtivoEdit(vaga.ativo !== false);
+    setDistanciaKm(parseDistancia(vaga.distancia));
+    const parsedHorario = parseHorario(vaga.horario);
+    setHorarioDe(parsedHorario.de);
+    setHorarioAte(parsedHorario.ate);
+    setDtLimitePicker(vaga.dt_limite ? new Date(vaga.dt_limite) : null);
+  };
+
   const diasSemana = [
     { value: 'segunda', label: 'Segunda' },
     { value: 'terca', label: 'Terça' },
@@ -590,7 +600,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
               {/* Botões de Ação */}
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
-                  onClick={() => setIsEditing(false)}
+                  onClick={() => { resetEditState(currentVaga); setIsEditing(false); }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
                 >
                   Cancelar
