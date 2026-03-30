@@ -539,7 +539,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             <input
               type="range"
               min={0}
-              max={500}
+              max={100}
               step={1}
               value={distanciaKm}
               onChange={(e) => {
@@ -551,8 +551,8 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
               <span style={{ fontSize: '11px', color: '#4a5a72' }}>0 km</span>
-              <span style={{ fontSize: '11px', color: '#4a5a72' }}>250 km</span>
-              <span style={{ fontSize: '11px', color: '#4a5a72' }}>500 km</span>
+              <span style={{ fontSize: '11px', color: '#4a5a72' }}>50 km</span>
+              <span style={{ fontSize: '11px', color: '#4a5a72' }}>100 km</span>
             </div>
           </div>
 
