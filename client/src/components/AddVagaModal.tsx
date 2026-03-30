@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ptBR } from 'date-fns/locale';
+registerLocale('pt-BR', ptBR);
 import { X, Calendar, MapPin, Users, Building, Clock, FileText, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
@@ -41,6 +45,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   const [newStatusName, setNewStatusName] = useState('');
   const [diasSelecionados, setDiasSelecionados] = useState<string[]>([]);
   const [distanciaKm, setDistanciaKm] = useState<number>(0);
+  const [dtLimite, setDtLimite] = useState<Date | null>(null);
   const [logradouros, setLogradouros] = useState<Logradouro[]>([]);
   const [logradouroSearchFilter, setLogradouroSearchFilter] = useState('');
   const [vagaId, setVagaId] = useState<number | null>(null);
@@ -128,6 +133,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       queryClient.invalidateQueries({ queryKey: ['vagas'] });
       setDiasSelecionados([]);
       setDistanciaKm(0);
+      setDtLimite(null);
       reset();
       setValue('dias_trabalho', []);
       onSuccess();
@@ -224,6 +230,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       setValue('dias_trabalho', []);
       setDiasSelecionados([]);
       setDistanciaKm(0);
+      setDtLimite(null);
       onClose();
     }
   };
@@ -499,6 +506,26 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             </div>
           </div>
 
+          {/* Tipo de Contrato */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Tipo de Contrato
+            </label>
+            <select
+              {...register('tipo_contrato')}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value="">Selecione o tipo de contrato</option>
+              <option value="CLT">CLT</option>
+              <option value="PJ">PJ</option>
+              <option value="Temporário">Temporário</option>
+              <option value="Autônomo">Autônomo</option>
+            </select>
+            {errors.tipo_contrato && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.tipo_contrato.message}</p>
+            )}
+          </div>
+
           {/* Distância Limite — Slider */}
           <div
             style={{
@@ -623,20 +650,6 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Tipo de Contrato
-              </label>
-              <input
-                {...register('tipo_contrato')}
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Ex: CLT, PJ, Temporário"
-              />
-              {errors.tipo_contrato && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.tipo_contrato.message}</p>
-              )}
-            </div>
           </div>
 
           {/* Deadline */}
@@ -644,10 +657,23 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Data Limite (Opcional)
             </label>
-            <input
-              {...register('dt_limite')}
-              type="datetime-local"
+            <DatePicker
+              selected={dtLimite}
+              onChange={(date: Date | null) => {
+                setDtLimite(date);
+                setValue('dt_limite', date ? date.toISOString() : undefined);
+              }}
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={15}
+              dateFormat="dd/MM/yyyy HH:mm"
+              placeholderText="Selecione data e hora"
+              isClearable
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              wrapperClassName="w-full"
+              calendarClassName="dark-datepicker"
+              locale="pt-BR"
+              minDate={new Date()}
             />
             {errors.dt_limite && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.dt_limite.message}</p>
