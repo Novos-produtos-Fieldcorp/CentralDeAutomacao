@@ -19,6 +19,7 @@ import { supabase } from "../../lib/supabase";
 import { useCompanyData } from "../../hooks/useCompanyData";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import BulkActionsModal from "../../components/BulkActionsModal";
+import Pagination from "../../components/Pagination";
 import toast from "react-hot-toast";
 import { formatCPF, formatPhone } from "../../utils/format";
 import type { Cliente } from "../../types/database";
@@ -34,11 +35,22 @@ interface InativoItem {
   ativo: boolean | null;
 }
 
+const DEFAULT_PAGE_SIZE = 50;
+
 const Inativos: React.FC = () => {
   const { companyId } = useCompanyData();
   const [items, setItems] = useState<InativoItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+
   const [loading, setLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(false);
+  const firstFetchRef = useRef(true);
+
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [serverPage, setServerPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+
   const [funcaoFilter, setFuncaoFilter] = useState<
     "todos" | "Motorista" | "Agregado"
   >("todos");
@@ -55,11 +67,13 @@ const Inativos: React.FC = () => {
   const [tagFilterMode, setTagFilterMode] = useState<
     "contains" | "not_contains"
   >("contains");
-  const [motoristaTags, setMotoristaTags] = useState<{
-    [key: number]: any[];
-  }>({});
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
+
+  const tagFilterSig = useMemo(
+    () => [...tagFilter].sort().join("|"),
+    [tagFilter],
+  );
 
   const { data: tags = [] } = useQuery({
     queryKey: ["inativos-tags", companyId],
@@ -76,109 +90,95 @@ const Inativos: React.FC = () => {
     enabled: !!companyId,
   });
 
-  const loadMotoristaTags = useCallback(async (motoristaIds: number[]) => {
-    if (motoristaIds.length === 0) {
-      setMotoristaTags({});
-      return;
-    }
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => window.clearTimeout(t);
+  }, [searchTerm]);
 
-    const associations: any[] = [];
-    const chunkSize = 50;
+  useEffect(() => {
+    setServerPage(0);
+  }, [debouncedSearch, funcaoFilter, tagFilterMode, tagFilterSig]);
 
-    for (let i = 0; i < motoristaIds.length; i += chunkSize) {
-      const chunk = motoristaIds.slice(i, i + chunkSize);
+  const fetchPage = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!companyId) return;
+
+      const showFullSpinner = firstFetchRef.current && !opts?.silent;
+
       try {
-        const { data: chunkAssociations, error: chunkError } = await supabase
-          .from("associacao_tags")
-          .select(
-            `
-            motorista_id,
-            tag:tag_id (
-              id,
-              nome,
-              cor,
-              company_id,
-              limite_max,
-              created_at,
-              updated_at
-            )
-          `,
-          )
-          .in("motorista_id", chunk);
+        if (showFullSpinner) setLoading(true);
+        else if (!opts?.silent) setListLoading(true);
 
-        if (chunkError) continue;
-        if (chunkAssociations) associations.push(...chunkAssociations);
-      } catch {
-        continue;
+        const tagIds = tagFilter
+          .map((id) => Number(id))
+          .filter((n) => !Number.isNaN(n));
+
+        const pTagMode =
+          tagIds.length === 0
+            ? "none"
+            : tagFilterMode === "contains"
+              ? "contains"
+              : "not_contains";
+
+        const { data, error } = await supabase.rpc("inativos_list_page", {
+          p_company_id: companyId,
+          p_search: debouncedSearch.trim(),
+          p_funcao: funcaoFilter,
+          p_tag_ids: tagIds,
+          p_tag_mode: pTagMode,
+          p_limit: pageSize,
+          p_offset: serverPage * pageSize,
+        });
+
+        if (error) throw error;
+
+        const payload = data as {
+          total_count?: number | string;
+          rows?: unknown;
+        } | null;
+
+        const rowsRaw = Array.isArray(payload?.rows) ? payload.rows : [];
+        const mapped: InativoItem[] = rowsRaw.map((r: any) => ({
+          motorista_id: r.motorista_id,
+          nome_motorista: r.nome_motorista ?? null,
+          cpf: r.cpf ?? null,
+          telefone: r.telefone ?? null,
+          email: r.email ?? null,
+          funcao: r.funcao ?? null,
+          st_cadastro: r.st_cadastro ?? null,
+          ativo: r.ativo ?? null,
+        }));
+
+        setItems(mapped);
+        const tc = payload?.total_count;
+        setTotalCount(
+          typeof tc === "number" ? tc : tc != null ? Number(tc) : 0,
+        );
+      } catch (error) {
+        console.error("Erro ao carregar inativos:", error);
+        toast.error("Erro ao carregar inativos");
+        setItems([]);
+        setTotalCount(0);
+      } finally {
+        setLoading(false);
+        setListLoading(false);
+        firstFetchRef.current = false;
       }
-    }
+    },
+    [
+      companyId,
+      debouncedSearch,
+      funcaoFilter,
+      tagFilter,
+      tagFilterMode,
+      serverPage,
+      pageSize,
+    ],
+  );
 
-    const newMotoristaTags: { [key: number]: any[] } = {};
-    motoristaIds.forEach((id) => {
-      newMotoristaTags[id] = [];
-    });
-
-    associations.forEach((association: any) => {
-      if (association.tag && association.motorista_id) {
-        newMotoristaTags[association.motorista_id].push(association.tag);
-      }
-    });
-
-    setMotoristaTags(newMotoristaTags);
-  }, []);
-
-  const fetchInativos = useCallback(async (opts?: { silent?: boolean }) => {
-    if (!companyId) return;
-
-    try {
-      if (!opts?.silent) setLoading(true);
-
-      const [motoristasRes, agregadosRes] = await Promise.all([
-        supabase
-          .from("vw_motoristas_completo")
-          .select(
-            "motorista_id, nome_motorista, cpf, telefone, email, funcao, st_cadastro, ativo",
-          )
-          .eq("company_id", companyId)
-          .eq("ativo", false),
-        supabase
-          .from("vw_agregados_completo")
-          .select(
-            "motorista_id, nome_motorista, cpf, telefone, email, funcao, st_cadastro, ativo",
-          )
-          .eq("company_id", companyId)
-          .eq("ativo", false),
-      ]);
-
-      if (motoristasRes.error) throw motoristasRes.error;
-      if (agregadosRes.error) throw agregadosRes.error;
-
-      const data: InativoItem[] = [
-        ...(motoristasRes.data || []),
-        ...(agregadosRes.data || []),
-      ];
-
-      const map = new Map<number, InativoItem>();
-      data.forEach((item) => {
-        if (!map.has(item.motorista_id)) {
-          map.set(item.motorista_id, item);
-        }
-      });
-
-      const list = Array.from(map.values());
-      setItems(list);
-
-      const ids = list
-        .map((m) => m.motorista_id)
-        .filter((id): id is number => typeof id === "number");
-      await loadMotoristaTags(ids);
-    } catch (error) {
-      console.error("Erro ao carregar inativos:", error);
-      toast.error("Erro ao carregar inativos");
-    } finally {
-      if (!opts?.silent) setLoading(false);
-    }
-  }, [companyId, loadMotoristaTags]);
+  useEffect(() => {
+    void fetchPage();
+  }, [fetchPage]);
 
   const fetchClientes = useCallback(async () => {
     if (!companyId) return;
@@ -195,10 +195,6 @@ const Inativos: React.FC = () => {
       console.error("Erro ao carregar clientes:", error);
     }
   }, [companyId]);
-
-  useEffect(() => {
-    fetchInativos();
-  }, [fetchInativos]);
 
   useEffect(() => {
     fetchClientes();
@@ -222,53 +218,12 @@ const Inativos: React.FC = () => {
   const activeFilterCount =
     (funcaoFilter !== "todos" ? 1 : 0) + (tagFilter.length > 0 ? 1 : 0);
 
-  const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      if (funcaoFilter !== "todos" && item.funcao !== funcaoFilter) {
-        return false;
-      }
-
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
-        const matchSearch =
-          (item.nome_motorista || "").toLowerCase().includes(term) ||
-          (item.cpf || "").toLowerCase().includes(term) ||
-          String(item.telefone || "").includes(term);
-        if (!matchSearch) return false;
-      }
-
-      if (tagFilter.length > 0) {
-        const motoristaId = item.motorista_id;
-        const motoristaTagsList = motoristaTags[motoristaId] || [];
-        const motoristaTagIds = motoristaTagsList.map((tag: any) =>
-          tag.id.toString(),
-        );
-
-        if (tagFilterMode === "contains") {
-          if (!tagFilter.some((tagId) => motoristaTagIds.includes(tagId))) {
-            return false;
-          }
-        } else if (
-          tagFilter.some((tagId) => motoristaTagIds.includes(tagId))
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [
-    items,
-    funcaoFilter,
-    searchTerm,
-    tagFilter,
-    tagFilterMode,
-    motoristaTags,
-  ]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize) || 1);
+  const currentPage = serverPage + 1;
 
   const selectAll =
-    filteredItems.length > 0 &&
-    filteredItems.every((i) => selectedItems.has(i.motorista_id));
+    items.length > 0 &&
+    items.every((i) => selectedItems.has(i.motorista_id));
 
   const handleSelectItem = (id: number) => {
     setSelectedItems((prev) => {
@@ -280,13 +235,21 @@ const Inativos: React.FC = () => {
   };
 
   const handleSelectAll = () => {
-    const ids = filteredItems.map((i) => i.motorista_id);
+    const ids = items.map((i) => i.motorista_id);
     if (ids.length === 0) return;
     const allSelected = ids.every((id) => selectedItems.has(id));
     if (allSelected) {
-      setSelectedItems(new Set());
+      setSelectedItems((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
     } else {
-      setSelectedItems(new Set(ids));
+      setSelectedItems((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.add(id));
+        return next;
+      });
     }
   };
 
@@ -306,9 +269,6 @@ const Inativos: React.FC = () => {
 
       if (error) throw error;
 
-      setItems((prev) =>
-        prev.filter((m) => m.motorista_id !== item.motorista_id),
-      );
       setSelectedItems((prev) => {
         const next = new Set(prev);
         next.delete(item.motorista_id);
@@ -316,6 +276,7 @@ const Inativos: React.FC = () => {
       });
 
       toast.success("Motorista/agregado reativado com sucesso");
+      void fetchPage({ silent: true });
     } catch (error) {
       console.error("Erro ao reativar motorista/agregado:", error);
       toast.error("Erro ao reativar motorista/agregado");
@@ -325,6 +286,12 @@ const Inativos: React.FC = () => {
   };
 
   const hasActiveFilters = () => activeFilterCount > 0;
+
+  const handlePageChange = (page1: number) => setServerPage(page1 - 1);
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setServerPage(0);
+  };
 
   if (loading) {
     return <LoadingSpinner />;
@@ -602,20 +569,27 @@ const Inativos: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={selectAll}
-            onChange={handleSelectAll}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            aria-label="Selecionar todos os inativos visíveis"
-          />
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {selectedItems.size > 0
-              ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? "s" : ""}`
-              : `Selecionar todos (${filteredItems.length} registro${filteredItems.length !== 1 ? "s" : ""})`}
-          </span>
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {listLoading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 dark:bg-gray-900/50">
+            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+          </div>
+        )}
+        <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center gap-2 justify-between">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={selectAll}
+              onChange={handleSelectAll}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              aria-label="Selecionar todos desta página"
+            />
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {selectedItems.size > 0
+                ? `${selectedItems.size} selecionado${selectedItems.size !== 1 ? "s" : ""}`
+                : `Nesta página: ${items.length} · Total: ${totalCount}`}
+            </span>
+          </div>
         </div>
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-900/40">
@@ -642,7 +616,7 @@ const Inativos: React.FC = () => {
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {filteredItems.length === 0 ? (
+            {items.length === 0 ? (
               <tr>
                 <td
                   colSpan={7}
@@ -652,7 +626,7 @@ const Inativos: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              filteredItems.map((item) => (
+              items.map((item) => (
                 <tr
                   key={item.motorista_id}
                   className={`hover:bg-gray-50 dark:hover:bg-gray-900/40 ${
@@ -731,6 +705,16 @@ const Inativos: React.FC = () => {
             )}
           </tbody>
         </table>
+        {totalCount > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalCount}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        )}
       </div>
 
       <BulkActionsModal
@@ -739,7 +723,7 @@ const Inativos: React.FC = () => {
         selectedItems={selectedItems}
         actionType={bulkActionType}
         onSuccess={() => {
-          void fetchInativos({ silent: true });
+          void fetchPage({ silent: true });
           setSelectedItems(new Set());
         }}
         clientes={clientes}
