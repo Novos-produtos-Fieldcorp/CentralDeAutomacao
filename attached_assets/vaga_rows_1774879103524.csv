@@ -1,0 +1,2 @@
+id,nome,descricao,created_at,updated_at,quantidade,dias_trabalho,horario,dt_limite,company_id,unidade_id,operacao_id,st_vaga_id,cliente_id,gr_id,tipo_contrato,distancia
+23,Teste Gabriel,Ajude nos testes,2026-03-30 13:55:58.650677+00,,2,"[""quarta"",""quinta"",""sexta"",""sabado"",""segunda"",""terca""]",10:00 às 22:00,2026-04-01 13:30:00+00,1,22,1,2,297,,,14 km
