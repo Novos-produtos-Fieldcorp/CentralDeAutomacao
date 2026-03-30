@@ -121,6 +121,33 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
     },
   });
 
+  // Auto-deactivate vagas when dt_limite has passed
+  useEffect(() => {
+    if (!vagas.length || !companyId) return;
+    const now = new Date();
+    const expired = vagas.filter(v => {
+      if (!v.dt_limite) return false;
+      if (v.ativo === false) return false;
+      return new Date(v.dt_limite) < now;
+    });
+    if (expired.length === 0) return;
+    expired.forEach(async (vaga) => {
+      try {
+        await fetch(`/api/vagas/${vaga.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...vaga,
+            company_id: companyId,
+            ativo: false,
+            updated_at: undefined,
+          }),
+        });
+      } catch {}
+    });
+    queryClient.invalidateQueries({ queryKey: ['vagas'] });
+  }, [vagas, companyId]);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

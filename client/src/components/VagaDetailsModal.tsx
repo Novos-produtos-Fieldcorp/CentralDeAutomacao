@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ptBR } from 'date-fns/locale';
+import { format, parse } from 'date-fns';
+registerLocale('pt-BR', ptBR);
 import { X, Edit2, Calendar, Users, Building, Clock, MapPin, User, Briefcase } from 'lucide-react';
 import { Vaga } from '@shared/schema';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
+import { useTheme } from '../context/ThemeContext';
 
 interface VagaDetailsModalProps {
   vaga: Vaga;
@@ -20,33 +24,75 @@ interface DropdownData {
   statusVagas: Array<{ id: number; status_vaga: string }>;
 }
 
+const parseHorario = (horario: string | null | undefined): { de: Date | null; ate: Date | null } => {
+  if (!horario) return { de: null, ate: null };
+  const match = horario.match(/^(\d{2}:\d{2})\s+às\s+(\d{2}:\d{2})$/);
+  if (match) {
+    try {
+      return {
+        de: parse(match[1], 'HH:mm', new Date()),
+        ate: parse(match[2], 'HH:mm', new Date()),
+      };
+    } catch {
+      return { de: null, ate: null };
+    }
+  }
+  return { de: null, ate: null };
+};
+
+const parseDistancia = (distancia: string | null | undefined): number => {
+  if (!distancia) return 0;
+  const match = distancia.match(/^(\d+)\s*km$/);
+  return match ? parseInt(match[1]) : 0;
+};
+
 const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, isOpen, onClose, onUpdate }) => {
   const { accountId } = useCurrentAccount();
+  const { isDark } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [currentVaga, setCurrentVaga] = useState(initialVaga);
-  const [formData, setFormData] = useState({
-    nome: initialVaga.nome || '',
-    descricao: initialVaga.descricao || '',
-    quantidade: initialVaga.quantidade || 0,
-    dias_trabalho: Array.isArray(initialVaga.dias_trabalho) ? initialVaga.dias_trabalho : 
-                   typeof initialVaga.dias_trabalho === 'string' ? JSON.parse(initialVaga.dias_trabalho || '[]') : [],
-    horario: initialVaga.horario || '',
-    tipo_contrato: initialVaga.tipo_contrato || '',
-    dt_limite: initialVaga.dt_limite ? new Date(initialVaga.dt_limite).toISOString().slice(0, 16) : '',
-    unidade_id: initialVaga.unidade_id || '',
-    operacao_id: initialVaga.operacao_id || '',
-    st_vaga_id: initialVaga.st_vaga_id || '',
-    cliente_id: initialVaga.cliente_id || '',
-  });
+  const [loading, setLoading] = useState(false);
+
   const [dropdownData, setDropdownData] = useState<DropdownData>({
     clientes: [],
     unidades: [],
     operacoes: [],
     statusVagas: []
   });
-  const [loading, setLoading] = useState(false);
+
+  const initFormData = (vaga: any) => ({
+    nome: vaga.nome || '',
+    descricao: vaga.descricao || '',
+    quantidade: vaga.quantidade || 0,
+    dias_trabalho: Array.isArray(vaga.dias_trabalho) ? vaga.dias_trabalho :
+      typeof vaga.dias_trabalho === 'string' ? JSON.parse(vaga.dias_trabalho || '[]') : [],
+    tipo_contrato: vaga.tipo_contrato || '',
+    unidade_id: vaga.unidade_id || '',
+    operacao_id: vaga.operacao_id || '',
+    st_vaga_id: vaga.st_vaga_id || '',
+    cliente_id: vaga.cliente_id || '',
+  });
+
+  const [formData, setFormData] = useState(initFormData(initialVaga));
+  const [ativoEdit, setAtivoEdit] = useState<boolean>(initialVaga.ativo !== false);
+  const [distanciaKm, setDistanciaKm] = useState<number>(parseDistancia((initialVaga as any).distancia));
+  const [horarioDe, setHorarioDe] = useState<Date | null>(parseHorario(initialVaga.horario).de);
+  const [horarioAte, setHorarioAte] = useState<Date | null>(parseHorario(initialVaga.horario).ate);
+  const [dtLimitePicker, setDtLimitePicker] = useState<Date | null>(
+    initialVaga.dt_limite ? new Date(initialVaga.dt_limite) : null
+  );
 
   const diasSemana = [
+    { value: 'segunda', label: 'Segunda' },
+    { value: 'terca', label: 'Terça' },
+    { value: 'quarta', label: 'Quarta' },
+    { value: 'quinta', label: 'Quinta' },
+    { value: 'sexta', label: 'Sexta' },
+    { value: 'sabado', label: 'Sábado' },
+    { value: 'domingo', label: 'Domingo' },
+  ];
+
+  const diasSemanaFull = [
     { value: 'segunda', label: 'Segunda-feira' },
     { value: 'terca', label: 'Terça-feira' },
     { value: 'quarta', label: 'Quarta-feira' },
@@ -62,36 +108,22 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
     }
   }, [isOpen, isEditing, accountId]);
 
-  // Atualizar dados quando a vaga inicial mudar
   useEffect(() => {
     setCurrentVaga(initialVaga);
-    setFormData({
-      nome: initialVaga.nome || '',
-      descricao: initialVaga.descricao || '',
-      quantidade: initialVaga.quantidade || 0,
-      dias_trabalho: Array.isArray(initialVaga.dias_trabalho) ? initialVaga.dias_trabalho : 
-                     typeof initialVaga.dias_trabalho === 'string' ? JSON.parse(initialVaga.dias_trabalho || '[]') : [],
-      horario: initialVaga.horario || '',
-      tipo_contrato: initialVaga.tipo_contrato || '',
-      dt_limite: initialVaga.dt_limite ? new Date(initialVaga.dt_limite).toISOString().slice(0, 16) : '',
-      unidade_id: initialVaga.unidade_id || '',
-      operacao_id: initialVaga.operacao_id || '',
-      st_vaga_id: initialVaga.st_vaga_id || '',
-      cliente_id: initialVaga.cliente_id || '',
-    });
+    setFormData(initFormData(initialVaga));
+    setAtivoEdit(initialVaga.ativo !== false);
+    setDistanciaKm(parseDistancia((initialVaga as any).distancia));
+    const parsedHorario = parseHorario(initialVaga.horario);
+    setHorarioDe(parsedHorario.de);
+    setHorarioAte(parsedHorario.ate);
+    setDtLimitePicker(initialVaga.dt_limite ? new Date(initialVaga.dt_limite) : null);
   }, [initialVaga]);
 
   const fetchDropdownData = async () => {
     if (!accountId) return;
-
     try {
-      // First get company_id from account_id
       const companyRes = await fetch(`/api/company/by-account/${accountId}`);
-      if (!companyRes.ok) {
-        console.error('Failed to fetch company data');
-        return;
-      }
-      
+      if (!companyRes.ok) return;
       const companyData = await companyRes.json();
       const companyId = companyData.company_id;
 
@@ -127,17 +159,15 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
 
   const validateForm = () => {
     const errors: string[] = [];
-    
     if (!formData.nome.trim()) errors.push('Nome da vaga é obrigatório');
     if (!formData.descricao.trim()) errors.push('Descrição é obrigatória');
     if (!formData.quantidade || formData.quantidade <= 0) errors.push('Quantidade deve ser maior que 0');
-    if (!formData.horario.trim()) errors.push('Horário é obrigatório');
+    if (!horarioDe && !horarioAte) errors.push('Horário é obrigatório');
     if (formData.dias_trabalho.length === 0) errors.push('Selecione pelo menos um dia de trabalho');
     if (!formData.cliente_id) errors.push('Cliente é obrigatório');
     if (!formData.unidade_id) errors.push('Unidade é obrigatória');
     if (!formData.operacao_id) errors.push('Operação é obrigatória');
     if (!formData.st_vaga_id) errors.push('Status é obrigatório');
-    
     return errors;
   };
 
@@ -149,17 +179,19 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
     }
 
     setLoading(true);
-    
+
     try {
-      // First get company_id from account_id
       const companyRes = await fetch(`/api/company/by-account/${accountId}`);
       if (!companyRes.ok) {
         toast.error('Erro ao obter dados da empresa');
         return;
       }
-      
       const companyData = await companyRes.json();
       const companyId = companyData.company_id;
+
+      const deStr = horarioDe ? format(horarioDe, 'HH:mm') : '';
+      const ateStr = horarioAte ? format(horarioAte, 'HH:mm') : '';
+      const horarioStr = deStr && ateStr ? `${deStr} às ${ateStr}` : deStr || ateStr || '';
 
       const updateData = {
         ...formData,
@@ -169,7 +201,11 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
         operacao_id: formData.operacao_id ? Number(formData.operacao_id) : null,
         st_vaga_id: formData.st_vaga_id ? Number(formData.st_vaga_id) : null,
         cliente_id: formData.cliente_id ? Number(formData.cliente_id) : null,
-        dt_limite: formData.dt_limite || null
+        horario: horarioStr,
+        distancia: distanciaKm > 0 ? `${distanciaKm} km` : null,
+        dt_limite: dtLimitePicker ? dtLimitePicker.toISOString() : null,
+        tipo_contrato: formData.tipo_contrato || null,
+        ativo: ativoEdit,
       };
 
       const response = await fetch(`/api/vagas/${currentVaga.id}`, {
@@ -180,7 +216,6 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
 
       if (response.ok) {
         const updatedVaga = await response.json();
-        // Atualizar a vaga local com os dados mais recentes
         setCurrentVaga(updatedVaga.vaga || { ...currentVaga, ...updateData });
         toast.success('Vaga atualizada com sucesso!');
         setIsEditing(false);
@@ -197,7 +232,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
     }
   };
 
-  const formatDate = (date: string | null) => {
+  const formatDate = (date: string | null | undefined) => {
     if (!date) return 'Não definida';
     try {
       return format(new Date(date), 'dd/MM/yyyy HH:mm', { locale: ptBR });
@@ -207,13 +242,11 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
   };
 
   const getDiasTrabalhoFormatted = () => {
-    const dias = Array.isArray(currentVaga.dias_trabalho) ? currentVaga.dias_trabalho : 
-                 typeof currentVaga.dias_trabalho === 'string' ? JSON.parse(currentVaga.dias_trabalho || '[]') : [];
-    
+    const dias = Array.isArray(currentVaga.dias_trabalho) ? currentVaga.dias_trabalho :
+      typeof currentVaga.dias_trabalho === 'string' ? JSON.parse(currentVaga.dias_trabalho || '[]') : [];
     if (dias.length === 0) return 'Não definido';
-    
     return dias.map((dia: string) => {
-      const diaObj = diasSemana.find((d: { value: string; label: string }) => d.value === dia);
+      const diaObj = diasSemanaFull.find(d => d.value === dia);
       return diaObj ? diaObj.label : dia;
     }).join(', ');
   };
@@ -248,215 +281,314 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
         <div className="p-6 space-y-6">
           {isEditing ? (
             <>
-              {/* Formulário de Edição */}
-              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-gray-400" />
-                    Informações da Vaga
-                  </h3>
-                  <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-                    Edite os detalhes da vaga de trabalho.
-                  </p>
+              {/* Ativo Toggle */}
+              <div className="flex items-center justify-between py-3 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <div>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">Vaga Ativa</span>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">A vaga estará visível e disponível para candidaturas</p>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
-                  <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        Nome da Vaga *
-                      </dt>
-                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                        <input
-                          type="text"
-                          value={formData.nome}
-                          onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                        />
-                      </dd>
-                    </div>
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Descrição *
-                      </dt>
-                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                        <textarea
-                          value={formData.descricao}
-                          onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                        />
-                      </dd>
-                    </div>
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Quantidade de Vagas *
-                      </dt>
-                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                        <input
-                          type="number"
-                          value={formData.quantidade}
-                          onChange={(e) => setFormData(prev => ({ ...prev, quantidade: Number(e.target.value) }))}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                        />
-                      </dd>
-                    </div>
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Horário de Trabalho *
-                      </dt>
-                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                        <input
-                          type="text"
-                          value={formData.horario}
-                          onChange={(e) => setFormData(prev => ({ ...prev, horario: e.target.value }))}
-                          placeholder="Ex: 08:00 às 17:00"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                        />
-                      </dd>
-                    </div>
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Tipo de Contrato
-                      </dt>
-                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                        <input
-                          type="text"
-                          value={formData.tipo_contrato}
-                          onChange={(e) => setFormData(prev => ({ ...prev, tipo_contrato: e.target.value }))}
-                          placeholder="Ex: CLT, PJ, Temporário"
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                        />
-                      </dd>
-                    </div>
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Dias de Trabalho *
-                      </dt>
-                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                        <div className="flex flex-wrap gap-2">
-                          {diasSemana.map((dia: { value: string; label: string }) => (
-                            <label key={dia.value} className="flex items-center space-x-2 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={formData.dias_trabalho.includes(dia.value)}
-                                onChange={() => handleDiaToggle(dia.value)}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              />
-                              <span className="text-sm text-gray-700 dark:text-gray-300">{dia.label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </dd>
-                    </div>
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Data Limite
-                      </dt>
-                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                        <input
-                          type="datetime-local"
-                          value={formData.dt_limite}
-                          onChange={(e) => setFormData(prev => ({ ...prev, dt_limite: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                        />
-                      </dd>
-                    </div>
-                  </dl>
+                <button
+                  type="button"
+                  onClick={() => setAtivoEdit(!ativoEdit)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    ativoEdit ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${ativoEdit ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              {/* Nome + Quantidade */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Nome da Vaga *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nome}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                    placeholder="Ex: Motorista Categoria D"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Quantidade de Vagas *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.quantidade}
+                    onChange={(e) => setFormData(prev => ({ ...prev, quantidade: Number(e.target.value) }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                    placeholder="Ex: 5"
+                  />
                 </div>
               </div>
 
-              {/* Informações de Relacionamento - Card Editável */}
-              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                    <Building className="w-5 h-5 text-gray-400" />
-                    Cliente e Unidade
-                  </h3>
+              {/* Descrição */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Descrição *
+                </label>
+                <textarea
+                  value={formData.descricao}
+                  onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                  placeholder="Descreva os requisitos e responsabilidades da vaga"
+                />
+              </div>
+
+              {/* Cliente + Unidade */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Cliente *
+                  </label>
+                  <select
+                    value={formData.cliente_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                  >
+                    <option value="">Selecione um cliente</option>
+                    {dropdownData.clientes.map((cliente) => (
+                      <option key={cliente.cliente_id} value={cliente.cliente_id}>
+                        {cliente.nome}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:p-0">
-                  <dl className="sm:divide-y sm:divide-gray-200 dark:sm:divide-gray-700">
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Cliente *
-                      </dt>
-                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                        <select
-                          value={formData.cliente_id}
-                          onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                        >
-                          <option value="">Selecione um cliente</option>
-                          {dropdownData.clientes.map((cliente) => (
-                            <option key={cliente.cliente_id} value={cliente.cliente_id}>
-                              {cliente.nome}
-                            </option>
-                          ))}
-                        </select>
-                      </dd>
-                    </div>
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Unidade *
-                      </dt>
-                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                        <select
-                          value={formData.unidade_id}
-                          onChange={(e) => setFormData(prev => ({ ...prev, unidade_id: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                        >
-                          <option value="">Selecione uma unidade</option>
-                          {dropdownData.unidades.map((unidade) => (
-                            <option key={unidade.id} value={unidade.id}>
-                              {unidade.unidade}
-                            </option>
-                          ))}
-                        </select>
-                      </dd>
-                    </div>
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Operação *
-                      </dt>
-                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                        <select
-                          value={formData.operacao_id}
-                          onChange={(e) => setFormData(prev => ({ ...prev, operacao_id: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                        >
-                          <option value="">Selecione uma operação</option>
-                          {dropdownData.operacoes.map((operacao) => (
-                            <option key={operacao.id} value={operacao.id}>
-                              {operacao.operacao}
-                            </option>
-                          ))}
-                        </select>
-                      </dd>
-                    </div>
-                    <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Status *
-                      </dt>
-                      <dd className="mt-1 sm:mt-0 sm:col-span-2">
-                        <select
-                          value={formData.st_vaga_id}
-                          onChange={(e) => setFormData(prev => ({ ...prev, st_vaga_id: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                        >
-                          <option value="">Selecione um status</option>
-                          {dropdownData.statusVagas.map((status) => (
-                            <option key={status.id} value={status.id}>
-                              {status.status_vaga}
-                            </option>
-                          ))}
-                        </select>
-                      </dd>
-                    </div>
-                  </dl>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Unidade *
+                  </label>
+                  <select
+                    value={formData.unidade_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, unidade_id: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                  >
+                    <option value="">Selecione uma unidade</option>
+                    {dropdownData.unidades.map((unidade) => (
+                      <option key={unidade.id} value={unidade.id}>
+                        {unidade.unidade}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+              </div>
+
+              {/* Operação + Status */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Operação *
+                  </label>
+                  <select
+                    value={formData.operacao_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, operacao_id: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                  >
+                    <option value="">Selecione uma operação</option>
+                    {dropdownData.operacoes.map((operacao) => (
+                      <option key={operacao.id} value={operacao.id}>
+                        {operacao.operacao}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Status *
+                  </label>
+                  <select
+                    value={formData.st_vaga_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, st_vaga_id: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                  >
+                    <option value="">Selecione um status</option>
+                    {dropdownData.statusVagas.map((status) => (
+                      <option key={status.id} value={status.id}>
+                        {status.status_vaga}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Tipo de Contrato */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Tipo de Contrato
+                </label>
+                <select
+                  value={formData.tipo_contrato}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tipo_contrato: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                >
+                  <option value="">Selecione o tipo de contrato</option>
+                  <option value="CLT">CLT</option>
+                  <option value="PJ">PJ</option>
+                  <option value="Temporário">Temporário</option>
+                  <option value="Autônomo">Autônomo</option>
+                </select>
+              </div>
+
+              {/* Distância Limite — Slider */}
+              <div
+                style={{
+                  background: isDark ? '#243044' : '#f1f5f9',
+                  borderRadius: '8px',
+                  padding: '1rem 1.25rem',
+                  border: isDark ? '0.5px solid rgba(255,255,255,0.08)' : '0.5px solid rgba(0,0,0,0.08)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: isDark ? '#cbd5e1' : '#374151' }}>
+                    Distância Limite
+                  </span>
+                  {distanciaKm === 0 ? (
+                    <span style={{
+                      background: isDark ? 'rgba(138,155,181,0.1)' : 'rgba(0,0,0,0.06)',
+                      color: isDark ? '#8a9bb5' : '#6b7280',
+                      padding: '2px 10px',
+                      borderRadius: '20px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                    }}>
+                      Sem limite
+                    </span>
+                  ) : (
+                    <span style={{
+                      background: isDark ? 'rgba(79,142,247,0.12)' : 'rgba(59,130,246,0.1)',
+                      color: isDark ? '#4f8ef7' : '#2563eb',
+                      padding: '2px 10px',
+                      borderRadius: '20px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                    }}>
+                      {distanciaKm} km
+                    </span>
+                  )}
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={distanciaKm}
+                  onChange={(e) => setDistanciaKm(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: isDark ? '#4f8ef7' : '#2563eb', cursor: 'pointer' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                  <span style={{ fontSize: '11px', color: isDark ? '#4a5a72' : '#9ca3af' }}>0 km</span>
+                  <span style={{ fontSize: '11px', color: isDark ? '#4a5a72' : '#9ca3af' }}>50 km</span>
+                  <span style={{ fontSize: '11px', color: isDark ? '#4a5a72' : '#9ca3af' }}>100 km</span>
+                </div>
+              </div>
+
+              {/* Dias de Trabalho */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Dias de Trabalho *
+                  <span className="ml-2 text-xs font-normal text-gray-500 dark:text-gray-400">(clique para selecionar)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {diasSemana.map((dia) => {
+                    const selecionado = formData.dias_trabalho.includes(dia.value);
+                    return (
+                      <button
+                        key={dia.value}
+                        type="button"
+                        onClick={() => handleDiaToggle(dia.value)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors select-none ${
+                          selecionado
+                            ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700'
+                            : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-400'
+                        }`}
+                      >
+                        {dia.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {formData.dias_trabalho.length > 0 && (
+                  <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                    {formData.dias_trabalho.length} dia{formData.dias_trabalho.length > 1 ? 's' : ''} selecionado{formData.dias_trabalho.length > 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+
+              {/* Horário */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Horário *
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col flex-1">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">De</span>
+                    <DatePicker
+                      selected={horarioDe ?? undefined}
+                      onChange={(date: Date | null) => setHorarioDe(date)}
+                      showTimeSelect
+                      showTimeSelectOnly
+                      timeIntervals={15}
+                      timeFormat="HH:mm"
+                      dateFormat="HH:mm"
+                      placeholderText="08:00"
+                      isClearable
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      wrapperClassName="w-full"
+                      calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                      locale="pt-BR"
+                    />
+                  </div>
+                  <span className="text-gray-400 dark:text-gray-500 mt-4 select-none">—</span>
+                  <div className="flex flex-col flex-1">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">Até</span>
+                    <DatePicker
+                      selected={horarioAte ?? undefined}
+                      onChange={(date: Date | null) => setHorarioAte(date)}
+                      showTimeSelect
+                      showTimeSelectOnly
+                      timeIntervals={15}
+                      timeFormat="HH:mm"
+                      dateFormat="HH:mm"
+                      placeholderText="17:00"
+                      isClearable
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      wrapperClassName="w-full"
+                      calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                      locale="pt-BR"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Data Limite */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Data Limite (Opcional)
+                </label>
+                <DatePicker
+                  selected={dtLimitePicker}
+                  onChange={(date: Date | null) => setDtLimitePicker(date)}
+                  showTimeSelect
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  dateFormat="dd/MM/yyyy HH:mm"
+                  placeholderText="Selecione data e hora"
+                  isClearable
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                  wrapperClassName="w-full"
+                  calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                  locale="pt-BR"
+                />
               </div>
 
               {/* Botões de Ação */}
-              <div className="flex justify-end space-x-3">
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => setIsEditing(false)}
                   className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
@@ -474,6 +606,18 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
             </>
           ) : (
             <>
+              {/* Ativo Badge */}
+              <div className="flex items-center gap-2 py-2 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status da Vaga:</span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                  currentVaga.ativo !== false
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                }`}>
+                  {currentVaga.ativo !== false ? 'Ativa' : 'Inativa'}
+                </span>
+              </div>
+
               {/* Visualização das Informações */}
               <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
                 <div className="px-4 py-5 sm:px-6">
@@ -519,7 +663,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                         Horário de Trabalho
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {currentVaga.horario}
+                        {currentVaga.horario || 'Não informado'}
                       </dd>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -532,6 +676,15 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                       </dd>
                     </div>
                     <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Distância Limite
+                      </dt>
+                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                        {(currentVaga as any).distancia || 'Sem limite'}
+                      </dd>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
                         <Calendar className="w-4 h-4 mr-2" />
                         Dias de Trabalho
@@ -546,7 +699,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                         Data Limite
                       </dt>
                       <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {formatDate(currentVaga.dt_limite)}
+                        {formatDate(currentVaga.dt_limite?.toString())}
                       </dd>
                     </div>
                   </dl>

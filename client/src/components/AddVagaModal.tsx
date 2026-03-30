@@ -51,6 +51,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   const [dtLimite, setDtLimite] = useState<Date | null>(null);
   const [horarioDe, setHorarioDe] = useState<Date | null>(null);
   const [horarioAte, setHorarioAte] = useState<Date | null>(null);
+  const [ativo, setAtivo] = useState<boolean>(true);
   const [logradouros, setLogradouros] = useState<Logradouro[]>([]);
   const [logradouroSearchFilter, setLogradouroSearchFilter] = useState('');
   const [vagaId, setVagaId] = useState<number | null>(null);
@@ -135,12 +136,19 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     mutationFn: (vagaData: InsertVaga) => createVaga(vagaData),
     onSuccess: (newVaga) => {
       toast.success('Vaga criada com sucesso!');
+      if (companyId) {
+        queryClient.setQueryData(
+          ['vagas', companyId],
+          (old: any[] | undefined) => old ? [newVaga, ...old] : [newVaga]
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ['vagas'] });
       setDiasSelecionados([]);
       setDistanciaKm(0);
       setDtLimite(null);
       setHorarioDe(null);
       setHorarioAte(null);
+      setAtivo(true);
       reset();
       setValue('dias_trabalho', []);
       onSuccess();
@@ -211,6 +219,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     const vagaData = {
       ...data,
       company_id: companyId!,
+      ativo,
     };
 
     createVagaMutation.mutate(vagaData);
@@ -240,6 +249,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       setDtLimite(null);
       setHorarioDe(null);
       setHorarioAte(null);
+      setAtivo(true);
       onClose();
     }
   };
@@ -263,6 +273,23 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+          {/* Ativo Toggle */}
+          <div className="flex items-center justify-between py-3 px-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
+            <div>
+              <span className="text-sm font-medium text-gray-900 dark:text-white">Vaga Ativa</span>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">A vaga estará visível e disponível para candidaturas</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAtivo(!ativo)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                ativo ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${ativo ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

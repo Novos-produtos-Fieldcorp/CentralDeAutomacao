@@ -18,6 +18,9 @@ export interface VagaWithRelations {
   st_vaga_id: number | null;
   cliente_id: number | null;
   gr_id: number | null;
+  tipo_contrato: string | null;
+  distancia: string | null;
+  ativo: boolean | null;
   // Campos relacionados (joins)
   cliente_nome: string | null;
   unidade_nome: string | null;
