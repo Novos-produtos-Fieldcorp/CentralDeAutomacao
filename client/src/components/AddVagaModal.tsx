@@ -40,6 +40,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   const [newOperacaoName, setNewOperacaoName] = useState('');
   const [newStatusName, setNewStatusName] = useState('');
   const [diasSelecionados, setDiasSelecionados] = useState<string[]>([]);
+  const [distanciaKm, setDistanciaKm] = useState<number>(0);
   const [logradouros, setLogradouros] = useState<Logradouro[]>([]);
   const [logradouroSearchFilter, setLogradouroSearchFilter] = useState('');
   const [vagaId, setVagaId] = useState<number | null>(null);
@@ -126,6 +127,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       toast.success('Vaga criada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['vagas'] });
       setDiasSelecionados([]);
+      setDistanciaKm(0);
       reset();
       setValue('dias_trabalho', []);
       onSuccess();
@@ -221,6 +223,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       reset();
       setValue('dias_trabalho', []);
       setDiasSelecionados([]);
+      setDistanciaKm(0);
       onClose();
     }
   };
@@ -496,21 +499,60 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             </div>
           </div>
 
-          {/* Distância Limite */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Distância Limite *
-              </label>
-              <input
-                {...register('distancia')}
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Ex: 50 km"
-              />
-              {errors.distancia && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.distancia.message}</p>
+          {/* Distância Limite — Slider */}
+          <div
+            style={{
+              background: '#243044',
+              borderRadius: '8px',
+              padding: '1rem 1.25rem',
+              border: '0.5px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <span style={{ fontSize: '14px', fontWeight: 500, color: '#cbd5e1' }}>
+                Distância Limite
+              </span>
+              {distanciaKm === 0 ? (
+                <span style={{
+                  background: 'rgba(138,155,181,0.1)',
+                  color: '#8a9bb5',
+                  padding: '2px 10px',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                }}>
+                  Sem limite
+                </span>
+              ) : (
+                <span style={{
+                  background: 'rgba(79,142,247,0.12)',
+                  color: '#4f8ef7',
+                  padding: '2px 10px',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                }}>
+                  {distanciaKm} km
+                </span>
               )}
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={500}
+              step={1}
+              value={distanciaKm}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setDistanciaKm(val);
+                setValue('distancia', val === 0 ? '' : `${val} km`);
+              }}
+              style={{ width: '100%', accentColor: '#4f8ef7', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+              <span style={{ fontSize: '11px', color: '#4a5a72' }}>0 km</span>
+              <span style={{ fontSize: '11px', color: '#4a5a72' }}>250 km</span>
+              <span style={{ fontSize: '11px', color: '#4a5a72' }}>500 km</span>
             </div>
           </div>
 
