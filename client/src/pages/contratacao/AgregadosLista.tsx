@@ -1576,7 +1576,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         .from("vw_agregados_completo")
         .select("*", { count: "exact" })
         .eq("company_id", companyId)
-        .eq("funcao", "Agregado");
+        .eq("funcao", "Agregado")
+        .eq("ativo", true);
 
       if (motoristaIdsByArea && motoristaIdsByArea.length > 0) {
         query = query.in("motorista_id", motoristaIdsByArea);
@@ -1739,9 +1740,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           };
         }) || [];
 
+      // Garantir que somente agregados ativos permaneçam nesta visão.
+      const activeProcessedData = processedData.filter((item) => item.ativo === true);
+
       // Agrupar ajudantes e áreas de atuação por motorista_id
       const agregadosAgrupadosMap = new Map<number, any>();
-      processedData.forEach((agregado) => {
+      activeProcessedData.forEach((agregado) => {
         if (!agregado.motorista_id) return;
 
         const existente = agregadosAgrupadosMap.get(agregado.motorista_id);
@@ -2270,7 +2274,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         .from("vw_agregados_completo")
         .select("motorista_id")
         .eq("company_id", companyId)
-        .eq("funcao", "Agregado");
+        .eq("funcao", "Agregado")
+        .eq("ativo", true);
 
       if (motoristaIdsByArea && motoristaIdsByArea.length > 0) {
         q = q.in("motorista_id", motoristaIdsByArea);
@@ -2368,6 +2373,44 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     } catch (error) {
       console.error("Error deleting motoristas:", error);
       toast.error("Erro ao excluir motoristas");
+    }
+  };
+
+  const handleBulkInactivate = async () => {
+    if (selectedItems.size === 0) return;
+
+    try {
+      const itemIds = Array.from(selectedItems);
+
+      // Atualiza em lotes para evitar payload muito grande no filtro IN.
+      for (let i = 0; i < itemIds.length; i += 500) {
+        const batch = itemIds.slice(i, i + 500);
+        const { error } = await supabase
+          .from("motorista")
+          .update({ ativo: false })
+          .in("motorista_id", batch);
+
+        if (error) throw error;
+      }
+
+      setContratados((prev) =>
+        prev.map((m) =>
+          m.motorista_id && selectedItems.has(m.motorista_id)
+            ? { ...m, ativo: false }
+            : m,
+        ),
+      );
+
+      setSelectedItems(new Set());
+      setSelectAllResults(false);
+      toast.success(
+        `${itemIds.length} agregado${itemIds.length !== 1 ? "s" : ""} inativado${itemIds.length !== 1 ? "s" : ""} com sucesso`,
+      );
+
+      await fetchContratados();
+    } catch (error) {
+      console.error("Error inactivating motoristas in bulk:", error);
+      toast.error("Erro ao inativar agregados em massa");
     }
   };
 
@@ -2730,6 +2773,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
               >
                 <MessageCircle className="w-5 h-5" />
                 Enviar Campanha
+              </button>
+              <button
+                onClick={handleBulkInactivate}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 
+                          focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 
+                          transition-colors flex items-center gap-2"
+              >
+                <XCircle className="w-5 h-5" />
+                Inativar
               </button>
               <button
                 onClick={() => setIsBulkDeleteModalOpen(true)}
