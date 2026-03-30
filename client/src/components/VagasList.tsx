@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus, LayoutGrid, LayoutList, Briefcase, AlertTriangle } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
@@ -120,6 +120,39 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
       toast.error('Erro ao deletar vaga');
     },
   });
+
+  // Auto-deactivate vagas when dt_limite has passed — runs once per unique batch of IDs
+  const processedIdsRef = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    if (!vagas.length || !companyId) return;
+    const now = new Date();
+    const expired = vagas.filter(v => {
+      if (!v.dt_limite) return false;
+      if (v.ativo === false) return false;
+      if (processedIdsRef.current.has(v.id)) return false;
+      return new Date(v.dt_limite) < now;
+    });
+    if (expired.length === 0) return;
+
+    expired.forEach(v => processedIdsRef.current.add(v.id));
+
+    Promise.allSettled(
+      expired.map(vaga =>
+        fetch(`/api/vagas/${vaga.id}/ativo`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ativo: false, company_id: companyId }),
+        }).then(res => {
+          if (!res.ok) processedIdsRef.current.delete(vaga.id);
+          return res;
+        }).catch(() => {
+          processedIdsRef.current.delete(vaga.id);
+        })
+      )
+    ).then(() => {
+      queryClient.invalidateQueries({ queryKey: ['vagas'] });
+    });
+  }, [vagas, companyId]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {

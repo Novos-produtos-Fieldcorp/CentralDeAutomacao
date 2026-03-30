@@ -1,7 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ptBR } from 'date-fns/locale';
+registerLocale('pt-BR', ptBR);
 import { createPortal } from 'react-dom';
 import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, Edit2, Plus, Trash2, Copy, Check, FilePen, ArrowUpDown } from 'lucide-react';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
+import { useTheme } from '../../context/ThemeContext';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
 import { formatCPF } from '../../utils/format';
@@ -248,6 +253,7 @@ const HodometrosMinuta: React.FC = () => {
   const { companyId } = useCurrentAccount();
   // moduleAccess removed — create modal removed
   const { periodType, dateRange, updatePeriod, setDateRange } = useDateRange('30days', false);
+  const { isDark } = useTheme();
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [sortLabelMode, setSortLabelMode] = useState<'default' | 'asc' | 'desc'>('default');
@@ -850,46 +856,46 @@ const HodometrosMinuta: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Data inicial
-            </label>
-            <input
-              type="date"
-              data-testid="input-custom-start-date-hodometros-minuta"
-              value={dateRange.startDate}
-              onChange={(e) => {
-                const newDate = e.target.value;
-                if (validateDate(newDate)) {
-                  setDateRange({ ...dateRange, startDate: e.target.value });
-                } else {
-                  toast.error('Por favor selecione uma data entre 2020 e 2099');
-                }
-              }}
-              min="2020-01-01"
-              max="2099-12-31"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data inicial
+              </label>
+              <DatePicker
+                selected={dateRange.startDate ? new Date(dateRange.startDate + 'T00:00:00') : null}
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    setDateRange({ ...dateRange, startDate: date.toLocaleDateString('en-CA') });
+                  }
+                }}
+                dateFormat="dd/MM/yyyy"
+                locale="pt-BR"
+                calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                minDate={new Date(2020, 0, 1)}
+                maxDate={new Date(2099, 11, 31)}
+                wrapperClassName="w-full"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                data-testid="input-custom-start-date-hodometros-minuta"
+              />
             </div>
             <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Data final
-            </label>
-            <input
-              type="date"
-              data-testid="input-custom-end-date-hodometros-minuta"
-              value={dateRange.endDate}
-              onChange={(e) => {
-                const newDate = e.target.value;
-                if (validateDate(newDate)) {
-                  setDateRange({ ...dateRange, endDate: e.target.value });
-                } else {
-                  toast.error('Por favor selecione uma data entre 2020 e 2099');
-                }
-              }}
-              min="2020-01-01"
-              max="2099-12-31"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Data final
+              </label>
+              <DatePicker
+                selected={dateRange.endDate ? new Date(dateRange.endDate + 'T00:00:00') : null}
+                onChange={(date: Date | null) => {
+                  if (date) {
+                    setDateRange({ ...dateRange, endDate: date.toLocaleDateString('en-CA') });
+                  }
+                }}
+                dateFormat="dd/MM/yyyy"
+                locale="pt-BR"
+                calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                minDate={new Date(2020, 0, 1)}
+                maxDate={new Date(2099, 11, 31)}
+                wrapperClassName="w-full"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                data-testid="input-custom-end-date-hodometros-minuta"
+              />
             </div>
           </div>
         </div>

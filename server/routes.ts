@@ -1224,6 +1224,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dias_trabalho: vagaData.dias_trabalho,
           horario: vagaData.horario,
           dt_limite: vagaData.dt_limite,
+          distancia: vagaData.distancia || null,
+          tipo_contrato: vagaData.tipo_contrato || null,
+          ativo: vagaData.ativo !== undefined ? vagaData.ativo : true,
           company_id: Number(vagaData.company_id),
           unidade_id: vagaData.unidade_id ? Number(vagaData.unidade_id) : null,
           operacao_id: vagaData.operacao_id ? Number(vagaData.operacao_id) : null,
@@ -1281,6 +1284,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dias_trabalho: vagaData.dias_trabalho,
           horario: vagaData.horario,
           dt_limite: vagaData.dt_limite,
+          distancia: vagaData.distancia !== undefined ? (vagaData.distancia || null) : undefined,
+          tipo_contrato: vagaData.tipo_contrato !== undefined ? (vagaData.tipo_contrato || null) : undefined,
+          ativo: vagaData.ativo !== undefined ? vagaData.ativo : undefined,
           company_id: Number(vagaData.company_id),
           unidade_id: vagaData.unidade_id ? Number(vagaData.unidade_id) : null,
           operacao_id: vagaData.operacao_id ? Number(vagaData.operacao_id) : null,
@@ -1341,6 +1347,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedVaga);
     } catch (error) {
       console.error("Error updating vaga status:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
+  // Patch vaga ativo field only (for auto-deactivation)
+  app.patch("/api/vagas/:vagaId/ativo", async (req, res) => {
+    try {
+      const { vagaId } = req.params;
+      const { ativo, company_id } = req.body;
+
+      if (!company_id) {
+        return res.status(400).json({ error: "company_id é obrigatório" });
+      }
+
+      const { data: updatedVaga, error } = await supabaseBackend
+        .from("vaga")
+        .update({ ativo: Boolean(ativo), updated_at: new Date().toISOString() })
+        .eq("id", Number(vagaId))
+        .eq("company_id", Number(company_id))
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error patching vaga ativo:", error);
+        return res.status(500).json({ error: "Erro ao atualizar vaga", details: error.message });
+      }
+
+      res.json(updatedVaga);
+    } catch (error) {
+      console.error("Error patching vaga ativo:", error);
       res.status(500).json({
         error: "Erro interno do servidor",
         details: error instanceof Error ? error.message : "Erro desconhecido",

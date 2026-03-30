@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ptBR } from 'date-fns/locale';
+registerLocale('pt-BR', ptBR);
 import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save, Gauge, Fuel } from 'lucide-react';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import { useModuleAccess } from '../../hooks/useModuleAccess';
+import { useTheme } from '../../context/ThemeContext';
 import toast from 'react-hot-toast';
 
 import { useDateRange } from '../../hooks/useDateRange';
@@ -77,9 +82,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   
-  // Local state for date inputs to prevent search on every keystroke
-  const [localStartDate, setLocalStartDate] = useState(dateRange.startDate);
-  const [localEndDate, setLocalEndDate] = useState(dateRange.endDate);
+  const { isDark } = useTheme();
   
   // Edit modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -199,12 +202,6 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
     // Only fetch when date range actually changes
     fetchReadings();
   }, [fetchReadings]);
-
-  // Sync local date states when dateRange changes externally (e.g., period selection)
-  useEffect(() => {
-    setLocalStartDate(dateRange.startDate);
-    setLocalEndDate(dateRange.endDate);
-  }, [dateRange.startDate, dateRange.endDate]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -750,44 +747,42 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Data inicial
             </label>
-            <input
-              type="date"
-              data-testid="input-custom-start-date-hodometros-relatorio"
-              value={localStartDate}
-              onChange={(e) => setLocalStartDate(e.target.value)}
-              onBlur={() => {
-                if (validateDate(localStartDate)) {
-                  setDateRange({ ...dateRange, startDate: localStartDate });
-                } else {
-                  toast.error('Por favor selecione uma data entre 2020 e 2099');
-                  setLocalStartDate(dateRange.startDate);
+            <DatePicker
+              selected={dateRange.startDate ? new Date(dateRange.startDate + 'T00:00:00') : null}
+              onChange={(date: Date | null) => {
+                if (date) {
+                  setDateRange({ ...dateRange, startDate: date.toLocaleDateString('en-CA') });
                 }
               }}
-              min="2020-01-01"
-              max="2099-12-31"
+              dateFormat="dd/MM/yyyy"
+              locale="pt-BR"
+              calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+              minDate={new Date(2020, 0, 1)}
+              maxDate={new Date(2099, 11, 31)}
+              wrapperClassName="w-full"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              data-testid="input-custom-start-date-hodometros-relatorio"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Data final
             </label>
-            <input
-              type="date"
-              data-testid="input-custom-end-date-hodometros-relatorio"
-              value={localEndDate}
-              onChange={(e) => setLocalEndDate(e.target.value)}
-              onBlur={() => {
-                if (validateDate(localEndDate)) {
-                  setDateRange({ ...dateRange, endDate: localEndDate });
-                } else {
-                  toast.error('Por favor selecione uma data entre 2020 e 2099');
-                  setLocalEndDate(dateRange.endDate);
+            <DatePicker
+              selected={dateRange.endDate ? new Date(dateRange.endDate + 'T00:00:00') : null}
+              onChange={(date: Date | null) => {
+                if (date) {
+                  setDateRange({ ...dateRange, endDate: date.toLocaleDateString('en-CA') });
                 }
               }}
-              min="2020-01-01"
-              max="2099-12-31"
+              dateFormat="dd/MM/yyyy"
+              locale="pt-BR"
+              calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+              minDate={new Date(2020, 0, 1)}
+              maxDate={new Date(2099, 11, 31)}
+              wrapperClassName="w-full"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              data-testid="input-custom-end-date-hodometros-relatorio"
             />
           </div>
         </div>
@@ -1014,10 +1009,17 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Data
                   </label>
-                  <input
-                    type="date"
-                    value={editFormData.data}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, data: e.target.value }))}
+                  <DatePicker
+                    selected={editFormData.data ? new Date(editFormData.data + 'T00:00:00') : null}
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        setEditFormData(prev => ({ ...prev, data: date.toLocaleDateString('en-CA') }));
+                      }
+                    }}
+                    dateFormat="dd/MM/yyyy"
+                    locale="pt-BR"
+                    calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                    wrapperClassName="w-full"
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>

@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ptBR } from 'date-fns/locale';
+import { format } from 'date-fns';
+registerLocale('pt-BR', ptBR);
 import { X, Calendar, MapPin, Users, Building, Clock, FileText, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
+import { useTheme } from '../context/ThemeContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { insertVagaSchema, type InsertVaga, type Cliente, type Unidade, type Operacao, type StVaga, type Logradouro } from '@shared/schema';
@@ -19,7 +25,8 @@ import {
   createUnidade,
   createOperacao,
   createStatusVaga,
-  createEndVaga
+  createEndVaga,
+  VagaWithRelations
 } from '../lib/vagasService';
 
 interface AddVagaModalProps {
@@ -29,6 +36,7 @@ interface AddVagaModalProps {
 }
 
 const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const { isDark } = useTheme();
   const { accountId: wiseappAccountId } = useWiseAppAccess();
   const { accountId: authAccountId } = useAuth();
   // Use WiseApp account ID (updated when switching accounts) as primary source
@@ -40,6 +48,11 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   const [newOperacaoName, setNewOperacaoName] = useState('');
   const [newStatusName, setNewStatusName] = useState('');
   const [diasSelecionados, setDiasSelecionados] = useState<string[]>([]);
+  const [distanciaKm, setDistanciaKm] = useState<number>(0);
+  const [dtLimite, setDtLimite] = useState<Date | null>(null);
+  const [horarioDe, setHorarioDe] = useState<Date | null>(null);
+  const [horarioAte, setHorarioAte] = useState<Date | null>(null);
+  const [ativo, setAtivo] = useState<boolean>(true);
   const [logradouros, setLogradouros] = useState<Logradouro[]>([]);
   const [logradouroSearchFilter, setLogradouroSearchFilter] = useState('');
   const [vagaId, setVagaId] = useState<number | null>(null);
@@ -109,6 +122,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     defaultValues: {
       company_id: companyId || undefined,
       dias_trabalho: [],
+      ativo: true,
     },
   });
 
@@ -124,8 +138,19 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     mutationFn: (vagaData: InsertVaga) => createVaga(vagaData),
     onSuccess: (newVaga) => {
       toast.success('Vaga criada com sucesso!');
+      if (companyId) {
+        queryClient.setQueryData(
+          ['vagas', companyId],
+          (old: VagaWithRelations[] | undefined) => old ? [newVaga, ...old] : [newVaga]
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ['vagas'] });
       setDiasSelecionados([]);
+      setDistanciaKm(0);
+      setDtLimite(null);
+      setHorarioDe(null);
+      setHorarioAte(null);
+      setAtivo(true);
       reset();
       setValue('dias_trabalho', []);
       onSuccess();
@@ -196,6 +221,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     const vagaData = {
       ...data,
       company_id: companyId!,
+      ativo,
     };
 
     createVagaMutation.mutate(vagaData);
@@ -221,6 +247,11 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       reset();
       setValue('dias_trabalho', []);
       setDiasSelecionados([]);
+      setDistanciaKm(0);
+      setDtLimite(null);
+      setHorarioDe(null);
+      setHorarioAte(null);
+      setAtivo(true);
       onClose();
     }
   };
@@ -244,6 +275,23 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+          {/* Ativo Toggle */}
+          <div className="flex items-center justify-between py-3 px-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
+            <div>
+              <span className="text-sm font-medium text-gray-900 dark:text-white">Vaga Ativa</span>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">A vaga estará visível e disponível para candidaturas</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAtivo(!ativo)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                ativo ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${ativo ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -496,6 +544,83 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             </div>
           </div>
 
+          {/* Tipo de Contrato */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Tipo de Contrato
+            </label>
+            <select
+              {...register('tipo_contrato')}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            >
+              <option value="">Selecione o tipo de contrato</option>
+              <option value="CLT">CLT</option>
+              <option value="PJ">PJ</option>
+              <option value="Temporário">Temporário</option>
+              <option value="Autônomo">Autônomo</option>
+            </select>
+            {errors.tipo_contrato && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.tipo_contrato.message}</p>
+            )}
+          </div>
+
+          {/* Distância Limite — Slider */}
+          <div
+            style={{
+              background: isDark ? '#243044' : '#f1f5f9',
+              borderRadius: '8px',
+              padding: '1rem 1.25rem',
+              border: isDark ? '0.5px solid rgba(255,255,255,0.08)' : '0.5px solid rgba(0,0,0,0.08)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <span style={{ fontSize: '14px', fontWeight: 500, color: isDark ? '#cbd5e1' : '#374151' }}>
+                Distância Limite
+              </span>
+              {distanciaKm === 0 ? (
+                <span style={{
+                  background: isDark ? 'rgba(138,155,181,0.1)' : 'rgba(0,0,0,0.06)',
+                  color: isDark ? '#8a9bb5' : '#6b7280',
+                  padding: '2px 10px',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                }}>
+                  Sem limite
+                </span>
+              ) : (
+                <span style={{
+                  background: isDark ? 'rgba(79,142,247,0.12)' : 'rgba(59,130,246,0.1)',
+                  color: isDark ? '#4f8ef7' : '#2563eb',
+                  padding: '2px 10px',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                }}>
+                  {distanciaKm} km
+                </span>
+              )}
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={distanciaKm}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setDistanciaKm(val);
+                setValue('distancia', val === 0 ? '' : `${val} km`);
+              }}
+              style={{ width: '100%', accentColor: isDark ? '#4f8ef7' : '#2563eb', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+              <span style={{ fontSize: '11px', color: isDark ? '#4a5a72' : '#9ca3af' }}>0 km</span>
+              <span style={{ fontSize: '11px', color: isDark ? '#4a5a72' : '#9ca3af' }}>50 km</span>
+              <span style={{ fontSize: '11px', color: isDark ? '#4a5a72' : '#9ca3af' }}>100 km</span>
+            </div>
+          </div>
+
           {/* Work Details */}
           <div className="grid grid-cols-1 gap-4">
             <div>
@@ -552,31 +677,60 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Horário *
               </label>
-              <input
-                {...register('horario')}
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Ex: 08:00 às 17:00"
-              />
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col flex-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">De</span>
+                  <DatePicker
+                    selected={horarioDe ?? undefined}
+                    onChange={(date: Date | null) => {
+                      setHorarioDe(date);
+                      const deStr = date ? format(date, 'HH:mm') : '';
+                      const ateStr = horarioAte ? format(horarioAte, 'HH:mm') : '';
+                      setValue('horario', deStr && ateStr ? `${deStr} às ${ateStr}` : deStr || ateStr || '');
+                    }}
+                    showTimeSelect
+                    showTimeSelectOnly
+                    timeIntervals={15}
+                    timeFormat="HH:mm"
+                    dateFormat="HH:mm"
+                    placeholderText="08:00"
+                    isClearable
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    wrapperClassName="w-full"
+                    calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                    locale="pt-BR"
+                  />
+                </div>
+                <span className="text-gray-400 dark:text-gray-500 mt-4 select-none">—</span>
+                <div className="flex flex-col flex-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">Até</span>
+                  <DatePicker
+                    selected={horarioAte ?? undefined}
+                    onChange={(date: Date | null) => {
+                      setHorarioAte(date);
+                      const deStr = horarioDe ? format(horarioDe, 'HH:mm') : '';
+                      const ateStr = date ? format(date, 'HH:mm') : '';
+                      setValue('horario', deStr && ateStr ? `${deStr} às ${ateStr}` : deStr || ateStr || '');
+                    }}
+                    showTimeSelect
+                    showTimeSelectOnly
+                    timeIntervals={15}
+                    timeFormat="HH:mm"
+                    dateFormat="HH:mm"
+                    placeholderText="17:00"
+                    isClearable
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    wrapperClassName="w-full"
+                    calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                    locale="pt-BR"
+                  />
+                </div>
+              </div>
               {errors.horario && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.horario.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Tipo de Contrato
-              </label>
-              <input
-                {...register('tipo_contrato')}
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Ex: CLT, PJ, Temporário"
-              />
-              {errors.tipo_contrato && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.tipo_contrato.message}</p>
-              )}
-            </div>
           </div>
 
           {/* Deadline */}
@@ -584,10 +738,23 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Data Limite (Opcional)
             </label>
-            <input
-              {...register('dt_limite')}
-              type="datetime-local"
+            <DatePicker
+              selected={dtLimite}
+              onChange={(date: Date | null) => {
+                setDtLimite(date);
+                setValue('dt_limite', date ? date.toISOString() : undefined);
+              }}
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={15}
+              dateFormat="dd/MM/yyyy HH:mm"
+              placeholderText="Selecione data e hora"
+              isClearable
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              wrapperClassName="w-full"
+              calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+              locale="pt-BR"
+              minDate={new Date()}
             />
             {errors.dt_limite && (
               <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.dt_limite.message}</p>

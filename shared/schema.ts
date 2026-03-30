@@ -572,6 +572,8 @@ export const vaga = pgTable("vaga", {
   horario: text("horario"),
   dt_limite: timestamp("dt_limite"),
   tipo_contrato: text("tipo_contrato"),
+  distancia: text("distancia"),
+  ativo: boolean("ativo").default(true),
   company_id: integer("company_id").references(() => company.company_id),
   unidade_id: bigint("unidade_id", { mode: "number" }).references(() => unidade.id),
   operacao_id: bigint("operacao_id", { mode: "number" }).references(() => operacao.id),
@@ -666,7 +668,10 @@ export const insertVagaSchema = createInsertSchema(vaga).omit({
   unidade_id: z.coerce.number().min(1, "Unidade é obrigatória"),
   operacao_id: z.coerce.number().min(1, "Operação é obrigatória"),
   st_vaga_id: z.coerce.number().min(1, "Status é obrigatório"),
-  dt_limite: z.string().optional(), // Único campo opcional
+  distancia: z.string().nullable().optional(),
+  dt_limite: z.string().optional(),
+  tipo_contrato: z.string().nullable().optional(),
+  ativo: z.boolean().optional().default(true),
 });
 
 export const insertUnidadeSchema = createInsertSchema(unidade).omit({
