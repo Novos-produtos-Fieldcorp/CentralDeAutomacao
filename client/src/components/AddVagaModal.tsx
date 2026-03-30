@@ -6,6 +6,7 @@ registerLocale('pt-BR', ptBR);
 import { X, Calendar, MapPin, Users, Building, Clock, FileText, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
+import { useTheme } from '../context/ThemeContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { insertVagaSchema, type InsertVaga, type Cliente, type Unidade, type Operacao, type StVaga, type Logradouro } from '@shared/schema';
@@ -33,6 +34,7 @@ interface AddVagaModalProps {
 }
 
 const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const { isDark } = useTheme();
   const { accountId: wiseappAccountId } = useWiseAppAccess();
   const { accountId: authAccountId } = useAuth();
   // Use WiseApp account ID (updated when switching accounts) as primary source
@@ -529,20 +531,20 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           {/* Distância Limite — Slider */}
           <div
             style={{
-              background: '#243044',
+              background: isDark ? '#243044' : '#f1f5f9',
               borderRadius: '8px',
               padding: '1rem 1.25rem',
-              border: '0.5px solid rgba(255,255,255,0.08)',
+              border: isDark ? '0.5px solid rgba(255,255,255,0.08)' : '0.5px solid rgba(0,0,0,0.08)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-              <span style={{ fontSize: '14px', fontWeight: 500, color: '#cbd5e1' }}>
+              <span style={{ fontSize: '14px', fontWeight: 500, color: isDark ? '#cbd5e1' : '#374151' }}>
                 Distância Limite
               </span>
               {distanciaKm === 0 ? (
                 <span style={{
-                  background: 'rgba(138,155,181,0.1)',
-                  color: '#8a9bb5',
+                  background: isDark ? 'rgba(138,155,181,0.1)' : 'rgba(0,0,0,0.06)',
+                  color: isDark ? '#8a9bb5' : '#6b7280',
                   padding: '2px 10px',
                   borderRadius: '20px',
                   fontSize: '13px',
@@ -552,8 +554,8 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                 </span>
               ) : (
                 <span style={{
-                  background: 'rgba(79,142,247,0.12)',
-                  color: '#4f8ef7',
+                  background: isDark ? 'rgba(79,142,247,0.12)' : 'rgba(59,130,246,0.1)',
+                  color: isDark ? '#4f8ef7' : '#2563eb',
                   padding: '2px 10px',
                   borderRadius: '20px',
                   fontSize: '13px',
@@ -574,12 +576,12 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                 setDistanciaKm(val);
                 setValue('distancia', val === 0 ? '' : `${val} km`);
               }}
-              style={{ width: '100%', accentColor: '#4f8ef7', cursor: 'pointer' }}
+              style={{ width: '100%', accentColor: isDark ? '#4f8ef7' : '#2563eb', cursor: 'pointer' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-              <span style={{ fontSize: '11px', color: '#4a5a72' }}>0 km</span>
-              <span style={{ fontSize: '11px', color: '#4a5a72' }}>50 km</span>
-              <span style={{ fontSize: '11px', color: '#4a5a72' }}>100 km</span>
+              <span style={{ fontSize: '11px', color: isDark ? '#4a5a72' : '#9ca3af' }}>0 km</span>
+              <span style={{ fontSize: '11px', color: isDark ? '#4a5a72' : '#9ca3af' }}>50 km</span>
+              <span style={{ fontSize: '11px', color: isDark ? '#4a5a72' : '#9ca3af' }}>100 km</span>
             </div>
           </div>
 
@@ -671,7 +673,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               isClearable
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               wrapperClassName="w-full"
-              calendarClassName="dark-datepicker"
+              calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
               locale="pt-BR"
               minDate={new Date()}
             />
