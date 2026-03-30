@@ -1354,6 +1354,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Patch vaga ativo field only (for auto-deactivation)
+  app.patch("/api/vagas/:vagaId/ativo", async (req, res) => {
+    try {
+      const { vagaId } = req.params;
+      const { ativo } = req.body;
+
+      const { data: updatedVaga, error } = await supabaseBackend
+        .from("vaga")
+        .update({ ativo: Boolean(ativo), updated_at: new Date().toISOString() })
+        .eq("id", Number(vagaId))
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error patching vaga ativo:", error);
+        return res.status(500).json({ error: "Erro ao atualizar vaga", details: error.message });
+      }
+
+      res.json(updatedVaga);
+    } catch (error) {
+      console.error("Error patching vaga ativo:", error);
+      res.status(500).json({
+        error: "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
   // Delete vaga
   app.delete("/api/vagas/:vagaId", async (req, res) => {
     try {

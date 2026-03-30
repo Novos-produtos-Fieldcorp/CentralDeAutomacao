@@ -25,7 +25,8 @@ import {
   createUnidade,
   createOperacao,
   createStatusVaga,
-  createEndVaga
+  createEndVaga,
+  VagaWithRelations
 } from '../lib/vagasService';
 
 interface AddVagaModalProps {
@@ -121,6 +122,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     defaultValues: {
       company_id: companyId || undefined,
       dias_trabalho: [],
+      ativo: true,
     },
   });
 
@@ -139,7 +141,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       if (companyId) {
         queryClient.setQueryData(
           ['vagas', companyId],
-          (old: any[] | undefined) => old ? [newVaga, ...old] : [newVaga]
+          (old: VagaWithRelations[] | undefined) => old ? [newVaga, ...old] : [newVaga]
         );
       }
       queryClient.invalidateQueries({ queryKey: ['vagas'] });
