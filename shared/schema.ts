@@ -666,7 +666,8 @@ export const insertVagaSchema = createInsertSchema(vaga).omit({
   unidade_id: z.coerce.number().min(1, "Unidade é obrigatória"),
   operacao_id: z.coerce.number().min(1, "Operação é obrigatória"),
   st_vaga_id: z.coerce.number().min(1, "Status é obrigatório"),
-  dt_limite: z.string().optional(), // Único campo opcional
+  distancia: z.string().nullable().optional(),
+  dt_limite: z.string().optional(),
 });
 
 export const insertUnidadeSchema = createInsertSchema(unidade).omit({

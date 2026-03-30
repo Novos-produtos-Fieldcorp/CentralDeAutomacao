@@ -496,6 +496,24 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             </div>
           </div>
 
+          {/* Distância Limite */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Distância Limite *
+              </label>
+              <input
+                {...register('distancia')}
+                type="text"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                placeholder="Ex: 50 km"
+              />
+              {errors.distancia && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.distancia.message}</p>
+              )}
+            </div>
+          </div>
+
           {/* Work Details */}
           <div className="grid grid-cols-1 gap-4">
             <div>
