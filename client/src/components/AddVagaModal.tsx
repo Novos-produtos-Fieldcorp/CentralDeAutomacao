@@ -48,6 +48,8 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   const [diasSelecionados, setDiasSelecionados] = useState<string[]>([]);
   const [distanciaKm, setDistanciaKm] = useState<number>(0);
   const [dtLimite, setDtLimite] = useState<Date | null>(null);
+  const [horarioDe, setHorarioDe] = useState('');
+  const [horarioAte, setHorarioAte] = useState('');
   const [logradouros, setLogradouros] = useState<Logradouro[]>([]);
   const [logradouroSearchFilter, setLogradouroSearchFilter] = useState('');
   const [vagaId, setVagaId] = useState<number | null>(null);
@@ -136,6 +138,8 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       setDiasSelecionados([]);
       setDistanciaKm(0);
       setDtLimite(null);
+      setHorarioDe('');
+      setHorarioAte('');
       reset();
       setValue('dias_trabalho', []);
       onSuccess();
@@ -233,6 +237,8 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       setDiasSelecionados([]);
       setDistanciaKm(0);
       setDtLimite(null);
+      setHorarioDe('');
+      setHorarioAte('');
       onClose();
     }
   };
@@ -641,12 +647,37 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Horário *
               </label>
-              <input
-                {...register('horario')}
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Ex: 08:00 às 17:00"
-              />
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col flex-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">De</span>
+                  <input
+                    type="time"
+                    value={horarioDe}
+                    onChange={(e) => {
+                      const de = e.target.value;
+                      setHorarioDe(de);
+                      const ate = horarioAte;
+                      setValue('horario', de && ate ? `${de} às ${ate}` : de || ate || '');
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <span className="text-gray-400 dark:text-gray-500 mt-5 select-none">—</span>
+                <div className="flex flex-col flex-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">Até</span>
+                  <input
+                    type="time"
+                    value={horarioAte}
+                    onChange={(e) => {
+                      const ate = e.target.value;
+                      setHorarioAte(ate);
+                      const de = horarioDe;
+                      setValue('horario', de && ate ? `${de} às ${ate}` : de || ate || '');
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
               {errors.horario && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.horario.message}</p>
               )}
