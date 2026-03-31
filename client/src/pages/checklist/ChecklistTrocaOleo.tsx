@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { useCurrentAccount } from '@/hooks/useCurrentAccount';
+import { supabase } from '../../lib/supabase';
 import { Link } from 'react-router-dom';
 import { Droplets, Pencil, Trash2, Plus, AlertTriangle, CheckCircle2, Loader2, RefreshCw, ExternalLink, Gauge } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -127,9 +128,16 @@ const ChecklistTrocaOleo = () => {
     queryKey: ['/api/veiculos-empresa', companyId],
     queryFn: async () => {
       if (!companyId) return [];
-      const res = await trocaOleoRequest(`/api/veiculos-empresa/${companyId}`);
-      if (!res.ok) return [];
-      return res.json();
+      const { data, error } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa, marca_veiculo')
+        .eq('status_veiculo', true)
+        .order('placa');
+      if (error) {
+        console.error('Erro ao buscar veículos:', error);
+        return [];
+      }
+      return data || [];
     },
     enabled: !!companyId,
   });
