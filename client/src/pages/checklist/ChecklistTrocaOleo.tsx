@@ -131,6 +131,7 @@ const ChecklistTrocaOleo = () => {
       const { data, error } = await supabase
         .from('veiculo')
         .select('veiculo_id, placa, marca')
+        .eq('company_id', companyId)
         .eq('status_veiculo', true)
         .order('placa');
       if (error) {
