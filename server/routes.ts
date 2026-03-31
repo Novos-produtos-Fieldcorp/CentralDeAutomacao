@@ -6459,9 +6459,32 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
           .limit(1)
           .single();
 
-        if (hodData?.hod_informado != null) {
-          km_atual = parseFloat(hodData.hod_informado);
+        const hodKm = hodData?.hod_informado != null ? parseFloat(hodData.hod_informado) : null;
+
+        const { data: viagemData } = await supabaseBackend
+          .from("acompanhamento_viagem")
+          .select("km_final, data_hora_final")
+          .eq("veiculo_id", r.veiculo_id)
+          .not("km_final", "is", null)
+          .order("km_final", { ascending: false })
+          .limit(1)
+          .single();
+
+        const viagemKm = viagemData?.km_final != null ? parseFloat(viagemData.km_final) : null;
+
+        if (hodKm !== null || viagemKm !== null) {
+          km_atual = Math.max(hodKm ?? 0, viagemKm ?? 0);
         }
+
+        const { data: ultimaViagemData } = await supabaseBackend
+          .from("acompanhamento_viagem")
+          .select("data_hora_inicial")
+          .eq("veiculo_id", r.veiculo_id)
+          .order("data_hora_inicial", { ascending: false })
+          .limit(1)
+          .single();
+
+        const ultima_viagem_data = ultimaViagemData?.data_hora_inicial || null;
 
         let motorista_nome: string | null = null;
         let motorista_telefone: string | null = null;
@@ -6496,6 +6519,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
           km_proxima_troca: kmProximaTroca,
           km_restante: kmRestante,
           status,
+          ultima_viagem_data,
         };
       }));
 

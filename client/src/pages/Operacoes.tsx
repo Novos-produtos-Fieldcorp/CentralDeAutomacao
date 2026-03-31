@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef, BarChart3, Download, FileSpreadsheet } from 'lucide-react';
+import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef, BarChart3, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react';
 import { exportRelatorioMotorista, exportRelatorioCliente, exportRelatorioPlacaDiario, exportRelatorioPlacaMensal, type RelatorioRow, type PeriodoFechamento } from '../utils/exportRelatorioFechamento';
 import toast from 'react-hot-toast';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -3205,10 +3205,17 @@ const VammoDashboard = ({ companyId }: { companyId: number }) => {
   );
 };
 
+interface TrocaOleoStatus {
+  placa: string | null;
+  status: 'OK' | 'Atenção' | 'Vencido';
+}
+
 const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedOperacao: string; setSelectedOperacao: (op: string) => void }) => {
   const { companyId } = useCurrentAccount();
+  const location = useLocation();
+  const initialPlaca = new URLSearchParams(location.search).get('placa') || '';
   const [selectedMotorista, setSelectedMotorista] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialPlaca);
   const [dataInicio, setDataInicio] = useState<string>('');
   const [dataFim, setDataFim] = useState<string>('');
   const [isMotoristaDropdownOpen, setIsMotoristaDropdownOpen] = useState(false);
@@ -3311,6 +3318,40 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
     refetchInterval: 30000,
     staleTime: 10000,
   });
+
+  const { data: trocaOleoList = [] } = useQuery<TrocaOleoStatus[]>({
+    queryKey: ['troca-oleo-status', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const wiseappToken = (() => {
+        try {
+          const session = localStorage.getItem('wiseapp_session');
+          if (!session) return null;
+          const parsed = JSON.parse(session);
+          if (Date.now() > parsed.expiresAt) return null;
+          return parsed.token || null;
+        } catch { return null; }
+      })();
+      const res = await fetch(`/api/troca-oleo/${companyId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(wiseappToken ? { 'wiseapp-token': wiseappToken } : {}),
+        },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!companyId,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const trocaOleoMap = useMemo(() => {
+    const map = new Map<string, 'OK' | 'Atenção' | 'Vencido'>();
+    trocaOleoList.forEach(item => {
+      if (item.placa) map.set(item.placa.toUpperCase(), item.status);
+    });
+    return map;
+  }, [trocaOleoList]);
 
   const { data: operacoesData = {} } = useQuery({
     queryKey: ['operacoes-viagens-data', viagens.map(v => v.id).join(',')],
@@ -3628,7 +3669,28 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
                       )}
                     </td>
                     <td className="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-300">{viagem.motorista_nome || '-'}</td>
-                    <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{viagem.veiculo_placa || '-'}</td>
+                    <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center gap-1.5">
+                        <span>{viagem.veiculo_placa || '-'}</span>
+                        {viagem.veiculo_placa && (() => {
+                          const oilStatus = trocaOleoMap.get(viagem.veiculo_placa.toUpperCase());
+                          if (oilStatus === 'Atenção' || oilStatus === 'Vencido') {
+                            return (
+                              <Link
+                                to="/checklist/troca-oleo"
+                                data-testid={`link-oleo-viagem-${viagem.id}`}
+                                title={`Óleo: ${oilStatus} — Ver troca de óleo`}
+                                onClick={(e) => e.stopPropagation()}
+                                className={`flex-shrink-0 ${oilStatus === 'Vencido' ? 'text-red-500 hover:text-red-700' : 'text-yellow-500 hover:text-yellow-700'}`}
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                              </Link>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    </td>
                     <td className="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-300">
                       {viagem.operacao_dados?.origem || '-'}
                     </td>

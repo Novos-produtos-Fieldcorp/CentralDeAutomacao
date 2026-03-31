@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryClient, apiRequest } from '@/lib/queryClient';
-import { useCompanyData } from '@/hooks/useCompanyData';
-import { Droplets, Pencil, Trash2, Plus, AlertTriangle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
+import { queryClient } from '@/lib/queryClient';
+import { useCurrentAccount } from '@/hooks/useCurrentAccount';
+import { Link } from 'react-router-dom';
+import { Droplets, Pencil, Trash2, Plus, AlertTriangle, CheckCircle2, Loader2, RefreshCw, ExternalLink, Gauge } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { format } from 'date-fns';
 
 interface TrocaOleoRecord {
   id: number;
@@ -22,6 +24,7 @@ interface TrocaOleoRecord {
   km_proxima_troca: number;
   km_restante: number | null;
   status: 'OK' | 'Atenção' | 'Vencido';
+  ultima_viagem_data: string | null;
 }
 
 interface VeiculoOption {
@@ -33,6 +36,15 @@ interface VeiculoOption {
 const fmtKm = (n: number | null | undefined) => {
   if (n == null) return '—';
   return Math.round(n).toLocaleString('pt-BR') + ' km';
+};
+
+const fmtDate = (d: string | null | undefined) => {
+  if (!d) return '—';
+  try {
+    return format(new Date(d), 'dd/MM/yyyy');
+  } catch {
+    return '—';
+  }
 };
 
 const StatusBadge = ({ status }: { status: string }) => {
@@ -83,9 +95,10 @@ const getWiseAppToken = (): string | null => {
 
 const trocaOleoRequest = (url: string, options: RequestInit = {}) => {
   const wiseappToken = getWiseAppToken();
-  return apiRequest(url, {
+  return fetch(url, {
     ...options,
     headers: {
+      'Content-Type': 'application/json',
       ...(options.headers as Record<string, string> || {}),
       ...(wiseappToken ? { 'wiseapp-token': wiseappToken } : {}),
     },
@@ -93,7 +106,7 @@ const trocaOleoRequest = (url: string, options: RequestInit = {}) => {
 };
 
 const ChecklistTrocaOleo = () => {
-  const { companyId } = useCompanyData();
+  const { companyId } = useCurrentAccount();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<TrocaOleoRecord | null>(null);
   const [form, setForm] = useState<ModalFormData>(defaultForm);
@@ -338,6 +351,7 @@ const ChecklistTrocaOleo = () => {
                 <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
                   <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Veículo</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">KM Atual</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Última Viagem</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Última Troca</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Próxima Troca</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Restam</th>
@@ -369,6 +383,9 @@ const ChecklistTrocaOleo = () => {
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
                       {record.km_atual != null ? fmtKm(record.km_atual) : <span className="text-gray-400 italic text-xs">Sem leitura</span>}
                     </td>
+                    <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400 text-xs">
+                      {fmtDate(record.ultima_viagem_data)}
+                    </td>
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
                       {fmtKm(parseFloat(record.km_ultima_troca))}
                     </td>
@@ -389,7 +406,7 @@ const ChecklistTrocaOleo = () => {
                       <StatusBadge status={record.status} />
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-1">
                         <button
                           data-testid={`button-edit-${record.id}`}
                           onClick={() => openEdit(record)}
@@ -406,6 +423,26 @@ const ChecklistTrocaOleo = () => {
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                        {record.placa && (
+                          <Link
+                            data-testid={`link-viagens-${record.id}`}
+                            to={`/operacoes/viagens?placa=${encodeURIComponent(record.placa)}`}
+                            className="p-1.5 rounded-md text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                            title="Ver viagens deste veículo"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Link>
+                        )}
+                        {record.placa && (
+                          <Link
+                            data-testid={`link-hodometros-${record.id}`}
+                            to={`/hodometros?placa=${encodeURIComponent(record.placa)}`}
+                            className="p-1.5 rounded-md text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                            title="Ver hodômetros deste veículo"
+                          >
+                            <Gauge className="w-4 h-4" />
+                          </Link>
+                        )}
                       </div>
                     </td>
                   </tr>
