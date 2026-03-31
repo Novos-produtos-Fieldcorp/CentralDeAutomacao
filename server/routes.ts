@@ -5777,12 +5777,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      const veiculoIds = [...new Set(viagensFiltered.map((v: any) => v.veiculo_id).filter(Boolean))];
+      let veiculosMap: Record<number, string> = {};
+      if (veiculoIds.length > 0) {
+        const { data: veiculosData } = await supabaseBackend
+          .from("veiculo")
+          .select("veiculo_id, placa")
+          .in("veiculo_id", veiculoIds);
+        (veiculosData || []).forEach((v: any) => {
+          veiculosMap[v.veiculo_id] = v.placa;
+        });
+      }
+
       const result = filteredOpData.map((op: any) => {
         const viagem = viagensFiltered.find((v: any) => v.id === op.id_viagem);
         return {
           ...op,
           data_viagem: viagem?.data_hora_inicial,
           motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || "Desconhecido" : "Desconhecido",
+          placa_veiculo: viagem ? veiculosMap[viagem.veiculo_id] || "Sem placa" : "Sem placa",
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
 
@@ -5865,12 +5878,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      const veiculoIds = [...new Set(viagensFiltered.map((v: any) => v.veiculo_id).filter(Boolean))];
+      let veiculosMap: Record<number, string> = {};
+      if (veiculoIds.length > 0) {
+        const { data: veiculosData } = await supabaseBackend
+          .from("veiculo")
+          .select("veiculo_id, placa")
+          .in("veiculo_id", veiculoIds);
+        (veiculosData || []).forEach((v: any) => {
+          veiculosMap[v.veiculo_id] = v.placa;
+        });
+      }
+
       const result = filteredOpData.map((op: any) => {
         const viagem = viagensFiltered.find((v: any) => v.id === op.id_viagem);
         return {
           ...op,
           data_viagem: viagem?.data_hora_inicial,
           motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || "Desconhecido" : "Desconhecido",
+          placa_veiculo: viagem ? veiculosMap[viagem.veiculo_id] || "Sem placa" : "Sem placa",
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
 

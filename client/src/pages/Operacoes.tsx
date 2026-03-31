@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef, BarChart3, Download, FileSpreadsheet } from 'lucide-react';
-import { exportRelatorioMotorista, exportRelatorioCliente, type RelatorioRow, type PeriodoFechamento } from '../utils/exportRelatorioFechamento';
+import { exportRelatorioMotorista, exportRelatorioCliente, exportRelatorioPlacaDiario, exportRelatorioPlacaMensal, type RelatorioRow, type PeriodoFechamento } from '../utils/exportRelatorioFechamento';
 import toast from 'react-hot-toast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 
@@ -3881,6 +3881,16 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       const motoristasMap: Record<number, string> = {};
       (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
 
+      const veiculoIdsSada = [...new Set(viagensEmpresa.map((v: any) => v.veiculo_id).filter(Boolean))];
+      const veiculosMapSada: Record<number, string> = {};
+      if (veiculoIdsSada.length > 0) {
+        const { data: veiculosDataSada } = await supabase
+          .from('veiculo')
+          .select('veiculo_id, placa')
+          .in('veiculo_id', veiculoIdsSada);
+        (veiculosDataSada || []).forEach((v: any) => { veiculosMapSada[v.veiculo_id] = v.placa; });
+      }
+
       const viagensComModelo = opData
         .filter((op: any) => op.modelo)
         .map((op: any) => ({ id_operacao: op.id_operacao, modelo: op.modelo }));
@@ -3906,6 +3916,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
           ...op,
           data_viagem: viagem?.data_hora_inicial,
           motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+          placa_veiculo: viagem ? veiculosMapSada[viagem.veiculo_id] || 'Sem placa' : 'Sem placa',
           qtd_mitsubishi: mitsubishiMap[op.id_operacao] ?? 0,
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
@@ -3945,6 +3956,16 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       motoristasData?.forEach((m: any) => {
         motoristasMap[m.motorista_id] = m.nome;
       });
+
+      const veiculoIdsSuper = [...new Set(viagensEmpresa.map((v: any) => v.veiculo_id).filter(Boolean))];
+      const veiculosMapSuper: Record<number, string> = {};
+      if (veiculoIdsSuper.length > 0) {
+        const { data: veiculosDataSuper } = await supabase
+          .from('veiculo')
+          .select('veiculo_id, placa')
+          .in('veiculo_id', veiculoIdsSuper);
+        (veiculosDataSuper || []).forEach((v: any) => { veiculosMapSuper[v.veiculo_id] = v.placa; });
+      }
       
       return opData.map((op: any) => {
         const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
@@ -3952,6 +3973,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
           ...op,
           data_viagem: viagem?.data_hora_inicial,
           motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+          placa_veiculo: viagem ? veiculosMapSuper[viagem.veiculo_id] || 'Sem placa' : 'Sem placa',
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
@@ -4182,12 +4204,14 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     tipo_carreta: number | null;
     origem: string | null;
     destino: string | null;
+    placa_veiculo?: string;
   }
   interface TripSuperterminais {
     motorista_nome: string;
     data_viagem: string;
     nome_navio: string | null;
     embarque_desembarque: string | null;
+    placa_veiculo?: string;
   }
   interface TripMitsubishi {
     motorista_nome: string;
@@ -4195,6 +4219,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     qtd_carro: number | null;
     origem: string | null;
     destino: string | null;
+    placa_veiculo?: string;
   }
   interface TripAutoservice {
     motorista_nome: string;
@@ -4203,6 +4228,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     valor_frete: string | number | null;
     origem: string | null;
     destino: string | null;
+    placa_veiculo?: string;
   }
   interface TripTegma {
     motorista: string | null;
@@ -4215,6 +4241,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     capacidade: number | null;
     origem: string | null;
     destino: string | null;
+    placa_veiculo?: string;
   }
   interface CesariPreco {
     local: string;
@@ -4235,6 +4262,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     v2_destino: string | null;
     pernoite: boolean | null;
     dia_nao_util: boolean | null;
+    placa_veiculo?: string;
   }
 
   // Normalized rows for all active operations — used by export handlers
@@ -4259,6 +4287,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
           dataViagem: v.data_viagem,
           valorFrete,
           comissaoMotorista: comissao,
+          placaVeiculo: v.placa_veiculo || 'Sem placa',
         });
       });
     }
@@ -4280,6 +4309,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         dataViagem: v.data_viagem,
         valorFrete: valorViagemSuper,
         comissaoMotorista: comissaoSuper,
+        placaVeiculo: v.placa_veiculo || 'Sem placa',
       });
     });
 
@@ -4303,6 +4333,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
           dataViagem: v.data_viagem,
           valorFrete,
           comissaoMotorista: comissaoMit,
+          placaVeiculo: v.placa_veiculo || 'Sem placa',
         });
       });
     }
@@ -4326,6 +4357,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         dataViagem: v.data_viagem,
         valorFrete,
         comissaoMotorista: comissaoAuto,
+        placaVeiculo: v.placa_veiculo || 'Sem placa',
       });
     });
 
@@ -4354,6 +4386,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
         dataViagem: v.data_viagem,
         valorFrete: valorPorTrechoTegma,
         comissaoMotorista: comissao,
+        placaVeiculo: v.placa_veiculo || 'Sem placa',
       });
     });
 
@@ -4431,6 +4464,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
           dataViagem: viagem.data_viagem,
           valorFrete,
           comissaoMotorista: comissao,
+          placaVeiculo: viagem.placa_veiculo || 'Sem placa',
         });
       });
     }
@@ -4456,17 +4490,21 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     };
   }, [filtroPeriodo, dataInicio, dataFim]);
 
-  const handleExport = useCallback(async (type: 'motorista' | 'cliente', format: 'pdf' | 'excel') => {
+  const handleExport = useCallback(async (type: 'motorista' | 'cliente' | 'placa-diario' | 'placa-mensal', format: 'pdf' | 'excel') => {
     const key = `${type}-${format}`;
     setExportLoading(key);
     try {
       const companyName = nomeEmpresa || 'Relatório de Fechamento';
       if (type === 'motorista') {
         exportRelatorioMotorista(normalizedRows, periodoAtual, companyName, format);
-      } else {
+      } else if (type === 'cliente') {
         exportRelatorioCliente(normalizedRows, periodoAtual, companyName, format);
+      } else if (type === 'placa-diario') {
+        exportRelatorioPlacaDiario(normalizedRows, periodoAtual, companyName, format);
+      } else {
+        exportRelatorioPlacaMensal(normalizedRows, periodoAtual, companyName, format);
       }
-      const label = type === 'motorista' ? 'Por Motorista' : 'Por Cliente';
+      const label = type === 'motorista' ? 'Por Motorista' : type === 'cliente' ? 'Por Cliente' : type === 'placa-diario' ? 'Diário por Placa' : 'Mensal por Placa';
       const ext = format === 'pdf' ? 'PDF' : 'Excel';
       toast.success(`Relatório ${label} exportado em ${ext}!`);
     } catch (err) {
@@ -5673,6 +5711,70 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
                       <FileSpreadsheet className="w-3 h-3" />
                     )}
                     Excel
+                  </button>
+                </div>
+              </div>
+
+              {/* Por Placa */}
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-semibold text-gray-800 dark:text-white">Por Placa</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">(faturamento & lucro)</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Uma seção por placa com totais de viagens, faturamento e lucro agrupados por dia ou mês.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleExport('placa-diario', 'pdf')}
+                    disabled={exportLoading !== null || normalizedRows.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-exportar-placa-diario-pdf"
+                  >
+                    {exportLoading === 'placa-diario-pdf' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileText className="w-3 h-3" />
+                    )}
+                    Diário (PDF)
+                  </button>
+                  <button
+                    onClick={() => handleExport('placa-diario', 'excel')}
+                    disabled={exportLoading !== null || normalizedRows.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-exportar-placa-diario-excel"
+                  >
+                    {exportLoading === 'placa-diario-excel' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileSpreadsheet className="w-3 h-3" />
+                    )}
+                    Diário (Excel)
+                  </button>
+                  <button
+                    onClick={() => handleExport('placa-mensal', 'pdf')}
+                    disabled={exportLoading !== null || normalizedRows.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-exportar-placa-mensal-pdf"
+                  >
+                    {exportLoading === 'placa-mensal-pdf' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileText className="w-3 h-3" />
+                    )}
+                    Mensal (PDF)
+                  </button>
+                  <button
+                    onClick={() => handleExport('placa-mensal', 'excel')}
+                    disabled={exportLoading !== null || normalizedRows.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-exportar-placa-mensal-excel"
+                  >
+                    {exportLoading === 'placa-mensal-excel' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileSpreadsheet className="w-3 h-3" />
+                    )}
+                    Mensal (Excel)
                   </button>
                 </div>
               </div>
