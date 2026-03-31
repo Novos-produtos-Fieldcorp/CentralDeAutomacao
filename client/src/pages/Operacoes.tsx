@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef, BarChart3, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, MapIcon, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef, BarChart3, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react';
 import { exportRelatorioMotorista, exportRelatorioCliente, exportRelatorioPlacaDiario, exportRelatorioPlacaMensal, type RelatorioRow, type PeriodoFechamento } from '../utils/exportRelatorioFechamento';
 import toast from 'react-hot-toast';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -1203,7 +1203,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
             <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-              <Map className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <MapIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.total || 0}</p>
@@ -1331,7 +1331,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                 </div>
               ) : viagensDetalhadas.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                  <Map className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <MapIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>Nenhuma viagem encontrada</p>
                 </div>
               ) : (
@@ -1498,7 +1498,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             if (totalViagens === 0) {
               return (
                 <EmptyState
-                  icon={Map}
+                  icon={MapIcon}
                   title="Nenhuma viagem no período"
                   subtitle="Selecione um período diferente ou verifique os filtros aplicados"
                 />
@@ -7378,7 +7378,7 @@ const Operacoes = () => {
 
   const tabs = [
     { path: '/operacoes', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/operacoes/viagens', label: 'Viagens', icon: Map },
+    { path: '/operacoes/viagens', label: 'Viagens', icon: MapIcon },
     { path: '/operacoes/financeiro', label: 'Financeiro', icon: Wallet },
     { path: '/operacoes/precos', label: 'Preços', icon: Settings },
   ];
