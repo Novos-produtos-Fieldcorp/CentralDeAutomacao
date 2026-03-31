@@ -6538,10 +6538,12 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
       const validated = await resolveAndValidateCompanyId(req, res, parseInt(company_id));
       if (!validated) return;
 
-      // Verify the vehicle belongs to the authenticated company (via motorista join)
+      // Verify the vehicle belongs to the authenticated company
+      // Primary: check veiculo.company_id (own vehicles without a motorista assigned)
+      // Fallback: check via veiculo.motorista_id → motorista.company_id
       const { data: veiculoData, error: veiculoErr } = await supabaseBackend
         .from("veiculo")
-        .select("veiculo_id, motorista_id")
+        .select("veiculo_id, company_id, motorista_id")
         .eq("veiculo_id", veiculo_id)
         .single();
 
@@ -6549,16 +6551,19 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
         return res.status(404).json({ error: "Veículo não encontrado" });
       }
 
-      if (veiculoData.motorista_id) {
-        const { data: motoristaData, error: motoristaErr } = await supabaseBackend
+      let veiculoBelongsToCompany = veiculoData.company_id === validated;
+
+      if (!veiculoBelongsToCompany && veiculoData.motorista_id) {
+        const { data: motoristaData } = await supabaseBackend
           .from("motorista")
           .select("company_id")
           .eq("motorista_id", veiculoData.motorista_id)
           .single();
+        veiculoBelongsToCompany = motoristaData?.company_id === validated;
+      }
 
-        if (motoristaErr || !motoristaData || motoristaData.company_id !== validated) {
-          return res.status(403).json({ error: "Veículo não pertence a esta empresa" });
-        }
+      if (!veiculoBelongsToCompany) {
+        return res.status(403).json({ error: "Veículo não pertence a esta empresa" });
       }
 
       const { data, error } = await supabaseBackend

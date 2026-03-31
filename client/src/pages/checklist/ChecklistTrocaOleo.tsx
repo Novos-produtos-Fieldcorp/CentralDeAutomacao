@@ -4,7 +4,7 @@ import { queryClient } from '@/lib/queryClient';
 import { useCurrentAccount } from '@/hooks/useCurrentAccount';
 import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
-import { Droplets, Pencil, Trash2, Plus, AlertTriangle, CheckCircle2, Loader2, RefreshCw, ExternalLink, Gauge } from 'lucide-react';
+import { Droplets, Pencil, Trash2, Plus, AlertTriangle, CheckCircle2, Loader2, RefreshCw, ExternalLink, Gauge, Bell, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -20,12 +20,24 @@ interface TrocaOleoRecord {
   placa: string | null;
   marca_veiculo: string | null;
   motorista_nome: string | null;
-  motorista_telefone: string | null;
   km_atual: number | null;
   km_proxima_troca: number;
   km_restante: number | null;
   status: 'OK' | 'Atenção' | 'Vencido';
   ultima_viagem_data: string | null;
+}
+
+interface AlertLog {
+  id: number;
+  company_id: number;
+  veiculo_id: number;
+  placa: string | null;
+  km_atual: number | null;
+  km_proxima_troca: number | null;
+  km_restante: number | null;
+  status: string;
+  lido: boolean;
+  created_at: string;
 }
 
 interface VeiculoOption {
@@ -43,6 +55,15 @@ const fmtDate = (d: string | null | undefined) => {
   if (!d) return '—';
   try {
     return format(new Date(d), 'dd/MM/yyyy');
+  } catch {
+    return '—';
+  }
+};
+
+const fmtDateTime = (d: string | null | undefined) => {
+  if (!d) return '—';
+  try {
+    return format(new Date(d), 'dd/MM/yyyy HH:mm');
   } catch {
     return '—';
   }
@@ -112,26 +133,133 @@ const ChecklistTrocaOleo = () => {
   const [editingRecord, setEditingRecord] = useState<TrocaOleoRecord | null>(null);
   const [form, setForm] = useState<ModalFormData>(defaultForm);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [alertsBannerOpen, setAlertsBannerOpen] = useState(true);
+
+  const numericCompanyId = companyId ? Number(companyId) : null;
 
   const { data: records = [], isLoading } = useQuery<TrocaOleoRecord[]>({
-    queryKey: ['/api/troca-oleo', companyId],
+    queryKey: ['/api/troca-oleo', numericCompanyId],
     queryFn: async () => {
-      if (!companyId) return [];
-      const res = await trocaOleoRequest(`/api/troca-oleo/${companyId}`);
-      if (!res.ok) throw new Error('Erro ao buscar registros');
-      return res.json();
+      if (!numericCompanyId) return [];
+
+      const { data: baseRecords, error: baseErr } = await supabase
+        .from('aviso_troca_oleo')
+        .select('*')
+        .eq('company_id', numericCompanyId);
+
+      if (baseErr) throw baseErr;
+      if (!baseRecords || baseRecords.length === 0) return [];
+
+      const veiculoIds = [...new Set(baseRecords.map((r: any) => r.veiculo_id))];
+
+      const [veiculosRes, hodsRes, viagensRes, ultimasViagensRes] = await Promise.all([
+        supabase
+          .from('veiculo')
+          .select('veiculo_id, placa, marca, motorista_id')
+          .in('veiculo_id', veiculoIds),
+        supabase
+          .from('hodometro')
+          .select('veiculo_id, hod_informado')
+          .in('veiculo_id', veiculoIds)
+          .order('hod_informado', { ascending: false }),
+        supabase
+          .from('acompanhamento_viagem')
+          .select('veiculo_id, km_final')
+          .in('veiculo_id', veiculoIds)
+          .not('km_final', 'is', null),
+        supabase
+          .from('acompanhamento_viagem')
+          .select('veiculo_id, data_hora_inicial')
+          .in('veiculo_id', veiculoIds)
+          .order('data_hora_inicial', { ascending: false }),
+      ]);
+
+      const veiculoMap = new Map<number, any>(
+        (veiculosRes.data || []).map((v: any) => [v.veiculo_id, v])
+      );
+
+      const hodKmMap = new Map<number, number>();
+      for (const h of (hodsRes.data || [])) {
+        const km = parseFloat(h.hod_informado);
+        if (!isNaN(km) && (!hodKmMap.has(h.veiculo_id) || km > hodKmMap.get(h.veiculo_id)!)) {
+          hodKmMap.set(h.veiculo_id, km);
+        }
+      }
+
+      const viagemKmMap = new Map<number, number>();
+      for (const v of (viagensRes.data || [])) {
+        const km = parseFloat(v.km_final);
+        if (!isNaN(km) && (!viagemKmMap.has(v.veiculo_id) || km > viagemKmMap.get(v.veiculo_id)!)) {
+          viagemKmMap.set(v.veiculo_id, km);
+        }
+      }
+
+      const ultimaViagemMap = new Map<number, string>();
+      for (const v of (ultimasViagensRes.data || [])) {
+        if (!ultimaViagemMap.has(v.veiculo_id) && v.data_hora_inicial) {
+          ultimaViagemMap.set(v.veiculo_id, v.data_hora_inicial);
+        }
+      }
+
+      return baseRecords.map((r: any) => {
+        const veiculo = veiculoMap.get(r.veiculo_id);
+        const hodKm = hodKmMap.get(r.veiculo_id) ?? null;
+        const viagemKm = viagemKmMap.get(r.veiculo_id) ?? null;
+        const km_atual = (hodKm !== null || viagemKm !== null)
+          ? Math.max(hodKm ?? 0, viagemKm ?? 0)
+          : null;
+
+        const kmUltimaTroca = parseFloat(r.km_ultima_troca);
+        const kmProximaTroca = kmUltimaTroca + r.intervalo_km;
+        const kmRestante = km_atual !== null ? kmProximaTroca - km_atual : null;
+
+        let status: 'OK' | 'Atenção' | 'Vencido' = 'OK';
+        if (kmRestante !== null) {
+          if (kmRestante <= 0) status = 'Vencido';
+          else if (kmRestante <= r.km_aviso_antecipado) status = 'Atenção';
+        }
+
+        return {
+          ...r,
+          placa: veiculo?.placa || null,
+          marca_veiculo: veiculo?.marca || null,
+          motorista_nome: null,
+          km_atual,
+          km_proxima_troca: kmProximaTroca,
+          km_restante: kmRestante,
+          status,
+          ultima_viagem_data: ultimaViagemMap.get(r.veiculo_id) || null,
+        } as TrocaOleoRecord;
+      });
     },
-    enabled: !!companyId,
+    enabled: !!numericCompanyId,
+  });
+
+  const { data: alertLogs = [], isLoading: alertsLoading } = useQuery<AlertLog[]>({
+    queryKey: ['/api/oil-change-alerts', numericCompanyId],
+    queryFn: async () => {
+      if (!numericCompanyId) return [];
+      const { data, error } = await supabase
+        .from('oil_change_alert_log')
+        .select('*')
+        .eq('company_id', numericCompanyId)
+        .eq('lido', false)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!numericCompanyId,
   });
 
   const { data: allVeiculos = [] } = useQuery<VeiculoOption[]>({
-    queryKey: ['/api/veiculos-empresa', companyId],
+    queryKey: ['/api/veiculos-empresa', numericCompanyId],
     queryFn: async () => {
-      if (!companyId) return [];
+      if (!numericCompanyId) return [];
       const { data, error } = await supabase
         .from('veiculo')
         .select('veiculo_id, placa, marca')
-        .eq('company_id', companyId)
+        .eq('company_id', numericCompanyId)
         .eq('status_veiculo', true)
         .order('placa');
       if (error) {
@@ -140,7 +268,7 @@ const ChecklistTrocaOleo = () => {
       }
       return data || [];
     },
-    enabled: !!companyId,
+    enabled: !!numericCompanyId,
   });
 
   const configuredVeiculoIds = new Set(records.map(r => r.veiculo_id));
@@ -159,7 +287,7 @@ const ChecklistTrocaOleo = () => {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/troca-oleo', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/troca-oleo', numericCompanyId] });
       toast.success('Veículo adicionado com sucesso!');
       closeModal();
     },
@@ -179,7 +307,7 @@ const ChecklistTrocaOleo = () => {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/troca-oleo', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/troca-oleo', numericCompanyId] });
       toast.success('Registro atualizado!');
       closeModal();
     },
@@ -192,27 +320,59 @@ const ChecklistTrocaOleo = () => {
       if (!res.ok) throw new Error('Erro ao excluir');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/troca-oleo', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/troca-oleo', numericCompanyId] });
       toast.success('Registro excluído!');
       setDeleteConfirm(null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const sendAlertsMutation = useMutation({
+  const markAlertReadMutation = useMutation({
+    mutationFn: async (alertId: number) => {
+      const { error } = await supabase
+        .from('oil_change_alert_log')
+        .update({ lido: true })
+        .eq('id', alertId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/oil-change-alerts', numericCompanyId] });
+    },
+  });
+
+  const markAllAlertsReadMutation = useMutation({
     mutationFn: async () => {
-      const res = await trocaOleoRequest(`/api/troca-oleo/verificar/${companyId}`, { method: 'POST' });
-      if (!res.ok) throw new Error('Erro ao enviar avisos');
+      const { error } = await supabase
+        .from('oil_change_alert_log')
+        .update({ lido: true })
+        .eq('company_id', numericCompanyId!)
+        .eq('lido', false);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/oil-change-alerts', numericCompanyId] });
+      toast.success('Todos os alertas marcados como lidos');
+    },
+  });
+
+  const verificarMutation = useMutation({
+    mutationFn: async () => {
+      const res = await trocaOleoRequest(`/api/troca-oleo/verificar/${numericCompanyId}`, { method: 'POST' });
+      if (!res.ok) throw new Error('Erro ao verificar alertas');
       return res.json();
     },
     onSuccess: (result: { sent: number; skipped: number; errors: string[] }) => {
-      const msg = `Avisos enviados: ${result.sent} | Ignorados: ${result.skipped}`;
+      const msg = result.sent > 0
+        ? `${result.sent} alerta(s) gerado(s) | ${result.skipped} ignorado(s)`
+        : `Nenhum alerta novo | ${result.skipped} veículo(s) OK`;
       if (result.errors.length > 0) {
-        toast.error(`${msg} | Erros: ${result.errors.length}`);
+        toast.error(`${msg} | ${result.errors.length} erro(s)`);
       } else {
         toast.success(msg);
       }
-      queryClient.invalidateQueries({ queryKey: ['/api/troca-oleo', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/troca-oleo', numericCompanyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/oil-change-alerts', numericCompanyId] });
+      setAlertsBannerOpen(true);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -260,7 +420,7 @@ const ChecklistTrocaOleo = () => {
       }
       createMutation.mutate({
         veiculo_id: form.veiculo_id,
-        company_id: companyId,
+        company_id: numericCompanyId,
         intervalo_km: form.intervalo_km,
         km_ultima_troca: form.km_ultima_troca,
         km_aviso_antecipado: form.km_aviso_antecipado,
@@ -281,6 +441,7 @@ const ChecklistTrocaOleo = () => {
 
   const countAtencao = records.filter(r => r.status === 'Atenção').length;
   const countVencido = records.filter(r => r.status === 'Vencido').length;
+  const unreadAlerts = alertLogs.filter(a => !a.lido);
 
   if (isLoading) {
     return (
@@ -299,6 +460,11 @@ const ChecklistTrocaOleo = () => {
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Droplets className="text-blue-500 w-6 h-6" />
             Troca de Óleo
+            {unreadAlerts.length > 0 && (
+              <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-red-500 text-white rounded-full">
+                {unreadAlerts.length}
+              </span>
+            )}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Gerencie alertas de troca de óleo por quilometragem para cada veículo
@@ -306,17 +472,17 @@ const ChecklistTrocaOleo = () => {
         </div>
         <div className="flex gap-2 flex-wrap">
           <button
-            data-testid="button-enviar-avisos"
-            onClick={() => sendAlertsMutation.mutate()}
-            disabled={sendAlertsMutation.isPending}
+            data-testid="button-verificar-agora"
+            onClick={() => verificarMutation.mutate()}
+            disabled={verificarMutation.isPending}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors disabled:opacity-60"
           >
-            {sendAlertsMutation.isPending ? (
+            {verificarMutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <RefreshCw className="w-4 h-4" />
             )}
-            Enviar Avisos Agora
+            Verificar Agora
           </button>
           <button
             data-testid="button-adicionar-veiculo"
@@ -328,6 +494,75 @@ const ChecklistTrocaOleo = () => {
           </button>
         </div>
       </div>
+
+      {/* Alerts Banner */}
+      {alertsBannerOpen && unreadAlerts.length > 0 && (
+        <div data-testid="alerts-banner" className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-semibold text-sm">
+              <Bell className="w-4 h-4 flex-shrink-0" />
+              {unreadAlerts.length === 1
+                ? '1 alerta de troca de óleo pendente'
+                : `${unreadAlerts.length} alertas de troca de óleo pendentes`}
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                data-testid="button-marcar-todos-lidos"
+                onClick={() => markAllAlertsReadMutation.mutate()}
+                disabled={markAllAlertsReadMutation.isPending}
+                className="text-xs text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 underline"
+              >
+                Marcar todos como lido
+              </button>
+              <button
+                data-testid="button-fechar-banner"
+                onClick={() => setAlertsBannerOpen(false)}
+                className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-300"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <div className="mt-3 space-y-2">
+            {unreadAlerts.slice(0, 5).map(alert => (
+              <div
+                key={alert.id}
+                data-testid={`alert-item-${alert.id}`}
+                className="flex items-center justify-between gap-3 bg-white dark:bg-gray-800 rounded-lg px-3 py-2 text-sm border border-amber-100 dark:border-amber-800"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <StatusBadge status={alert.status} />
+                  <span className="font-semibold text-gray-900 dark:text-white uppercase">
+                    {alert.placa || '—'}
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-400 truncate">
+                    KM atual: {fmtKm(alert.km_atual)} · Próxima: {fmtKm(alert.km_proxima_troca)}
+                    {alert.km_restante !== null && alert.km_restante <= 0
+                      ? ` · Vencido em ${fmtKm(Math.abs(alert.km_restante ?? 0))}`
+                      : alert.km_restante !== null
+                      ? ` · Restam ${fmtKm(alert.km_restante)}`
+                      : ''}
+                  </span>
+                  <span className="text-xs text-gray-400 flex-shrink-0">{fmtDateTime(alert.created_at)}</span>
+                </div>
+                <button
+                  data-testid={`button-marcar-lido-${alert.id}`}
+                  onClick={() => markAlertReadMutation.mutate(alert.id)}
+                  disabled={markAlertReadMutation.isPending}
+                  className="flex-shrink-0 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 underline"
+                >
+                  Lido
+                </button>
+              </div>
+            ))}
+            {unreadAlerts.length > 5 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+                + {unreadAlerts.length - 5} alertas adicionais
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -53,7 +53,10 @@ export async function checkAndSendOilChangeAlerts(filterCompanyId?: number): Pro
 
     for (const record of records) {
       try {
-        const { data: hodData, error: hodError } = await supabase
+        // Try hodometro first, then acompanhamento_viagem as fallback
+        let kmAtual: number | null = null;
+
+        const { data: hodData } = await supabase
           .from('hodometro')
           .select('hod_informado')
           .eq('veiculo_id', record.veiculo_id)
@@ -61,13 +64,28 @@ export async function checkAndSendOilChangeAlerts(filterCompanyId?: number): Pro
           .limit(1)
           .single();
 
-        if (hodError || !hodData) {
-          result.skipped++;
-          continue;
+        if (hodData?.hod_informado != null) {
+          const km = parseFloat(hodData.hod_informado);
+          if (!isNaN(km)) kmAtual = km;
         }
 
-        const kmAtual = parseFloat(hodData.hod_informado);
-        if (isNaN(kmAtual)) {
+        const { data: viagemData } = await supabase
+          .from('acompanhamento_viagem')
+          .select('km_final')
+          .eq('veiculo_id', record.veiculo_id)
+          .not('km_final', 'is', null)
+          .order('km_final', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (viagemData?.km_final != null) {
+          const km = parseFloat(viagemData.km_final);
+          if (!isNaN(km) && (kmAtual === null || km > kmAtual)) {
+            kmAtual = km;
+          }
+        }
+
+        if (kmAtual === null) {
           result.skipped++;
           continue;
         }
@@ -90,60 +108,41 @@ export async function checkAndSendOilChangeAlerts(filterCompanyId?: number): Pro
           continue;
         }
 
-        const { data: veiculoData, error: veiculoError } = await supabase
+        // Fetch vehicle plate
+        const { data: veiculoData } = await supabase
           .from('veiculo')
-          .select('placa, motorista_id')
+          .select('placa')
           .eq('veiculo_id', record.veiculo_id)
           .single();
 
-        if (veiculoError || !veiculoData) {
-          result.skipped++;
+        const placa = (veiculoData?.placa || '').toUpperCase() || null;
+        const status = kmRestante <= 0 ? 'Vencido' : 'Atenção';
+
+        // Insert in-app alert log instead of sending WhatsApp
+        const { error: insertErr } = await supabase
+          .from('oil_change_alert_log')
+          .insert({
+            company_id: record.company_id,
+            veiculo_id: record.veiculo_id,
+            placa,
+            km_atual: kmAtual,
+            km_proxima_troca: kmProximaTroca,
+            km_restante: kmRestante,
+            status,
+          });
+
+        if (insertErr) {
+          result.errors.push(`Veículo ${placa || record.veiculo_id}: falha ao gravar alerta — ${insertErr.message}`);
           continue;
         }
 
-        if (!veiculoData.motorista_id) {
-          result.skipped++;
-          continue;
-        }
+        // Update ultimo_aviso_km to avoid duplicate alerts within 100 km
+        await supabase
+          .from('aviso_troca_oleo')
+          .update({ ultimo_aviso_km: String(kmAtual) })
+          .eq('id', record.id);
 
-        const { data: motoristaData, error: motoristaError } = await supabase
-          .from('motorista')
-          .select('telefone, nome')
-          .eq('motorista_id', veiculoData.motorista_id)
-          .single();
-
-        if (motoristaError || !motoristaData || !motoristaData.telefone) {
-          result.skipped++;
-          continue;
-        }
-
-        const placa = (veiculoData.placa || '').toUpperCase();
-        const kmRestanteDisplay = Math.round(kmRestante);
-        const message = `⚠️ *Aviso de Troca de Óleo* — Veículo ${placa}: a troca de óleo está prevista para ${Math.round(kmProximaTroca).toLocaleString('pt-BR')} km. KM atual: ${Math.round(kmAtual).toLocaleString('pt-BR')}. Restam ${Math.abs(kmRestanteDisplay).toLocaleString('pt-BR')} km${kmRestanteDisplay < 0 ? ' (vencido)' : ''}. Por favor, agende a manutenção.`;
-
-        const baseUrl = process.env.REPLIT_DEV_DOMAIN
-          ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-          : `http://localhost:${process.env.PORT || 5000}`;
-
-        const sendResponse = await fetch(`${baseUrl}/api/send-bulk-messages`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            numbers: [String(motoristaData.telefone)],
-            message,
-          }),
-        });
-
-        if (sendResponse.ok) {
-          await supabase
-            .from('aviso_troca_oleo')
-            .update({ ultimo_aviso_km: String(kmAtual), updated_at: new Date().toISOString() })
-            .eq('id', record.id);
-          result.sent++;
-        } else {
-          const errText = await sendResponse.text();
-          result.errors.push(`Veículo ${placa}: falha ao enviar mensagem — ${errText}`);
-        }
+        result.sent++;
       } catch (err: any) {
         result.errors.push(`Erro ao processar registro ${record.id}: ${err.message}`);
       }
@@ -161,7 +160,7 @@ export function startOilChangeCron() {
     console.log('[OIL_CRON] Iniciando verificação diária de troca de óleo...');
     try {
       const result = await checkAndSendOilChangeAlerts();
-      console.log(`[OIL_CRON] Concluído — enviados: ${result.sent}, ignorados: ${result.skipped}, erros: ${result.errors.length}`);
+      console.log(`[OIL_CRON] Concluído — alertas gerados: ${result.sent}, ignorados: ${result.skipped}, erros: ${result.errors.length}`);
       if (result.errors.length > 0) {
         console.error('[OIL_CRON] Erros:', result.errors);
       }
