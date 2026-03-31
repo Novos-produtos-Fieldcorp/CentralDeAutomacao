@@ -31,7 +31,7 @@ interface TrocaOleoRecord {
 interface VeiculoOption {
   veiculo_id: number;
   placa: string | null;
-  marca_veiculo: string | null;
+  marca: string | null;
 }
 
 const fmtKm = (n: number | null | undefined) => {
@@ -130,7 +130,7 @@ const ChecklistTrocaOleo = () => {
       if (!companyId) return [];
       const { data, error } = await supabase
         .from('veiculo')
-        .select('veiculo_id, placa, marca_veiculo')
+        .select('veiculo_id, placa, marca')
         .eq('status_veiculo', true)
         .order('placa');
       if (error) {
@@ -494,7 +494,7 @@ const ChecklistTrocaOleo = () => {
                     <option value="">Selecione um veículo...</option>
                     {availableVeiculos.map(v => (
                       <option key={v.veiculo_id} value={v.veiculo_id}>
-                        {(v.placa || '').toUpperCase()} {v.marca_veiculo ? `— ${v.marca_veiculo}` : ''}
+                        {(v.placa || '').toUpperCase()} {v.marca ? `— ${v.marca}` : ''}
                       </option>
                     ))}
                   </select>
