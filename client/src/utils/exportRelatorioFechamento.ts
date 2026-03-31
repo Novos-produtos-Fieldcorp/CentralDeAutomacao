@@ -28,6 +28,17 @@ type SheetRow = (string | number)[];
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
+// jsPDF's built-in fonts use WinAnsi (Windows-1252) encoding.
+// Accented Portuguese characters are fine. Replace specific Unicode symbols
+// that fall outside WinAnsi and would render as garbage.
+const sanitizePdf = (str: string): string =>
+  str
+    .replace(/→/g, '->')
+    .replace(/←/g, '<-')
+    .replace(/—/g, '-')
+    .replace(/–/g, '-')
+    .replace(/[^\u0000-\u00FF]/g, '?');
+
 const formatDateBR = (dateStr: string): string => {
   if (!dateStr) return '-';
   try {
@@ -45,10 +56,10 @@ const buildHeader = (doc: jsPDF, title: string, companyName: string, periodo: Pe
   const pageWidth = doc.internal.pageSize.getWidth();
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text(companyName, pageWidth / 2, 16, { align: 'center' });
+  doc.text(sanitizePdf(companyName), pageWidth / 2, 16, { align: 'center' });
 
   doc.setFontSize(13);
-  doc.text(title, pageWidth / 2, 24, { align: 'center' });
+  doc.text(sanitizePdf(title), pageWidth / 2, 24, { align: 'center' });
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
@@ -110,13 +121,13 @@ export const exportRelatorioMotorista = (
 
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Motorista: ${motorista}`, 14, startY);
+      doc.text(`Motorista: ${sanitizePdf(motorista)}`, 14, startY);
       startY += 4;
 
       const tableBody: (string | number)[][] = viagens.map((v) => [
         formatDateBR(v.dataViagem),
-        v.operacaoTipo,
-        v.detalhe || '-',
+        sanitizePdf(v.operacaoTipo),
+        sanitizePdf(v.detalhe || '-'),
         formatCurrency(v.valorFrete),
         formatCurrency(v.comissaoMotorista),
       ]);
@@ -230,13 +241,13 @@ export const exportRelatorioCliente = (
 
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Cliente: ${cliente}`, 14, startY);
+      doc.text(`Cliente: ${sanitizePdf(cliente)}`, 14, startY);
       startY += 4;
 
       const tableBody: (string | number)[][] = viagens.map((v) => [
         formatDateBR(v.dataViagem),
-        v.operacaoTipo,
-        v.motoristaNome,
+        sanitizePdf(v.operacaoTipo),
+        sanitizePdf(v.motoristaNome),
         formatCurrency(v.valorFrete),
       ]);
 

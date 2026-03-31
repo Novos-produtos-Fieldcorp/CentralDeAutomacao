@@ -5,7 +5,7 @@ import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Tru
 import { exportRelatorioMotorista, exportRelatorioCliente, type RelatorioRow, type PeriodoFechamento } from '../utils/exportRelatorioFechamento';
 import toast from 'react-hot-toast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { useState as useStateReact } from 'react';
+
 import { supabase } from '../lib/supabase';
 import { API_BASE_URL, supabaseAnonKey } from '@/lib/api-config-supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
