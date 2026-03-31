@@ -4,6 +4,11 @@ import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef, BarChart3, Download, FileSpreadsheet } from 'lucide-react';
 import { exportRelatorioMotorista, exportRelatorioCliente, exportRelatorioPlacaDiario, exportRelatorioPlacaMensal, type RelatorioRow, type PeriodoFechamento } from '../utils/exportRelatorioFechamento';
 import toast from 'react-hot-toast';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ptBR } from 'date-fns/locale';
+registerLocale('pt-BR', ptBR);
+import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
 
 import { supabase } from '../lib/supabase';
@@ -3746,6 +3751,7 @@ interface FaturamentoCesari {
 // Componente Financeiro - Lista de viagens com cálculo de faturamento
 const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
+  const { isDark } = useTheme();
   const [filtroPeriodo, setFiltroPeriodo] = useState<'15' | '30' | 'custom'>('30');
   const [isDateFilterExpanded, setIsDateFilterExpanded] = useState(false);
   const [dataInicio, setDataInicio] = useState('');
@@ -5574,19 +5580,34 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 
           {isDateFilterExpanded && (
             <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={dataInicio}
-                onChange={(e) => { setDataInicio(e.target.value); setFiltroPeriodo('custom'); }}
-                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              <DatePicker
+                selected={dataInicio ? new Date(dataInicio + 'T00:00:00') : null}
+                onChange={(date: Date | null) => {
+                  setDataInicio(date ? date.toLocaleDateString('en-CA') : '');
+                  setFiltroPeriodo('custom');
+                }}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="dd/mm/aaaa"
+                locale="pt-BR"
+                calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-32"
+                wrapperClassName="w-32"
                 data-testid="input-data-inicio-financeiro"
               />
               <span className="text-gray-400 text-sm">até</span>
-              <input
-                type="date"
-                value={dataFim}
-                onChange={(e) => { setDataFim(e.target.value); setFiltroPeriodo('custom'); }}
-                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              <DatePicker
+                selected={dataFim ? new Date(dataFim + 'T00:00:00') : null}
+                onChange={(date: Date | null) => {
+                  setDataFim(date ? date.toLocaleDateString('en-CA') : '');
+                  setFiltroPeriodo('custom');
+                }}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="dd/mm/aaaa"
+                locale="pt-BR"
+                calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-32"
+                wrapperClassName="w-32"
+                minDate={dataInicio ? new Date(dataInicio + 'T00:00:00') : undefined}
                 data-testid="input-data-fim-financeiro"
               />
               {(dataInicio || dataFim) && (
