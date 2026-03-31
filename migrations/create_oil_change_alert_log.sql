@@ -17,3 +17,6 @@ CREATE TABLE IF NOT EXISTS oil_change_alert_log (
 
 CREATE INDEX IF NOT EXISTS idx_oil_change_alert_log_company_id ON oil_change_alert_log(company_id, lido);
 CREATE INDEX IF NOT EXISTS idx_oil_change_alert_log_veiculo_id ON oil_change_alert_log(veiculo_id);
+
+-- Enable RLS: all access is through service_role (backend), anon key is blocked
+ALTER TABLE oil_change_alert_log ENABLE ROW LEVEL SECURITY;

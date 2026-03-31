@@ -6672,6 +6672,81 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     }
   });
 
+  // GET /api/troca-oleo/alertas/:companyId — get unread oil change alerts (RLS-protected table)
+  app.get("/api/troca-oleo/alertas/:companyId", async (req, res) => {
+    try {
+      const companyId = parseInt(req.params.companyId);
+      if (isNaN(companyId)) return res.status(400).json({ error: "companyId inválido" });
+
+      const validated = await resolveAndValidateCompanyId(req, res, companyId);
+      if (!validated) return;
+
+      const { data, error } = await supabaseBackend
+        .from("oil_change_alert_log")
+        .select("*")
+        .eq("company_id", validated)
+        .eq("lido", false)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PATCH /api/troca-oleo/alertas/:id/ler — mark single alert as read
+  app.patch("/api/troca-oleo/alertas/:id/ler", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "id inválido" });
+
+      const { data: existing } = await supabaseBackend
+        .from("oil_change_alert_log")
+        .select("company_id")
+        .eq("id", id)
+        .single();
+
+      if (!existing) return res.status(404).json({ error: "Alerta não encontrado" });
+
+      const callerCompanyId = await resolveAndValidateCompanyId(req, res, existing.company_id);
+      if (!callerCompanyId) return;
+
+      const { error } = await supabaseBackend
+        .from("oil_change_alert_log")
+        .update({ lido: true })
+        .eq("id", id);
+
+      if (error) return res.status(500).json({ error: error.message });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/troca-oleo/alertas/lerTodos/:companyId — mark all alerts as read
+  app.post("/api/troca-oleo/alertas/lerTodos/:companyId", async (req, res) => {
+    try {
+      const companyId = parseInt(req.params.companyId);
+      if (isNaN(companyId)) return res.status(400).json({ error: "companyId inválido" });
+
+      const validated = await resolveAndValidateCompanyId(req, res, companyId);
+      if (!validated) return;
+
+      const { error } = await supabaseBackend
+        .from("oil_change_alert_log")
+        .update({ lido: true })
+        .eq("company_id", validated)
+        .eq("lido", false);
+
+      if (error) return res.status(500).json({ error: error.message });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   startGroupSummaryCron();

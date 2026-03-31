@@ -118,6 +118,23 @@ export async function checkAndSendOilChangeAlerts(filterCompanyId?: number): Pro
         const placa = (veiculoData?.placa || '').toUpperCase() || null;
         const status = kmRestante <= 0 ? 'Vencido' : 'Atenção';
 
+        // Idempotency: skip if an unread alert for this vehicle was created in the last 24 hours
+        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data: recentAlert } = await supabase
+          .from('oil_change_alert_log')
+          .select('id')
+          .eq('company_id', record.company_id)
+          .eq('veiculo_id', record.veiculo_id)
+          .eq('lido', false)
+          .gte('created_at', cutoff)
+          .limit(1)
+          .single();
+
+        if (recentAlert) {
+          result.skipped++;
+          continue;
+        }
+
         // Insert in-app alert log instead of sending WhatsApp
         const { error: insertErr } = await supabase
           .from('oil_change_alert_log')

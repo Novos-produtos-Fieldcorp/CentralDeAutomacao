@@ -239,15 +239,9 @@ const ChecklistTrocaOleo = () => {
     queryKey: ['/api/oil-change-alerts', numericCompanyId],
     queryFn: async () => {
       if (!numericCompanyId) return [];
-      const { data, error } = await supabase
-        .from('oil_change_alert_log')
-        .select('*')
-        .eq('company_id', numericCompanyId)
-        .eq('lido', false)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data || [];
+      const res = await trocaOleoRequest(`/api/troca-oleo/alertas/${numericCompanyId}`);
+      if (!res.ok) return [];
+      return res.json();
     },
     enabled: !!numericCompanyId,
   });
@@ -329,11 +323,8 @@ const ChecklistTrocaOleo = () => {
 
   const markAlertReadMutation = useMutation({
     mutationFn: async (alertId: number) => {
-      const { error } = await supabase
-        .from('oil_change_alert_log')
-        .update({ lido: true })
-        .eq('id', alertId);
-      if (error) throw error;
+      const res = await trocaOleoRequest(`/api/troca-oleo/alertas/${alertId}/ler`, { method: 'PATCH' });
+      if (!res.ok) throw new Error('Erro ao marcar alerta como lido');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/oil-change-alerts', numericCompanyId] });
@@ -342,12 +333,8 @@ const ChecklistTrocaOleo = () => {
 
   const markAllAlertsReadMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from('oil_change_alert_log')
-        .update({ lido: true })
-        .eq('company_id', numericCompanyId!)
-        .eq('lido', false);
-      if (error) throw error;
+      const res = await trocaOleoRequest(`/api/troca-oleo/alertas/lerTodos/${numericCompanyId}`, { method: 'POST' });
+      if (!res.ok) throw new Error('Erro ao marcar alertas como lidos');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/oil-change-alerts', numericCompanyId] });
