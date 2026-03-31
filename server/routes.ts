@@ -6412,7 +6412,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
 
       const { data, error } = await supabaseBackend
         .from("veiculo")
-        .select("veiculo_id, placa, marca_veiculo")
+        .select("veiculo_id, placa, marca")
         .in("motorista_id", motoristaIds)
         .eq("status_veiculo", true);
 
@@ -6446,7 +6446,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
       const enriched = await Promise.all((records || []).map(async (r: any) => {
         const { data: vData } = await supabaseBackend
           .from("veiculo")
-          .select("placa, marca_veiculo, motorista_id")
+          .select("placa, marca, motorista_id")
           .eq("veiculo_id", r.veiculo_id)
           .single();
 
@@ -6512,7 +6512,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
         return {
           ...r,
           placa: vData?.placa || null,
-          marca_veiculo: vData?.marca_veiculo || null,
+          marca_veiculo: vData?.marca || null,
           motorista_nome,
           motorista_telefone,
           km_atual,
