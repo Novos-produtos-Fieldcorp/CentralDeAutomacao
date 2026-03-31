@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useLocation, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { ClipboardCheck, Calendar, LayoutDashboard, Wrench, Lock, ChevronRight } from 'lucide-react';
+import { ClipboardCheck, Calendar, LayoutDashboard, Wrench, Lock, ChevronRight, Droplets } from 'lucide-react';
 import ChecklistSemanal from './checklist/ChecklistSemanal';
 import ChecklistMensal from './checklist/ChecklistMensal';
 import ChecklistDashboard from './checklist/ChecklistDashboard';
 import ChecklistInfiniteList from './checklist/ChecklistInfiniteList';
 import ChecklistManutencao from './checklist/ChecklistManutencao';
+import ChecklistTrocaOleo from './checklist/ChecklistTrocaOleo';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 
 const Checklist = () => {
@@ -69,6 +70,12 @@ const Checklist = () => {
       icon: Wrench, 
       label: 'Manutenção',
       description: 'Alertas e gestão de manutenções dos veículos'
+    },
+    {
+      path: '/checklist/troca-oleo',
+      icon: Droplets,
+      label: 'Troca de Óleo',
+      description: 'Alertas automáticos de troca de óleo por quilometragem'
     }
   ];
 
@@ -131,6 +138,7 @@ const Checklist = () => {
             <Route path="infinito" element={<Navigate to="/checklist/mensal\" replace />} />
             <Route path="dashboard" element={<ChecklistDashboard />} />
             <Route path="manutencao" element={<ChecklistManutencao />} />
+            <Route path="troca-oleo" element={<ChecklistTrocaOleo />} />
           </Routes>
         </div>
       </div>

@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { corsMiddleware } from "./cors-middleware";
+import { startOilChangeCron } from "./cron/oilChangeCron";
 
 // Declaração para process global do Node.js
 declare const process: {
@@ -122,6 +123,8 @@ app.use((req, res, next) => {
   
   const server = await registerRoutes(app);
   console.log('✅ Rotas registradas com sucesso');
+
+  startOilChangeCron();
 
   // Sistema de error handling robusto com fallbacks
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {

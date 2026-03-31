@@ -6343,6 +6343,306 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     }
   });
 
+  // Helper: authenticate oil-change requests by validating the wiseapp-token stored in
+  // the database (wiseapp_acesso table) and confirming it maps to the claimed company.
+  // wiseapp-token is required — no fallback to client-controlled headers.
+  async function resolveAndValidateCompanyId(
+    req: any,
+    res: any,
+    paramCompanyId: number
+  ): Promise<number | null> {
+    const wiseappToken = req.header('wiseapp-token') as string | undefined;
+
+    if (!wiseappToken) {
+      res.status(401).json({ error: "wiseapp-token header é obrigatório" });
+      return null;
+    }
+
+    // Look up token in wiseapp_acesso table to get id_conta_wiseapp
+    const { data: acesso, error: acessoErr } = await supabaseBackend
+      .from("wiseapp_acesso")
+      .select("id_conta_wiseapp")
+      .eq("access_token_wiseapp", wiseappToken)
+      .limit(1);
+
+    if (acessoErr || !acesso || acesso.length === 0) {
+      res.status(401).json({ error: "Token de acesso inválido ou expirado" });
+      return null;
+    }
+
+    // Map id_conta_wiseapp → company_id
+    const idContaWiseapp = acesso[0].id_conta_wiseapp;
+    const { data: companies, error: companyErr } = await supabaseBackend
+      .from("company")
+      .select("company_id")
+      .eq("id_conta_wiseapp", idContaWiseapp)
+      .limit(1);
+
+    if (companyErr || !companies || companies.length === 0) {
+      res.status(401).json({ error: "Empresa associada ao token não encontrada" });
+      return null;
+    }
+
+    const tokenCompanyId: number = companies[0].company_id;
+    if (tokenCompanyId !== paramCompanyId) {
+      res.status(403).json({ error: "Acesso negado a este recurso" });
+      return null;
+    }
+    return tokenCompanyId;
+  }
+
+  // GET /api/veiculos-empresa/:companyId — list vehicles for a company
+  app.get("/api/veiculos-empresa/:companyId", async (req, res) => {
+    try {
+      const companyId = parseInt(req.params.companyId);
+      if (isNaN(companyId)) return res.status(400).json({ error: "companyId inválido" });
+
+      const validated = await resolveAndValidateCompanyId(req, res, companyId);
+      if (!validated) return;
+
+      const { data: motoristas, error: motoristasError } = await supabaseBackend
+        .from("motorista")
+        .select("motorista_id")
+        .eq("company_id", companyId);
+
+      if (motoristasError) return res.status(500).json({ error: motoristasError.message });
+
+      const motoristaIds = (motoristas || []).map((m: any) => m.motorista_id);
+      if (motoristaIds.length === 0) return res.json([]);
+
+      const { data, error } = await supabaseBackend
+        .from("veiculo")
+        .select("veiculo_id, placa, marca_veiculo")
+        .in("motorista_id", motoristaIds)
+        .eq("status_veiculo", true);
+
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ============================================================
+  // Troca de Óleo routes
+  // ============================================================
+
+  // GET /api/troca-oleo/:companyId — list all aviso_troca_oleo for a company, enriched
+  app.get("/api/troca-oleo/:companyId", async (req, res) => {
+    try {
+      const companyId = parseInt(req.params.companyId);
+      if (isNaN(companyId)) return res.status(400).json({ error: "companyId inválido" });
+
+      const validated = await resolveAndValidateCompanyId(req, res, companyId);
+      if (!validated) return;
+
+      const { data: records, error } = await supabaseBackend
+        .from("aviso_troca_oleo")
+        .select("*")
+        .eq("company_id", companyId);
+
+      if (error) return res.status(500).json({ error: error.message });
+
+      const enriched = await Promise.all((records || []).map(async (r: any) => {
+        const { data: vData } = await supabaseBackend
+          .from("veiculo")
+          .select("placa, marca_veiculo, motorista_id")
+          .eq("veiculo_id", r.veiculo_id)
+          .single();
+
+        let km_atual: number | null = null;
+        const { data: hodData } = await supabaseBackend
+          .from("hodometro")
+          .select("hod_informado")
+          .eq("veiculo_id", r.veiculo_id)
+          .order("hod_informado", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (hodData?.hod_informado != null) {
+          km_atual = parseFloat(hodData.hod_informado);
+        }
+
+        let motorista_nome: string | null = null;
+        let motorista_telefone: string | null = null;
+        if (vData?.motorista_id) {
+          const { data: mData } = await supabaseBackend
+            .from("motorista")
+            .select("nome, telefone")
+            .eq("motorista_id", vData.motorista_id)
+            .single();
+          motorista_nome = mData?.nome || null;
+          motorista_telefone = mData?.telefone ? String(mData.telefone) : null;
+        }
+
+        const kmUltimaTroca = parseFloat(r.km_ultima_troca);
+        const kmProximaTroca = kmUltimaTroca + r.intervalo_km;
+        const kmRestante = km_atual !== null ? kmProximaTroca - km_atual : null;
+
+        let status: "OK" | "Atenção" | "Vencido" = "OK";
+        if (kmRestante !== null) {
+          if (kmRestante <= 0) status = "Vencido";
+          else if (kmRestante <= r.km_aviso_antecipado) status = "Atenção";
+          else status = "OK";
+        }
+
+        return {
+          ...r,
+          placa: vData?.placa || null,
+          marca_veiculo: vData?.marca_veiculo || null,
+          motorista_nome,
+          motorista_telefone,
+          km_atual,
+          km_proxima_troca: kmProximaTroca,
+          km_restante: kmRestante,
+          status,
+        };
+      }));
+
+      res.json(enriched);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/troca-oleo — create record
+  app.post("/api/troca-oleo", async (req, res) => {
+    try {
+      const { veiculo_id, company_id, intervalo_km, km_ultima_troca, km_aviso_antecipado } = req.body;
+      if (!veiculo_id || !company_id) return res.status(400).json({ error: "veiculo_id e company_id são obrigatórios" });
+
+      const validated = await resolveAndValidateCompanyId(req, res, parseInt(company_id));
+      if (!validated) return;
+
+      // Verify the vehicle belongs to the authenticated company (via motorista join)
+      const { data: veiculoData, error: veiculoErr } = await supabaseBackend
+        .from("veiculo")
+        .select("veiculo_id, motorista_id")
+        .eq("veiculo_id", veiculo_id)
+        .single();
+
+      if (veiculoErr || !veiculoData) {
+        return res.status(404).json({ error: "Veículo não encontrado" });
+      }
+
+      if (veiculoData.motorista_id) {
+        const { data: motoristaData, error: motoristaErr } = await supabaseBackend
+          .from("motorista")
+          .select("company_id")
+          .eq("motorista_id", veiculoData.motorista_id)
+          .single();
+
+        if (motoristaErr || !motoristaData || motoristaData.company_id !== validated) {
+          return res.status(403).json({ error: "Veículo não pertence a esta empresa" });
+        }
+      }
+
+      const { data, error } = await supabaseBackend
+        .from("aviso_troca_oleo")
+        .insert([{
+          veiculo_id,
+          company_id: validated,
+          intervalo_km: intervalo_km ?? 5000,
+          km_ultima_troca: String(km_ultima_troca ?? 0),
+          km_aviso_antecipado: km_aviso_antecipado ?? 500,
+          ativo: true,
+        }])
+        .select()
+        .single();
+
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PUT /api/troca-oleo/:id — update record
+  app.put("/api/troca-oleo/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "id inválido" });
+
+      // Fetch the record first to get company_id, then validate caller owns it
+      const { data: existing, error: fetchErr } = await supabaseBackend
+        .from("aviso_troca_oleo")
+        .select("company_id")
+        .eq("id", id)
+        .single();
+
+      if (fetchErr || !existing) return res.status(404).json({ error: "Registro não encontrado" });
+
+      const callerCompanyId = await resolveAndValidateCompanyId(req, res, existing.company_id);
+      if (!callerCompanyId) return;
+
+      const { intervalo_km, km_ultima_troca, km_aviso_antecipado, ativo } = req.body;
+      const updates: Record<string, any> = { updated_at: new Date().toISOString() };
+      if (intervalo_km !== undefined) updates.intervalo_km = intervalo_km;
+      if (km_ultima_troca !== undefined) updates.km_ultima_troca = String(km_ultima_troca);
+      if (km_aviso_antecipado !== undefined) updates.km_aviso_antecipado = km_aviso_antecipado;
+      if (ativo !== undefined) updates.ativo = ativo;
+
+      const { data, error } = await supabaseBackend
+        .from("aviso_troca_oleo")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // DELETE /api/troca-oleo/:id
+  app.delete("/api/troca-oleo/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ error: "id inválido" });
+
+      // Fetch the record first to get company_id, then validate caller owns it
+      const { data: existing, error: fetchErr } = await supabaseBackend
+        .from("aviso_troca_oleo")
+        .select("company_id")
+        .eq("id", id)
+        .single();
+
+      if (fetchErr || !existing) return res.status(404).json({ error: "Registro não encontrado" });
+
+      const callerCompanyId = await resolveAndValidateCompanyId(req, res, existing.company_id);
+      if (!callerCompanyId) return;
+
+      const { error } = await supabaseBackend
+        .from("aviso_troca_oleo")
+        .delete()
+        .eq("id", id);
+
+      if (error) return res.status(500).json({ error: error.message });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/troca-oleo/verificar/:companyId — manually trigger alerts
+  app.post("/api/troca-oleo/verificar/:companyId", async (req, res) => {
+    try {
+      const companyId = parseInt(req.params.companyId);
+      if (isNaN(companyId)) return res.status(400).json({ error: "companyId inválido" });
+
+      const validated = await resolveAndValidateCompanyId(req, res, companyId);
+      if (!validated) return;
+
+      const { checkAndSendOilChangeAlerts } = await import("./cron/oilChangeCron");
+      const result = await checkAndSendOilChangeAlerts(validated);
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   startGroupSummaryCron();

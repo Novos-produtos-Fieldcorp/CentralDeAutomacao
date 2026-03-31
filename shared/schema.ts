@@ -697,6 +697,29 @@ export const insertEndVagaSchema = createInsertSchema(end_vaga).omit({
   created_at: true,
 });
 
+// Aviso Troca de Óleo table
+export const aviso_troca_oleo = pgTable("aviso_troca_oleo", {
+  id: serial("id").primaryKey(),
+  veiculo_id: integer("veiculo_id").notNull().references(() => veiculo.veiculo_id),
+  company_id: integer("company_id").notNull().references(() => company.company_id),
+  intervalo_km: integer("intervalo_km").notNull().default(5000),
+  km_ultima_troca: numeric("km_ultima_troca").notNull().default("0"),
+  km_aviso_antecipado: integer("km_aviso_antecipado").notNull().default(500),
+  ativo: boolean("ativo").notNull().default(true),
+  ultimo_aviso_km: numeric("ultimo_aviso_km"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAvisoTrocaOleoSchema = createInsertSchema(aviso_troca_oleo).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export type AvisoTrocaOleo = typeof aviso_troca_oleo.$inferSelect;
+export type InsertAvisoTrocaOleo = z.infer<typeof insertAvisoTrocaOleoSchema>;
+
 // WiseApp Access table
 export const wiseapp_acesso = pgTable("wiseapp_acesso", {
   wiseapp_acesso_id: serial("wiseapp_acesso_id").primaryKey(),
