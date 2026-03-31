@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { useCurrentAccount } from '@/hooks/useCurrentAccount';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
 import { Droplets, Pencil, Trash2, Plus, AlertTriangle, CheckCircle2, Loader2, RefreshCw, ExternalLink, Gauge } from 'lucide-react';
 import toast from 'react-hot-toast';
