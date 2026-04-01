@@ -1,0 +1,49 @@
+VM130 dashboard:416 🔄 Rota mudou - Account ID: null → 6
+user-guiding-ZQE100070ZVAID-embedded.js:2 [UserGuiding INFO] 
+
+Please check this article https://help.userguiding.com/en/articles/2722978-mau-quota and take the recommended measures. 
+
+*Submit a ticket using the link below if you think this is a bug
+https://desk.zoho.com/portal/userguiding/newticket
+centralautomacoes.netlify.app/.netlify/scripts/rum:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1176 Hybrid API Configuration: Object
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1175 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+Q2 @ index-Bg0r8I5I.js:1175
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 🔍 [WiseAppAccess] Account ID (mount/URL): 6 (mount: 6 )
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 6
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 📊 [WiseAppAccess] Resultado da busca da empresa: Object
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 ✅ [WiseAppAccess] Empresa encontrada: Object
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 📧 [WiseAppAccess] Mostrando modal de autenticação (e-mail obrigatório)
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1530 Dashboard data loaded: Object
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 🔍 Token encontrado para email, validando antes de usar... 6
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 ✅ Token válido, usando sessão existente
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 📧 [WiseAppAccess] Token salvo para email, usando accountId: 6 (do email: 6 , fallback: 6 )
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 🔄 [WiseAppAccess] Atualizando sessão: Object
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 🔄 [WiseAppAccess] Sincronizando companyId com AuthContext: 1 accountId: 6
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1176 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 1
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 🔍 [WiseAppAccess] Já verificado nesta sessão...
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 ✅ [WiseAppAccess] Sessão válida com email: gabriel.mauro@fieldcorp.com.br
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 🔍 [WiseAppAccess] Já verificado nesta sessão...
+centralautomacoes.netlify.app/assets/index-Bg0r8I5I.js:1181 ✅ [WiseAppAccess] Sessão válida com email: gabriel.mauro@fieldcorp.com.br
+index-Bg0r8I5I.js:2110 Criando tag com dados: {nome: '4123421', cor: '#3B82F6', limite_max: null, company_id: 1}
+?account_id=6:60  GET https://centralautomacoes.netlify.app/.netlify/scripts/rum net::ERR_BLOCKED_BY_CLIENT
+index-Bg0r8I5I.js:1176 Hybrid API Configuration: {hostname: 'centralautomacoes.netlify.app', environment: 'Netlify (Supabase Functions)', apiBaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api', supabaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co', hasAnonKey: true, …}
+index-Bg0r8I5I.js:1175 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+Q2 @ index-Bg0r8I5I.js:1175
+Lke @ index-Bg0r8I5I.js:1176
+_initSupabaseAuthClient @ index-Bg0r8I5I.js:1176
+Uke @ index-Bg0r8I5I.js:1176
+Ine @ index-Bg0r8I5I.js:1176
+(anonymous) @ index-Bg0r8I5I.js:1176
+index-Bg0r8I5I.js:1181 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-Bg0r8I5I.js:1181 🔍 [WiseAppAccess] Account ID (mount/URL): 6 (mount: 6 )
+index-Bg0r8I5I.js:1181 ✅ [WiseAppAccess] Sessão válida encontrada para: gabriel.mauro@fieldcorp.com.br accountId: 6
+index-Bg0r8I5I.js:1181 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 1 accountId: 6
+index-Bg0r8I5I.js:1176 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 1
+index-Bg0r8I5I.js:1530 Dashboard data loaded: {agregados: 138, motoristas: 618, contratados: 77, totalVagas: 1, vagasAbertas: 0, …}
+index-Bg0r8I5I.js:1181 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-Bg0r8I5I.js:1181 🔍 [WiseAppAccess] Já verificado nesta sessão...
+index-Bg0r8I5I.js:1181 ✅ [WiseAppAccess] Sessão válida com email: gabriel.mauro@fieldcorp.com.br
