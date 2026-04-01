@@ -141,9 +141,83 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
     },
   });
 
+  // Atualizar label no WiseApp: busca o ID pelo nome atual, depois faz PATCH
+  const updateWiseAppTag = async (oldNome: string, updates: { nome?: string; cor?: string }) => {
+    if (!accountId || !wiseAppToken) return;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const labelsResponse = await fetch(createApiUrl(`wiseapp/${accountId}/labels`), {
+        method: 'GET',
+        headers: getSupabaseEdgeFunctionHeaders({
+          'wiseapp-token': wiseAppToken,
+          'wiseapp-account-id': accountId
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!labelsResponse.ok) {
+        console.warn('[updateWiseAppTag] Erro ao buscar labels:', labelsResponse.status);
+        return;
+      }
+
+      const labels = await labelsResponse.json();
+      const wiseAppLabel = labels.find(
+        (label: any) => (label.name || label.title || '').toLowerCase() === oldNome.toLowerCase()
+      );
+
+      if (!wiseAppLabel) {
+        console.warn('[updateWiseAppTag] Label não encontrada no WiseApp:', oldNome);
+        return;
+      }
+
+      const patchController = new AbortController();
+      const patchTimeoutId = setTimeout(() => patchController.abort(), 10000);
+
+      const patchResponse = await fetch(
+        createApiUrl(`wiseapp/${accountId}/labels/${wiseAppLabel.id}`),
+        {
+          method: 'PATCH',
+          headers: getSupabaseEdgeFunctionHeaders({
+            'wiseapp-token': wiseAppToken,
+            'wiseapp-account-id': accountId
+          }),
+          body: JSON.stringify({
+            title: updates.nome ?? oldNome,
+            color: updates.cor,
+            description: updates.nome ?? oldNome,
+            show_on_sidebar: true
+          }),
+          signal: patchController.signal
+        }
+      );
+
+      clearTimeout(patchTimeoutId);
+
+      if (!patchResponse.ok) {
+        const errorText = await patchResponse.text();
+        console.warn('[updateWiseAppTag] Erro ao atualizar label:', patchResponse.status, errorText);
+      } else {
+        console.log('[updateWiseAppTag] Label atualizada no WiseApp com sucesso');
+      }
+    } catch (error) {
+      console.warn('[updateWiseAppTag] Erro (não crítico):', error);
+    }
+  };
+
   // Mutation para atualizar tag
   const updateTagMutation = useMutation({
-    mutationFn: async ({ tagId, updates }: { tagId: number; updates: Partial<Tag> }) => {
+    mutationFn: async ({ tagId, updates, oldNome }: { tagId: number; updates: Partial<Tag>; oldNome: string }) => {
+      // 1. Atualizar no WiseApp primeiro (não bloqueia em caso de falha)
+      if (accountId && wiseAppToken) {
+        await updateWiseAppTag(oldNome, { nome: updates.nome, cor: updates.cor });
+      }
+
+      // 2. Atualizar localmente no Supabase
       const { data, error } = await supabase
         .from('tag')
         .update({
@@ -159,11 +233,10 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
       return data[0];
     },
     onSuccess: () => {
-      // Invalidar todas as queries relacionadas a tags
       queryClient.invalidateQueries({ queryKey: ['local-tags', companyId] });
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       queryClient.invalidateQueries({ queryKey: ['all-tags'] });
-      toast.success("Marcador atualizado com sucesso!");
+      toast.success("Marcador atualizado no WiseApp e localmente!");
       setIsEditModalOpen(false);
       setEditingTag(null);
     },
@@ -462,7 +535,7 @@ export function TagAdministration({ companyId }: TagAdministrationProps) {
 
   const handleUpdateTag = (updates: Partial<Tag>) => {
     if (editingTag) {
-      updateTagMutation.mutate({ tagId: editingTag.id, updates });
+      updateTagMutation.mutate({ tagId: editingTag.id, updates, oldNome: editingTag.nome });
     }
   };
 

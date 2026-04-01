@@ -905,6 +905,83 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
     }
   }
 
+  // Update (PATCH) WiseApp label
+  if (path.match(/^\/wiseapp\/(\d+)\/labels\/(\d+)$/) && method === 'PATCH') {
+    const match = path.match(/^\/wiseapp\/(\d+)\/labels\/(\d+)$/)
+    const accountId = match![1]
+    const labelId = match![2]
+
+    console.log('Debug: Atualizando label', labelId, 'para account_id:', accountId);
+
+    const freshToken = await fetchFreshToken(supabase, accountId);
+    if (!freshToken) {
+      return new Response(JSON.stringify({
+        error: 'Token WiseApp não configurado para esta empresa',
+        details: 'Nenhum token encontrado'
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    let parsedBody: any = {};
+    try {
+      parsedBody = await req.json();
+    } catch (_) {}
+
+    const labelName = parsedBody.title || parsedBody.name || parsedBody.nome;
+    const labelColor = parsedBody.color || parsedBody.cor;
+
+    const updatePayload: any = {};
+    if (labelName !== undefined) updatePayload.title = labelName;
+    if (labelColor !== undefined) updatePayload.color = labelColor;
+    if (parsedBody.description !== undefined) updatePayload.description = parsedBody.description;
+    if (parsedBody.show_on_sidebar !== undefined) updatePayload.show_on_sidebar = parsedBody.show_on_sidebar;
+
+    const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels/${labelId}`;
+
+    try {
+      const response = await wiseAppFetchWithRetry(
+        supabase,
+        accountId,
+        wiseAppUrl,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatePayload)
+        },
+        freshToken.token
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`Debug: Update label failed with status ${response.status}: ${errorText}`);
+        return new Response(JSON.stringify({
+          error: `WiseApp API error: ${response.status}`,
+          details: errorText
+        }), {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      const data = await response.json();
+      console.log('Debug: Label updated successfully');
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'Erro ao atualizar label no WiseApp',
+        details: error.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
   // Delete WiseApp label
   if (path.match(/^\/wiseapp\/(\d+)\/labels\/(\d+)$/) && method === 'DELETE') {
     const match = path.match(/^\/wiseapp\/(\d+)\/labels\/(\d+)$/)

@@ -1,9 +1,16 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, MapIcon, Filter, Search, RefreshCw, ChevronDown, User, Truck, X, Clock, MapPin, Car, Package, FileText, TrendingUp, Image, Ship, Building, CheckCircle, XCircle, Moon, Calendar, Phone, DollarSign, Hash, Navigation, Check, Layers, Factory, Container, Boxes, Wallet, Settings, Edit, Save, Loader2, Plus, Trash2, Beef, BarChart3, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react';
+import { exportRelatorioMotorista, exportRelatorioCliente, exportRelatorioPlacaDiario, exportRelatorioPlacaMensal, type RelatorioRow, type PeriodoFechamento } from '../utils/exportRelatorioFechamento';
+import toast from 'react-hot-toast';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ptBR } from 'date-fns/locale';
+registerLocale('pt-BR', ptBR);
+import { useTheme } from '../context/ThemeContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, LabelList } from 'recharts';
-import { useState as useStateReact } from 'react';
+
 import { supabase } from '../lib/supabase';
 import { API_BASE_URL, supabaseAnonKey } from '@/lib/api-config-supabase';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
@@ -1196,7 +1203,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Viagens</span>
             <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-              <Map className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <MapIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
           <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{viagensStats?.total || 0}</p>
@@ -1324,7 +1331,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
                 </div>
               ) : viagensDetalhadas.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                  <Map className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <MapIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>Nenhuma viagem encontrada</p>
                 </div>
               ) : (
@@ -1491,7 +1498,7 @@ const OperacoesDashboard = ({ selectedOperacao }: { selectedOperacao: string }) 
             if (totalViagens === 0) {
               return (
                 <EmptyState
-                  icon={Map}
+                  icon={MapIcon}
                   title="Nenhuma viagem no período"
                   subtitle="Selecione um período diferente ou verifique os filtros aplicados"
                 />
@@ -3198,10 +3205,17 @@ const VammoDashboard = ({ companyId }: { companyId: number }) => {
   );
 };
 
+interface TrocaOleoStatus {
+  placa: string | null;
+  status: 'OK' | 'Atenção' | 'Vencido';
+}
+
 const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedOperacao: string; setSelectedOperacao: (op: string) => void }) => {
   const { companyId } = useCurrentAccount();
+  const location = useLocation();
+  const initialPlaca = new URLSearchParams(location.search).get('placa') || '';
   const [selectedMotorista, setSelectedMotorista] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialPlaca);
   const [dataInicio, setDataInicio] = useState<string>('');
   const [dataFim, setDataFim] = useState<string>('');
   const [isMotoristaDropdownOpen, setIsMotoristaDropdownOpen] = useState(false);
@@ -3304,6 +3318,40 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
     refetchInterval: 30000,
     staleTime: 10000,
   });
+
+  const { data: trocaOleoList = [] } = useQuery<TrocaOleoStatus[]>({
+    queryKey: ['troca-oleo-status', companyId],
+    queryFn: async () => {
+      if (!companyId) return [];
+      const wiseappToken = (() => {
+        try {
+          const session = localStorage.getItem('wiseapp_session');
+          if (!session) return null;
+          const parsed = JSON.parse(session);
+          if (Date.now() > parsed.expiresAt) return null;
+          return parsed.token || null;
+        } catch { return null; }
+      })();
+      const res = await fetch(`/api/troca-oleo/${companyId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(wiseappToken ? { 'wiseapp-token': wiseappToken } : {}),
+        },
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!companyId,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const trocaOleoMap = useMemo(() => {
+    const map = new Map<string, 'OK' | 'Atenção' | 'Vencido'>();
+    trocaOleoList.forEach(item => {
+      if (item.placa) map.set(item.placa.toUpperCase(), item.status);
+    });
+    return map;
+  }, [trocaOleoList]);
 
   const { data: operacoesData = {} } = useQuery({
     queryKey: ['operacoes-viagens-data', viagens.map(v => v.id).join(',')],
@@ -3621,7 +3669,28 @@ const OperacoesViagens = ({ selectedOperacao, setSelectedOperacao }: { selectedO
                       )}
                     </td>
                     <td className="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-300">{viagem.motorista_nome || '-'}</td>
-                    <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">{viagem.veiculo_placa || '-'}</td>
+                    <td className="px-4 py-3.5 text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center gap-1.5">
+                        <span>{viagem.veiculo_placa || '-'}</span>
+                        {viagem.veiculo_placa && (() => {
+                          const oilStatus = trocaOleoMap.get(viagem.veiculo_placa.toUpperCase());
+                          if (oilStatus === 'Atenção' || oilStatus === 'Vencido') {
+                            return (
+                              <Link
+                                to="/checklist/troca-oleo"
+                                data-testid={`link-oleo-viagem-${viagem.id}`}
+                                title={`Óleo: ${oilStatus} — Ver troca de óleo`}
+                                onClick={(e) => e.stopPropagation()}
+                                className={`flex-shrink-0 ${oilStatus === 'Vencido' ? 'text-red-500 hover:text-red-700' : 'text-yellow-500 hover:text-yellow-700'}`}
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                              </Link>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    </td>
                     <td className="px-4 py-3.5 text-sm text-gray-600 dark:text-gray-300">
                       {viagem.operacao_dados?.origem || '-'}
                     </td>
@@ -3744,15 +3813,35 @@ interface FaturamentoCesari {
 // Componente Financeiro - Lista de viagens com cálculo de faturamento
 const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string }) => {
   const { companyId } = useCurrentAccount();
+  const { isDark } = useTheme();
   const [filtroPeriodo, setFiltroPeriodo] = useState<'15' | '30' | 'custom'>('30');
   const [isDateFilterExpanded, setIsDateFilterExpanded] = useState(false);
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportLoading, setExportLoading] = useState<string | null>(null);
+
+  // Query para buscar nome da empresa para o cabeçalho do relatório
+  const { data: nomeEmpresa = '' } = useQuery({
+    queryKey: ['company-nome', companyId],
+    queryFn: async () => {
+      if (!companyId) return '';
+      const { data, error } = await supabase
+        .from('company')
+        .select('nome_company')
+        .eq('company_id', companyId)
+        .single();
+      if (error || !data) return '';
+      const row = data as { nome_company: string | null };
+      return row.nome_company || '';
+    },
+    enabled: !!companyId,
+  });
 
   // Função para filtrar viagens por período (usada por todas as operações)
-  const filtrarPorPeriodo = (viagens: any[]) => {
+  const filtrarPorPeriodo = <T extends { data_viagem: string | null | undefined }>(viagens: T[]): T[] => {
     const agora = new Date();
-    return viagens.filter((v: any) => {
+    return viagens.filter((v) => {
       const dataViagem = v.data_viagem ? new Date(v.data_viagem) : null;
       if (!dataViagem) return false;
       
@@ -3860,6 +3949,16 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       const motoristasMap: Record<number, string> = {};
       (motoristasData || []).forEach((m: any) => { motoristasMap[m.motorista_id] = m.nome; });
 
+      const veiculoIdsSada = [...new Set(viagensEmpresa.map((v: any) => v.veiculo_id).filter(Boolean))];
+      const veiculosMapSada: Record<number, string> = {};
+      if (veiculoIdsSada.length > 0) {
+        const { data: veiculosDataSada } = await supabase
+          .from('veiculo')
+          .select('veiculo_id, placa')
+          .in('veiculo_id', veiculoIdsSada);
+        (veiculosDataSada || []).forEach((v: any) => { veiculosMapSada[v.veiculo_id] = v.placa; });
+      }
+
       const viagensComModelo = opData
         .filter((op: any) => op.modelo)
         .map((op: any) => ({ id_operacao: op.id_operacao, modelo: op.modelo }));
@@ -3885,6 +3984,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
           ...op,
           data_viagem: viagem?.data_hora_inicial,
           motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+          placa_veiculo: viagem ? veiculosMapSada[viagem.veiculo_id] || 'Sem placa' : 'Sem placa',
           qtd_mitsubishi: mitsubishiMap[op.id_operacao] ?? 0,
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
@@ -3924,6 +4024,16 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
       motoristasData?.forEach((m: any) => {
         motoristasMap[m.motorista_id] = m.nome;
       });
+
+      const veiculoIdsSuper = [...new Set(viagensEmpresa.map((v: any) => v.veiculo_id).filter(Boolean))];
+      const veiculosMapSuper: Record<number, string> = {};
+      if (veiculoIdsSuper.length > 0) {
+        const { data: veiculosDataSuper } = await supabase
+          .from('veiculo')
+          .select('veiculo_id, placa')
+          .in('veiculo_id', veiculoIdsSuper);
+        (veiculosDataSuper || []).forEach((v: any) => { veiculosMapSuper[v.veiculo_id] = v.placa; });
+      }
       
       return opData.map((op: any) => {
         const viagem = viagensEmpresa.find((v: any) => v.id === op.id_viagem);
@@ -3931,6 +4041,7 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
           ...op,
           data_viagem: viagem?.data_hora_inicial,
           motorista_nome: viagem ? motoristasMap[viagem.motorista_id] || 'Desconhecido' : 'Desconhecido',
+          placa_veiculo: viagem ? veiculosMapSuper[viagem.veiculo_id] || 'Sem placa' : 'Sem placa',
         };
       }).sort((a: any, b: any) => new Date(b.data_viagem || 0).getTime() - new Date(a.data_viagem || 0).getTime());
     },
@@ -4150,6 +4261,327 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
     }
     return 0;
   };
+
+  // Per-operation trip shapes — typed to match the shapes returned by the query functions above
+  interface TripSada {
+    motorista_nome: string;
+    data_viagem: string;
+    modelo: string | null;
+    qtd_carros: number | null;
+    qtd_mitsubishi: number;
+    tipo_carreta: number | null;
+    origem: string | null;
+    destino: string | null;
+    placa_veiculo?: string;
+  }
+  interface TripSuperterminais {
+    motorista_nome: string;
+    data_viagem: string;
+    nome_navio: string | null;
+    embarque_desembarque: string | null;
+    placa_veiculo?: string;
+  }
+  interface TripMitsubishi {
+    motorista_nome: string;
+    data_viagem: string;
+    qtd_carro: number | null;
+    origem: string | null;
+    destino: string | null;
+    placa_veiculo?: string;
+  }
+  interface TripAutoservice {
+    motorista_nome: string;
+    data_viagem: string;
+    nome_cliente: string | null;
+    valor_frete: string | number | null;
+    origem: string | null;
+    destino: string | null;
+    placa_veiculo?: string;
+  }
+  interface TripTegma {
+    motorista: string | null;
+    nome_motorista: string | null;
+    data_viagem: string | null;
+    p2_data_hora: string | null;
+    created_at: string | null;
+    empresa: string | null;
+    tipo_viagem: string | null;
+    capacidade: number | null;
+    origem: string | null;
+    destino: string | null;
+    placa_veiculo?: string;
+  }
+  interface CesariPreco {
+    local: string;
+    tipo_carga: string;
+    sentido: string;
+    destino_especial: string | null;
+    valor_frete: string | number;
+    valor_pernoite: string | number;
+    comissao_pernoite_feriado_motorista: string | number;
+  }
+  interface TripCesari {
+    motorista_nome: string;
+    data_viagem: string;
+    tipo_viagem: string | null;
+    origem: string | null;
+    destino: string | null;
+    v2_origem: string | null;
+    v2_destino: string | null;
+    pernoite: boolean | null;
+    dia_nao_util: boolean | null;
+    placa_veiculo?: string;
+  }
+
+  // Normalized rows for all active operations — used by export handlers
+  const normalizedRows = useMemo<RelatorioRow[]>(() => {
+    const rows: RelatorioRow[] = [];
+
+    // SADA — filter rows missing required fields (motorista, data, pricing)
+    const sadaFiltradas = filtrarPorPeriodo(viagensSada as TripSada[]);
+    if (precosSada) {
+      sadaFiltradas.forEach((v) => {
+        if (!v.motorista_nome || !v.data_viagem) return;
+        const valorFrete = calcularValorFrete(v.modelo, v.qtd_carros, v.qtd_mitsubishi ?? 0);
+        const comissao = calcularComissao(v.tipo_carreta, v.modelo, v.qtd_carros, v.qtd_mitsubishi ?? 0);
+        if (valorFrete === 0) return;
+        const rota = [v.origem, v.destino].filter(Boolean).join(' → ') || (v.modelo || '-');
+        rows.push({
+          motoristaNome: v.motorista_nome,
+          clienteNome: 'SADA',
+          includeInClientReport: true,
+          operacaoTipo: 'SADA',
+          detalhe: rota,
+          dataViagem: v.data_viagem,
+          valorFrete,
+          comissaoMotorista: comissao,
+          placaVeiculo: v.placa_veiculo || 'Sem placa',
+        });
+      });
+    }
+
+    // SUPERTERMINAIS — filter rows missing required fields
+    // Not included in client report (no client relationship per spec)
+    const superFiltradas = filtrarPorPeriodo(viagensSuperterminais as TripSuperterminais[]);
+    const valorViagemSuper = precosSuperterminais?.ganho_por_viagem ?? 135;
+    const comissaoSuper = precosSuperterminais?.comissao_motorista ?? 10;
+    superFiltradas.forEach((v) => {
+      if (!v.motorista_nome || !v.data_viagem) return;
+      const navio = v.nome_navio ? `Navio: ${v.nome_navio}` : (v.embarque_desembarque || '-');
+      rows.push({
+        motoristaNome: v.motorista_nome,
+        clienteNome: 'Superterminais',
+        includeInClientReport: false,
+        operacaoTipo: 'Superterminais',
+        detalhe: navio,
+        dataViagem: v.data_viagem,
+        valorFrete: valorViagemSuper,
+        comissaoMotorista: comissaoSuper,
+        placaVeiculo: v.placa_veiculo || 'Sem placa',
+      });
+    });
+
+    // MITSUBISHI — filter rows missing required fields
+    // Not included in client report (no client relationship per spec)
+    const mitFiltradas = filtrarPorPeriodo(viagensMitsubishi as TripMitsubishi[]);
+    const precoPorVeiculo = parsePreco(precosMitsubishi?.preco_por_veiculo || '0');
+    const comissaoMit = parsePreco(precosMitsubishi?.comissao_motorista || '0');
+    if (precoPorVeiculo > 0) {
+      mitFiltradas.forEach((v) => {
+        if (!v.motorista_nome || !v.data_viagem) return;
+        const valorFrete = precoPorVeiculo * (v.qtd_carro || 0);
+        if (valorFrete === 0) return;
+        const rota = [v.origem, v.destino].filter(Boolean).join(' → ') || `${v.qtd_carro || 0} veículo(s)`;
+        rows.push({
+          motoristaNome: v.motorista_nome,
+          clienteNome: 'Mitsubishi',
+          includeInClientReport: false,
+          operacaoTipo: 'Mitsubishi',
+          detalhe: rota,
+          dataViagem: v.data_viagem,
+          valorFrete,
+          comissaoMotorista: comissaoMit,
+          placaVeiculo: v.placa_veiculo || 'Sem placa',
+        });
+      });
+    }
+
+    // AUTOSERVICE — filter rows missing required fields; uses per-trip nome_cliente
+    const autoFiltradas = filtrarPorPeriodo(viagensAutoservice as TripAutoservice[]);
+    const valorPorVeiculoAuto = precosAutoservice?.valor_por_veiculo ?? 0;
+    const comissaoAuto = precosAutoservice?.comissao_motorista ?? 0;
+    autoFiltradas.forEach((v) => {
+      if (!v.motorista_nome || !v.data_viagem) return;
+      const rawFrete = typeof v.valor_frete === 'string' ? parseFloat(v.valor_frete) : (v.valor_frete ?? NaN);
+      const valorFrete = Number.isFinite(rawFrete) && rawFrete > 0 ? rawFrete : valorPorVeiculoAuto;
+      if (valorFrete === 0) return;
+      const rota = [v.origem, v.destino].filter(Boolean).join(' → ') || '-';
+      rows.push({
+        motoristaNome: v.motorista_nome,
+        clienteNome: v.nome_cliente || 'Autoservice',
+        includeInClientReport: true,
+        operacaoTipo: 'Autoservice',
+        detalhe: rota,
+        dataViagem: v.data_viagem,
+        valorFrete,
+        comissaoMotorista: comissaoAuto,
+        placaVeiculo: v.placa_veiculo || 'Sem placa',
+      });
+    });
+
+    // TEGMA — filter rows missing required fields; uses per-trip empresa as client name
+    // Date normalized to (p2_data_hora || data_viagem || created_at) before period-filtering
+    const valorPorTrechoTegma = precosTegma?.valor_por_trecho ?? 500;
+    const comissaoVazia = precosTegma?.comissao_motorista_carreta_vazia ?? 15;
+    const comissaoCheia = precosTegma?.comissao_motorista_carreta_cheia ?? 20;
+    const tegmaComData = (viagensTegma as TripTegma[]).map((v) => ({
+      ...v,
+      data_viagem: v.p2_data_hora || v.data_viagem || v.created_at || null,
+    }));
+    const tegmaFiltradas = filtrarPorPeriodo(tegmaComData);
+    tegmaFiltradas.forEach((v) => {
+      const motoristaName = v.motorista || v.nome_motorista;
+      if (!motoristaName || !v.data_viagem) return;
+      const isCheia = v.tipo_viagem?.toLowerCase()?.includes('cheia') || v.capacidade === 1;
+      const comissao = isCheia ? comissaoCheia : comissaoVazia;
+      const rota = [v.origem, v.destino].filter(Boolean).join(' → ') || (v.tipo_viagem || '-');
+      rows.push({
+        motoristaNome: motoristaName,
+        clienteNome: v.empresa || 'Tegma',
+        includeInClientReport: true,
+        operacaoTipo: 'Tegma',
+        detalhe: rota,
+        dataViagem: v.data_viagem,
+        valorFrete: valorPorTrechoTegma,
+        comissaoMotorista: comissao,
+        placaVeiculo: v.placa_veiculo || 'Sem placa',
+      });
+    });
+
+    // CESARI — filter rows missing required fields; reuse pricing logic
+    const cesariFiltradas = filtrarPorPeriodo(viagensCesari as TripCesari[]);
+    const findPrecoMatchCesari = (
+      local: string,
+      tipoCarga: string,
+      sentido: string,
+      destinoEspecial: string | null
+    ): CesariPreco | null => {
+      return (precosCesari as CesariPreco[]).find((p) => {
+        if (p.local.toLowerCase() !== local.toLowerCase()) return false;
+        if (p.tipo_carga.toLowerCase() !== tipoCarga.toLowerCase()) return false;
+        if (p.sentido.toLowerCase() !== sentido.toLowerCase()) return false;
+        const pDest = (p.destino_especial || '').toLowerCase();
+        const qDest = (destinoEspecial || '').toLowerCase();
+        if (qDest && !pDest.includes(qDest)) return false;
+        if (!qDest && pDest) return false;
+        return true;
+      }) ?? null;
+    };
+    const inferLegCesari = (origem: string, destino: string) => {
+      const o = (origem || '').toLowerCase();
+      const d = (destino || '').toLowerCase();
+      const isTaboca = o.includes('taboca') || d.includes('taboca');
+      const local = isTaboca ? 'Taboca' : 'Porto';
+      const destinoEspecial = isTaboca ? 'Taboca' : null;
+      const sentidoIda = d.includes('taboca') || d.includes('porto') ? 'Volta' : 'Ida';
+      const actualSentido = o.includes('taboca') ? 'Volta' : (d.includes('taboca') ? 'Ida' : sentidoIda);
+      return { local, destinoEspecial, sentido: actualSentido };
+    };
+    if (precosCesari.length > 0) {
+      cesariFiltradas.forEach((viagem) => {
+        if (!viagem.motorista_nome || !viagem.data_viagem) return;
+        const tipoViagem = (viagem.tipo_viagem || '').toLowerCase();
+        const isSolteira = tipoViagem.includes('solteira');
+        let valorFrete = 0;
+        let comissao = 0;
+        let precoV1: CesariPreco | null = null;
+        if (isSolteira) {
+          const leg = inferLegCesari(viagem.origem || '', viagem.destino || '');
+          precoV1 = findPrecoMatchCesari(leg.local, 'Vazia', 'Ida/Volta', leg.destinoEspecial);
+          valorFrete = precoV1 ? Number(precoV1.valor_frete) : 0;
+          comissao = 250;
+        } else {
+          const leg1 = inferLegCesari(viagem.origem || '', viagem.destino || '');
+          precoV1 = findPrecoMatchCesari(leg1.local, 'Cheia', leg1.sentido, leg1.destinoEspecial)
+            || findPrecoMatchCesari(leg1.local, 'Vazia', leg1.sentido, leg1.destinoEspecial);
+          valorFrete = precoV1 ? Number(precoV1.valor_frete) : 0;
+          comissao = 300;
+          if (viagem.v2_origem || viagem.v2_destino) {
+            const leg2 = inferLegCesari(viagem.v2_origem || '', viagem.v2_destino || '');
+            const precoV2 = findPrecoMatchCesari(leg2.local, 'Vazia', leg2.sentido, leg2.destinoEspecial)
+              || findPrecoMatchCesari(leg2.local, 'Cheia', leg2.sentido, leg2.destinoEspecial);
+            valorFrete += precoV2 ? Number(precoV2.valor_frete) : 0;
+            comissao += 300;
+          }
+        }
+        if (viagem.pernoite) {
+          valorFrete += precoV1 ? Number(precoV1.valor_pernoite) : 450;
+          comissao += precoV1 ? Number(precoV1.comissao_pernoite_feriado_motorista) : 100;
+        }
+        if (viagem.dia_nao_util) {
+          comissao += precoV1 ? Number(precoV1.comissao_pernoite_feriado_motorista) : 100;
+        }
+        if (valorFrete === 0) return;
+        const rota = [viagem.origem, viagem.destino].filter(Boolean).join(' → ') || (viagem.tipo_viagem || '-');
+        rows.push({
+          motoristaNome: viagem.motorista_nome,
+          clienteNome: 'Cesari',
+          includeInClientReport: true,
+          operacaoTipo: 'Cesari',
+          detalhe: rota,
+          dataViagem: viagem.data_viagem,
+          valorFrete,
+          comissaoMotorista: comissao,
+          placaVeiculo: viagem.placa_veiculo || 'Sem placa',
+        });
+      });
+    }
+
+    return rows;
+  }, [
+    viagensSada, viagensSuperterminais, viagensMitsubishi, viagensAutoservice, viagensTegma, viagensCesari,
+    precosSada, precosSuperterminais, precosMitsubishi, precosAutoservice, precosTegma, precosCesari,
+    filtroPeriodo, dataInicio, dataFim,
+  ]);
+
+  const periodoAtual = useMemo<PeriodoFechamento>(() => {
+    if (filtroPeriodo === 'custom') {
+      return { label: 'Personalizado', dataInicio, dataFim };
+    }
+    const agora = new Date();
+    const dias = filtroPeriodo === '15' ? 15 : 30;
+    const inicio = new Date(agora.getTime() - dias * 24 * 60 * 60 * 1000);
+    return {
+      label: `Últimos ${dias} dias`,
+      dataInicio: inicio.toISOString().split('T')[0],
+      dataFim: agora.toISOString().split('T')[0],
+    };
+  }, [filtroPeriodo, dataInicio, dataFim]);
+
+  const handleExport = useCallback(async (type: 'motorista' | 'cliente' | 'placa-diario' | 'placa-mensal', format: 'pdf' | 'excel') => {
+    const key = `${type}-${format}`;
+    setExportLoading(key);
+    try {
+      const companyName = nomeEmpresa || 'Relatório de Fechamento';
+      if (type === 'motorista') {
+        exportRelatorioMotorista(normalizedRows, periodoAtual, companyName, format);
+      } else if (type === 'cliente') {
+        exportRelatorioCliente(normalizedRows, periodoAtual, companyName, format);
+      } else if (type === 'placa-diario') {
+        exportRelatorioPlacaDiario(normalizedRows, periodoAtual, companyName, format);
+      } else {
+        exportRelatorioPlacaMensal(normalizedRows, periodoAtual, companyName, format);
+      }
+      const label = type === 'motorista' ? 'Por Motorista' : type === 'cliente' ? 'Por Cliente' : type === 'placa-diario' ? 'Diário por Placa' : 'Mensal por Placa';
+      const ext = format === 'pdf' ? 'PDF' : 'Excel';
+      toast.success(`Relatório ${label} exportado em ${ext}!`);
+    } catch (err) {
+      console.error('Erro ao exportar:', err);
+      toast.error('Erro ao gerar o relatório. Tente novamente.');
+    } finally {
+      setExportLoading(null);
+    }
+  }, [normalizedRows, periodoAtual, nomeEmpresa]);
 
   const FinanceiroSkeleton = ({ cards = 4 }: { cards?: number }) => (
     <div className="space-y-6 animate-pulse" data-testid="financeiro-skeleton">
@@ -5210,19 +5642,34 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
 
           {isDateFilterExpanded && (
             <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={dataInicio}
-                onChange={(e) => { setDataInicio(e.target.value); setFiltroPeriodo('custom'); }}
-                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              <DatePicker
+                selected={dataInicio ? new Date(dataInicio + 'T00:00:00') : null}
+                onChange={(date: Date | null) => {
+                  setDataInicio(date ? date.toLocaleDateString('en-CA') : '');
+                  setFiltroPeriodo('custom');
+                }}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="dd/mm/aaaa"
+                locale="pt-BR"
+                calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-32"
+                wrapperClassName="w-32"
                 data-testid="input-data-inicio-financeiro"
               />
               <span className="text-gray-400 text-sm">até</span>
-              <input
-                type="date"
-                value={dataFim}
-                onChange={(e) => { setDataFim(e.target.value); setFiltroPeriodo('custom'); }}
-                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              <DatePicker
+                selected={dataFim ? new Date(dataFim + 'T00:00:00') : null}
+                onChange={(date: Date | null) => {
+                  setDataFim(date ? date.toLocaleDateString('en-CA') : '');
+                  setFiltroPeriodo('custom');
+                }}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="dd/mm/aaaa"
+                locale="pt-BR"
+                calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-32"
+                wrapperClassName="w-32"
+                minDate={dataInicio ? new Date(dataInicio + 'T00:00:00') : undefined}
                 data-testid="input-data-fim-financeiro"
               />
               {(dataInicio || dataFim) && (
@@ -5237,10 +5684,193 @@ const OperacoesFinanceiro = ({ selectedOperacao }: { selectedOperacao: string })
               )}
             </div>
           )}
+
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 rounded-lg hover:bg-gray-700 dark:hover:bg-gray-300 transition-colors font-medium"
+            data-testid="button-exportar-fechamento"
+          >
+            <Download className="w-4 h-4" />
+            Exportar Fechamento
+          </button>
         </div>
       </div>
 
       {renderFinanceiroContent()}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" data-testid="modal-exportar-fechamento">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <Download className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Exportar Fechamento</h3>
+              </div>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                data-testid="button-fechar-modal-exportar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-5">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Período: <span className="font-medium text-gray-700 dark:text-gray-300">{periodoAtual.label}</span>
+                {' · '}{normalizedRows.length} viagens com dados de faturamento
+              </p>
+
+              {/* Por Motorista */}
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-semibold text-gray-800 dark:text-white">Por Motorista</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">(comissão)</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Uma seção por motorista com todas as viagens, valor de frete e comissão.</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleExport('motorista', 'pdf')}
+                    disabled={exportLoading !== null || normalizedRows.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-exportar-motorista-pdf"
+                  >
+                    {exportLoading === 'motorista-pdf' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileText className="w-3 h-3" />
+                    )}
+                    PDF
+                  </button>
+                  <button
+                    onClick={() => handleExport('motorista', 'excel')}
+                    disabled={exportLoading !== null || normalizedRows.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-exportar-motorista-excel"
+                  >
+                    {exportLoading === 'motorista-excel' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileSpreadsheet className="w-3 h-3" />
+                    )}
+                    Excel
+                  </button>
+                </div>
+              </div>
+
+              {/* Por Cliente */}
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-semibold text-gray-800 dark:text-white">Por Cliente</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">(faturamento)</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Uma seção por cliente com todas as viagens e total de faturamento.</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleExport('cliente', 'pdf')}
+                    disabled={exportLoading !== null || normalizedRows.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-exportar-cliente-pdf"
+                  >
+                    {exportLoading === 'cliente-pdf' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileText className="w-3 h-3" />
+                    )}
+                    PDF
+                  </button>
+                  <button
+                    onClick={() => handleExport('cliente', 'excel')}
+                    disabled={exportLoading !== null || normalizedRows.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-exportar-cliente-excel"
+                  >
+                    {exportLoading === 'cliente-excel' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileSpreadsheet className="w-3 h-3" />
+                    )}
+                    Excel
+                  </button>
+                </div>
+              </div>
+
+              {/* Por Placa */}
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  <span className="text-sm font-semibold text-gray-800 dark:text-white">Por Placa</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">(faturamento & lucro)</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Uma seção por placa com totais de viagens, faturamento e lucro agrupados por dia ou mês.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleExport('placa-diario', 'pdf')}
+                    disabled={exportLoading !== null || normalizedRows.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-exportar-placa-diario-pdf"
+                  >
+                    {exportLoading === 'placa-diario-pdf' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileText className="w-3 h-3" />
+                    )}
+                    Diário (PDF)
+                  </button>
+                  <button
+                    onClick={() => handleExport('placa-diario', 'excel')}
+                    disabled={exportLoading !== null || normalizedRows.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-exportar-placa-diario-excel"
+                  >
+                    {exportLoading === 'placa-diario-excel' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileSpreadsheet className="w-3 h-3" />
+                    )}
+                    Diário (Excel)
+                  </button>
+                  <button
+                    onClick={() => handleExport('placa-mensal', 'pdf')}
+                    disabled={exportLoading !== null || normalizedRows.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-exportar-placa-mensal-pdf"
+                  >
+                    {exportLoading === 'placa-mensal-pdf' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileText className="w-3 h-3" />
+                    )}
+                    Mensal (PDF)
+                  </button>
+                  <button
+                    onClick={() => handleExport('placa-mensal', 'excel')}
+                    disabled={exportLoading !== null || normalizedRows.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    data-testid="button-exportar-placa-mensal-excel"
+                  >
+                    {exportLoading === 'placa-mensal-excel' ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FileSpreadsheet className="w-3 h-3" />
+                    )}
+                    Mensal (Excel)
+                  </button>
+                </div>
+              </div>
+
+              {normalizedRows.length === 0 && (
+                <p className="text-xs text-center text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
+                  Nenhuma viagem com dados de faturamento encontrada no período selecionado.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -6748,7 +7378,7 @@ const Operacoes = () => {
 
   const tabs = [
     { path: '/operacoes', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/operacoes/viagens', label: 'Viagens', icon: Map },
+    { path: '/operacoes/viagens', label: 'Viagens', icon: MapIcon },
     { path: '/operacoes/financeiro', label: 'Financeiro', icon: Wallet },
     { path: '/operacoes/precos', label: 'Preços', icon: Settings },
   ];
