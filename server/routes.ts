@@ -2317,6 +2317,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Atualizar (PATCH) label no WiseApp
+  app.patch("/api/wiseapp/:companyId/labels/:labelId", async (req, res) => {
+    try {
+      const { companyId, labelId } = req.params;
+
+      console.log(`Updating WiseApp label ${labelId} for company ${companyId}`);
+
+      const accountId = req.headers['wiseapp-account-id'] as string;
+      if (!accountId) {
+        return res.status(400).json({ error: "Account ID não encontrado" });
+      }
+
+      const fetchTokenFromDb = async (): Promise<string | null> => {
+        const numericAccountId = parseInt(accountId, 10);
+        const { data: accessDataArray } = await supabaseBackend
+          .from("wiseapp_acesso")
+          .select("access_token_wiseapp, email")
+          .eq("id_conta_wiseapp", numericAccountId)
+          .not("access_token_wiseapp", "is", null)
+          .neq("access_token_wiseapp", "")
+          .limit(1);
+
+        if (accessDataArray?.[0]?.access_token_wiseapp) {
+          return accessDataArray[0].access_token_wiseapp;
+        }
+        return null;
+      };
+
+      let token = req.headers['wiseapp-token'] as string;
+      let tokenSource = 'header';
+
+      if (!token) {
+        const dbToken = await fetchTokenFromDb();
+        if (dbToken) { token = dbToken; tokenSource = 'database'; }
+      }
+
+      if (!token) {
+        return res.status(401).json({ error: "Token WiseApp não encontrado" });
+      }
+
+      const body = req.body;
+      const updatePayload: Record<string, any> = {};
+      const labelName = body.title || body.name || body.nome;
+      if (labelName !== undefined) updatePayload.title = labelName;
+      if (body.color !== undefined) updatePayload.color = body.color;
+      if (body.cor !== undefined) updatePayload.color = body.cor;
+      if (body.description !== undefined) updatePayload.description = body.description;
+      if (body.show_on_sidebar !== undefined) updatePayload.show_on_sidebar = body.show_on_sidebar;
+
+      const wiseAppUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/labels/${labelId}`;
+      console.log(`Using token from ${tokenSource} for patch operation`);
+
+      let response = await fetch(wiseAppUrl, {
+        method: 'PATCH',
+        headers: { 'api_access_token': token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatePayload),
+      });
+
+      if (response.status === 401 && tokenSource === 'header') {
+        const dbToken = await fetchTokenFromDb();
+        if (dbToken && dbToken !== token) {
+          token = dbToken;
+          tokenSource = 'database-fallback';
+          response = await fetch(wiseAppUrl, {
+            method: 'PATCH',
+            headers: { 'api_access_token': token, 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatePayload),
+          });
+        }
+      }
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error(`WiseApp API error: ${response.status} - ${errorData}`);
+        if (response.status === 401) {
+          return res.status(401).json({
+            error: "Token WiseApp expirado ou inválido",
+            details: "Faça login novamente no WiseApp para renovar o token"
+          });
+        }
+        throw new Error(`WiseApp API responded with ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`WiseApp label ${labelId} updated successfully with token from ${tokenSource}`);
+      res.json(data);
+
+    } catch (error) {
+      console.error("Erro ao atualizar label no WiseApp:", error);
+      res.status(500).json({
+        error: "Erro ao atualizar label no WiseApp",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    }
+  });
+
   // Aplicar tag a um contato no WiseApp (com fallback de token do banco)
   app.post("/api/wiseapp/:accountIdParam/contacts/:contactId/labels", async (req, res) => {
     try {
