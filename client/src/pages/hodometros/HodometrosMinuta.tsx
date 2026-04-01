@@ -13,6 +13,23 @@ import { formatCPF } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Pagination from '../../components/Pagination';
+
+const formatCreatedAt = (created_at: string): { data: string; hora: string } => {
+  if (!created_at) return { data: '-', hora: '-' };
+  try {
+    const d = new Date(created_at.replace(' ', 'T'));
+    if (isNaN(d.getTime())) return { data: '-', hora: '-' };
+    const parts = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(d);
+    const p = Object.fromEntries(parts.map(x => [x.type, x.value]));
+    return { data: `${p.day}/${p.month}/${p.year}`, hora: `${p.hour}:${p.minute}` };
+  } catch {
+    return { data: '-', hora: '-' };
+  }
+};
 import { usePagination } from '../../hooks/usePagination';
 import * as XLSX from 'xlsx';
 
@@ -454,21 +471,8 @@ const HodometrosMinuta: React.FC = () => {
           }
         }
         
-        // Extract date and time from created_at without creating Date object
-        let dataFormatada = '-';
-        let horaFormatada = '-';
-        if (m.created_at) {
-          const [datePart, timePart] = m.created_at.split('T');
-          if (datePart) {
-            const [year, month, day] = datePart.split('-');
-            dataFormatada = `${day}/${month}/${year}`;
-          }
-          if (timePart) {
-            const [hour, minute] = timePart.split(':');
-            horaFormatada = `${hour}:${minute}`;
-          }
-        }
-        
+        const { data: dataFormatada, hora: horaFormatada } = formatCreatedAt(m.created_at);
+
         return {
           'Data': dataFormatada,
           'Hora': horaFormatada,
@@ -925,20 +929,7 @@ const HodometrosMinuta: React.FC = () => {
                 <tr><td colSpan={8} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Nenhuma minuta encontrada para o período selecionado</td></tr>
               ) : (
                 (paginatedData || []).map((m) => {
-                  // Extract date and time from created_at without creating Date object
-                  let dateStr = '-';
-                  let timeStr = '-';
-                  if (m.created_at) {
-                    const [datePart, timePart] = m.created_at.split('T');
-                    if (datePart) {
-                      const [year, month, day] = datePart.split('-');
-                      dateStr = `${day}/${month}/${year}`;
-                    }
-                    if (timePart) {
-                      const [hour, minute] = timePart.split(':');
-                      timeStr = `${hour}:${minute}`;
-                    }
-                  }
+                  const { data: dateStr, hora: timeStr } = formatCreatedAt(m.created_at);
 
                   return (
                     <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
