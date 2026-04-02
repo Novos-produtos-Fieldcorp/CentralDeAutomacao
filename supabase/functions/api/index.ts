@@ -2187,18 +2187,36 @@ async function handleVagasRoutes(req: Request, path: string, method: string, sup
   // GET /vagas/dashboard/:companyId
   if (path.match(/^\/vagas\/dashboard\/(\d+)$/) && method === 'GET') {
     const match = path.match(/^\/vagas\/dashboard\/(\d+)$/)
-    const companyId = parseInt(match![1])
-    const { data, error } = await supabase
-      .from('vaga')
-      .select('*')
-      .eq('company_id', companyId)
-      .limit(100)
-    if (error) {
-      return new Response(JSON.stringify({ error: 'Erro ao buscar vagas', details: error.message }), {
+    const cId = parseInt(match![1])
+    const [vagasRes, statusRes] = await Promise.all([
+      supabase.from('vaga').select('*').eq('company_id', cId),
+      supabase.from('st_vaga').select('id, status_vaga').eq('company_id', cId),
+    ])
+    if (vagasRes.error) {
+      return new Response(JSON.stringify({ error: 'Erro ao buscar vagas', details: vagasRes.error.message }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
-    return new Response(JSON.stringify({ data: data || [], total: data?.length || 0, company_id: companyId }), {
+    const vagas = vagasRes.data || []
+    const statusMap: Record<number, string> = {}
+    ;(statusRes.data || []).forEach((s: any) => { statusMap[s.id] = s.status_vaga })
+    const now = new Date()
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+    const totalVagas = vagas.length
+    const vagasAbertas = vagas.filter((v: any) => {
+      const st = statusMap[v.st_vaga_id]
+      return st === 'Em Andamento' || st === 'Ativa' || st === 'Aberta'
+    }).length
+    const vagasFechadas = vagas.filter((v: any) => {
+      const st = statusMap[v.st_vaga_id]
+      return st === 'Fechada' || st === 'Finalizada' || st === 'Concluída'
+    }).length
+    const vagasVencendo = vagas.filter((v: any) => {
+      if (!v.dt_limite) return false
+      const d = new Date(v.dt_limite)
+      return d >= now && d <= sevenDaysFromNow
+    }).length
+    return new Response(JSON.stringify({ totalVagas, vagasAbertas, vagasFechadas, vagasVencendo }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
