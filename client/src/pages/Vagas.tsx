@@ -28,7 +28,7 @@ const Vagas: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       // First get company_id from account_id
-      const companyResponse = await fetch(`/api/company/by-account/${accountId}`);
+      const companyResponse = await fetch(`${API_BASE_URL}/company/by-account/${accountId}`);
       if (!companyResponse.ok) {
         console.error('Error fetching company data');
         return;
@@ -38,8 +38,7 @@ const Vagas: React.FC = () => {
       const companyId = companyData.company_id;
       
       // Then fetch dashboard data using company_id
-      const apiBaseUrl = API_BASE_URL;
-      const response = await fetch(`${apiBaseUrl}/vagas/dashboard/${companyId}`);
+      const response = await fetch(`${API_BASE_URL}/vagas/dashboard/${companyId}`);
       if (response.ok) {
         const data = await response.json();
         setDashboardData(data);
