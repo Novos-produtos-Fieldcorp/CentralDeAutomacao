@@ -1,0 +1,865 @@
+39:1169 🔄 Rota mudou - Account ID: null → 6
+user-guiding-ZQE100070ZVAID-embedded.js:2  POST https://user.userguiding.com/sdk/identify net::ERR_BLOCKED_BY_CLIENT
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+xhr @ user-guiding-ZQE100070ZVAID-embedded.js:2
+rt @ user-guiding-ZQE100070ZVAID-embedded.js:2
+_request @ user-guiding-ZQE100070ZVAID-embedded.js:2
+request @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+f @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+D @ user-guiding-ZQE100070ZVAID-embedded.js:2
+a @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+F @ user-guiding-ZQE100070ZVAID-embedded.js:2
+F @ user-guiding-ZQE100070ZVAID-embedded.js:2
+L @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+p @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+p @ user-guiding-ZQE100070ZVAID-embedded.js:2
+a @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+executeCallbackQueue @ user-guiding-ZQE100070ZVAID-embedded.js:2
+setState @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+f @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+M @ user-guiding-ZQE100070ZVAID-embedded.js:2
+i @ user-guiding-ZQE100070ZVAID-embedded.js:2
+Promise.then
+M @ user-guiding-ZQE100070ZVAID-embedded.js:2
+i @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+R @ user-guiding-ZQE100070ZVAID-embedded.js:2
+L.loadState @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+(anonymous) @ user-guiding-ZQE100070ZVAID-embedded.js:2
+PendingScript
+(anonymous) @ 39:1190
+(anonymous) @ 39:1190
+?account_id=6:60  GET https://centralautomacoes.netlify.app/.netlify/scripts/rum net::ERR_BLOCKED_BY_CLIENT
+index-fhPZRMyx.js:1191 Hybrid API Configuration: {hostname: 'centralautomacoes.netlify.app', environment: 'Netlify (Supabase Functions)', apiBaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api', supabaseUrl: 'https://ohmoxsvwjvohmqqgxjhb.supabase.co', hasAnonKey: true, …}
+index-fhPZRMyx.js:1190 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+G2 @ index-fhPZRMyx.js:1190
+n_e @ index-fhPZRMyx.js:1191
+_initSupabaseAuthClient @ index-fhPZRMyx.js:1191
+o_e @ index-fhPZRMyx.js:1191
+Jne @ index-fhPZRMyx.js:1191
+(anonymous) @ index-fhPZRMyx.js:1191
+index-fhPZRMyx.js:1196 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-fhPZRMyx.js:1196 🔍 [WiseAppAccess] Account ID (mount/URL): 6 (mount: 6 )
+index-fhPZRMyx.js:1196 ✅ [WiseAppAccess] Sessão válida encontrada para: gabriel.mauro@fieldcorp.com.br accountId: 6
+index-fhPZRMyx.js:1196 🔄 [WiseAppAccess] Sincronizando companyId do cache com AuthContext: 1 accountId: 6
+index-fhPZRMyx.js:1191 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 1
+index-fhPZRMyx.js:1545 Dashboard data loaded: {agregados: 138, motoristas: 618, contratados: 77, totalVagas: 1, vagasAbertas: 0, …}
+39:1 The resource https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+index-fhPZRMyx.js:1196 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-fhPZRMyx.js:1196 🔍 [WiseAppAccess] Já verificado nesta sessão...
+index-fhPZRMyx.js:1196 ✅ [WiseAppAccess] Sessão válida com email: gabriel.mauro@fieldcorp.com.br
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/status-vagas/1 404 (Not Found)
+fhe @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/unidades/1 404 (Not Found)
+mhe @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/1 404 (Not Found)
+ghe @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/vagas/company/1 404 (Not Found)
+fAt @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/1 404 (Not Found)
+ghe @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/vagas/company/1 404 (Not Found)
+fAt @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/status-vagas/1 404 (Not Found)
+fhe @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/unidades/1 404 (Not Found)
+mhe @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/1 404 (Not Found)
+ghe @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/status-vagas/1 404 (Not Found)
+fhe @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/vagas/company/1 404 (Not Found)
+fAt @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/unidades/1 404 (Not Found)
+mhe @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/status-vagas/1 404 (Not Found)
+fhe @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/operacoes/1 404 (Not Found)
+ghe @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/vagas/company/1 404 (Not Found)
+fAt @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:40 Error: Minified React error #31; visit https://reactjs.org/docs/error-decoder.html?invariant=31&args[]=%5Bobject%20Error%5D for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at qj (index-fhPZRMyx.js:38:6349)
+    at A (index-fhPZRMyx.js:38:11408)
+    at Xl (index-fhPZRMyx.js:40:1481)
+    at Pae (index-fhPZRMyx.js:40:45906)
+    at Tae (index-fhPZRMyx.js:40:39894)
+    at gbe (index-fhPZRMyx.js:40:39817)
+    at T4 (index-fhPZRMyx.js:40:39666)
+    at lD (index-fhPZRMyx.js:40:36022)
+    at r9 (index-fhPZRMyx.js:40:36827)
+    at Kg (index-fhPZRMyx.js:38:3292)
+YF @ index-fhPZRMyx.js:40
+r.callback @ index-fhPZRMyx.js:40
+MU @ index-fhPZRMyx.js:38
+ZU @ index-fhPZRMyx.js:40
+Cae @ index-fhPZRMyx.js:40
+fbe @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:38 Uncaught Error: Minified React error #31; visit https://reactjs.org/docs/error-decoder.html?invariant=31&args[]=%5Bobject%20Error%5D for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at qj (index-fhPZRMyx.js:38:6349)
+    at A (index-fhPZRMyx.js:38:11408)
+    at Xl (index-fhPZRMyx.js:40:1481)
+    at Pae (index-fhPZRMyx.js:40:45906)
+    at Tae (index-fhPZRMyx.js:40:39894)
+    at gbe (index-fhPZRMyx.js:40:39817)
+    at T4 (index-fhPZRMyx.js:40:39666)
+    at lD (index-fhPZRMyx.js:40:36022)
+    at r9 (index-fhPZRMyx.js:40:36827)
+    at Kg (index-fhPZRMyx.js:38:3292)
+qj @ index-fhPZRMyx.js:38
+A @ index-fhPZRMyx.js:38
+Xl @ index-fhPZRMyx.js:40
+Pae @ index-fhPZRMyx.js:40
+Tae @ index-fhPZRMyx.js:40
+gbe @ index-fhPZRMyx.js:40
+T4 @ index-fhPZRMyx.js:40
+lD @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
+index-fhPZRMyx.js:1779  GET https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/unidades/1 404 (Not Found)
+mhe @ index-fhPZRMyx.js:1779
+queryFn @ index-fhPZRMyx.js:1779
+o @ index-fhPZRMyx.js:51
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.then
+(anonymous) @ index-fhPZRMyx.js:51
+Promise.catch
+p @ index-fhPZRMyx.js:51
+start @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+_1 @ index-fhPZRMyx.js:51
+setOptions @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+Abe @ index-fhPZRMyx.js:40
+Ep @ index-fhPZRMyx.js:40
+r9 @ index-fhPZRMyx.js:40
+Kg @ index-fhPZRMyx.js:38
+(anonymous) @ index-fhPZRMyx.js:40
+setTimeout
+Zve @ index-fhPZRMyx.js:51
+i @ index-fhPZRMyx.js:51
+batch @ index-fhPZRMyx.js:51
+Jf @ index-fhPZRMyx.js:51
+setData @ index-fhPZRMyx.js:51
+fetch @ index-fhPZRMyx.js:51
+await in fetch
+_1 @ index-fhPZRMyx.js:51
+onSubscribe @ index-fhPZRMyx.js:51
+subscribe @ index-fhPZRMyx.js:51
+(anonymous) @ index-fhPZRMyx.js:51
+Yre @ index-fhPZRMyx.js:38
+i3 @ index-fhPZRMyx.js:40
+eb @ index-fhPZRMyx.js:40
+(anonymous) @ index-fhPZRMyx.js:40
+v @ index-fhPZRMyx.js:25
+E @ index-fhPZRMyx.js:25
