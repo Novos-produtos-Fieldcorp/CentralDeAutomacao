@@ -1,0 +1,47 @@
+rum:1  Failed to load resource: net::ERR_BLOCKED_BY_CLIENT
+index-tdlgbhS9.js:1196 Hybrid API Configuration: Object
+index-tdlgbhS9.js:1195 Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
+Y2 @ index-tdlgbhS9.js:1195
+index-tdlgbhS9.js:1201 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-tdlgbhS9.js:1201 🔍 [WiseAppAccess] Account ID (mount/URL): 6 (mount: 6 )
+index-tdlgbhS9.js:1201 🔍 [WiseAppAccess] Buscando empresa com id_conta_wiseapp: 6
+index-tdlgbhS9.js:1201 📊 [WiseAppAccess] Resultado da busca da empresa: Object
+index-tdlgbhS9.js:1201 ✅ [WiseAppAccess] Empresa encontrada: Object
+index-tdlgbhS9.js:1201 📧 [WiseAppAccess] Mostrando modal de autenticação (e-mail obrigatório)
+index-tdlgbhS9.js:1550 Dashboard data loaded: Object
+index-tdlgbhS9.js:1201 🔍 Token encontrado para email, validando antes de usar... 6
+index-tdlgbhS9.js:1201 ✅ Token válido, usando sessão existente
+index-tdlgbhS9.js:1201 📧 [WiseAppAccess] Token salvo para email, usando accountId: 6 (do email: 6 , fallback: 6 )
+index-tdlgbhS9.js:1201 🔄 [WiseAppAccess] Atualizando sessão: Object
+index-tdlgbhS9.js:1201 🔄 [WiseAppAccess] Sincronizando companyId com AuthContext: 1 accountId: 6
+index-tdlgbhS9.js:1196 🔄 [AuthContext] Atualizando companyId da sessão WiseApp: 1
+index-tdlgbhS9.js:1201 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-tdlgbhS9.js:1201 🔍 [WiseAppAccess] Já verificado nesta sessão...
+index-tdlgbhS9.js:1201 ✅ [WiseAppAccess] Sessão válida com email: gabriel.mauro@fieldcorp.com.br
+index-tdlgbhS9.js:1201 🔍 [WiseAppAccess] Iniciando verificação de acesso...
+index-tdlgbhS9.js:1201 🔍 [WiseAppAccess] Já verificado nesta sessão...
+index-tdlgbhS9.js:1201 ✅ [WiseAppAccess] Sessão válida com email: gabriel.mauro@fieldcorp.com.br
+ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/clientes/1:1  Failed to load resource: the server responded with a status of 404 ()
+index-tdlgbhS9.js:40 TypeError: m.clientes.map is not a function
+    at fAt (index-tdlgbhS9.js:1784:117953)
+    at DM (index-tdlgbhS9.js:38:17050)
+    at XF (index-tdlgbhS9.js:40:3150)
+    at Oae (index-tdlgbhS9.js:40:44967)
+    at Fae (index-tdlgbhS9.js:40:39894)
+    at pbe (index-tdlgbhS9.js:40:39817)
+    at F4 (index-tdlgbhS9.js:40:39666)
+    at lD (index-tdlgbhS9.js:40:36022)
+    at Eae (index-tdlgbhS9.js:40:34968)
+    at v (index-tdlgbhS9.js:25:1552)
+YF @ index-tdlgbhS9.js:40
+index-tdlgbhS9.js:40 Uncaught TypeError: m.clientes.map is not a function
+    at fAt (index-tdlgbhS9.js:1784:117953)
+    at DM (index-tdlgbhS9.js:38:17050)
+    at XF (index-tdlgbhS9.js:40:3150)
+    at Oae (index-tdlgbhS9.js:40:44967)
+    at Fae (index-tdlgbhS9.js:40:39894)
+    at pbe (index-tdlgbhS9.js:40:39817)
+    at F4 (index-tdlgbhS9.js:40:39666)
+    at lD (index-tdlgbhS9.js:40:36022)
+    at Eae (index-tdlgbhS9.js:40:34968)
+    at v (index-tdlgbhS9.js:25:1552)
