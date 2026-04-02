@@ -2163,6 +2163,10 @@ async function handleVagasRoutes(req: Request, path: string, method: string, sup
         supabase.from('operacao').select('id, operacao').eq('company_id', companyId),
         supabase.from('st_vaga').select('id, status_vaga').eq('company_id', companyId),
       ])
+      if (clientesRes.error) console.error('[vagas/company] clientes lookup error:', clientesRes.error.message)
+      if (unidadesRes.error) console.error('[vagas/company] unidades lookup error:', unidadesRes.error.message)
+      if (operacoesRes.error) console.error('[vagas/company] operacoes lookup error:', operacoesRes.error.message)
+      if (statusRes.error) console.error('[vagas/company] st_vaga lookup error:', statusRes.error.message)
       const clientesMap: Record<number, string> = {}
       ;(clientesRes.data || []).forEach((c: any) => { clientesMap[c.cliente_id] = c.nome })
       const unidadesMap: Record<number, string> = {}
