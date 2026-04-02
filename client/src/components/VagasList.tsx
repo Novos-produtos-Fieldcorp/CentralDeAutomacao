@@ -8,6 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { queryClient } from '../lib/queryClient';
 import VagaDetailsModal from './VagaDetailsModal';
+import { API_BASE_URL } from '../lib/api-config-supabase';
 import {
   fetchVagasWithRelations,
   fetchStatusVagas,
@@ -138,7 +139,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
 
     Promise.allSettled(
       expired.map(vaga =>
-        fetch(`/api/vagas/${vaga.id}/ativo`, {
+        fetch(`${API_BASE_URL}/vagas/${vaga.id}/ativo`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ativo: false, company_id: companyId }),

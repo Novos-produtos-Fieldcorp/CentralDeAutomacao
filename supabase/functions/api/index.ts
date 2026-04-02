@@ -140,9 +140,24 @@ serve(async (req) => {
       return await handleClienteRoutes(req, path, method, supabase)
     }
 
+    // Company routes
+    if (path.startsWith('/company')) {
+      return await handleCompanyRoutes(req, path, method, supabase)
+    }
+
     // Vagas routes
     if (path.startsWith('/vagas')) {
       return await handleVagasRoutes(req, path, method, supabase)
+    }
+
+    // Unidades routes
+    if (path.startsWith('/unidades')) {
+      return await handleUnidadesRoutes(req, path, method, supabase)
+    }
+
+    // Status-vagas routes
+    if (path.startsWith('/status-vagas')) {
+      return await handleStatusVagasRoutes(req, path, method, supabase)
     }
 
     // Operacoes routes
@@ -1925,6 +1940,40 @@ async function handleCompanyRoutes(req: Request, path: string, method: string, s
     })
   }
 
+  // GET /company/by-account/:accountId
+  const byAccountMatch = path.match(/^\/company\/by-account\/(.+)$/)
+  if (byAccountMatch && method === 'GET') {
+    try {
+      const accountId = byAccountMatch[1]
+      const { data: companies, error } = await supabase
+        .from('company')
+        .select('*')
+        .eq('id_conta_wiseapp', accountId)
+        .limit(1)
+      if (error) {
+        console.error('Error fetching company:', error)
+        return new Response(JSON.stringify({ error: 'Erro ao buscar empresa', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      if (!companies || companies.length === 0) {
+        return new Response(JSON.stringify({ error: 'Empresa não encontrada' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      const company = companies[0]
+      return new Response(JSON.stringify({
+        company_id: company.company_id || company.id,
+        razao_social: company.nome,
+        id_conta_wiseapp: company.id_conta_wiseapp,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
   return new Response(JSON.stringify({
     error: 'Endpoint Company não encontrado',
     path,
@@ -2056,6 +2105,31 @@ async function handleClienteRoutes(req: Request, path: string, method: string, s
 
   const companyId = parseInt(req.headers.get('company-id') || '1')
 
+  // GET /clientes/:companyId — simple dropdown list filtered by company (must be before paginated handler)
+  const getByCompanyMatch = path.match(/^\/clientes\/(\d+)$/)
+  if (getByCompanyMatch && method === 'GET') {
+    try {
+      const cId = parseInt(getByCompanyMatch[1])
+      const { data, error } = await supabase
+        .from('cliente')
+        .select('cliente_id, nome')
+        .eq('company_id', cId)
+        .eq('st_cliente', true)
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao buscar clientes', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify(data || []), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
   // Get all clientes
   if (path === '/clientes' && method === 'GET') {
     const url = new URL(req.url)
@@ -2110,37 +2184,283 @@ async function handleVagasRoutes(req: Request, path: string, method: string, sup
     return new Response('ok', { headers: corsHeaders })
   }
 
-  const companyId = parseInt(req.headers.get('company-id') || '1')
-
-  // Dashboard routes
+  // GET /vagas/dashboard/:companyId
   if (path.match(/^\/vagas\/dashboard\/(\d+)$/) && method === 'GET') {
     const match = path.match(/^\/vagas\/dashboard\/(\d+)$/)
-    const companyId = parseInt(match![1])
-    
-    // Retornar dados básicos do dashboard de vagas
-    const { data, error } = await supabase
-      .from('vaga')
-      .select('*')
-      .eq('company_id', companyId)
-      .limit(100)
-
-    if (error) {
-      return new Response(JSON.stringify({
-        error: 'Erro ao buscar vagas',
-        details: error.message
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    const cId = parseInt(match![1])
+    const [vagasRes, statusRes] = await Promise.all([
+      supabase.from('vaga').select('*').eq('company_id', cId),
+      supabase.from('st_vaga').select('id, status_vaga').eq('company_id', cId),
+    ])
+    if (vagasRes.error) {
+      return new Response(JSON.stringify({ error: 'Erro ao buscar vagas', details: vagasRes.error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
-
-    return new Response(JSON.stringify({
-      data: data || [],
-      total: data?.length || 0,
-      company_id: companyId
-    }), {
+    const vagas = vagasRes.data || []
+    if (statusRes.error) {
+      console.error('[vagas/dashboard] st_vaga lookup error:', statusRes.error.message)
+    }
+    const statusMap: Record<number, string> = {}
+    ;(statusRes.data || []).forEach((s: any) => { statusMap[s.id] = s.status_vaga })
+    const now = new Date()
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+    const totalVagas = vagas.length
+    const vagasAbertas = vagas.filter((v: any) => {
+      const st = statusMap[v.st_vaga_id]
+      return st === 'Em Andamento' || st === 'Ativa' || st === 'Aberta'
+    }).length
+    const vagasFechadas = vagas.filter((v: any) => {
+      const st = statusMap[v.st_vaga_id]
+      return st === 'Fechada' || st === 'Finalizada' || st === 'Concluída'
+    }).length
+    const vagasVencendo = vagas.filter((v: any) => {
+      if (!v.dt_limite) return false
+      const d = new Date(v.dt_limite)
+      return d >= now && d <= sevenDaysFromNow
+    }).length
+    return new Response(JSON.stringify({ totalVagas, vagasAbertas, vagasFechadas, vagasVencendo }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
+  }
+
+  // GET /vagas/company/:companyId — enriched list with joined names
+  const companyMatch = path.match(/^\/vagas\/company\/(\d+)$/)
+  if (companyMatch && method === 'GET') {
+    try {
+      const companyId = parseInt(companyMatch[1])
+      const { data: vagas, error: vagasError } = await supabase
+        .from('vaga')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+      if (vagasError) {
+        return new Response(JSON.stringify({ error: 'Erro ao buscar vagas', details: vagasError.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      if (!vagas || vagas.length === 0) {
+        return new Response(JSON.stringify([]), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      const [clientesRes, unidadesRes, operacoesRes, statusRes] = await Promise.all([
+        supabase.from('cliente').select('cliente_id, nome').eq('company_id', companyId),
+        supabase.from('unidade').select('id, unidade').eq('company_id', companyId),
+        supabase.from('operacao').select('id, operacao').eq('company_id', companyId),
+        supabase.from('st_vaga').select('id, status_vaga').eq('company_id', companyId),
+      ])
+      if (clientesRes.error) console.error('[vagas/company] clientes lookup error:', clientesRes.error.message)
+      if (unidadesRes.error) console.error('[vagas/company] unidades lookup error:', unidadesRes.error.message)
+      if (operacoesRes.error) console.error('[vagas/company] operacoes lookup error:', operacoesRes.error.message)
+      if (statusRes.error) console.error('[vagas/company] st_vaga lookup error:', statusRes.error.message)
+      const clientesMap: Record<number, string> = {}
+      ;(clientesRes.data || []).forEach((c: any) => { clientesMap[c.cliente_id] = c.nome })
+      const unidadesMap: Record<number, string> = {}
+      ;(unidadesRes.data || []).forEach((u: any) => { unidadesMap[u.id] = u.unidade })
+      const operacoesMap: Record<number, string> = {}
+      ;(operacoesRes.data || []).forEach((o: any) => { operacoesMap[o.id] = o.operacao })
+      const statusMap: Record<number, string> = {}
+      ;(statusRes.data || []).forEach((s: any) => { statusMap[s.id] = s.status_vaga })
+      const enriched = vagas.map((vaga: any) => ({
+        ...vaga,
+        cliente_nome: clientesMap[vaga.cliente_id] || null,
+        unidade_nome: unidadesMap[vaga.unidade_id] || null,
+        operacao_nome: operacoesMap[vaga.operacao_id] || null,
+        status_nome: statusMap[vaga.st_vaga_id] || null,
+      }))
+      return new Response(JSON.stringify(enriched), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // PATCH /vagas/:vagaId/status
+  const patchStatusMatch = path.match(/^\/vagas\/(\d+)\/status$/)
+  if (patchStatusMatch && method === 'PATCH') {
+    try {
+      const vagaId = parseInt(patchStatusMatch[1])
+      const body = await req.json()
+      const { data, error } = await supabase
+        .from('vaga')
+        .update({ st_vaga_id: Number(body.st_vaga_id), updated_at: new Date().toISOString() })
+        .eq('id', vagaId)
+        .select()
+        .single()
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao atualizar status da vaga', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // PATCH /vagas/:vagaId/ativo
+  const patchAtivoMatch = path.match(/^\/vagas\/(\d+)\/ativo$/)
+  if (patchAtivoMatch && method === 'PATCH') {
+    try {
+      const vagaId = parseInt(patchAtivoMatch[1])
+      const body = await req.json()
+      if (!body.company_id) {
+        return new Response(JSON.stringify({ error: 'company_id é obrigatório' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      const { data, error } = await supabase
+        .from('vaga')
+        .update({ ativo: Boolean(body.ativo), updated_at: new Date().toISOString() })
+        .eq('id', vagaId)
+        .eq('company_id', Number(body.company_id))
+        .select()
+        .single()
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao atualizar vaga', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // PUT /vagas/:vagaId
+  const putVagaMatch = path.match(/^\/vagas\/(\d+)$/)
+  if (putVagaMatch && method === 'PUT') {
+    try {
+      const vagaId = parseInt(putVagaMatch[1])
+      const vagaData = await req.json()
+      if (typeof vagaData.dias_trabalho === 'string') {
+        vagaData.dias_trabalho = vagaData.dias_trabalho.split(',').map((d: string) => d.trim())
+      }
+      if ('dt_limite' in vagaData) {
+        vagaData.dt_limite = vagaData.dt_limite ? new Date(vagaData.dt_limite).toISOString() : null
+      }
+      const updatePayload: any = {
+        nome: vagaData.nome,
+        descricao: vagaData.descricao,
+        quantidade: Number(vagaData.quantidade),
+        dias_trabalho: vagaData.dias_trabalho,
+        horario: vagaData.horario,
+        dt_limite: vagaData.dt_limite,
+        company_id: Number(vagaData.company_id),
+        unidade_id: vagaData.unidade_id ? Number(vagaData.unidade_id) : null,
+        operacao_id: vagaData.operacao_id ? Number(vagaData.operacao_id) : null,
+        st_vaga_id: vagaData.st_vaga_id ? Number(vagaData.st_vaga_id) : null,
+        cliente_id: vagaData.cliente_id ? Number(vagaData.cliente_id) : null,
+        gr_id: vagaData.gr_id ? Number(vagaData.gr_id) : null,
+        updated_at: new Date().toISOString(),
+      }
+      if (vagaData.distancia !== undefined) updatePayload.distancia = vagaData.distancia || null
+      if (vagaData.tipo_contrato !== undefined) updatePayload.tipo_contrato = vagaData.tipo_contrato || null
+      if (vagaData.ativo !== undefined) updatePayload.ativo = vagaData.ativo
+      const { data, error } = await supabase
+        .from('vaga')
+        .update(updatePayload)
+        .eq('id', vagaId)
+        .select()
+        .single()
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao atualizar vaga', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify({ success: true, vaga: data }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // DELETE /vagas/:vagaId
+  if (putVagaMatch && method === 'DELETE') {
+    try {
+      const vagaId = parseInt(putVagaMatch[1])
+      const { error } = await supabase.from('vaga').delete().eq('id', vagaId)
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao deletar vaga', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // GET /vagas/:companyId — simple list
+  const getVagasMatch = path.match(/^\/vagas\/(\d+)$/)
+  if (getVagasMatch && method === 'GET') {
+    try {
+      const companyId = parseInt(getVagasMatch[1])
+      const { data, error } = await supabase.from('vaga').select('*').eq('company_id', companyId)
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao buscar vagas', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify(data || []), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // POST /vagas — create
+  if (path === '/vagas' && method === 'POST') {
+    try {
+      const vagaData = await req.json()
+      if (typeof vagaData.dias_trabalho === 'string') {
+        vagaData.dias_trabalho = vagaData.dias_trabalho.split(',').map((d: string) => d.trim())
+      }
+      vagaData.dt_limite = vagaData.dt_limite ? new Date(vagaData.dt_limite).toISOString() : null
+      const { data, error } = await supabase
+        .from('vaga')
+        .insert({
+          nome: vagaData.nome,
+          descricao: vagaData.descricao,
+          quantidade: Number(vagaData.quantidade),
+          dias_trabalho: vagaData.dias_trabalho,
+          horario: vagaData.horario,
+          dt_limite: vagaData.dt_limite,
+          distancia: vagaData.distancia || null,
+          tipo_contrato: vagaData.tipo_contrato || null,
+          ativo: vagaData.ativo !== undefined ? vagaData.ativo : true,
+          company_id: Number(vagaData.company_id),
+          unidade_id: vagaData.unidade_id ? Number(vagaData.unidade_id) : null,
+          operacao_id: vagaData.operacao_id ? Number(vagaData.operacao_id) : null,
+          st_vaga_id: vagaData.st_vaga_id ? Number(vagaData.st_vaga_id) : null,
+          cliente_id: vagaData.cliente_id ? Number(vagaData.cliente_id) : null,
+          gr_id: vagaData.gr_id ? Number(vagaData.gr_id) : null,
+        })
+        .select()
+        .single()
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao criar vaga', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify(data), {
+        status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
   }
 
   return new Response(JSON.stringify({
@@ -2150,6 +2470,114 @@ async function handleVagasRoutes(req: Request, path: string, method: string, sup
   }), {
     status: 404,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  })
+}
+
+// Unidades routes handler
+async function handleUnidadesRoutes(req: Request, path: string, method: string, supabase: any) {
+  if (method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  // GET /unidades/:companyId
+  const getMatch = path.match(/^\/unidades\/(\d+)$/)
+  if (getMatch && method === 'GET') {
+    try {
+      const companyId = parseInt(getMatch[1])
+      const { data, error } = await supabase.from('unidade').select('*').eq('company_id', companyId)
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao buscar unidades', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify(data || []), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // POST /unidades
+  if (path === '/unidades' && method === 'POST') {
+    try {
+      const body = await req.json()
+      const { data, error } = await supabase
+        .from('unidade')
+        .insert({ unidade: body.unidade, company_id: Number(body.company_id) })
+        .select()
+        .single()
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao criar unidade', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify(data), {
+        status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  return new Response(JSON.stringify({ error: 'Endpoint Unidades não encontrado', path, method }), {
+    status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  })
+}
+
+// Status-vagas routes handler
+async function handleStatusVagasRoutes(req: Request, path: string, method: string, supabase: any) {
+  if (method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  // GET /status-vagas/:companyId
+  const getMatch = path.match(/^\/status-vagas\/(\d+)$/)
+  if (getMatch && method === 'GET') {
+    try {
+      const companyId = parseInt(getMatch[1])
+      const { data, error } = await supabase.from('st_vaga').select('*').eq('company_id', companyId)
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao buscar status das vagas', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify(data || []), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // POST /status-vagas
+  if (path === '/status-vagas' && method === 'POST') {
+    try {
+      const body = await req.json()
+      const { data, error } = await supabase
+        .from('st_vaga')
+        .insert({ status_vaga: body.status_vaga, company_id: Number(body.company_id) })
+        .select()
+        .single()
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao criar status', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify(data), {
+        status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  return new Response(JSON.stringify({ error: 'Endpoint Status Vagas não encontrado', path, method }), {
+    status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   })
 }
 
@@ -2302,6 +2730,49 @@ async function handleWiseAppProxyRoutes(req: Request, path: string, method: stri
 async function handleOperacoesRoutes(req: Request, path: string, method: string, supabase: any) {
   if (method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+
+  // GET /operacoes/:companyId — simple lookup list for dropdowns (must be before sub-path matchers)
+  const getOperacoesMatch = path.match(/^\/operacoes\/(\d+)$/)
+  if (getOperacoesMatch && method === 'GET') {
+    try {
+      const companyId = parseInt(getOperacoesMatch[1])
+      const { data, error } = await supabase.from('operacao').select('*').eq('company_id', companyId)
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao buscar operações', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify(data || []), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
+  // POST /operacoes — create a new operacao
+  if (path === '/operacoes' && method === 'POST') {
+    try {
+      const body = await req.json()
+      const { data, error } = await supabase
+        .from('operacao')
+        .insert({ operacao: body.operacao, company_id: Number(body.company_id) })
+        .select()
+        .single()
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao criar operação', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify(data), {
+        status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
   }
 
   // GET /operacoes/faturamento/cesari

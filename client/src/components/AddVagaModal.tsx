@@ -4,7 +4,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { ptBR } from 'date-fns/locale';
 import { format } from 'date-fns';
 registerLocale('pt-BR', ptBR);
-import { X, Calendar, MapPin, Users, Building, Clock, FileText, Plus } from 'lucide-react';
+import { X, Calendar, MapPin, Users, Building, Clock, FileText, Plus, Sparkles, Copy, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWiseAppAccess } from '../context/WiseAppAccessContext';
 import { useTheme } from '../context/ThemeContext';
@@ -63,6 +63,10 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     st_end: false,
   });
 
+  const [aiSummary, setAiSummary] = useState<string>('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiCopied, setAiCopied] = useState(false);
+
   // Filter logradouros based on search
   const filteredLogradouros = logradouros.filter((log: any) =>
     log.logradouro.toLowerCase().includes(logradouroSearchFilter.toLowerCase())
@@ -116,6 +120,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
     handleSubmit,
     reset,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<InsertVaga>({
     resolver: zodResolver(insertVagaSchema),
@@ -216,6 +221,66 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       toast.error('Erro ao criar status');
     },
   });
+
+  const generateAiSummary = async () => {
+    const values = getValues();
+    const clienteNome = clientes.find(c => c.cliente_id === Number(values.cliente_id))?.nome || '';
+    const unidadeNome = (unidades as any[]).find(u => u.id === Number(values.unidade_id))?.unidade || '';
+    const operacaoNome = (operacoes as any[]).find(o => o.id === Number(values.operacao_id))?.operacao || '';
+
+    const dadosParaIA = {
+      nome: values.nome || '',
+      quantidade: Number(values.quantidade) || 1,
+      descricao: values.descricao || '',
+      cliente_id: values.cliente_id ? Number(values.cliente_id) : null,
+      unidade_id: values.unidade_id ? Number(values.unidade_id) : null,
+      operacao_id: values.operacao_id ? Number(values.operacao_id) : null,
+      st_vaga_id: values.st_vaga_id ? Number(values.st_vaga_id) : null,
+      dias_trabalho: diasSelecionados,
+      horario: values.horario || '',
+      cliente_nome: clienteNome,
+      unidade_nome: unidadeNome,
+      operacao_nome: operacaoNome,
+    };
+
+    setAiLoading(true);
+    setAiSummary('');
+    try {
+      const response = await fetch('https://n8nqp.wiseapp360.com/webhook/resumir-vaga', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dadosParaIA }),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const raw = await response.text();
+      let text: string | null = null;
+      // Try JSON first (n8n may return structured or plain text depending on config)
+      try {
+        const result = JSON.parse(raw);
+        const first = Array.isArray(result) ? result[0] : result;
+        text = first?.message?.content
+          || first?.resumo || first?.output || first?.text
+          || (typeof first === 'string' ? first : null);
+      } catch {
+        // Not JSON — use the raw text directly
+        text = raw.trim() || null;
+      }
+      if (!text) throw new Error('Resposta vazia da IA');
+      setAiSummary(text);
+    } catch (err) {
+      toast.error('Erro ao gerar resumo com IA');
+      console.error('AI summary error:', err);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const copyAiSummary = async () => {
+    if (!aiSummary) return;
+    await navigator.clipboard.writeText(aiSummary);
+    setAiCopied(true);
+    setTimeout(() => setAiCopied(false), 2000);
+  };
 
   const onSubmit = (data: InsertVaga) => {
     const vagaData = {
@@ -850,6 +915,55 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                 </label>
               </div>
             </div>
+          </div>
+
+          {/* AI Summary */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  Resumo com IA
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Gera um anúncio formatado com base nos dados preenchidos
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={generateAiSummary}
+                disabled={aiLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {aiLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Gerar Resumo
+                  </>
+                )}
+              </button>
+            </div>
+
+            {aiSummary && (
+              <div className="relative rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30 p-4">
+                <button
+                  type="button"
+                  onClick={copyAiSummary}
+                  title="Copiar resumo"
+                  className="absolute top-3 right-3 p-1.5 rounded text-purple-400 hover:text-purple-600 dark:hover:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-800/50 transition-colors"
+                >
+                  {aiCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                </button>
+                <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-sans pr-8 leading-relaxed">
+                  {aiSummary}
+                </pre>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
