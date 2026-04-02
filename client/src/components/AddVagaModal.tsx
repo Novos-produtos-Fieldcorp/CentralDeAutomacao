@@ -232,10 +232,10 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
       nome: values.nome || '',
       quantidade: Number(values.quantidade) || 1,
       descricao: values.descricao || '',
-      cliente_id: values.cliente_id || null,
-      unidade_id: values.unidade_id || null,
-      operacao_id: values.operacao_id || null,
-      st_vaga_id: values.st_vaga_id || null,
+      cliente_id: values.cliente_id ? Number(values.cliente_id) : null,
+      unidade_id: values.unidade_id ? Number(values.unidade_id) : null,
+      operacao_id: values.operacao_id ? Number(values.operacao_id) : null,
+      st_vaga_id: values.st_vaga_id ? Number(values.st_vaga_id) : null,
       dias_trabalho: diasSelecionados,
       horario: values.horario || '',
       cliente_nome: clienteNome,
@@ -252,9 +252,20 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
         body: JSON.stringify({ dadosParaIA }),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const result = await response.json();
-      const text = result?.resumo || result?.output || result?.text || result?.message
-        || (typeof result === 'string' ? result : JSON.stringify(result));
+      const raw = await response.text();
+      let text: string | null = null;
+      // Try JSON first (n8n may return structured or plain text depending on config)
+      try {
+        const result = JSON.parse(raw);
+        const first = Array.isArray(result) ? result[0] : result;
+        text = first?.message?.content
+          || first?.resumo || first?.output || first?.text
+          || (typeof first === 'string' ? first : null);
+      } catch {
+        // Not JSON — use the raw text directly
+        text = raw.trim() || null;
+      }
+      if (!text) throw new Error('Resposta vazia da IA');
       setAiSummary(text);
     } catch (err) {
       toast.error('Erro ao gerar resumo com IA');
