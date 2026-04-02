@@ -2105,6 +2105,31 @@ async function handleClienteRoutes(req: Request, path: string, method: string, s
 
   const companyId = parseInt(req.headers.get('company-id') || '1')
 
+  // GET /clientes/:companyId — simple dropdown list filtered by company (must be before paginated handler)
+  const getByCompanyMatch = path.match(/^\/clientes\/(\d+)$/)
+  if (getByCompanyMatch && method === 'GET') {
+    try {
+      const cId = parseInt(getByCompanyMatch[1])
+      const { data, error } = await supabase
+        .from('cliente')
+        .select('cliente_id, nome')
+        .eq('company_id', cId)
+        .eq('st_cliente', true)
+      if (error) {
+        return new Response(JSON.stringify({ error: 'Erro ao buscar clientes', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      return new Response(JSON.stringify(data || []), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+  }
+
   // Get all clientes
   if (path === '/clientes' && method === 'GET') {
     const url = new URL(req.url)
