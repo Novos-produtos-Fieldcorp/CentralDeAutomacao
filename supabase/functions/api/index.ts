@@ -140,6 +140,11 @@ serve(async (req) => {
       return await handleClienteRoutes(req, path, method, supabase)
     }
 
+    // Company routes
+    if (path.startsWith('/company')) {
+      return await handleCompanyRoutes(req, path, method, supabase)
+    }
+
     // Vagas routes
     if (path.startsWith('/vagas')) {
       return await handleVagasRoutes(req, path, method, supabase)
@@ -1933,6 +1938,40 @@ async function handleCompanyRoutes(req: Request, path: string, method: string, s
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
+  }
+
+  // GET /company/by-account/:accountId
+  const byAccountMatch = path.match(/^\/company\/by-account\/(.+)$/)
+  if (byAccountMatch && method === 'GET') {
+    try {
+      const accountId = byAccountMatch[1]
+      const { data: companies, error } = await supabase
+        .from('company')
+        .select('*')
+        .eq('id_conta_wiseapp', accountId)
+        .limit(1)
+      if (error) {
+        console.error('Error fetching company:', error)
+        return new Response(JSON.stringify({ error: 'Erro ao buscar empresa', details: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      if (!companies || companies.length === 0) {
+        return new Response(JSON.stringify({ error: 'Empresa não encontrada' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      const company = companies[0]
+      return new Response(JSON.stringify({
+        company_id: company.company_id || company.id,
+        razao_social: company.nome,
+        id_conta_wiseapp: company.id_conta_wiseapp,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
   }
 
   return new Response(JSON.stringify({
