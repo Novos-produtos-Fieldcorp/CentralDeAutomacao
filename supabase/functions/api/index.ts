@@ -2198,6 +2198,9 @@ async function handleVagasRoutes(req: Request, path: string, method: string, sup
       })
     }
     const vagas = vagasRes.data || []
+    if (statusRes.error) {
+      console.error('[vagas/dashboard] st_vaga lookup error:', statusRes.error.message)
+    }
     const statusMap: Record<number, string> = {}
     ;(statusRes.data || []).forEach((s: any) => { statusMap[s.id] = s.status_vaga })
     const now = new Date()
