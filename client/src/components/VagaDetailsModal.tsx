@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { useTheme } from '../context/ThemeContext';
 import { VagaWithRelations } from '../lib/vagasService';
+import { API_BASE_URL } from '../lib/api-config-supabase';
 
 interface VagaDetailsModalProps {
   vaga: VagaWithRelations;
@@ -132,16 +133,16 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
   const fetchDropdownData = async () => {
     if (!accountId) return;
     try {
-      const companyRes = await fetch(`/api/company/by-account/${accountId}`);
+      const companyRes = await fetch(`${API_BASE_URL}/company/by-account/${accountId}`);
       if (!companyRes.ok) return;
       const companyData = await companyRes.json();
       const companyId = companyData.company_id;
 
       const [clientesRes, unidadesRes, operacoesRes, statusRes] = await Promise.all([
-        fetch(`/api/clientes/${companyId}`),
-        fetch(`/api/unidades/${companyId}`),
-        fetch(`/api/operacoes/${companyId}`),
-        fetch(`/api/status-vagas/${companyId}`),
+        fetch(`${API_BASE_URL}/clientes/${companyId}`),
+        fetch(`${API_BASE_URL}/unidades/${companyId}`),
+        fetch(`${API_BASE_URL}/operacoes/${companyId}`),
+        fetch(`${API_BASE_URL}/status-vagas/${companyId}`),
       ]);
 
       const [clientes, unidades, operacoes, statusVagas] = await Promise.all([
@@ -191,7 +192,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
     setLoading(true);
 
     try {
-      const companyRes = await fetch(`/api/company/by-account/${accountId}`);
+      const companyRes = await fetch(`${API_BASE_URL}/company/by-account/${accountId}`);
       if (!companyRes.ok) {
         toast.error('Erro ao obter dados da empresa');
         return;
@@ -218,7 +219,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
         ativo: ativoEdit,
       };
 
-      const response = await fetch(`/api/vagas/${currentVaga.id}`, {
+      const response = await fetch(`${API_BASE_URL}/vagas/${currentVaga.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
