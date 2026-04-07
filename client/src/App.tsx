@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -16,21 +16,30 @@ import { ChatProvider } from "./context/ChatContext";
 import { WiseAppAccessProvider } from "./context/WiseAppAccessContext";
 import SidebarLayout from "./components/SidebarLayout";
 import Version from "./components/Version";
-import Dashboard from "./pages/Dashboard";
-import Motoristas from "./pages/Motoristas";
-import Veiculos from "./pages/Veiculos";
-import Hodometros from "./pages/Hodometros";
-import Checklist from "./pages/Checklist";
-import Clientes from "./pages/Clientes";
 import Unauthorized from "./pages/Unauthorized";
 import Admin from "./pages/Admin";
-import ResumosGrupo from "./pages/ResumosGrupo";
-import TagsAdmin from "./pages/TagsAdmin";
-import Comprovantes from "./pages/Comprovantes";
-import Vagas from "./pages/Vagas";
-import ComprovRota from "./pages/ComprovRota";
-import Operacoes from "./pages/Operacoes";
-import Logs from "./pages/Logs";
+
+// Lazy loading para páginas não críticas
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Motoristas = lazy(() => import("./pages/Motoristas"));
+const Veiculos = lazy(() => import("./pages/Veiculos"));
+const Hodometros = lazy(() => import("./pages/Hodometros"));
+const Checklist = lazy(() => import("./pages/Checklist"));
+const Clientes = lazy(() => import("./pages/Clientes"));
+const ResumosGrupo = lazy(() => import("./pages/ResumosGrupo"));
+const TagsAdmin = lazy(() => import("./pages/TagsAdmin"));
+const Comprovantes = lazy(() => import("./pages/Comprovantes"));
+const Vagas = lazy(() => import("./pages/Vagas"));
+const ComprovRota = lazy(() => import("./pages/ComprovRota"));
+const Operacoes = lazy(() => import("./pages/Operacoes"));
+const Logs = lazy(() => import("./pages/Logs"));
+
+// Componente de loading para lazy loading
+const PageLoader = () => (
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+  </div>
+);
 
 const AppRoutes = () => {
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -39,7 +48,7 @@ const AppRoutes = () => {
     if (isLoading) {
       return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="text-gray-600 dark:text-gray-400">Carregando...</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       );
     }
@@ -59,57 +68,59 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <SidebarLayout>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route
-                  path="/comprov-rota/*"
-                  element={<ComprovRota />}
-                />
-                <Route
-                  path="/motoristas/*"
-                  element={<Motoristas />}
-                />
-                <Route
-                  path="/veiculos/*"
-                  element={<Veiculos />}
-                />
-                <Route
-                  path="/hodometros/*"
-                  element={<Hodometros />}
-                />
-                <Route
-                  path="/checklist/*"
-                  element={<Checklist />}
-                />
-                <Route
-                  path="/clientes"
-                  element={<Clientes />}
-                />
-                <Route
-                  path="/resumos-grupo"
-                  element={<ResumosGrupo />}
-                />
-                <Route
-                  path="/tags-admin"
-                  element={<TagsAdmin />}
-                />
-                <Route
-                  path="/comprovantes/*"
-                  element={<Comprovantes />}
-                />
-                <Route
-                  path="/vagas/*"
-                  element={<Vagas />}
-                />
-                <Route
-                  path="/operacoes/*"
-                  element={<Operacoes />}
-                />
-                <Route
-                  path="/logs"
-                  element={<Logs />}
-                />
-              </Routes>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route
+                    path="/comprov-rota/*"
+                    element={<ComprovRota />}
+                  />
+                  <Route
+                    path="/motoristas/*"
+                    element={<Motoristas />}
+                  />
+                  <Route
+                    path="/veiculos/*"
+                    element={<Veiculos />}
+                  />
+                  <Route
+                    path="/hodometros/*"
+                    element={<Hodometros />}
+                  />
+                  <Route
+                    path="/checklist/*"
+                    element={<Checklist />}
+                  />
+                  <Route
+                    path="/clientes"
+                    element={<Clientes />}
+                  />
+                  <Route
+                    path="/resumos-grupo"
+                    element={<ResumosGrupo />}
+                  />
+                  <Route
+                    path="/tags-admin"
+                    element={<TagsAdmin />}
+                  />
+                  <Route
+                    path="/comprovantes/*"
+                    element={<Comprovantes />}
+                  />
+                  <Route
+                    path="/vagas/*"
+                    element={<Vagas />}
+                  />
+                  <Route
+                    path="/operacoes/*"
+                    element={<Operacoes />}
+                  />
+                  <Route
+                    path="/logs"
+                    element={<Logs />}
+                  />
+                </Routes>
+              </Suspense>
               <Version />
               <CustomToaster />
               <Toaster containerStyle={{ display: "none" }} toastOptions={{ duration: 12000 }} />
