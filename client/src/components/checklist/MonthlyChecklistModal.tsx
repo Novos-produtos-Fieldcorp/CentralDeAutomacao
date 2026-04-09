@@ -5,6 +5,90 @@ import type { Motorista, Veiculo, Checklist } from '../../types/database';
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 
+const FIELD_LABELS: Record<string, string> = {
+  cartao_combustivel: 'Cartão de Combustível',
+  carrinho_carga: 'Carrinho de Carga',
+  chave_roda: 'Chave de Roda',
+  cinto_seguranca: 'Cinto de Segurança',
+  documento_veicular: 'Documento Veicular',
+  FarolAlto: 'Farol Alto',
+  fluido_freio: 'Fluído de Freio',
+  freio_estacionamento: 'Freio de Estacionamento',
+  lanterna_traseira: 'Lanterna Traseira',
+  liq_arrefecimento: 'Líquido de Arrefecimento',
+  limpador_parabrisa: 'Limpador do Para-brisa',
+  luz_indicador_painel: 'Luz Indicadora do Painel',
+  luz_placa: 'Luz da Placa',
+  LuzFreio: 'Luz de Freio',
+  LuzNeblina: 'Luz de Neblina (Farol de Milha)',
+  LuzRe: 'Luz de Ré',
+  manual_veiculo: 'Manual do Veículo',
+  oleo_hidraulico: 'Óleo Hidráulico',
+  oleo_motor: 'Óleo do Motor',
+  parabrisa_dianteiro: 'Para-brisa Dianteiro',
+  pisca_dianteiro: 'Pisca Dianteiro',
+  pisca_traseiro: 'Pisca Traseiro',
+  sistema_freio: 'Sistema de Freio',
+  tampa_tanque: 'Tampa do Tanque',
+  vidros_laterais: 'Vidros Laterais'
+};
+
+const PHOTO_SECTIONS = [
+  {
+    title: 'Identificação e inspeção',
+    fields: [
+      { key: 'foto_hodometro', label: 'Hodômetro' },
+      { key: 'foto_oleo', label: 'Óleo' },
+      { key: 'foto_bateria', label: 'Bateria' }
+    ]
+  },
+  {
+    title: 'Vista externa do veículo',
+    fields: [
+      { key: 'foto_dianteira', label: 'Dianteira' },
+      { key: 'foto_traseira', label: 'Traseira' },
+      { key: 'foto_lateral_direita', label: 'Lateral Direita' },
+      { key: 'foto_lateral_esquerda', label: 'Lateral Esquerda' }
+    ]
+  },
+  {
+    title: 'Acessórios fotografados',
+    fields: [
+      { key: 'foto_carrinho_carga', label: 'Carrinho de Carga' }
+    ]
+  },
+  {
+    title: 'Fotos das avarias',
+    description: 'Envie 3 fotos das avarias quando houver necessidade.',
+    fields: [
+      { key: 'foto_avaria', label: 'Avaria 1' },
+      { key: 'foto_avaria2', label: 'Avaria 2' },
+      { key: 'foto_avaria3', label: 'Avaria 3' }
+    ]
+  }
+] as const;
+
+const ESTEPE_STATUS_NAMES = new Set(['bom', 'meiavida', 'ruim', 'naopossui']);
+
+const getFieldLabel = (key: string) => FIELD_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+const normalizeStatusName = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '').toLowerCase();
+
+const getEstepeStatusOptions = (items: { status_id: number; status: string }[]) => {
+  const filteredItems = items.filter(item => ESTEPE_STATUS_NAMES.has(normalizeStatusName(item.status)));
+  return filteredItems.length > 0 ? filteredItems : items;
+};
+
+const normalizeStatusValue = (value: unknown, fallback = 1) => {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : fallback;
+};
+
+const getPhotoGridClassName = (title: string) => {
+  if (title === 'Fotos das avarias') return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5';
+  return 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5';
+};
+
 interface MonthlyChecklistModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -17,6 +101,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
   const [loading, setLoading] = useState(false);
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
+  const [statusItems, setStatusItems] = useState<{ status_id: number; status: string }[]>([]);
   const [currentStep, setCurrentStep] = useState(1);
   const { companyId } = useCurrentAccount();
   
@@ -36,7 +121,10 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
       foto_dianteira: '',
       foto_traseira: '',
       foto_lateral_direita: '',
-      foto_lateral_esquerda: ''
+      foto_lateral_esquerda: '',
+      foto_avaria: '',
+      foto_avaria2: '',
+      foto_avaria3: ''
     },
     acessorios: {
       pneu: 1,
@@ -52,6 +140,8 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
       triangulo: 1,
       chave_roda: 1
     },
+    ComentarioBarulhoFreio: '',
+    AvariaComentario: '',
     componentes: {
       buzina: 1,
       ar_condicionado: 1,
@@ -80,6 +170,10 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
       pisca_traseiro: 1,
       lanterna_traseira: 1,
       luz_placa: 1,
+      FarolAlto: 1,
+      LuzFreio: 1,
+      LuzRe: 1,
+      LuzNeblina: 1,
       luz_indicador_painel: ''
     },
     fluidos: {
@@ -115,7 +209,9 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
           quilometragem: checklist.quilometragem?.toString() || '',
           observacoes: checklist.observacoes || '',
           data: checklist.data || new Date().toISOString().split('T')[0],
-          hora: checklist.hora || new Date().toTimeString().split(' ')[0].slice(0, 5)
+          hora: checklist.hora || new Date().toTimeString().split(' ')[0].slice(0, 5),
+          ComentarioBarulhoFreio: (checklist as any).ComentarioBarulhoFreio || '',
+          AvariaComentario: (checklist as any).AvariaComentario || ''
         }));
       } else {
         // If creating a new checklist, reset to empty form
@@ -125,8 +221,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
       
       fetchMotoristas();
       fetchVeiculos();
-      
-      // If editing a checklist, also fetch its photos
+      fetchStatusItems();
       if (checklist) {
         fetchChecklistPhotos(checklist.checklist_id);
         fetchChecklistDetails(checklist.checklist_id);
@@ -157,6 +252,8 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         // Update form data with the fetched details
         setFormData(prev => ({
           ...prev,
+          ComentarioBarulhoFreio: data.ComentarioBarulhoFreio || '',
+          AvariaComentario: data.AvariaComentario || '',
           acessorios: {
             pneu: data.acessorios_veiculos?.[0]?.pneu || 1,
             estepe: data.acessorios_veiculos?.[0]?.estepe || 1,
@@ -193,12 +290,16 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
             cinto_seguranca: data.componentes_gerais?.[0]?.cinto_seguranca || 1
           },
           farol: {
-            dianteiro: data.farol_veiculo?.[0]?.dianteiro || 1,
-            auxiliar: data.farol_veiculo?.[0]?.auxiliar || 1,
-            pisca_dianteiro: data.farol_veiculo?.[0]?.pisca_dianteiro || 1,
-            pisca_traseiro: data.farol_veiculo?.[0]?.pisca_traseiro || 1,
-            lanterna_traseira: data.farol_veiculo?.[0]?.lanterna_traseira || 1,
-            luz_placa: data.farol_veiculo?.[0]?.luz_placa || 1,
+            dianteiro: normalizeStatusValue(data.farol_veiculo?.[0]?.dianteiro),
+            auxiliar: normalizeStatusValue(data.farol_veiculo?.[0]?.auxiliar),
+            pisca_dianteiro: normalizeStatusValue(data.farol_veiculo?.[0]?.pisca_dianteiro),
+            pisca_traseiro: normalizeStatusValue(data.farol_veiculo?.[0]?.pisca_traseiro),
+            lanterna_traseira: normalizeStatusValue(data.farol_veiculo?.[0]?.lanterna_traseira),
+            luz_placa: normalizeStatusValue(data.farol_veiculo?.[0]?.luz_placa),
+            FarolAlto: normalizeStatusValue(data.farol_veiculo?.[0]?.FarolAlto),
+            LuzFreio: normalizeStatusValue(data.farol_veiculo?.[0]?.LuzFreio),
+            LuzRe: normalizeStatusValue(data.farol_veiculo?.[0]?.LuzRe),
+            LuzNeblina: normalizeStatusValue(data.farol_veiculo?.[0]?.LuzNeblina),
             luz_indicador_painel: data.farol_veiculo?.[0]?.luz_indicador_painel || ''
           },
           fluidos: {
@@ -242,7 +343,10 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
             foto_dianteira: data.foto_dianteira || '',
             foto_traseira: data.foto_traseira || '',
             foto_lateral_direita: data.foto_lateral_direita || '',
-            foto_lateral_esquerda: data.foto_lateral_esquerda || ''
+            foto_lateral_esquerda: data.foto_lateral_esquerda || '',
+            foto_avaria: data.foto_avaria || '',
+            foto_avaria2: data.foto_avaria2 || '',
+            foto_avaria3: data.foto_avaria3 || ''
           }
         }));
       }
@@ -283,6 +387,19 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
     } catch (error) {
       console.error('Error fetching veiculos:', error);
       toast.error('Erro ao carregar veículos');
+    }
+  };
+
+  const fetchStatusItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('status_item')
+        .select('*')
+        .order('status_id');
+      if (error) throw error;
+      setStatusItems(data || []);
+    } catch (error) {
+      console.error('Error fetching status items:', error);
     }
   };
 
@@ -347,6 +464,8 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         hora: formData.hora,
         quilometragem: parseFloat(formData.quilometragem),
         observacoes: formData.observacoes,
+        ComentarioBarulhoFreio: formData.ComentarioBarulhoFreio,
+        AvariaComentario: formData.AvariaComentario,
         id_tipo_checklist: 1, // Monthly
         motorista_id: parseInt(formData.motorista_id),
         veiculo_id: parseInt(formData.veiculo_id),
@@ -396,7 +515,10 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
             foto_dianteira: formData.fotos.foto_dianteira,
             foto_traseira: formData.fotos.foto_traseira,
             foto_lateral_direita: formData.fotos.foto_lateral_direita,
-            foto_lateral_esquerda: formData.fotos.foto_lateral_esquerda
+            foto_lateral_esquerda: formData.fotos.foto_lateral_esquerda,
+            foto_avaria: formData.fotos.foto_avaria,
+            foto_avaria2: formData.fotos.foto_avaria2,
+            foto_avaria3: formData.fotos.foto_avaria3
           });
 
         if (fotosError) throw fotosError;
@@ -483,6 +605,10 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
           pisca_traseiro: formData.farol.pisca_traseiro,
           lanterna_traseira: formData.farol.lanterna_traseira,
           luz_placa: formData.farol.luz_placa,
+          FarolAlto: formData.farol.FarolAlto,
+          LuzFreio: formData.farol.LuzFreio,
+          LuzRe: formData.farol.LuzRe,
+          LuzNeblina: formData.farol.LuzNeblina,
           luz_indicador_painel: formData.farol.luz_indicador_painel
         });
 
@@ -537,9 +663,9 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-6xl 2xl:max-w-7xl w-full max-h-[92vh] overflow-y-auto shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-2xl">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             {checklist ? 'Editar' : 'Novo'} Checklist Mensal
           </h2>
@@ -552,13 +678,13 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="p-6">
+          <div className="p-4 sm:p-6 space-y-6">
             {/* Progress Steps */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between gap-3 mb-2">
               {[1, 2, 3].map((step, index) => (
                 <React.Fragment key={step}>
                   <div 
-                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 
+                    className={`flex shrink-0 items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 text-sm font-medium
                               ${currentStep >= step 
                                 ? 'border-blue-600 bg-blue-600 text-white' 
                                 : 'border-gray-300 dark:border-gray-600'}`}
@@ -576,12 +702,17 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
 
             {/* Step Content */}
             {currentStep === 1 && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                  Informações Básicas
-                </h3>
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-6">
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Informações Básicas
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Preencha os dados principais e registre observações relevantes do veículo.
+                  </p>
+                </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 xl:gap-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Motorista *
@@ -660,7 +791,7 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
                     />
                   </div>
 
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-2 xl:col-span-4">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Observações
                     </label>
@@ -671,106 +802,147 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     />
                   </div>
+
+                  <div className="md:col-span-2 xl:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Descreva comentário sobre barulho de freio se possui?
+                    </label>
+                    <textarea
+                      value={formData.ComentarioBarulhoFreio}
+                      onChange={(e) => setFormData(prev => ({ ...prev, ComentarioBarulhoFreio: e.target.value }))}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="Descreva o barulho de freio (se houver)"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2 xl:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Avarias, se sim, descreva quais
+                    </label>
+                    <textarea
+                      value={formData.AvariaComentario}
+                      onChange={(e) => setFormData(prev => ({ ...prev, AvariaComentario: e.target.value }))}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="Descreva as avarias encontradas (se houver)"
+                    />
+                  </div>
                 </div>
               </div>
             )}
 
             {currentStep === 2 && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                  Fotos do Veículo
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {Object.entries(formData.fotos).map(([key, value]) => (
-                    <div key={key} className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {key.replace(/foto_/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </label>
-                      {value ? (
-                        <div className="relative aspect-video w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden group">
-                          <img
-                            src={value}
-                            alt={key.replace(/foto_/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            className="absolute inset-0 w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <button
-                              type="button"
-                              onClick={() => handleRemovePhoto(key as keyof typeof formData.fotos)}
-                              className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-4">
-                          <label
-                            htmlFor={`file-${key}`}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
-                          >
-                            <Camera className="w-5 h-5" />
-                            <span>Adicionar Foto</span>
-                            <input
-                              type="file"
-                              id={`file-${key}`}
-                              accept="image/*"
-                              onChange={(e) => handlePhotoUpload(e, key as keyof typeof formData.fotos)}
-                              className="hidden"
-                            />
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-6">
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Fotos do Veículo
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Organize as imagens por grupo para reduzir rolagem e facilitar conferência visual.
+                  </p>
                 </div>
+                <div className="space-y-8">
+                    {PHOTO_SECTIONS.map(section => (
+                      <div key={section.title}>
+                        <h4 className="text-base font-medium text-gray-900 dark:text-white mb-2">
+                          {section.title}
+                        </h4>
+                        {'description' in section && section.description ? (
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{section.description}</p>
+                        ) : null}
+                        <div className={getPhotoGridClassName(section.title)}>
+                          {section.fields.map(({ key, label }) => {
+                            const value = formData.fotos[key as keyof typeof formData.fotos];
+
+                            return (
+                              <div key={key} className="space-y-2 min-w-0">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  {label}
+                                </label>
+                                {value ? (
+                                  <div className="relative aspect-video w-full bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden group shadow-sm">
+                                    <img src={value} alt={label} className="absolute inset-0 w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                      <button type="button" onClick={() => handleRemovePhoto(key as keyof typeof formData.fotos)} className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors">
+                                        <X size={16} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <label htmlFor={`file-${key}`} className="flex min-h-[150px] items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700/40 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                                    <Camera className="w-5 h-5" />
+                                    <span>Adicionar Foto</span>
+                                    <input type="file" id={`file-${key}`} accept="image/*" onChange={(e) => handlePhotoUpload(e, key as keyof typeof formData.fotos)} className="hidden" />
+                                  </label>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
               </div>
             )}
 
             {currentStep === 3 && (
               <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-                  Estado dos Componentes
-                </h3>
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Estado dos Componentes
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Distribua os status com menos rolagem e melhor leitura em telas largas.
+                  </p>
+                </div>
                 
                 {/* Acessórios */}
-                <div className="space-y-4">
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
                   <h4 className="text-base font-medium text-gray-900 dark:text-white">Acessórios</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.entries(formData.acessorios).map(([key, value]) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    {(['pneu','macaco','extintor','cartao_combustivel','cadeado','chave_reserva','carrinho_carga','documento_veicular','manual_veiculo','triangulo','chave_roda'] as const).map((key) => (
                       <div key={key}>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          {getFieldLabel(key)}
                         </label>
                         <select
-                          value={value}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            acessorios: {
-                              ...prev.acessorios,
-                              [key]: parseInt(e.target.value)
-                            }
-                          }))}
+                          value={formData.acessorios[key]}
+                          onChange={(e) => setFormData(prev => ({ ...prev, acessorios: { ...prev.acessorios, [key]: parseInt(e.target.value) } }))}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         >
-                          <option value={1}>OK</option>
-                          <option value={2}>Não OK</option>
-                          <option value={3}>N/A</option>
+                          {statusItems.map(item => (
+                            <option key={item.status_id} value={item.status_id}>{item.status}</option>
+                          ))}
                         </select>
                       </div>
                     ))}
+
+                    {/* Estepe com opções específicas */}
+                    <div className="md:col-span-2 xl:col-span-4">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estepe</label>
+                      <select
+                        value={formData.acessorios.estepe}
+                        onChange={(e) => setFormData(prev => ({ ...prev, acessorios: { ...prev.acessorios, estepe: parseInt(e.target.value) } }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      >
+                        {getEstepeStatusOptions(statusItems).map(item => (
+                          <option key={item.status_id} value={item.status_id}>{item.status}</option>
+                        ))}
+                      </select>
+                    </div>
+
                   </div>
                 </div>
 
                 {/* Componentes */}
-                <div className="space-y-4">
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
                   <h4 className="text-base font-medium text-gray-900 dark:text-white">Componentes</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                     {Object.entries(formData.componentes).map(([key, value]) => (
                       <div key={key}>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          {getFieldLabel(key)}
                         </label>
                         <select
                           value={value}
@@ -783,9 +955,11 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
                           }))}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         >
-                          <option value={1}>OK</option>
-                          <option value={2}>Não OK</option>
-                          <option value={3}>N/A</option>
+                          {statusItems.map(item => (
+                            <option key={item.status_id} value={item.status_id}>
+                              {item.status}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     ))}
@@ -793,13 +967,13 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
                 </div>
 
                 {/* Faróis */}
-                <div className="space-y-4">
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
                   <h4 className="text-base font-medium text-gray-900 dark:text-white">Faróis</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                     {Object.entries(formData.farol).map(([key, value]) => (
                       <div key={key}>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          {getFieldLabel(key)}
                         </label>
                         {key === 'luz_indicador_painel' ? (
                           <input
@@ -827,9 +1001,11 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
                             }))}
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                           >
-                            <option value={1}>OK</option>
-                            <option value={2}>Não OK</option>
-                            <option value={3}>N/A</option>
+                            {statusItems.map(item => (
+                              <option key={item.status_id} value={item.status_id}>
+                                {item.status}
+                              </option>
+                            ))}
                           </select>
                         )}
                       </div>
@@ -838,9 +1014,9 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
                 </div>
 
                 {/* Fluidos */}
-                <div className="space-y-4">
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
                   <h4 className="text-base font-medium text-gray-900 dark:text-white">Fluidos</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {Object.entries(formData.fluidos).map(([key, value]) => (
                       <div key={key}>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -857,9 +1033,11 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
                           }))}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         >
-                          <option value={1}>OK</option>
-                          <option value={2}>Não OK</option>
-                          <option value={3}>N/A</option>
+                          {statusItems.map(item => (
+                            <option key={item.status_id} value={item.status_id}>
+                              {item.status}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     ))}
@@ -869,8 +1047,8 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
             )}
           </div>
 
-          <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-            {currentPage > 1 && (
+          <div className="flex flex-wrap justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-gray-800/80">
+            {currentStep > 1 && (
               <button
                 type="button"
                 onClick={() => setCurrentStep(prev => prev - 1)}

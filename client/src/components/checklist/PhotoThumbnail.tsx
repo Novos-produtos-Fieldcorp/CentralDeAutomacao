@@ -4,9 +4,10 @@ import { Camera, Loader2, Download, X } from 'lucide-react';
 interface PhotoThumbnailProps {
   url: string;
   label: string;
+  badgeLabel?: string;
 }
 
-export const PhotoThumbnail = React.memo(({ url, label }: PhotoThumbnailProps) => {
+export const PhotoThumbnail = React.memo(({ url, label, badgeLabel }: PhotoThumbnailProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
@@ -66,6 +67,11 @@ export const PhotoThumbnail = React.memo(({ url, label }: PhotoThumbnailProps) =
           className="relative aspect-video w-full bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden group cursor-pointer shadow-md"
           onClick={openLightbox}
         >
+          {badgeLabel ? (
+            <div className="absolute top-2 left-2 z-10 px-2.5 py-1 rounded-full bg-black/70 text-white text-xs font-medium backdrop-blur-sm">
+              {badgeLabel}
+            </div>
+          ) : null}
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
@@ -117,9 +123,16 @@ export const PhotoThumbnail = React.memo(({ url, label }: PhotoThumbnailProps) =
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                {label}
-              </h3>
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  {label}
+                </h3>
+                {badgeLabel ? (
+                  <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 text-xs font-medium">
+                    {badgeLabel}
+                  </span>
+                ) : null}
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleDownload}
