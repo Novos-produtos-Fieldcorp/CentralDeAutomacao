@@ -686,7 +686,6 @@ const CreateMonthlyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateMonth
                     </div>
                   ))}
                 </div>
-              </div>
             </div>
           )}
 
