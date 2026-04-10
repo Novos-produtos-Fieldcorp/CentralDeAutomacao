@@ -55,6 +55,12 @@ import { WiseAppBulkSyncPanel } from "../../components/WiseAppSyncButton";
 import { API_BASE_URL, createApiUrl } from "@/lib/api-config-supabase";
 import FilterTags from "../../components/FilterTags";
 import { useModuleAccess } from "../../hooks/useModuleAccess";
+import {
+  getListRefreshSkeletonPreset,
+  default as ListRefreshSkeleton,
+} from "../../components/contratacao/ListRefreshSkeleton";
+
+const agregadosSkeletonPreset = getListRefreshSkeletonPreset("agregados");
 
 interface AgregadosListaProps {
   onSuccess?: () => void;
@@ -253,8 +259,11 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { moduleAccess } = useModuleAccess();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const latestFetchContratadosRef = useRef(0);
+  const hasLoadedContratadosRef = useRef(false);
   const [pageSize, setPageSize] = useState(50);
   const [serverPage, setServerPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
@@ -1539,8 +1548,16 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
   const fetchContratados = async (page = 0, size = pageSize) => {
     if (!companyId) return;
+    const requestId = ++latestFetchContratadosRef.current;
+    const shouldShowFullSpinner =
+      !hasLoadedContratadosRef.current && contratados.length === 0;
+
     try {
-      setLoading(true);
+      if (shouldShowFullSpinner) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
 
       // Pré-filtrar por áreas de atuação via tabela relacional
       let motoristaIdsByArea: number[] | null = null;
@@ -1564,9 +1581,12 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
           // Se não houver nenhum motorista correspondente, evitamos a query principal
           if (motoristaIdsByArea.length === 0) {
+            if (requestId !== latestFetchContratadosRef.current) return;
             setContratados([]);
             setTotalCount(0);
+            hasLoadedContratadosRef.current = true;
             setLoading(false);
+            setIsRefreshing(false);
             return;
           }
         }
@@ -1587,7 +1607,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (debouncedSearch.trim()) {
         const term = debouncedSearch.trim();
         query = query.or(
-          `nome_motorista.ilike.%${term}%,cpf.ilike.%${term}%,placa.ilike.%${term}%,telefone.ilike.%${term}%`,
+          `nome_motorista.ilike.%${term}%,cpf.ilike.%${term}%,placa.ilike.%${term}%,email.ilike.%${term}%`,
         );
       }
 
@@ -1674,6 +1694,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       query = query.range(page * size, (page + 1) * size - 1);
 
       const { data, error, count } = await query;
+
+      if (requestId !== latestFetchContratadosRef.current) return;
 
       setTotalCount(count ?? 0);
 
@@ -1792,15 +1814,37 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       // As cidades já foram carregadas pela função separada
       // Não precisamos fazer nada aqui
 
+      if (requestId !== latestFetchContratadosRef.current) return;
+      hasLoadedContratadosRef.current = true;
       setContratados(agregadosAgrupados);
 
       // Tags serão carregadas apenas quando necessário (filtro, ações em massa, etc.)
       // Para melhor performance, não carregar automaticamente
-    } catch (error) {
+    } catch (error: any) {
+      if (requestId !== latestFetchContratadosRef.current) return;
       console.error("Error fetching contratados:", error);
-      toast.error("Erro ao carregar contratados");
+
+      const message = error?.message || "";
+      const code = error?.code || "";
+      const details = error?.details || "";
+      const isMissingAgregadosView =
+        code === "PGRST205" ||
+        message.toLowerCase().includes("vw_agregados_completo") ||
+        details.toLowerCase().includes("vw_agregados_completo") ||
+        (message.toLowerCase().includes("relation") &&
+          message.toLowerCase().includes("does not exist"));
+
+      if (isMissingAgregadosView) {
+        const friendlyMessage =
+          "A view vw_agregados_completo não está disponível no ambiente atual. Verifique se as migrations do Supabase foram aplicadas.";
+        toast.error(friendlyMessage);
+      } else {
+        toast.error("Erro ao carregar contratados");
+      }
     } finally {
+      if (requestId !== latestFetchContratadosRef.current) return;
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -2284,7 +2328,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       if (debouncedSearch.trim()) {
         const term = debouncedSearch.trim();
         q = q.or(
-          `nome_motorista.ilike.%${term}%,cpf.ilike.%${term}%,placa.ilike.%${term}%,telefone.ilike.%${term}%`,
+          `nome_motorista.ilike.%${term}%,cpf.ilike.%${term}%,placa.ilike.%${term}%,email.ilike.%${term}%`,
         );
       }
       if (statusFilter.length > 0) q = q.in("st_cadastro", statusFilter);
@@ -2579,8 +2623,6 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   };
 
   const filteredContratados = contratados.filter((motorista): boolean => {
-    const searchLower = searchTerm.toLowerCase();
-
     // Status, cidade, cliente are filtered server-side — skip here
 
     // Lógica para filtro de tipo de veículo (multiseleção)
@@ -2664,24 +2706,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             ? motorista.ativo === false
             : true;
 
-    // Client-side search is a no-op when server-side search is active
-    // (already filtered by server). Only needed for email which isn't in the view OR
-    // when debouncedSearch is empty.
-    const searchMatch = !debouncedSearch.trim()
-      ? Boolean(
-          (motorista.nome_motorista &&
-            motorista.nome_motorista.toLowerCase().includes(searchLower)) ||
-          (motorista.cpf && motorista.cpf.includes(searchLower)) ||
-          (typeof motorista.email === "string" &&
-            motorista.email.toLowerCase().includes(searchLower)) ||
-          (motorista.telefone &&
-            motorista.telefone.toString().includes(searchLower)),
-        )
-      : true;
-
-    return Boolean(
-      tipoVeiculoMatch && bauMatch && tagMatch && ativoMatch && searchMatch,
-    );
+    return Boolean(tipoVeiculoMatch && bauMatch && tagMatch && ativoMatch);
   });
 
   // selectAll is derived: true when every item on the current page is selected
@@ -2703,7 +2728,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
     setServerPage(0);
   };
 
-  if (loading) {
+  if (loading && contratados.length === 0) {
     return <LoadingSpinner />;
   }
 
@@ -2816,12 +2841,15 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         <div className="relative flex-1">
           <input
             type="text"
-            placeholder="Buscar por nome, CPF, email ou telefone..."
+            placeholder="Buscar por nome, CPF, email ou placa..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
           />
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          {isRefreshing && (
+            <Loader2 className="absolute right-10 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-blue-500" />
+          )}
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
@@ -3884,7 +3912,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             )}
           </div>
 
-          <div className="overflow-x-auto" ref={tableContainerRef}>
+          <div className="relative overflow-x-auto" ref={tableContainerRef}>
             <div className="w-full">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
@@ -3926,7 +3954,10 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedData.map((motorista, index) => (
+                  {isRefreshing ? (
+                    <ListRefreshSkeleton {...agregadosSkeletonPreset} />
+                  ) : (
+                    paginatedData.map((motorista, index) => (
                     <tr
                       key={`agregado-${motorista.motorista_id || ""}-${motorista.cpf || ""}-${index}`}
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
@@ -4524,7 +4555,8 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -4536,13 +4568,13 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
           </div>
         </div>
 
-        {filteredContratados.length === 0 ? (
+        {!isRefreshing && filteredContratados.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400">
               Nenhum contratado encontrado
             </p>
           </div>
-        ) : (
+        ) : !isRefreshing ? (
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -4557,7 +4589,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
           />
-        )}
+        ) : null}
       </div>
 
       {/* Context Menu */}

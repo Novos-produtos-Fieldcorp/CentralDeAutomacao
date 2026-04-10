@@ -117,12 +117,14 @@ const VeiculosAgregados = () => {
       const from = (currentPage - 1) * pageSize;
       const to = from + pageSize - 1;
 
-      // Buscar veículos agregados diretamente da view vw_agregados_completo
+      // Buscar apenas vínculos ativos de veículos dos agregados.
       let query = supabase
         .from('vw_agregados_completo')
         .select('*', { count: 'exact' })
         .eq('company_id', companyId)
-        .eq('st_cadastro', 'contratado');
+        .eq('ativo', true)
+        .eq('status_veiculo', true)
+        .not('veiculo_id', 'is', null);
 
       if (debouncedSearchTerm) {
         query = query.or(
@@ -138,15 +140,24 @@ const VeiculosAgregados = () => {
       setTotalCount(count || 0);
       setTotalPages(Math.max(1, Math.ceil((count || 0) / pageSize)));
 
-      // Normalizar placas para maiúsculo e garantir array
-      const veiculosContratados = (data || [])
+      // A view usa LEFT JOIN; filtramos novamente para evitar registros órfãos.
+      const veiculosAtivos = (data || [])
+        .filter((veiculo: any) => veiculo.veiculo_id && veiculo.status_veiculo === true)
         .map((veiculo: any) => ({
           ...veiculo,
           placa: veiculo.placa?.toUpperCase() || '',
+          motorista: veiculo.nome_motorista
+            ? {
+                motorista_id: veiculo.motorista_id,
+                nome: veiculo.nome_motorista,
+                cpf: veiculo.cpf || '',
+                telefone: veiculo.telefone || '',
+              }
+            : null,
         }))
         .sort((a, b) => (a.placa || '').localeCompare(b.placa || ''));
 
-      setVeiculos(veiculosContratados);
+      setVeiculos(veiculosAtivos);
     } catch (error: any) {
       console.error('Error fetching veiculos (full):', error);
       const errorMessage = error?.message || error?.error?.message || JSON.stringify(error) || 'Erro desconhecido ao carregar veículos';
@@ -166,7 +177,7 @@ const VeiculosAgregados = () => {
         .from('motorista')
         .select('*')
         .eq('funcao', 'Agregado')
-        .eq('st_cadastro', 'contratado')
+        .eq('ativo', true)
         .eq('company_id', companyId);
 
       if (motoristasError) {
@@ -438,7 +449,7 @@ const VeiculosAgregados = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative overflow-hidden">
         <div className="overflow-hidden">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
             <div className="flex items-center">
@@ -456,16 +467,16 @@ const VeiculosAgregados = () => {
           
           <div className="relative">
             <div ref={tableContainerRef} className="overflow-x-auto w-full">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <table className="w-full min-w-[860px] table-fixed divide-y divide-gray-200 dark:divide-gray-700 xl:min-w-full">
                 <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800"></th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Veículo</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Motorista</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Características</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Rastreador</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Status</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800">Ações</th>
+                    <th className="w-12 px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 md:px-4"></th>
+                    <th className="w-[24%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 md:px-4">Veículo</th>
+                    <th className="w-[20%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 md:px-4">Agregado</th>
+                    <th className="w-[26%] px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 md:px-4">Características</th>
+                    <th className="hidden w-[14%] px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 lg:table-cell md:px-4">Rastreador</th>
+                    <th className="w-[10%] px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 md:px-4">Status</th>
+                    <th className="w-[10%] px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-800 md:px-4">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -477,44 +488,53 @@ const VeiculosAgregados = () => {
                       }`}
                       onContextMenu={(e) => handleContextMenu(e, veiculo)}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.has(veiculo.veiculo_id)}
-                          onChange={() => handleSelectItem(veiculo.veiculo_id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
+                      <td className="px-3 py-4 align-middle md:px-4">
+                        <div className="flex items-center justify-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedItems.has(veiculo.veiculo_id)}
+                            onChange={() => handleSelectItem(veiculo.veiculo_id)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                      <td className="px-3 py-4 align-top md:px-4">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
                             <span className="text-lg font-medium text-gray-600 dark:text-gray-300">
                               {veiculo.placa.charAt(0)}
                             </span>
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-medium text-gray-900 dark:text-white">
                               {veiculo.placa.toUpperCase()}
                             </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {veiculo.marca} {veiculo.tipo}
+                            <div className="line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
+                              {[veiculo.marca, veiculo.tipo].filter(Boolean).join(' ') || 'Dados não informados'}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {veiculo.motorista?.nome}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {veiculo.motorista?.cpf && formatCPF(veiculo.motorista.cpf)}
+                      <td className="px-3 py-4 align-top md:px-4">
+                        <div className="min-w-0">
+                          <div className="line-clamp-2 text-sm font-medium text-gray-900 dark:text-white">
+                            {veiculo.motorista?.nome || 'Agregado não identificado'}
+                          </div>
+                          <div className="truncate text-sm text-gray-500 dark:text-gray-400">
+                            {veiculo.motorista?.cpf ? formatCPF(veiculo.motorista.cpf) : 'CPF não informado'}
+                          </div>
+                          {veiculo.motorista?.telefone && (
+                            <div className="truncate text-xs text-gray-400 dark:text-gray-500">
+                              {veiculo.motorista.telefone}
+                            </div>
+                          )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-4 align-top md:px-4">
                         <div className="text-sm text-gray-900 dark:text-white uppercase">
                           {veiculo.tipologia || 'NÃO INFORMADA'}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="break-words text-sm text-gray-500 dark:text-gray-400">
                           {veiculo.peso && veiculo.cubagem ? (
                             <span className="uppercase">
                               PESO: {veiculo.peso} | CUBAGEM: {veiculo.cubagem}
@@ -524,41 +544,48 @@ const VeiculosAgregados = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          veiculo.possui_rastreador
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                        }`}>
-                          {veiculo.possui_rastreador ? 'SIM' : 'NÃO'}
-                        </span>
-                        {veiculo.possui_rastreador && (
-                          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 uppercase">
-                            {veiculo.marca_rastreador}
+                      <td className="hidden px-3 py-4 align-middle lg:table-cell md:px-4">
+                        <div className="flex flex-col items-center justify-center gap-1 text-center">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            veiculo.possui_rastreador
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          }`}>
+                            {veiculo.possui_rastreador ? 'SIM' : 'NÃO'}
+                          </span>
+                          {veiculo.possui_rastreador && (
+                            <div className="text-sm text-gray-500 dark:text-gray-400 uppercase">
+                              {veiculo.marca_rastreador}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-4 align-middle md:px-4">
+                        <div className="flex flex-col items-center justify-center gap-2 text-center">
+                          <button
+                            onClick={(e) => handleToggleStatus(veiculo, e)}
+                            disabled={updatingStatus === veiculo.veiculo_id}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                              veiculo.status_veiculo 
+                                ? 'bg-green-500 dark:bg-green-600' 
+                                : 'bg-red-500 dark:bg-red-600'
+                            } ${updatingStatus === veiculo.veiculo_id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            role="switch"
+                            aria-checked={veiculo.status_veiculo}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                veiculo.status_veiculo ? 'translate-x-5' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                          <div className="text-xs font-medium text-gray-500 dark:text-gray-400 lg:hidden">
+                            {veiculo.possui_rastreador ? veiculo.marca_rastreador || 'Rastreador ativo' : 'Sem rastreador'}
                           </div>
-                        )}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={(e) => handleToggleStatus(veiculo, e)}
-                          disabled={updatingStatus === veiculo.veiculo_id}
-                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                            veiculo.status_veiculo 
-                              ? 'bg-green-500 dark:bg-green-600' 
-                              : 'bg-red-500 dark:bg-red-600'
-                          } ${updatingStatus === veiculo.veiculo_id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          role="switch"
-                          aria-checked={veiculo.status_veiculo}
-                        >
-                          <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                              veiculo.status_veiculo ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-3">
+                      <td className="px-3 py-4 align-middle text-center text-sm font-medium md:px-4">
+                        <div className="flex items-center justify-center space-x-3">
                           <button
                             onClick={() => handleViewCombined(veiculo)}
                             className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"

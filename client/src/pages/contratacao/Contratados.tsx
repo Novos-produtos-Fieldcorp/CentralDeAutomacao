@@ -48,6 +48,12 @@ import ScrollableTableIndicator from "../../components/ScrollableTableIndicator"
 import ContextMenu from "../../components/ContextMenu";
 import UnifiedMotoristaModal from "../../components/UnifiedMotoristaModal";
 import { TableDropdown } from "../../components/TableDropdown";
+import {
+  getListRefreshSkeletonPreset,
+  default as ListRefreshSkeleton,
+} from "../../components/contratacao/ListRefreshSkeleton";
+
+const contratadosSkeletonPreset = getListRefreshSkeletonPreset("contratados");
 import { useWiseAppAccess } from "../../context/WiseAppAccessContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -163,6 +169,8 @@ const Contratados = () => {
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const hasLoadedContratadosRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>("");
@@ -475,7 +483,7 @@ const Contratados = () => {
   useEffect(() => {
     fetchContratados();
     fetchClientes();
-  }, [dateFilter, customDateRange, currentPage, pageSize, searchTerm]);
+  }, [dateFilter, customDateRange, currentPage, pageSize]);
 
   useEffect(() => {
     // Close context menu when clicking anywhere
@@ -492,8 +500,15 @@ const Contratados = () => {
   }, [contextMenu.visible]);
 
   const fetchContratados = async () => {
+    const showFullSpinner =
+      !hasLoadedContratadosRef.current && contratados.length === 0;
+
     try {
-      setLoading(true);
+      if (showFullSpinner) {
+        setLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
 
       // STEP 1: Buscar IDs únicos separadamente para motoristas e agregados
       const [motoristasIds, agregadosIds] = await Promise.all([
@@ -537,6 +552,7 @@ const Contratados = () => {
         setCidades([]);
         setTiposVeiculo([]);
         setFuncoes([]);
+        hasLoadedContratadosRef.current = true;
         return;
       }
 
@@ -620,11 +636,13 @@ const Contratados = () => {
       }
 
       setContratados(contratadosAgrupados);
+      hasLoadedContratadosRef.current = true;
     } catch (error) {
       console.error("Erro ao buscar contratados:", error);
       toast.error("Erro ao carregar dados dos contratados");
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -1547,7 +1565,7 @@ const Contratados = () => {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  if (loading) {
+  if (loading && contratados.length === 0) {
     return <LoadingSpinner />;
   }
 
@@ -1701,6 +1719,9 @@ const Contratados = () => {
                 className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
               />
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              {isRefreshing && (
+                <Loader2 className="absolute right-10 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-blue-500" />
+              )}
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm("")}
@@ -2433,7 +2454,7 @@ const Contratados = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <div ref={tableContainerRef} className="w-full">
+            <div ref={tableContainerRef} className="relative w-full">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
@@ -2474,7 +2495,10 @@ const Contratados = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedData.map((motorista) => (
+                  {isRefreshing ? (
+                    <ListRefreshSkeleton {...contratadosSkeletonPreset} />
+                  ) : (
+                    paginatedData.map((motorista) => (
                     <tr
                       key={motorista.motorista_id || Math.random()}
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
@@ -2947,7 +2971,8 @@ const Contratados = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -2959,13 +2984,13 @@ const Contratados = () => {
           </div>
         </div>
 
-        {paginatedData.length === 0 ? (
+        {!isRefreshing && paginatedData.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400">
               Nenhum contratado encontrado
             </p>
           </div>
-        ) : (
+        ) : !isRefreshing ? (
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -2974,7 +2999,7 @@ const Contratados = () => {
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
           />
-        )}
+        ) : null}
       </div>
 
       {/* Context Menu */}

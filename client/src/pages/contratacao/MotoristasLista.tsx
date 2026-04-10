@@ -30,6 +30,12 @@ import { useWiseAppContactsSync } from '../../hooks/useWiseAppContactsSync';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { API_BASE_URL, createApiUrl } from '@/lib/api-config-supabase';
 import FilterTags from '../../components/FilterTags';
+import {
+  getListRefreshSkeletonPreset,
+  default as ListRefreshSkeleton,
+} from '../../components/contratacao/ListRefreshSkeleton';
+
+const motoristasSkeletonPreset = getListRefreshSkeletonPreset('motoristas');
 
 // Função auxiliar para converter ViewMotorista para Motorista
 const toMotorista = (viewMotorista: ViewMotorista): MotoristaWithAddress => {
@@ -148,6 +154,8 @@ const MotoristasLista = () => {
   const { syncAllContatos, isBulkSyncing } = useWiseAppContactsSync();
   const [motoristas, setMotoristas] = useState<ViewMotorista[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(false);
+  const hasLoadedMotoristasRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [ativoFilter, setAtivoFilter] = useState<string>('');
@@ -769,8 +777,14 @@ const MotoristasLista = () => {
   }, [tagDropdownOpen]);
 
   const fetchMotoristas = async () => {
+    const showFullSpinner = !hasLoadedMotoristasRef.current && motoristas.length === 0;
+
     try {
-      setLoading(true);
+      if (showFullSpinner) {
+        setLoading(true);
+      } else {
+        setListLoading(true);
+      }
       let query = supabase
       .from('vw_motoristas_completo')
       .select('*')
@@ -864,6 +878,7 @@ const MotoristasLista = () => {
       setCidades(Array.from(uniqueCities).sort());
 
       setMotoristas(motoristasAgrupados || []);
+      hasLoadedMotoristasRef.current = true;
 
       // Tags serão carregadas apenas quando necessário (filtro, ações em massa, etc.)
       // Para melhor performance, não carregar automaticamente
@@ -872,6 +887,7 @@ const MotoristasLista = () => {
       toast.error('Erro ao carregar motoristas');
     } finally {
       setLoading(false);
+      setListLoading(false);
     }
   };
 
@@ -1418,7 +1434,7 @@ const MotoristasLista = () => {
     initialPageSize: 10
   });
 
-  if (loading) {
+  if (loading && motoristas.length === 0) {
     return <LoadingSpinner />;
   }
 
@@ -2122,7 +2138,7 @@ const MotoristasLista = () => {
           </div>
 
           <div className="relative">
-            <div ref={tableContainerRef} className="overflow-x-auto w-full">
+            <div ref={tableContainerRef} className="relative overflow-x-auto w-full">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
@@ -2139,7 +2155,10 @@ const MotoristasLista = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedData.map((motorista, index) => (
+                  {listLoading ? (
+                    <ListRefreshSkeleton {...motoristasSkeletonPreset} />
+                  ) : (
+                    paginatedData.map((motorista, index) => (
                     <tr 
                       key={`motorista-${motorista.motorista_id}-${motorista.cpf || ''}-${index}`}
                       className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
@@ -2504,7 +2523,8 @@ const MotoristasLista = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -2516,13 +2536,13 @@ const MotoristasLista = () => {
           </div>
         </div>
 
-        {filteredMotoristas.length === 0 ? (
+        {!listLoading && filteredMotoristas.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400">
               Nenhum motorista encontrado
             </p>
           </div>
-        ) : (
+        ) : !listLoading ? (
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -2531,7 +2551,7 @@ const MotoristasLista = () => {
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
           />
-        )}
+        ) : null}
       </div>
 
       {/* Role Change Confirmation Modal */}
