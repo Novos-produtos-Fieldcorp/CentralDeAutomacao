@@ -4,7 +4,8 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development tsx server/index.ts",
+    "dev": "cross-env NODE_ENV=development tsx watch server/index.ts",
+    "dev:start": "cross-env NODE_ENV=development tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "build:analyze": "vite build && npx vite-bundle-analyzer dist/public/stats.html",
     "start": "NODE_ENV=production node dist/index.js",

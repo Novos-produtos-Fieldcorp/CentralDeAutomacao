@@ -36,6 +36,35 @@ docker-compose up --build
 - **AI Service**: http://localhost:8000
 - **API Docs (FastAPI)**: http://localhost:8000/docs
 
+## Desenvolvimento com Docker
+
+Para desenvolvimento rápido, use [docker-compose.dev.yml](/Users/gabrielmauro/Documents/CentralDeAutomacao/docker-compose.dev.yml). Esse fluxo não gera imagem de produção e sobe o backend Express com Vite middleware em modo desenvolvimento, com recarga a quente servida na mesma porta `5000`.
+
+### Subir ambiente dev
+
+```bash
+docker compose -f docker-compose.dev.yml up
+```
+
+### Subir em background
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
+```
+
+### Parar ambiente dev
+
+```bash
+docker compose -f docker-compose.dev.yml down
+```
+
+### Como funciona
+
+- O código-fonte é montado no container via volume.
+- As dependências Node ficam em um volume nomeado para evitar `npm ci` completo a cada subida.
+- O comando `npm run dev` agora usa `tsx watch`, então mudanças no backend reiniciam o servidor.
+- O frontend continua sendo servido pelo Vite middleware embutido no Express, então o acesso segue por `http://localhost:5000`.
+
 ## 📁 Estrutura dos Arquivos Docker
 
 ### Dockerfile

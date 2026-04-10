@@ -69,6 +69,32 @@ const PHOTO_SECTIONS = [
 ] as const;
 
 const ESTEPE_STATUS_NAMES = new Set(['bom', 'meiavida', 'ruim', 'naopossui']);
+const LEGACY_LIGHTING_FIELDS = ['FarolAlto', 'LuzFreio', 'LuzRe', 'LuzNeblina'] as const;
+const DEFAULT_LIGHTING_VALUES = {
+  dianteiro: 1,
+  auxiliar: 1,
+  pisca_dianteiro: 1,
+  pisca_traseiro: 1,
+  lanterna_traseira: 1,
+  luz_placa: 1,
+  FarolAlto: 1,
+  LuzFreio: 1,
+  LuzRe: 1,
+  LuzNeblina: 1,
+  luz_indicador_painel: ''
+};
+const LIGHTING_STATUS_FIELDS = [
+  'dianteiro',
+  'auxiliar',
+  'pisca_dianteiro',
+  'pisca_traseiro',
+  'lanterna_traseira',
+  'luz_placa',
+  'FarolAlto',
+  'LuzFreio',
+  'LuzRe',
+  'LuzNeblina'
+] as const;
 
 const getFieldLabel = (key: string) => FIELD_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
@@ -82,6 +108,41 @@ const getEstepeStatusOptions = (items: { status_id: number; status: string }[]) 
 const normalizeStatusValue = (value: unknown, fallback = 1) => {
   const numericValue = Number(value);
   return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : fallback;
+};
+
+const buildLightingData = (
+  farolData?: Record<string, any> | null,
+  acessoriosData?: Record<string, any> | null
+) => {
+  const hasFarolData = farolData
+    ? LIGHTING_STATUS_FIELDS.some(field => farolData[field] !== null && farolData[field] !== undefined)
+      || (typeof farolData.luz_indicador_painel === 'string' && farolData.luz_indicador_painel.trim().length > 0)
+    : false;
+  const hasLegacyLightingData = acessoriosData
+    ? LEGACY_LIGHTING_FIELDS.some(field => acessoriosData[field] !== null && acessoriosData[field] !== undefined)
+    : false;
+
+  if (!hasFarolData && !hasLegacyLightingData) {
+    return { ...DEFAULT_LIGHTING_VALUES };
+  }
+
+  const mergedData: Record<string, any> = {
+    ...DEFAULT_LIGHTING_VALUES,
+    ...(farolData || {})
+  };
+
+  if (acessoriosData) {
+    for (const field of LEGACY_LIGHTING_FIELDS) {
+      if (mergedData[field] === null || mergedData[field] === undefined) {
+        const legacyValue = acessoriosData[field];
+        if (legacyValue !== null && legacyValue !== undefined) {
+          mergedData[field] = legacyValue;
+        }
+      }
+    }
+  }
+
+  return mergedData;
 };
 
 const getPhotoGridClassName = (title: string) => {
@@ -249,24 +310,27 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
       if (error) throw error;
 
       if (data) {
+        const acessoriosData = data.acessorios_veiculos?.[0] || null;
+        const farolData = buildLightingData(data.farol_veiculo?.[0] || null, acessoriosData);
+
         // Update form data with the fetched details
         setFormData(prev => ({
           ...prev,
           ComentarioBarulhoFreio: data.ComentarioBarulhoFreio || '',
           AvariaComentario: data.AvariaComentario || '',
           acessorios: {
-            pneu: data.acessorios_veiculos?.[0]?.pneu || 1,
-            estepe: data.acessorios_veiculos?.[0]?.estepe || 1,
-            macaco: data.acessorios_veiculos?.[0]?.macaco || 1,
-            extintor: data.acessorios_veiculos?.[0]?.extintor || 1,
-            cartao_combustivel: data.acessorios_veiculos?.[0]?.cartao_combustivel || 1,
-            cadeado: data.acessorios_veiculos?.[0]?.cadeado || 1,
-            chave_reserva: data.acessorios_veiculos?.[0]?.chave_reserva || 1,
-            carrinho_carga: data.acessorios_veiculos?.[0]?.carrinho_carga || 1,
-            documento_veicular: data.acessorios_veiculos?.[0]?.documento_veicular || 1,
-            manual_veiculo: data.acessorios_veiculos?.[0]?.manual_veiculo || 1,
-            triangulo: data.acessorios_veiculos?.[0]?.triangulo || 1,
-            chave_roda: data.acessorios_veiculos?.[0]?.chave_roda || 1
+            pneu: acessoriosData?.pneu || 1,
+            estepe: acessoriosData?.estepe || 1,
+            macaco: acessoriosData?.macaco || 1,
+            extintor: acessoriosData?.extintor || 1,
+            cartao_combustivel: acessoriosData?.cartao_combustivel || 1,
+            cadeado: acessoriosData?.cadeado || 1,
+            chave_reserva: acessoriosData?.chave_reserva || 1,
+            carrinho_carga: acessoriosData?.carrinho_carga || 1,
+            documento_veicular: acessoriosData?.documento_veicular || 1,
+            manual_veiculo: acessoriosData?.manual_veiculo || 1,
+            triangulo: acessoriosData?.triangulo || 1,
+            chave_roda: acessoriosData?.chave_roda || 1
           },
           componentes: {
             buzina: data.componentes_gerais?.[0]?.buzina || 1,
@@ -290,17 +354,17 @@ const MonthlyChecklistModal = ({ isOpen, onClose, onSuccess, checklist }: Monthl
             cinto_seguranca: data.componentes_gerais?.[0]?.cinto_seguranca || 1
           },
           farol: {
-            dianteiro: normalizeStatusValue(data.farol_veiculo?.[0]?.dianteiro),
-            auxiliar: normalizeStatusValue(data.farol_veiculo?.[0]?.auxiliar),
-            pisca_dianteiro: normalizeStatusValue(data.farol_veiculo?.[0]?.pisca_dianteiro),
-            pisca_traseiro: normalizeStatusValue(data.farol_veiculo?.[0]?.pisca_traseiro),
-            lanterna_traseira: normalizeStatusValue(data.farol_veiculo?.[0]?.lanterna_traseira),
-            luz_placa: normalizeStatusValue(data.farol_veiculo?.[0]?.luz_placa),
-            FarolAlto: normalizeStatusValue(data.farol_veiculo?.[0]?.FarolAlto),
-            LuzFreio: normalizeStatusValue(data.farol_veiculo?.[0]?.LuzFreio),
-            LuzRe: normalizeStatusValue(data.farol_veiculo?.[0]?.LuzRe),
-            LuzNeblina: normalizeStatusValue(data.farol_veiculo?.[0]?.LuzNeblina),
-            luz_indicador_painel: data.farol_veiculo?.[0]?.luz_indicador_painel || ''
+            dianteiro: normalizeStatusValue(farolData.dianteiro),
+            auxiliar: normalizeStatusValue(farolData.auxiliar),
+            pisca_dianteiro: normalizeStatusValue(farolData.pisca_dianteiro),
+            pisca_traseiro: normalizeStatusValue(farolData.pisca_traseiro),
+            lanterna_traseira: normalizeStatusValue(farolData.lanterna_traseira),
+            luz_placa: normalizeStatusValue(farolData.luz_placa),
+            FarolAlto: normalizeStatusValue(farolData.FarolAlto),
+            LuzFreio: normalizeStatusValue(farolData.LuzFreio),
+            LuzRe: normalizeStatusValue(farolData.LuzRe),
+            LuzNeblina: normalizeStatusValue(farolData.LuzNeblina),
+            luz_indicador_painel: farolData.luz_indicador_painel || ''
           },
           fluidos: {
             agua_radiador: data.fluido_veiculo?.[0]?.agua_radiador || 1,
