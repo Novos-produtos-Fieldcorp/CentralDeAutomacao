@@ -177,7 +177,7 @@ const ChecklistManutencao = () => {
 
               // Status 2 indicates an issue
               if (value === 2) {
-                const statusItem = statusItems.find(item => item.status_id === value);
+                const statusItem = statusItems.find(item => Number(item.status_id) === Number(value));
                 
                 // Format the item name for better readability
                 const itemName = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -277,7 +277,7 @@ const ChecklistManutencao = () => {
   };
   
   const getStatusColor = (status_id: number) => {
-    const statusItem = statusItems.find(item => item.status_id === status_id);
+    const statusItem = statusItems.find(item => Number(item.status_id) === Number(status_id));
     if (!statusItem) return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200';
 
     switch (status_id) {

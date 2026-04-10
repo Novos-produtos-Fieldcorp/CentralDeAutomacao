@@ -44,6 +44,32 @@ const FIELD_LABELS: Record<string, string> = {
 
 const TEXT_COMPONENT_FIELDS = new Set(['luz_indicador_painel', 'pneu_ruim']);
 const ESTEPE_STATUS_NAMES = new Set(['bom', 'meiavida', 'ruim', 'naopossui']);
+const LEGACY_LIGHTING_FIELDS = ['FarolAlto', 'LuzFreio', 'LuzRe', 'LuzNeblina'] as const;
+const DEFAULT_LIGHTING_VALUES = {
+  dianteiro: 1,
+  auxiliar: 1,
+  pisca_dianteiro: 1,
+  pisca_traseiro: 1,
+  lanterna_traseira: 1,
+  luz_placa: 1,
+  FarolAlto: 1,
+  LuzFreio: 1,
+  LuzRe: 1,
+  LuzNeblina: 1,
+  luz_indicador_painel: ''
+};
+const LIGHTING_STATUS_FIELDS = [
+  'dianteiro',
+  'auxiliar',
+  'pisca_dianteiro',
+  'pisca_traseiro',
+  'lanterna_traseira',
+  'luz_placa',
+  'FarolAlto',
+  'LuzFreio',
+  'LuzRe',
+  'LuzNeblina'
+] as const;
 const PHOTO_SECTIONS = [
   {
     title: 'Identificação e inspeção',
@@ -90,15 +116,69 @@ const PHOTO_SECTIONS = [
 const getFieldLabel = (key: string) => FIELD_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
 const normalizeStatusName = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '').toLowerCase();
+const normalizeStatusValue = (value: unknown, fallback = 1) => {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : fallback;
+};
 
 const getEstepeStatusOptions = (items: { status_id: number; status: string }[]) => {
   const filteredItems = items.filter(item => ESTEPE_STATUS_NAMES.has(normalizeStatusName(item.status)));
   return filteredItems.length > 0 ? filteredItems : items;
 };
 
+const buildLightingData = (
+  farolData?: Record<string, any> | null,
+  acessoriosData?: Record<string, any> | null
+) => {
+  const hasFarolData = farolData
+    ? LIGHTING_STATUS_FIELDS.some(field => farolData[field] !== null && farolData[field] !== undefined)
+      || (typeof farolData.luz_indicador_painel === 'string' && farolData.luz_indicador_painel.trim().length > 0)
+    : false;
+  const hasLegacyLightingData = acessoriosData
+    ? LEGACY_LIGHTING_FIELDS.some(field => acessoriosData[field] !== null && acessoriosData[field] !== undefined)
+    : false;
+
+  if (!hasFarolData && !hasLegacyLightingData) {
+    return { ...DEFAULT_LIGHTING_VALUES };
+  }
+
+  const getLightingStatusValue = (field: typeof LIGHTING_STATUS_FIELDS[number]) => {
+    const farolValue = farolData?.[field];
+    if (farolValue !== null && farolValue !== undefined) {
+      return normalizeStatusValue(farolValue);
+    }
+
+    const legacyValue = acessoriosData?.[field];
+    if (legacyValue !== null && legacyValue !== undefined) {
+      return normalizeStatusValue(legacyValue);
+    }
+
+    return DEFAULT_LIGHTING_VALUES[field];
+  };
+
+  const mergedData: Record<string, any> = {
+    ...DEFAULT_LIGHTING_VALUES,
+    id_farol_veiculo: farolData?.id_farol_veiculo ?? null,
+    checklist_id: farolData?.checklist_id ?? null,
+    dianteiro: getLightingStatusValue('dianteiro'),
+    auxiliar: getLightingStatusValue('auxiliar'),
+    pisca_dianteiro: getLightingStatusValue('pisca_dianteiro'),
+    pisca_traseiro: getLightingStatusValue('pisca_traseiro'),
+    lanterna_traseira: getLightingStatusValue('lanterna_traseira'),
+    luz_placa: getLightingStatusValue('luz_placa'),
+    FarolAlto: getLightingStatusValue('FarolAlto'),
+    LuzFreio: getLightingStatusValue('LuzFreio'),
+    LuzRe: getLightingStatusValue('LuzRe'),
+    LuzNeblina: getLightingStatusValue('LuzNeblina'),
+    luz_indicador_painel: farolData?.luz_indicador_painel || ''
+  };
+
+  return mergedData;
+};
+
 const getStatusLabelById = (items: { status_id: number; status: string }[], statusId?: number | null) => {
   if (statusId === undefined || statusId === null) return null;
-  return items.find(item => item.status_id === Number(statusId))?.status || null;
+  return items.find(item => Number(item.status_id) === Number(statusId))?.status || null;
 };
 
 const getPhotoGridClassName = (fieldCount: number) => {
@@ -278,9 +358,13 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       });
 
       // Initialize component data
+      const monthlyLightingState = checklistDetails.id_tipo_checklist === 1
+        ? { ...DEFAULT_LIGHTING_VALUES, ...(checklistDetails.farol || {}) }
+        : (checklistDetails.farol || {});
+
       setEditComponents({
         fluidos: checklistDetails.fluidos || {},
-        farol: checklistDetails.farol || {},
+        farol: monthlyLightingState,
         componentes: checklistDetails.componentes || {},
         acessorios: checklistDetails.acessorios || {}
       });
@@ -346,12 +430,13 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
 
       if (data) {
         const acessoriosData = data.acessorios_veiculos?.[0] || null;
+        const farolData = buildLightingData(data.farol_veiculo?.[0] || null, acessoriosData);
 
         const processedData = {
           ...data,
           acessorios: acessoriosData,
           componentes: data.componentes_gerais?.[0] || null,
-          farol: data.farol_veiculo?.[0] || null,
+          farol: farolData,
           fluidos: data.fluido_veiculo?.[0] || null,
           fotos: data.foto_checklist?.[0] || null
         };
@@ -388,17 +473,29 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
     setEditComponents((prev: any) => ({
       ...prev,
       [section]: {
-        ...prev[section],
+        ...(section === 'farol' && checklist?.id_tipo_checklist === 1
+          ? { ...DEFAULT_LIGHTING_VALUES, ...(prev[section] || {}) }
+          : (prev[section] || {})),
         [field]: value
       }
     }));
   };
 
   const getLightingItems = () => {
-    return details?.farol || {};
+    if (details?.farol && Object.keys(details.farol).length > 0) {
+      return checklist?.id_tipo_checklist === 1
+        ? { ...DEFAULT_LIGHTING_VALUES, ...details.farol }
+        : details.farol;
+    }
+
+    return checklist?.id_tipo_checklist === 1 ? { ...DEFAULT_LIGHTING_VALUES } : {};
   };
 
   const getEditableLightingItems = () => {
+    if (checklist?.id_tipo_checklist === 1) {
+      return { ...DEFAULT_LIGHTING_VALUES, ...(editComponents.farol || {}) };
+    }
+
     return editComponents.farol || {};
   };
 
@@ -606,10 +703,29 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
       
       // Update farol
       if (editComponents.farol && Object.keys(editComponents.farol).length > 0) {
-        const { error: farolError } = await supabase
+        const { data: existingFarol, error: farolLookupError } = await supabase
           .from('farol_veiculo')
-          .update(editComponents.farol)
-          .eq('checklist_id', checklist.checklist_id);
+          .select('id_farol_veiculo')
+          .eq('checklist_id', checklist.checklist_id)
+          .maybeSingle();
+
+        if (farolLookupError && farolLookupError.code !== 'PGRST116') throw farolLookupError;
+
+        const farolPayload = {
+          ...editComponents.farol,
+          checklist_id: checklist.checklist_id
+        };
+
+        const farolOperation = existingFarol
+          ? supabase
+              .from('farol_veiculo')
+              .update(editComponents.farol)
+              .eq('id_farol_veiculo', existingFarol.id_farol_veiculo)
+          : supabase
+              .from('farol_veiculo')
+              .insert(farolPayload);
+
+        const { error: farolError } = await farolOperation;
           
         if (farolError) throw farolError;
       }

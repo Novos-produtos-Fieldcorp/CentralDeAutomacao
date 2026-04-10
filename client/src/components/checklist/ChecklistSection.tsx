@@ -86,7 +86,8 @@ export const ChecklistSection: React.FC<ChecklistSectionProps> = ({
     return String(value).trim().length > 0;
   };
   const getStatusInfo = (status_id: number) => {
-    const statusItem = statusItems.find(item => item.status_id === status_id);
+    const normalizedStatusId = Number(status_id);
+    const statusItem = statusItems.find(item => Number(item.status_id) === normalizedStatusId);
     if (!statusItem) return { icon: MinusCircle, colorClass: 'text-gray-400', label: 'N/A' };
 
     const mappingKey = statusItem.status as StatusKey;
@@ -141,7 +142,7 @@ export const ChecklistSection: React.FC<ChecklistSectionProps> = ({
           }
 
           // Handle status fields
-          const status = getStatusInfo(value as number);
+          const status = getStatusInfo(Number(value));
           const StatusIcon = status.icon;
 
           return (

@@ -78,7 +78,7 @@ const formatDate = (date: string): string => {
 // Function to get the status text from the status_id
 const getStatusText = (statusId: number, statusItems: { status_id: number; status: string }[]): string => {
   // Find the status text from the status items
-  const statusItem = statusItems.find(item => item.status_id === statusId);
+  const statusItem = statusItems.find(item => Number(item.status_id) === Number(statusId));
   if (statusItem) {
     return statusItem.status;
   }
