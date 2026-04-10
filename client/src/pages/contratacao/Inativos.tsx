@@ -23,6 +23,12 @@ import Pagination from "../../components/Pagination";
 import toast from "react-hot-toast";
 import { formatCPF, formatPhone } from "../../utils/format";
 import type { Cliente } from "../../types/database";
+import {
+  getListRefreshSkeletonPreset,
+  default as ListRefreshSkeleton,
+} from "../../components/contratacao/ListRefreshSkeleton";
+
+const inativosSkeletonPreset = getListRefreshSkeletonPreset("inativos");
 
 interface InativoItem {
   motorista_id: number;
@@ -570,11 +576,6 @@ const Inativos: React.FC = () => {
       </div>
 
       <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {listLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 dark:bg-gray-900/50">
-            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-          </div>
-        )}
         <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center gap-2 justify-between">
           <div className="flex items-center gap-2">
             <input
@@ -616,7 +617,9 @@ const Inativos: React.FC = () => {
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {items.length === 0 ? (
+            {listLoading ? (
+              <ListRefreshSkeleton {...inativosSkeletonPreset} />
+            ) : items.length === 0 ? (
               <tr>
                 <td
                   colSpan={7}
@@ -705,7 +708,7 @@ const Inativos: React.FC = () => {
             )}
           </tbody>
         </table>
-        {totalCount > 0 && (
+        {!listLoading && totalCount > 0 && (
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

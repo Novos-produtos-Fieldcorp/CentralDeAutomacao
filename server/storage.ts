@@ -129,7 +129,7 @@ export class DatabaseStorage implements IStorage {
       .eq('company_id', companyId);
 
     if (search) {
-      query = query.or(`nome.ilike.%${search}%,cpf.ilike.%${search}%,email.ilike.%${search}%,telefone.ilike.%${search}%`);
+      query = query.or(`nome.ilike.%${search}%,cpf.ilike.%${search}%,email.ilike.%${search}%`);
     }
 
     const { data, error, count } = await query

@@ -6,6 +6,14 @@ import toast from 'react-hot-toast';
 import { VEHICLE_TYPES } from '../../constants/vehicleTypes';
 import { consultarPlacaApi, validarPlaca, formatarPlaca } from '../../utils/placaService';
 
+interface VeiculoMotoristaAssociado {
+  motorista_id: number;
+  nome: string;
+  cpf: string | null;
+  telefone: string | null;
+  email: string | null;
+}
+
 interface CombinedVehicleModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,6 +33,7 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
   const [consultingPlaca, setConsultingPlaca] = useState(false);
   const [veiculoData, setVeiculoData] = useState<Veiculo | null>(null);
   const [documentoVeiculo, setDocumentoVeiculo] = useState<DocumentoVeiculo | null>(null);
+  const [motoristaAssociado, setMotoristaAssociado] = useState<VeiculoMotoristaAssociado | null>(null);
 
   // Form state for editing
   const [formData, setFormData] = useState({
@@ -114,6 +123,22 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
 
       if (vehicleError) throw vehicleError;
       setVeiculoData(vehicleData);
+
+      if (vehicleData?.motorista_id) {
+        const { data: motoristaData, error: motoristaError } = await supabase
+          .from('motorista')
+          .select('motorista_id, nome, cpf, telefone, email')
+          .eq('motorista_id', vehicleData.motorista_id)
+          .maybeSingle();
+
+        if (motoristaError && motoristaError.code !== 'PGRST116') {
+          throw motoristaError;
+        }
+
+        setMotoristaAssociado(motoristaData || null);
+      } else {
+        setMotoristaAssociado(null);
+      }
 
       // Fetch document details
       const { data: documentData, error: documentError } = await supabase
@@ -576,6 +601,36 @@ const CombinedVehicleModal = ({ isOpen, onClose, veiculo, onUploadSuccess }: Com
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                      <Truck className="w-5 h-5 text-gray-400" />
+                      Motorista Associado
+                    </h3>
+
+                    {motoristaAssociado ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Nome</span>
+                          <p className="text-base text-gray-900 dark:text-white mt-1">{motoristaAssociado.nome}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">CPF</span>
+                          <p className="text-base text-gray-900 dark:text-white mt-1">{motoristaAssociado.cpf || 'Não informado'}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Telefone</span>
+                          <p className="text-base text-gray-900 dark:text-white mt-1">{motoristaAssociado.telefone || 'Não informado'}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</span>
+                          <p className="text-base text-gray-900 dark:text-white mt-1 break-all">{motoristaAssociado.email || 'Não informado'}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-base text-gray-500 dark:text-gray-400">Nenhum motorista associado a este veículo.</p>
+                    )}
                   </div>
 
                   {/* Tracking Info */}
