@@ -6,9 +6,12 @@ import React, {
   useState,
 } from "react";
 import {
+  ChevronDown,
+  Filter,
   Search,
   User,
   Truck,
+  X,
   XCircle,
   Loader2,
   Edit2,
@@ -60,7 +63,6 @@ const Inativos: React.FC = () => {
   const [funcaoFilter, setFuncaoFilter] = useState<
     "todos" | "Motorista" | "Agregado"
   >("todos");
-  const [showFilters, setShowFilters] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
@@ -224,6 +226,35 @@ const Inativos: React.FC = () => {
   const activeFilterCount =
     (funcaoFilter !== "todos" ? 1 : 0) + (tagFilter.length > 0 ? 1 : 0);
 
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setFuncaoFilter("todos");
+    setTagFilter([]);
+    setTagFilterMode("contains");
+    setShowTagDropdown(false);
+  };
+
+  const getFuncaoFilterLabel = () => {
+    switch (funcaoFilter) {
+      case "Motorista":
+        return "Somente motoristas";
+      case "Agregado":
+        return "Somente agregados";
+      default:
+        return "Todas as funções";
+    }
+  };
+
+  const getTagName = (tagId: string) => {
+    const tag = tags.find((item: any) => item.id.toString() === tagId);
+    return tag?.nome || `Marcador ${tagId}`;
+  };
+
+  const getTagColor = (tagId: string) => {
+    const tag = tags.find((item: any) => item.id.toString() === tagId);
+    return tag?.cor || "#3B82F6";
+  };
+
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize) || 1);
   const currentPage = serverPage + 1;
 
@@ -363,215 +394,263 @@ const Inativos: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Buscar por nome, CPF ou telefone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-              />
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  ×
-                </button>
-              )}
-            </div>
+      <div className="search-section-surface p-6">
+        <div className="relative mb-4">
+          <input
+            type="text"
+            placeholder="Buscar por nome, CPF ou telefone..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+          />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
 
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowFilters((prev) => !prev)}
-                className={`inline-flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg border transition-colors ${
-                  showFilters || hasActiveFilters()
-                    ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-300"
-                    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600"
-                }`}
-              >
-                <Search size={16} />
-                Filtros
-                {activeFilterCount > 0 && (
-                  <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
+        <div className="search-toolbar-meta mb-4">
+          <div className="search-toolbar-summary">
+            {hasActiveFilters() && (
+              <div className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                <Filter className="h-3 w-3" />
+                <span>{activeFilterCount}</span>
+              </div>
+            )}
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              {totalCount} inativo{totalCount !== 1 ? "s" : ""} encontrado
+              {totalCount !== 1 ? "s" : ""}
             </div>
           </div>
+          <div className="search-toolbar-summary">
+            {(hasActiveFilters() || searchTerm) && (
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="flex items-center gap-1 rounded-md px-3 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              >
+                <X className="h-3 w-3" />
+                Limpar busca e filtros
+              </button>
+            )}
+          </div>
+        </div>
 
-          {showFilters && (
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
-              <div className="flex flex-wrap gap-3 items-center">
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Função:
+        {hasActiveFilters() && (
+          <div className="filter-tags-panel mb-4">
+            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Filtros ativos
                 </span>
-                <div className="inline-flex rounded-md shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden">
+                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-100 px-2 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  {activeFilterCount}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="inline-flex items-center gap-1.5 self-start rounded-lg bg-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
+              >
+                <X className="h-3 w-3" />
+                <span>Limpar todos</span>
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {funcaoFilter !== "todos" && (
+                <div className="filter-tags-chip bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                  {funcaoFilter === "Motorista" ? (
+                    <User className="h-3 w-3" />
+                  ) : (
+                    <Truck className="h-3 w-3" />
+                  )}
+                  <span className="filter-tags-chip-label">
+                    Função: {getFuncaoFilterLabel()}
+                  </span>
                   <button
                     type="button"
                     onClick={() => setFuncaoFilter("todos")}
-                    className={`px-3 py-1.5 text-xs font-medium ${
-                      funcaoFilter === "todos"
-                        ? "bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-100"
-                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                    }`}
+                    className="rounded-sm p-0.5 transition-colors hover:bg-black/10 dark:hover:bg-white/10"
                   >
-                    Todos
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFuncaoFilter("Motorista")}
-                    className={`px-3 py-1.5 text-xs font-medium border-l border-gray-200 dark:border-gray-700 ${
-                      funcaoFilter === "Motorista"
-                        ? "bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-100"
-                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                    }`}
-                  >
-                    Motoristas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFuncaoFilter("Agregado")}
-                    className={`px-3 py-1.5 text-xs font-medium border-l border-gray-200 dark:border-gray-700 ${
-                      funcaoFilter === "Agregado"
-                        ? "bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-100"
-                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                    }`}
-                  >
-                    Agregados
+                    <X className="h-3 w-3" />
                   </button>
                 </div>
-              </div>
+              )}
 
-              <div className="flex flex-wrap gap-3 items-start">
-                <span className="text-sm text-gray-700 dark:text-gray-300 pt-2">
-                  Marcadores:
-                </span>
-                <div className="relative" ref={tagDropdownRef}>
+              {tagFilter.map((tagId) => (
+                <div
+                  key={tagId}
+                  className="filter-tags-chip bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300"
+                >
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: getTagColor(tagId) }}
+                  />
+                  <span className="filter-tags-chip-label">
+                    {tagFilterMode === "contains" ? "Marcador" : "Exclui"}: {getTagName(tagId)}
+                  </span>
                   <button
                     type="button"
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
-                    onClick={() => setShowTagDropdown((v) => !v)}
+                    onClick={() =>
+                      setTagFilter((prev) => prev.filter((id) => id !== tagId))
+                    }
+                    className="rounded-sm p-0.5 transition-colors hover:bg-black/10 dark:hover:bg-white/10"
                   >
-                    <Tag className="h-4 w-4" />
-                    <span>
-                      {tagFilter.length === 0
-                        ? "Marcadores"
-                        : `Marcadores (${tagFilter.length})`}
-                    </span>
+                    <X className="h-3 w-3" />
                   </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-                  {showTagDropdown && (
-                    <div
-                      className="absolute z-50 mt-1 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto w-72"
-                      style={{ left: 0, top: "100%" }}
-                    >
-                      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            Filtro de marcadores
-                          </span>
-                          <button
-                            type="button"
-                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTagFilter([]);
-                            }}
-                          >
-                            Limpar
-                          </button>
-                        </div>
-                        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-md p-1">
-                          <button
-                            type="button"
-                            className={`flex-1 text-xs px-2 py-1 rounded transition-colors ${
-                              tagFilterMode === "contains"
-                                ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
-                                : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-                            }`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTagFilterMode("contains");
-                            }}
-                          >
-                            Contém
-                          </button>
-                          <button
-                            type="button"
-                            className={`flex-1 text-xs px-2 py-1 rounded transition-colors ${
-                              tagFilterMode === "not_contains"
-                                ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
-                                : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-                            }`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTagFilterMode("not_contains");
-                            }}
-                          >
-                            Não contém
-                          </button>
-                        </div>
-                      </div>
-                      {tags.length === 0 ? (
-                        <p className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-                          Nenhum marcador cadastrado.
-                        </p>
-                      ) : (
-                        tags.map((tag: any) => (
-                          <div
-                            key={tag.id}
-                            className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600"
-                          >
-                            <label className="flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 mr-2"
-                                checked={tagFilter.includes(tag.id.toString())}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setTagFilter([
-                                      ...tagFilter,
-                                      tag.id.toString(),
-                                    ]);
-                                  } else {
-                                    setTagFilter(
-                                      tagFilter.filter(
-                                        (id) => id !== tag.id.toString(),
-                                      ),
-                                    );
-                                  }
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="w-3 h-3 rounded-full shrink-0"
-                                  style={{
-                                    backgroundColor: tag.cor || "#3B82F6",
-                                  }}
-                                />
-                                <span className="text-sm text-gray-700 dark:text-gray-200">
-                                  {tag.nome}
-                                </span>
-                              </div>
-                            </label>
-                          </div>
-                        ))
-                      )}
+        <div className="search-toolbar-row relative">
+          <div className="search-filter-grid">
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-funcao" />
+              <select
+                value={funcaoFilter}
+                onChange={(e) =>
+                  setFuncaoFilter(
+                    e.target.value as "todos" | "Motorista" | "Agregado",
+                  )
+                }
+                className="search-filter-select"
+              >
+                <option value="todos">Todas as funções</option>
+                <option value="Motorista">Somente motoristas</option>
+                <option value="Agregado">Somente agregados</option>
+              </select>
+            </div>
+
+            <div className="relative" ref={tagDropdownRef}>
+              <button
+                type="button"
+                className="search-filter-trigger w-full justify-between pl-10 pr-3"
+                onClick={() => setShowTagDropdown((prev) => !prev)}
+              >
+                <span className="truncate">
+                  {tagFilter.length === 0
+                    ? "Marcadores"
+                    : `Marcadores (${tagFilter.length})`}
+                </span>
+                <ChevronDown
+                  className={`ml-2 h-4 w-4 flex-shrink-0 text-gray-400 transition-transform ${
+                    showTagDropdown ? "transform rotate-180" : ""
+                  }`}
+                />
+              </button>
+              <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-tag" />
+
+              {showTagDropdown && (
+                <div className="absolute z-[var(--z-layer-page-dropdown)] mt-1 max-h-64 w-72 overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-600 dark:bg-gray-700">
+                  <div className="border-b border-gray-200 px-3 py-2 dark:border-gray-600">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Filtro de marcadores
+                      </span>
+                      <button
+                        type="button"
+                        className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTagFilter([]);
+                        }}
+                      >
+                        Limpar
+                      </button>
                     </div>
+                    <div className="flex rounded-md bg-gray-100 p-1 dark:bg-gray-800">
+                      <button
+                        type="button"
+                        className={`flex-1 rounded px-2 py-1 text-xs transition-colors ${
+                          tagFilterMode === "contains"
+                            ? "bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white"
+                            : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTagFilterMode("contains");
+                        }}
+                      >
+                        Contém
+                      </button>
+                      <button
+                        type="button"
+                        className={`flex-1 rounded px-2 py-1 text-xs transition-colors ${
+                          tagFilterMode === "not_contains"
+                            ? "bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white"
+                            : "text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTagFilterMode("not_contains");
+                        }}
+                      >
+                        Não contém
+                      </button>
+                    </div>
+                  </div>
+                  {tags.length === 0 ? (
+                    <p className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                      Nenhum marcador cadastrado.
+                    </p>
+                  ) : (
+                    tags.map((tag: any) => (
+                      <div
+                        key={tag.id}
+                        className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600"
+                      >
+                        <label className="flex cursor-pointer items-center">
+                          <input
+                            type="checkbox"
+                            className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                            checked={tagFilter.includes(tag.id.toString())}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setTagFilter([...tagFilter, tag.id.toString()]);
+                              } else {
+                                setTagFilter(
+                                  tagFilter.filter(
+                                    (id) => id !== tag.id.toString(),
+                                  ),
+                                );
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-3 w-3 shrink-0 rounded-full"
+                              style={{
+                                backgroundColor: tag.cor || "#3B82F6",
+                              }}
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-200">
+                              {tag.nome}
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+                    ))
                   )}
                 </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
+
+          <div className="search-toolbar-actions">
+            <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+              Página atual: {items.length} registro{items.length !== 1 ? "s" : ""}
+            </div>
+          </div>
         </div>
       </div>
 

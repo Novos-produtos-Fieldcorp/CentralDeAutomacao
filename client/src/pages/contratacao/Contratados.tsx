@@ -1778,20 +1778,6 @@ const Contratados = () => {
               </div>
             )}
           </div>
-          <div className="search-toolbar-summary">
-            {(hasActiveFilters() || searchTerm) && (
-              <button
-                onClick={() => {
-                  clearAllFilters();
-                  setSearchTerm("");
-                }}
-                className="flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-              >
-                <X className="w-3 h-3" />
-                Limpar busca e filtros
-              </button>
-            )}
-          </div>
         </div>
 
         <FilterTags

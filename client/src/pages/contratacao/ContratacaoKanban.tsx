@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import UnifiedAgregadoModal from '../../components/UnifiedAgregadoModal';
 import UnifiedMotoristaModal from '../../components/UnifiedMotoristaModal';
+import FilterTags from '../../components/FilterTags';
 
 interface MotoristaWithDetails extends Omit<Motorista, 'nome'> {
   end_motorista?: {
@@ -751,7 +752,37 @@ const ContratacaoKanban = () => {
     setFuncaoFilter('todos');
     setSearchTerm('');
     setDebouncedSearchTerm('');
+    setShowStatusDropdown(false);
+    setShowCidadeDropdown(false);
+    setShowClienteDropdown(false);
+    setShowAtivoDropdown(false);
+    setShowTagsDropdown(false);
   };
+
+  const hasActiveFilters = () => (
+    statusFilter.length > 0 ||
+    cidadeFilter.length > 0 ||
+    clienteFilter.length > 0 ||
+    ativoFilter !== '' ||
+    funcaoFilter !== 'todos'
+  );
+
+  const getActiveFiltersCount = () => (
+    statusFilter.length +
+    cidadeFilter.length +
+    clienteFilter.length +
+    (ativoFilter ? 1 : 0) +
+    (funcaoFilter !== 'todos' ? 1 : 0)
+  );
+
+  const visibleColumns = columns.filter(
+    (column) => statusFilter.length === 0 || statusFilter.includes(column.id),
+  );
+
+  const loadedItemsCount = visibleColumns.reduce(
+    (total, column) => total + column.motoristas.length,
+    0,
+  );
 
   if (loading) {
     return (
@@ -780,86 +811,120 @@ const ContratacaoKanban = () => {
 
 
 
-  const filterButtons = [
-    { value: 'todos', label: 'Todos' },
-    { value: 'Motorista', label: 'Motoristas' },
-    { value: 'Agregado', label: 'Agregados' }
-  ];
-
   return (
     <div className="space-y-4 h-[calc(100vh-12rem)]">
-      {/* Search and Filter Section - Standardized layout */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        {/* Search Bar */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-600">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Buscar por nome, CPF, email ou telefone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-            />
+      <div className="search-section-surface p-6">
+        <div className="relative mb-4">
+          <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
             {isSearching ? (
-              <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-              </div>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
             ) : (
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="h-4 w-4 text-gray-400" />
             )}
-            {searchTerm && (
+          </div>
+          <input
+            type="text"
+            placeholder="Buscar por nome, CPF, email ou telefone..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        <div className="search-toolbar-meta mb-4">
+          <div className="search-toolbar-summary">
+            {hasActiveFilters() && (
+              <div className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                <Filter className="h-3 w-3" />
+                <span>{getActiveFiltersCount()}</span>
+              </div>
+            )}
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              {loadedItemsCount} itens carregados em {visibleColumns.length} coluna{visibleColumns.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+          <div className="search-toolbar-summary">
+            {(hasActiveFilters() || searchTerm) && (
               <button
-                onClick={clearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                type="button"
+                onClick={clearAllFilters}
+                className="flex items-center gap-1 rounded-md px-3 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
               >
-                <X size={16} />
+                <X className="h-3 w-3" />
+                Limpar busca e filtros
               </button>
             )}
           </div>
         </div>
 
-        {/* Filters Row */}
-        <div className="p-4">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Function Filter - Keep existing functionality */}
-            <div className="flex items-center gap-2">
-              <Filter size={18} className="text-gray-500" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo:</span>
-              <div className="flex gap-2">
-                {filterButtons.map(button => (
-                  <button
-                    key={button.value}
-                    onClick={() => setFuncaoFilter(button.value as 'todos' | 'Motorista' | 'Agregado')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      funcaoFilter === button.value
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 shadow-sm'
-                        : 'bg-white/60 text-gray-600 hover:bg-white hover:shadow-sm dark:bg-gray-700/60 dark:text-gray-300 dark:hover:bg-gray-600'
-                    }`}
-                  >
-                    {button.label}
-                  </button>
-                ))}
-              </div>
+        <FilterTags
+          statusFilter={statusFilter}
+          ativoFilter={ativoFilter}
+          clienteFilter={clienteFilter}
+          cidadeFilter={cidadeFilter}
+          funcaoFilter={funcaoFilter !== 'todos' ? [funcaoFilter] : []}
+          onRemoveStatus={(status) => {
+            setStatusFilter(statusFilter.filter((item) => item !== status));
+          }}
+          onRemoveAtivo={() => {
+            setAtivoFilter('');
+          }}
+          onRemoveCliente={(clienteId) => {
+            setClienteFilter(clienteFilter.filter((item) => item !== clienteId));
+          }}
+          onRemoveCidade={(cidade) => {
+            setCidadeFilter(cidadeFilter.filter((item) => item !== cidade));
+          }}
+          onRemoveFuncao={() => {
+            setFuncaoFilter('todos');
+          }}
+          onClearAll={clearAllFilters}
+          clientes={clientes}
+          cidades={cidades.map((cidade) => cidade.nome_cidade)}
+          tags={tags}
+        />
+
+        <div className="search-toolbar-row relative">
+          <div className="search-filter-grid">
+            <div className="relative">
+              <Truck className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-funcao" />
+              <select
+                value={funcaoFilter}
+                onChange={(e) =>
+                  setFuncaoFilter(e.target.value as 'todos' | 'Motorista' | 'Agregado')
+                }
+                className="search-filter-select"
+              >
+                <option value="todos">Todos os tipos</option>
+                <option value="Motorista">Somente motoristas</option>
+                <option value="Agregado">Somente agregados</option>
+              </select>
             </div>
 
-            {/* Status Filter */}
             <div className="relative" ref={statusDropdownRef}>
               <button
                 type="button"
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[120px] justify-between"
+                className="search-filter-trigger w-full justify-between pl-10 pr-3"
                 onClick={handleToggleStatusDropdown}
               >
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>
-                    {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
-                  </span>
-                </div>
+                <span>
+                  {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
+                </span>
                 <ChevronDown className={`h-4 w-4 transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} />
               </button>
+              <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-status" />
 
               {showStatusDropdown && (
-                <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                <div className="absolute z-[var(--z-layer-page-dropdown)] top-full mt-1 max-h-64 w-64 overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-600 dark:bg-gray-700">
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar status</span>
@@ -902,20 +967,18 @@ const ContratacaoKanban = () => {
             <div className="relative" ref={cidadeDropdownRef}>
               <button
                 type="button"
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[110px] justify-between"
+                className="search-filter-trigger w-full justify-between pl-10 pr-3"
                 onClick={handleToggleCidadeDropdown}
               >
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  <span>
-                    {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
-                  </span>
-                </div>
+                <span>
+                  {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
+                </span>
                 <ChevronDown className={`h-4 w-4 transition-transform ${showCidadeDropdown ? 'rotate-180' : ''}`} />
               </button>
+              <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-cidade" />
 
               {showCidadeDropdown && (
-                <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                <div className="absolute z-[var(--z-layer-page-dropdown)] top-full mt-1 max-h-64 w-64 overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-600 dark:bg-gray-700">
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar cidades</span>
@@ -958,19 +1021,17 @@ const ContratacaoKanban = () => {
             <div className="relative" ref={clienteDropdownRef}>
               <button
                 type="button"
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[110px] justify-between"
+                className="search-filter-trigger w-full justify-between pl-10 pr-3"
                 onClick={handleToggleClienteDropdown}
               >
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>
-                    {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
-                  </span>
-                </div>
+                <span>
+                  {clienteFilter.length === 0 ? 'Cliente' : `Cliente (${clienteFilter.length})`}
+                </span>
                 <ChevronDown className={`h-4 w-4 transition-transform ${showClienteDropdown ? 'rotate-180' : ''}`} />
               </button>
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-cliente" />
               {showClienteDropdown && (
-                <div className="absolute z-[99999] top-full mt-1 w-64 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-64 overflow-y-auto">
+                <div className="absolute z-[var(--z-layer-page-dropdown)] top-full mt-1 max-h-64 w-64 overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-600 dark:bg-gray-700">
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500 dark:text-gray-400">Selecionar clientes</span>
@@ -1032,20 +1093,18 @@ const ContratacaoKanban = () => {
             <div className="relative" ref={ativoDropdownRef}>
               <button
                 type="button"
-                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-[100px] justify-between"
+                className="search-filter-trigger w-full justify-between pl-10 pr-3"
                 onClick={handleToggleAtivoDropdown}
               >
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>
-                    {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
-                  </span>
-                </div>
+                <span>
+                  {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
+                </span>
                 <ChevronDown className={`h-4 w-4 transition-transform ${showAtivoDropdown ? 'rotate-180' : ''}`} />
               </button>
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-ativo" />
               
               {showAtivoDropdown && (
-                <div className="absolute z-[99999] top-full mt-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
+                <div className="absolute z-[var(--z-layer-page-dropdown)] top-full mt-1 w-48 rounded-md border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-600 dark:bg-gray-700">
                   <div 
                     className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-purple-50 dark:bg-purple-900/30' : ''}`}
                     onClick={() => {
@@ -1077,15 +1136,17 @@ const ContratacaoKanban = () => {
               )}
             </div>
 
-            {/* Items per page selector */}
-            <div className="flex items-center gap-2 ml-auto">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+          </div>
+
+          <div className="search-toolbar-actions">
+            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-700">
+              <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                 Itens por coluna:
               </span>
               <select
                 value={itemsPerPage}
                 onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-                className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="h-9 rounded-md border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
               >
                 <option value={100}>100</option>
                 <option value={200}>200</option>
@@ -1097,17 +1158,6 @@ const ContratacaoKanban = () => {
                 <option value={7000}>7000</option>
               </select>
             </div>
-
-          {/* Clear all filters button */}
-          {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || ativoFilter || funcaoFilter !== 'todos' || searchTerm) && (
-            <button
-              onClick={clearAllFilters}
-              className="px-3 py-2 text-sm bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50 rounded-md transition-colors flex items-center gap-2"
-            >
-              <X size={16} />
-              Limpar Filtros
-            </button>
-          )}
           </div>
         </div>
       </div>
@@ -1116,7 +1166,7 @@ const ContratacaoKanban = () => {
       <div className="flex-1 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex gap-4 overflow-x-auto overflow-y-hidden h-full"
              style={{ minHeight: 'calc(100vh - 25rem)' }}>
-          {columns.filter(col => statusFilter.length === 0 || statusFilter.includes(col.id)).map((column) => (
+          {visibleColumns.map((column) => (
             <div
               key={column.id}
               className="flex-shrink-0 w-[340px] flex flex-col h-full max-h-full"

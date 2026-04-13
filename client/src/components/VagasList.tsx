@@ -46,7 +46,6 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showUnidadeDropdown, setShowUnidadeDropdown] = useState(false);
   const [showOperacaoDropdown, setShowOperacaoDropdown] = useState(false);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Get company data first
   const { data: companyData, isLoading: companyLoading, error: companyError } = useQuery({
@@ -252,6 +251,40 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
     }
   };
 
+  const clearAllFilters = () => {
+    setStatusFilter([]);
+    setClienteFilter([]);
+    setUnidadeFilter([]);
+    setOperacaoFilter([]);
+    setQuantidadeFilter({ min: null, max: null });
+    setDateFilter({ start: '', end: '' });
+  };
+
+  const clearSearchAndFilters = () => {
+    setSearchTerm('');
+    clearAllFilters();
+  };
+
+  const getStatusName = (statusId: string) => {
+    const status = statusOptions.find((item) => item.id.toString() === statusId);
+    return status?.status_vaga || `Status ${statusId}`;
+  };
+
+  const getClienteName = (clienteId: string) => {
+    const cliente = clientes.find((item) => item.cliente_id.toString() === clienteId);
+    return cliente?.nome || `Cliente ${clienteId}`;
+  };
+
+  const getUnidadeName = (unidadeId: string) => {
+    const unidade = unidades.find((item) => item.id.toString() === unidadeId);
+    return unidade?.unidade || `Unidade ${unidadeId}`;
+  };
+
+  const getOperacaoName = (operacaoId: string) => {
+    const operacao = operacoes.find((item) => item.id.toString() === operacaoId);
+    return operacao?.operacao || `Operação ${operacaoId}`;
+  };
+
   const getFilterButtonText = (filterType: string) => {
     switch (filterType) {
       case 'status':
@@ -368,306 +401,400 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   return (
     <div className="space-y-6">
       {/* Filters Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-4">
-          {/* Compact header with search and add button */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            {/* Search bar */}
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Buscar vagas..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-              />
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X size={16} />
-                </button>
-              )}
+      <div className="search-section-surface p-6">
+        <div className="relative mb-4">
+          <input
+            type="text"
+            placeholder="Buscar vagas..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+          />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        <div className="search-toolbar-meta mb-4">
+          <div className="search-toolbar-summary">
+            {hasActiveFilters() && (
+              <div className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                <Filter className="h-3 w-3" />
+                <span>{getActiveFiltersCount()}</span>
+              </div>
+            )}
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              {filteredVagas.length} de {vagas.length} vagas
+            </div>
+          </div>
+          <div className="search-toolbar-summary">
+            {(hasActiveFilters() || searchTerm) && (
+              <button
+                onClick={clearSearchAndFilters}
+                className="flex items-center gap-1 rounded-md px-3 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+              >
+                <X className="h-3 w-3" />
+                Limpar busca e filtros
+              </button>
+            )}
+          </div>
+        </div>
+
+        {hasActiveFilters() && (
+          <div className="filter-tags-panel mb-4">
+            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  Filtros ativos
+                </span>
+                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-100 px-2 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  {getActiveFiltersCount()}
+                </span>
+              </div>
+              <button
+                onClick={clearAllFilters}
+                className="inline-flex items-center gap-1.5 self-start rounded-lg bg-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
+              >
+                <X className="h-3 w-3" />
+                <span>Limpar todos</span>
+              </button>
             </div>
 
-            {/* Filter toggle and add button */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`inline-flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg border transition-colors ${
-                  showAdvancedFilters || hasActiveFilters()
-                    ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-300'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                <Filter size={16} />
-                Filtros
-                {hasActiveFilters() && (
-                  <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                    {getActiveFiltersCount()}
+            <div className="flex flex-wrap items-center gap-2">
+              {statusFilter.map((statusId) => (
+                <div key={`status-${statusId}`} className="filter-tags-chip bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
+                  <Filter className="h-3 w-3" />
+                  <span className="filter-tags-chip-label">Status: {getStatusName(statusId)}</span>
+                  <button
+                    onClick={() => setStatusFilter(statusFilter.filter((item) => item !== statusId))}
+                    className="rounded-sm p-0.5 transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+
+              {clienteFilter.map((clienteId) => (
+                <div key={`cliente-${clienteId}`} className="filter-tags-chip bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
+                  <Users className="h-3 w-3" />
+                  <span className="filter-tags-chip-label">Cliente: {getClienteName(clienteId)}</span>
+                  <button
+                    onClick={() => setClienteFilter(clienteFilter.filter((item) => item !== clienteId))}
+                    className="rounded-sm p-0.5 transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+
+              {unidadeFilter.map((unidadeId) => (
+                <div key={`unidade-${unidadeId}`} className="filter-tags-chip bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300">
+                  <Building className="h-3 w-3" />
+                  <span className="filter-tags-chip-label">Unidade: {getUnidadeName(unidadeId)}</span>
+                  <button
+                    onClick={() => setUnidadeFilter(unidadeFilter.filter((item) => item !== unidadeId))}
+                    className="rounded-sm p-0.5 transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+
+              {operacaoFilter.map((operacaoId) => (
+                <div key={`operacao-${operacaoId}`} className="filter-tags-chip bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300">
+                  <MapPin className="h-3 w-3" />
+                  <span className="filter-tags-chip-label">Operação: {getOperacaoName(operacaoId)}</span>
+                  <button
+                    onClick={() => setOperacaoFilter(operacaoFilter.filter((item) => item !== operacaoId))}
+                    className="rounded-sm p-0.5 transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+
+              {(quantidadeFilter.min !== null || quantidadeFilter.max !== null) && (
+                <div className="filter-tags-chip bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300">
+                  <Users className="h-3 w-3" />
+                  <span className="filter-tags-chip-label">
+                    Quantidade: {quantidadeFilter.min ?? '0'} - {quantidadeFilter.max ?? 'sem limite'}
                   </span>
-                )}
-                <ChevronDown className={`h-4 w-4 transition-transform ${showAdvancedFilters ? 'transform rotate-180' : ''}`} />
-              </button>
-              
-              {onAddClick && (
-                <button
-                  onClick={onAddClick}
-                  className="inline-flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                  title="Adicionar Vaga"
-                >
-                  <Plus size={18} />
-                </button>
+                  <button
+                    onClick={() => clearFilter('quantidade')}
+                    className="rounded-sm p-0.5 transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+
+              {(dateFilter.start || dateFilter.end) && (
+                <div className="filter-tags-chip bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300">
+                  <Calendar className="h-3 w-3" />
+                  <span className="filter-tags-chip-label">
+                    Período: {dateFilter.start || '...'} até {dateFilter.end || '...'}
+                  </span>
+                  <button
+                    onClick={() => clearFilter('data')}
+                    className="rounded-sm p-0.5 transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
               )}
             </div>
           </div>
+        )}
 
-          {/* Advanced filters - collapsible */}
-          {showAdvancedFilters && (
-            <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {/* Status Filter */}
-                <div className="relative" id="status-dropdown">
-                  <button
-                    type="button"
-                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                    className="w-full flex justify-between items-center pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left text-sm"
-                  >
-                    <span className="truncate">{getFilterButtonText('status')}</span>
-                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
-                  </button>
-                  <Building className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  {showStatusDropdown && (
-                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-auto">
-                      <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os status</span>
-                        <button 
-                          type="button" 
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setStatusFilter([]);
-                          }}
-                        >
-                          Limpar
-                        </button>
-                      </div>
-                      {statusOptions.map((status) => (
-                        <div key={status.id} className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                          <input
-                            type="checkbox"
-                            id={`status-${status.id}`}
-                            checked={statusFilter.includes(status.id.toString())}
-                            onChange={() => toggleFilterOption('status', status.id.toString())}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <label htmlFor={`status-${status.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                            {status.status_vaga}
-                          </label>
-                        </div>
-                      ))}
+        <div className="search-toolbar-row relative">
+          <div className="search-filter-grid">
+            <div className="relative" id="status-dropdown">
+              <button
+                type="button"
+                onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                className="search-filter-trigger justify-between pl-10 pr-3"
+              >
+                <span className="truncate">{getFilterButtonText('status')}</span>
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
+              </button>
+              <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-status" />
+              {showStatusDropdown && (
+                <div className="absolute z-[var(--z-layer-page-dropdown)] mt-1 w-full rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-700 max-h-48 overflow-auto">
+                  <div className="flex items-center justify-between border-b border-gray-200 px-3 py-1.5 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os status</span>
+                    <button
+                      type="button"
+                      className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setStatusFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  {statusOptions.map((status) => (
+                    <div key={status.id} className="flex cursor-pointer items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <input
+                        type="checkbox"
+                        id={`status-${status.id}`}
+                        checked={statusFilter.includes(status.id.toString())}
+                        onChange={() => toggleFilterOption('status', status.id.toString())}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <label htmlFor={`status-${status.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        {status.status_vaga}
+                      </label>
                     </div>
-                  )}
-                </div>
-
-                {/* Cliente Filter */}
-                <div className="relative" id="cliente-dropdown">
-                  <button
-                    type="button" 
-                    onClick={() => setShowClienteDropdown(!showClienteDropdown)}
-                    className="w-full flex justify-between items-center pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left text-sm"
-                  >
-                    <span className="truncate">{getFilterButtonText('cliente')}</span>
-                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
-                  </button>
-                  <Users className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  {showClienteDropdown && (
-                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-auto">
-                      <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os clientes</span>
-                        <button 
-                          type="button" 
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setClienteFilter([]);
-                          }}
-                        >
-                          Limpar
-                        </button>
-                      </div>
-                      {clientes.map((cliente) => (
-                        <div key={cliente.cliente_id} className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                          <input
-                            type="checkbox"
-                            id={`cliente-${cliente.cliente_id}`}
-                            checked={clienteFilter.includes(cliente.cliente_id.toString())}
-                            onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <label htmlFor={`cliente-${cliente.cliente_id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                            {cliente.nome}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Unidade Filter */}
-                <div className="relative" id="unidade-dropdown">
-                  <button
-                    type="button"
-                    onClick={() => setShowUnidadeDropdown(!showUnidadeDropdown)}
-                    className="w-full flex justify-between items-center pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left text-sm"
-                  >
-                    <span className="truncate">{getFilterButtonText('unidade')}</span>
-                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showUnidadeDropdown ? 'transform rotate-180' : ''}`} />
-                  </button>
-                  <Building className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  {showUnidadeDropdown && (
-                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-auto">
-                      <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as unidades</span>
-                        <button 
-                          type="button" 
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setUnidadeFilter([]);
-                          }}
-                        >
-                          Limpar
-                        </button>
-                      </div>
-                      {unidades.map((unidade) => (
-                        <div key={unidade.id} className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                          <input
-                            type="checkbox"
-                            id={`unidade-${unidade.id}`}
-                            checked={unidadeFilter.includes(unidade.id.toString())}
-                            onChange={() => toggleFilterOption('unidade', unidade.id.toString())}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <label htmlFor={`unidade-${unidade.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                            {unidade.unidade}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Operacao Filter */}
-                <div className="relative" id="operacao-dropdown">
-                  <button
-                    type="button"
-                    onClick={() => setShowOperacaoDropdown(!showOperacaoDropdown)}
-                    className="w-full flex justify-between items-center pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-left text-sm"
-                  >
-                    <span className="truncate">{getFilterButtonText('operacao')}</span>
-                    <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showOperacaoDropdown ? 'transform rotate-180' : ''}`} />
-                  </button>
-                  <MapPin className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  {showOperacaoDropdown && (
-                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 shadow-lg rounded-md py-1 border border-gray-200 dark:border-gray-600 max-h-48 overflow-auto">
-                      <div className="px-3 py-1.5 flex justify-between items-center border-b border-gray-200 dark:border-gray-600">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as operações</span>
-                        <button 
-                          type="button" 
-                          className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOperacaoFilter([]);
-                          }}
-                        >
-                          Limpar
-                        </button>
-                      </div>
-                      {operacoes.map((operacao) => (
-                        <div key={operacao.id} className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex items-center">
-                          <input
-                            type="checkbox"
-                            id={`operacao-${operacao.id}`}
-                            checked={operacaoFilter.includes(operacao.id.toString())}
-                            onChange={() => toggleFilterOption('operacao', operacao.id.toString())}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <label htmlFor={`operacao-${operacao.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                            {operacao.operacao}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Compact date and quantity filters */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                <div className="flex gap-2">
-                  <input
-                    type="date"
-                    value={dateFilter.start}
-                    onChange={(e) => setDateFilter(prev => ({...prev, start: e.target.value}))}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-                    title="Data inicial"
-                  />
-                  <input
-                    type="date"
-                    value={dateFilter.end}
-                    onChange={(e) => setDateFilter(prev => ({...prev, end: e.target.value}))}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-                    title="Data final"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    placeholder="Qtde Min"
-                    value={quantidadeFilter.min || ''}
-                    onChange={(e) => setQuantidadeFilter(prev => ({...prev, min: e.target.value ? Number(e.target.value) : null}))}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Qtde Max"
-                    value={quantidadeFilter.max || ''}
-                    onChange={(e) => setQuantidadeFilter(prev => ({...prev, max: e.target.value ? Number(e.target.value) : null}))}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Active filters summary */}
-              {hasActiveFilters() && (
-                <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {filteredVagas.length} de {vagas.length} vagas
-                  </span>
-                  <button
-                    onClick={() => {
-                      setStatusFilter([]);
-                      setClienteFilter([]);
-                      setUnidadeFilter([]);
-                      setOperacaoFilter([]);
-                      setQuantidadeFilter({min: null, max: null});
-                      setDateFilter({start: '', end: ''});
-                    }}
-                    className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                  >
-                    Limpar filtros
-                  </button>
+                  ))}
                 </div>
               )}
             </div>
-          )}
+
+            <div className="relative" id="cliente-dropdown">
+              <button
+                type="button"
+                onClick={() => setShowClienteDropdown(!showClienteDropdown)}
+                className="search-filter-trigger justify-between pl-10 pr-3"
+              >
+                <span className="truncate">{getFilterButtonText('cliente')}</span>
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
+              </button>
+              <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-cliente" />
+              {showClienteDropdown && (
+                <div className="absolute z-[var(--z-layer-page-dropdown)] mt-1 w-full rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-700 max-h-48 overflow-auto">
+                  <div className="flex items-center justify-between border-b border-gray-200 px-3 py-1.5 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecione os clientes</span>
+                    <button
+                      type="button"
+                      className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setClienteFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  {clientes.map((cliente) => (
+                    <div key={cliente.cliente_id} className="flex cursor-pointer items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <input
+                        type="checkbox"
+                        id={`cliente-${cliente.cliente_id}`}
+                        checked={clienteFilter.includes(cliente.cliente_id.toString())}
+                        onChange={() => toggleFilterOption('cliente', cliente.cliente_id.toString())}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <label htmlFor={`cliente-${cliente.cliente_id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        {cliente.nome}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="relative" id="unidade-dropdown">
+              <button
+                type="button"
+                onClick={() => setShowUnidadeDropdown(!showUnidadeDropdown)}
+                className="search-filter-trigger justify-between pl-10 pr-3"
+              >
+                <span className="truncate">{getFilterButtonText('unidade')}</span>
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showUnidadeDropdown ? 'transform rotate-180' : ''}`} />
+              </button>
+              <Building className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-unidade" />
+              {showUnidadeDropdown && (
+                <div className="absolute z-[var(--z-layer-page-dropdown)] mt-1 w-full rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-700 max-h-48 overflow-auto">
+                  <div className="flex items-center justify-between border-b border-gray-200 px-3 py-1.5 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as unidades</span>
+                    <button
+                      type="button"
+                      className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setUnidadeFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  {unidades.map((unidade) => (
+                    <div key={unidade.id} className="flex cursor-pointer items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <input
+                        type="checkbox"
+                        id={`unidade-${unidade.id}`}
+                        checked={unidadeFilter.includes(unidade.id.toString())}
+                        onChange={() => toggleFilterOption('unidade', unidade.id.toString())}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <label htmlFor={`unidade-${unidade.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        {unidade.unidade}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="relative" id="operacao-dropdown">
+              <button
+                type="button"
+                onClick={() => setShowOperacaoDropdown(!showOperacaoDropdown)}
+                className="search-filter-trigger justify-between pl-10 pr-3"
+              >
+                <span className="truncate">{getFilterButtonText('operacao')}</span>
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showOperacaoDropdown ? 'transform rotate-180' : ''}`} />
+              </button>
+              <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-operacao" />
+              {showOperacaoDropdown && (
+                <div className="absolute z-[var(--z-layer-page-dropdown)] mt-1 w-full rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-600 dark:bg-gray-700 max-h-48 overflow-auto">
+                  <div className="flex items-center justify-between border-b border-gray-200 px-3 py-1.5 dark:border-gray-600">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Selecione as operações</span>
+                    <button
+                      type="button"
+                      className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOperacaoFilter([]);
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                  {operacoes.map((operacao) => (
+                    <div key={operacao.id} className="flex cursor-pointer items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <input
+                        type="checkbox"
+                        id={`operacao-${operacao.id}`}
+                        checked={operacaoFilter.includes(operacao.id.toString())}
+                        onChange={() => toggleFilterOption('operacao', operacao.id.toString())}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <label htmlFor={`operacao-${operacao.id}`} className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        {operacao.operacao}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 z-10 -translate-y-1/2">
+                <Calendar className="h-4 w-4 search-filter-icon-periodo" />
+              </div>
+              <input
+                type="date"
+                value={dateFilter.start}
+                onChange={(e) => setDateFilter((prev) => ({ ...prev, start: e.target.value }))}
+                className="search-filter-input pl-10"
+                title="Data inicial"
+              />
+            </div>
+
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 z-10 -translate-y-1/2">
+                <Calendar className="h-4 w-4 search-filter-icon-periodo" />
+              </div>
+              <input
+                type="date"
+                value={dateFilter.end}
+                onChange={(e) => setDateFilter((prev) => ({ ...prev, end: e.target.value }))}
+                className="search-filter-input pl-10"
+                title="Data final"
+              />
+            </div>
+
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 z-10 -translate-y-1/2">
+                <Users className="h-4 w-4 search-filter-icon-quantidade" />
+              </div>
+              <input
+                type="number"
+                placeholder="Qtde Min"
+                value={quantidadeFilter.min || ''}
+                onChange={(e) => setQuantidadeFilter((prev) => ({ ...prev, min: e.target.value ? Number(e.target.value) : null }))}
+                className="search-filter-input pl-10"
+              />
+            </div>
+
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 z-10 -translate-y-1/2">
+                <Users className="h-4 w-4 search-filter-icon-quantidade" />
+              </div>
+              <input
+                type="number"
+                placeholder="Qtde Max"
+                value={quantidadeFilter.max || ''}
+                onChange={(e) => setQuantidadeFilter((prev) => ({ ...prev, max: e.target.value ? Number(e.target.value) : null }))}
+                className="search-filter-input pl-10"
+              />
+            </div>
+          </div>
+
+          <div className="search-toolbar-actions">
+            {onAddClick && (
+              <button
+                onClick={onAddClick}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                title="Adicionar Vaga"
+              >
+                <Plus size={16} />
+                <span>Nova Vaga</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

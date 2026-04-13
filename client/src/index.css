@@ -316,6 +316,18 @@
     @apply text-violet-600 dark:text-violet-300;
   }
 
+  .search-filter-icon-unidade {
+    @apply text-slate-600 dark:text-slate-300;
+  }
+
+  .search-filter-icon-operacao {
+    @apply text-rose-600 dark:text-rose-300;
+  }
+
+  .search-filter-icon-quantidade {
+    @apply text-cyan-600 dark:text-cyan-300;
+  }
+
   .search-filter-icon-tag {
     @apply text-pink-600 dark:text-pink-300;
   }
@@ -330,6 +342,10 @@
 
   .search-filter-select {
     @apply h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pl-10 pr-3 text-sm text-gray-700 appearance-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 sm:w-[10.75rem];
+  }
+
+  .search-filter-input {
+    @apply h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200;
   }
 
   .search-toolbar-actions {
