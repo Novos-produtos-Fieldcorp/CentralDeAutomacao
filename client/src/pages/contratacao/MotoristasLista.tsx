@@ -1551,66 +1551,50 @@ const MotoristasLista = () => {
                 <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tagFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
               </div>
             )}
-            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
-              ativoFilter !== '' || tagFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
-              <button
-                onClick={() => {
-                  setStatusFilter([]);
-                  setCidadeFilter([]);
-                  setClienteFilter([]);
-                  setAtivoFilter('');
-                  setTagFilter([]);
-                  setDateFilter('all');
-                  setSearchTerm('');
-                }}
-                className="flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-              >
-                <X className="w-3 h-3" />
-                Limpar Filtros
-              </button>
-            )}
           </div>
         </div>
 
         {/* Filter Tags - Filtros aplicados como tags removíveis */}
-        <FilterTags
-          statusFilter={statusFilter}
-          ativoFilter={ativoFilter}
-          clienteFilter={clienteFilter}
-          cidadeFilter={cidadeFilter}
-          tagFilter={tagFilter}
-          dateFilter={dateFilter}
-          customDateRange={customDateRange}
-          onRemoveStatus={(status) => {
-            setStatusFilter(statusFilter.filter(s => s !== status));
-          }}
-          onRemoveAtivo={() => {
-            setAtivoFilter('');
-          }}
-          onRemoveCliente={(clienteId) => {
-            setClienteFilter(clienteFilter.filter(c => c !== clienteId));
-          }}
-          onRemoveCidade={(cidade) => {
-            setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
-          }}
-          onRemoveTag={(tagId) => {
-            setTagFilter(tagFilter.filter(t => t !== tagId));
-          }}
-          onRemoveDate={() => {
-            setDateFilter('all');
-          }}
-          onClearAll={() => {
-            setStatusFilter([]);
-            setCidadeFilter([]);
-            setClienteFilter([]);
-            setAtivoFilter('');
-            setTagFilter([]);
-            setDateFilter('all');
-          }}
-          clientes={clientes}
-          tags={tags}
-          cidades={cidades}
-        />
+        <div className="mb-4">
+          <FilterTags
+            statusFilter={statusFilter}
+            ativoFilter={ativoFilter}
+            clienteFilter={clienteFilter}
+            cidadeFilter={cidadeFilter}
+            tagFilter={tagFilter}
+            dateFilter={dateFilter}
+            customDateRange={customDateRange}
+            onRemoveStatus={(status) => {
+              setStatusFilter(statusFilter.filter(s => s !== status));
+            }}
+            onRemoveAtivo={() => {
+              setAtivoFilter('');
+            }}
+            onRemoveCliente={(clienteId) => {
+              setClienteFilter(clienteFilter.filter(c => c !== clienteId));
+            }}
+            onRemoveCidade={(cidade) => {
+              setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
+            }}
+            onRemoveTag={(tagId) => {
+              setTagFilter(tagFilter.filter(t => t !== tagId));
+            }}
+            onRemoveDate={() => {
+              setDateFilter('all');
+            }}
+            onClearAll={() => {
+              setStatusFilter([]);
+              setCidadeFilter([]);
+              setClienteFilter([]);
+              setAtivoFilter('');
+              setTagFilter([]);
+              setDateFilter('all');
+            }}
+            clientes={clientes}
+            tags={tags}
+            cidades={cidades}
+          />
+        </div>
 
         {/* Filtros modernos */}
         <div className="search-toolbar-row mb-4 relative">

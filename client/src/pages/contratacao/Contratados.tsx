@@ -1780,50 +1780,52 @@ const Contratados = () => {
           </div>
         </div>
 
-        <FilterTags
-          statusFilter={statusFilter}
-          ativoFilter={ativoFilter}
-          clienteFilter={clienteFilter}
-          cidadeFilter={cidadeFilter}
-          funcaoFilter={funcaoFilter}
-          tipoVeiculoFilter={tipoVeiculoFilter}
-          tagFilter={tagFilter}
-          dateFilter={dateFilter}
-          customDateRange={customDateRange}
-          onRemoveStatus={(status) => {
-            setStatusFilter(statusFilter.filter((item) => item !== status));
-          }}
-          onRemoveAtivo={() => {
-            setAtivoFilter("");
-          }}
-          onRemoveCliente={(clienteId) => {
-            setClienteFilter(clienteFilter.filter((item) => item !== clienteId));
-          }}
-          onRemoveCidade={(cidade) => {
-            setCidadeFilter(cidadeFilter.filter((item) => item !== cidade));
-          }}
-          onRemoveFuncao={(funcao) => {
-            setFuncaoFilter(funcaoFilter.filter((item) => item !== funcao));
-          }}
-          onRemoveTipoVeiculo={(tipo) => {
-            setTipoVeiculoFilter(tipoVeiculoFilter.filter((item) => item !== tipo));
-          }}
-          onRemoveTag={(tagId) => {
-            setTagFilter(tagFilter.filter((item) => item !== tagId));
-          }}
-          onRemoveDate={() => {
-            setDateFilter("all");
-            setCustomDateRange({
-              startDate: null,
-              endDate: null,
-            });
-          }}
-          onClearAll={clearAllFilters}
-          clientes={clientes}
-          tags={tags}
-          cidades={cidades}
-          tiposVeiculo={tiposVeiculo}
-        />
+        <div className="mb-4">
+          <FilterTags
+            statusFilter={statusFilter}
+            ativoFilter={ativoFilter}
+            clienteFilter={clienteFilter}
+            cidadeFilter={cidadeFilter}
+            funcaoFilter={funcaoFilter}
+            tipoVeiculoFilter={tipoVeiculoFilter}
+            tagFilter={tagFilter}
+            dateFilter={dateFilter}
+            customDateRange={customDateRange}
+            onRemoveStatus={(status) => {
+              setStatusFilter(statusFilter.filter((item) => item !== status));
+            }}
+            onRemoveAtivo={() => {
+              setAtivoFilter("");
+            }}
+            onRemoveCliente={(clienteId) => {
+              setClienteFilter(clienteFilter.filter((item) => item !== clienteId));
+            }}
+            onRemoveCidade={(cidade) => {
+              setCidadeFilter(cidadeFilter.filter((item) => item !== cidade));
+            }}
+            onRemoveFuncao={(funcao) => {
+              setFuncaoFilter(funcaoFilter.filter((item) => item !== funcao));
+            }}
+            onRemoveTipoVeiculo={(tipo) => {
+              setTipoVeiculoFilter(tipoVeiculoFilter.filter((item) => item !== tipo));
+            }}
+            onRemoveTag={(tagId) => {
+              setTagFilter(tagFilter.filter((item) => item !== tagId));
+            }}
+            onRemoveDate={() => {
+              setDateFilter("all");
+              setCustomDateRange({
+                startDate: null,
+                endDate: null,
+              });
+            }}
+            onClearAll={clearAllFilters}
+            clientes={clientes}
+            tags={tags}
+            cidades={cidades}
+            tiposVeiculo={tiposVeiculo}
+          />
+        </div>
 
         <div className="search-toolbar-row mb-4 relative">
           <div className="search-filter-grid">
