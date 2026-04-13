@@ -2836,7 +2836,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 p-6 rounded-xl shadow-lg border border-gray-200/70 dark:border-gray-700/70 backdrop-blur-sm">
+      <div className="search-section-surface p-6">
         {/* Search bar */}
         <div className="relative flex-1">
           <input
