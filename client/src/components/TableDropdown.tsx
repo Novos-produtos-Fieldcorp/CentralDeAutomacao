@@ -20,6 +20,7 @@ interface TableDropdownProps {
   disabled?: boolean;
   maxHeight?: string;
   dropdownMinWidth?: number;
+  portalLayer?: 'page' | 'modal';
 }
 
 export const TableDropdown: React.FC<TableDropdownProps> = ({
@@ -32,7 +33,8 @@ export const TableDropdown: React.FC<TableDropdownProps> = ({
   dropdownClassName = "",
   disabled = false,
   maxHeight = "200px",
-  dropdownMinWidth
+  dropdownMinWidth,
+  portalLayer = 'page'
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -107,6 +109,11 @@ export const TableDropdown: React.FC<TableDropdownProps> = ({
   const renderDropdown = () => {
     if (!isOpen) return null;
 
+    const portalZIndex =
+      portalLayer === 'modal'
+        ? 'var(--z-layer-modal-floating)'
+        : 'var(--z-layer-page-dropdown)';
+
     return createPortal(
       <div
         ref={dropdownRef}
@@ -117,7 +124,7 @@ export const TableDropdown: React.FC<TableDropdownProps> = ({
           width: dropdownPosition.width,
           maxHeight,
           overflowY: 'auto',
-          zIndex: 9999
+          zIndex: portalZIndex
         }}
       >
         {options.map((option) => (

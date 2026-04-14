@@ -1511,7 +1511,7 @@ const MotoristasLista = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+      <div className="search-section-surface p-6">
         {/* Campo de busca */}
         <div className="relative mb-4">
           <input
@@ -1533,8 +1533,8 @@ const MotoristasLista = () => {
         </div>
 
         {/* Ações e Filtros */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2">
+        <div className="search-toolbar-meta mb-4">
+          <div className="search-toolbar-summary">
             <BulkContactTagsSync 
               onSyncComplete={(result) => {
                 if (result.success && motoristas && motoristas.length > 0) {
@@ -1543,7 +1543,7 @@ const MotoristasLista = () => {
               }}
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="search-toolbar-summary">
             {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
               ativoFilter !== '' || tagFilter.length > 0 || dateFilter !== 'all') && (
               <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
@@ -1551,80 +1551,64 @@ const MotoristasLista = () => {
                 <span>{[statusFilter.length > 0 ? 1 : 0, cidadeFilter.length > 0 ? 1 : 0, clienteFilter.length > 0 ? 1 : 0, ativoFilter !== '' ? 1 : 0, tagFilter.length > 0 ? 1 : 0, dateFilter !== 'all' ? 1 : 0].reduce((a, b) => a + b, 0)}</span>
               </div>
             )}
-            {(statusFilter.length > 0 || cidadeFilter.length > 0 || clienteFilter.length > 0 || 
-              ativoFilter !== '' || tagFilter.length > 0 || dateFilter !== 'all' || searchTerm) && (
-              <button
-                onClick={() => {
-                  setStatusFilter([]);
-                  setCidadeFilter([]);
-                  setClienteFilter([]);
-                  setAtivoFilter('');
-                  setTagFilter([]);
-                  setDateFilter('all');
-                  setSearchTerm('');
-                }}
-                className="flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
-              >
-                <X className="w-3 h-3" />
-                Limpar Filtros
-              </button>
-            )}
           </div>
         </div>
 
         {/* Filter Tags - Filtros aplicados como tags removíveis */}
-        <FilterTags
-          statusFilter={statusFilter}
-          ativoFilter={ativoFilter}
-          clienteFilter={clienteFilter}
-          cidadeFilter={cidadeFilter}
-          tagFilter={tagFilter}
-          dateFilter={dateFilter}
-          customDateRange={customDateRange}
-          onRemoveStatus={(status) => {
-            setStatusFilter(statusFilter.filter(s => s !== status));
-          }}
-          onRemoveAtivo={() => {
-            setAtivoFilter('');
-          }}
-          onRemoveCliente={(clienteId) => {
-            setClienteFilter(clienteFilter.filter(c => c !== clienteId));
-          }}
-          onRemoveCidade={(cidade) => {
-            setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
-          }}
-          onRemoveTag={(tagId) => {
-            setTagFilter(tagFilter.filter(t => t !== tagId));
-          }}
-          onRemoveDate={() => {
-            setDateFilter('all');
-          }}
-          onClearAll={() => {
-            setStatusFilter([]);
-            setCidadeFilter([]);
-            setClienteFilter([]);
-            setAtivoFilter('');
-            setTagFilter([]);
-            setDateFilter('all');
-          }}
-          clientes={clientes}
-          tags={tags}
-          cidades={cidades}
-        />
+        <div className="mb-4">
+          <FilterTags
+            statusFilter={statusFilter}
+            ativoFilter={ativoFilter}
+            clienteFilter={clienteFilter}
+            cidadeFilter={cidadeFilter}
+            tagFilter={tagFilter}
+            dateFilter={dateFilter}
+            customDateRange={customDateRange}
+            onRemoveStatus={(status) => {
+              setStatusFilter(statusFilter.filter(s => s !== status));
+            }}
+            onRemoveAtivo={() => {
+              setAtivoFilter('');
+            }}
+            onRemoveCliente={(clienteId) => {
+              setClienteFilter(clienteFilter.filter(c => c !== clienteId));
+            }}
+            onRemoveCidade={(cidade) => {
+              setCidadeFilter(cidadeFilter.filter(c => c !== cidade));
+            }}
+            onRemoveTag={(tagId) => {
+              setTagFilter(tagFilter.filter(t => t !== tagId));
+            }}
+            onRemoveDate={() => {
+              setDateFilter('all');
+            }}
+            onClearAll={() => {
+              setStatusFilter([]);
+              setCidadeFilter([]);
+              setClienteFilter([]);
+              setAtivoFilter('');
+              setTagFilter([]);
+              setDateFilter('all');
+            }}
+            clientes={clientes}
+            tags={tags}
+            cidades={cidades}
+          />
+        </div>
 
         {/* Filtros modernos */}
-        <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[20]">
-          <div className="flex flex-wrap gap-2">
+        <div className="search-toolbar-row mb-4 relative">
+          <div className="search-filter-grid">
             {/* Status Filter */}
             <div className="relative">
               <div className="relative group" ref={statusDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                  className="search-filter-trigger"
                   onClick={handleToggleStatusDropdown}
                 >
                   <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
+                    <Filter className="h-4 w-4 search-filter-icon-status" />
                     <span>
                       {statusFilter.length === 0 ? 'Status' : `Status (${statusFilter.length})`}
                     </span>
@@ -1640,7 +1624,7 @@ const MotoristasLista = () => {
                     bottom: '100%',
                     left: 0,
                     marginBottom: '4px',
-                    zIndex: 30
+                    zIndex: 'var(--z-layer-page-dropdown)'
                   }}>
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
@@ -1689,11 +1673,11 @@ const MotoristasLista = () => {
               <div className="relative group" ref={cidadeDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                  className="search-filter-trigger"
                   onClick={handleToggleCidadeDropdown}
                 >
                   <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
+                    <MapPin className="h-4 w-4 search-filter-icon-cidade" />
                     <span>
                       {cidadeFilter.length === 0 ? 'Cidade' : `Cidade (${cidadeFilter.length})`}
                     </span>
@@ -1709,7 +1693,7 @@ const MotoristasLista = () => {
                     bottom: '100%',
                     left: 0,
                     marginBottom: '4px',
-                    zIndex: 30
+                    zIndex: 'var(--z-layer-page-dropdown)'
                   }}>
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
@@ -1752,15 +1736,15 @@ const MotoristasLista = () => {
             </div>
 
             {/* Cliente Filter */}
-            <div className="relative z-[20]">
+            <div className="relative">
               <div className="relative group" ref={clienteDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                  className="search-filter-trigger"
                   onClick={handleToggleClienteDropdown}
                 >
                   <div className="flex items-center gap-2">
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="h-4 w-4 search-filter-icon-cliente" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                       <circle cx="9" cy="7" r="4"></circle>
                       <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -1781,7 +1765,7 @@ const MotoristasLista = () => {
                     bottom: '100%',
                     left: 0,
                     marginBottom: '4px',
-                    zIndex: 30
+                    zIndex: 'var(--z-layer-page-dropdown)'
                   }}>
                   <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex justify-between items-center">
@@ -1845,15 +1829,15 @@ const MotoristasLista = () => {
 
 
             {/* Tags Filter */}
-            <div className="relative z-[20]">
+            <div className="relative">
               <div className="relative group" ref={tagDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                  className="search-filter-trigger"
                   onClick={handleToggleTagDropdown}
                 >
                   <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4" />
+                    <Tag className="h-4 w-4 search-filter-icon-tag" />
                     <span>
                       {tagFilter.length === 0 
                         ? (tagFilterMode === 'contains' ? 'Contém marcadores' : 'Não contém marcadores')
@@ -1871,7 +1855,7 @@ const MotoristasLista = () => {
                       bottom: '100%',
                       left: 0,
                       marginBottom: '4px',
-                      zIndex: 30
+                      zIndex: 'var(--z-layer-page-dropdown)'
                     }}>
 
                     <div className="px-3 py-2">
@@ -1978,15 +1962,15 @@ const MotoristasLista = () => {
             </div>
 
             {/* Status Ativo Filter */}
-            <div className="relative z-[20]">
+            <div className="relative">
               <div className="relative group" ref={ativoDropdownRef}>
                 <button
                   type="button"
-                  className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                  className="search-filter-trigger"
                   onClick={handleToggleAtivoDropdown}
                 >
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
+                    <CheckCircle className="h-4 w-4 search-filter-icon-ativo" />
                     <span>
                       {!ativoFilter ? 'Ativo' : ativoFilter === 'ativo' ? 'Ativo (Sim)' : 'Ativo (Não)'}
                     </span>
@@ -1994,7 +1978,10 @@ const MotoristasLista = () => {
                 </button>
 
                 {showAtivoDropdown && (
-                  <div className="absolute z-[30] bottom-full mb-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600">
+                  <div
+                    className="absolute bottom-full mb-1 w-48 bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600"
+                    style={{ zIndex: 'var(--z-layer-page-dropdown)' }}
+                  >
                     <div 
                       className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 ${!ativoFilter ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
                       onClick={() => {
@@ -2028,14 +2015,14 @@ const MotoristasLista = () => {
             </div>
 
             {/* Período Filter */}
-            <div className="relative z-[20]">
+            <div className="relative">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
-                <Calendar className="h-4 w-4 text-gray-400" />
+                <Calendar className="h-4 w-4 search-filter-icon-periodo" />
               </div>
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[120px]"
+                className="search-filter-select"
               >
                 <option value="all">Período</option>
                 <option value="today">Hoje</option>
@@ -2047,42 +2034,43 @@ const MotoristasLista = () => {
             </div>
 
           </div>
-
-          {/* Botão Sincronizar Contatos */}
-          <button
-            onClick={syncAllContatos}
-            disabled={isBulkSyncing}
-            className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            data-testid="button-sync-contatos"
-          >
-            <svg 
-              className={`w-4 h-4 ${isBulkSyncing ? 'animate-spin' : ''}`} 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2"
+          <div className="search-toolbar-actions">
+            {/* Botão Sincronizar Contatos */}
+            <button
+              onClick={syncAllContatos}
+              disabled={isBulkSyncing}
+              className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              data-testid="button-sync-contatos"
             >
-              <path d="M1 4v6h6" />
-              <path d="M23 20v-6h-6" />
-              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-            </svg>
-            <span>{isBulkSyncing ? 'Sincronizando...' : 'Sincronizar Contatos'}</span>
-          </button>
+              <svg 
+                className={`w-4 h-4 ${isBulkSyncing ? 'animate-spin' : ''}`} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2"
+              >
+                <path d="M1 4v6h6" />
+                <path d="M23 20v-6h-6" />
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+              </svg>
+              <span>{isBulkSyncing ? 'Sincronizando...' : 'Sincronizar Contatos'}</span>
+            </button>
 
-          {/* Botão Novo Motorista */}
-          <button
-            onClick={() => {
-              setIsNovoMotoristaModalOpen(true);
-              setSelectedMotorista(null);
-              setIsUnifiedModalOpen(true);
-            }}
-            className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm"
-            title="Adicionar motorista"
-            data-testid="button-add-motorista"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Adicionar Motorista</span>
-          </button>
+            {/* Botão Novo Motorista */}
+            <button
+              onClick={() => {
+                setIsNovoMotoristaModalOpen(true);
+                setSelectedMotorista(null);
+                setIsUnifiedModalOpen(true);
+              }}
+              className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center gap-2 text-sm"
+              title="Adicionar motorista"
+              data-testid="button-add-motorista"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Adicionar Motorista</span>
+            </button>
+          </div>
         </div>
 
         {dateFilter === 'custom' && (
@@ -2370,7 +2358,7 @@ const MotoristasLista = () => {
                                   top: tagDropdownPosition[motorista.motorista_id].top,
                                   left: tagDropdownPosition[motorista.motorista_id].left,
                                   width: tagDropdownPosition[motorista.motorista_id].width,
-                                  zIndex: 9999
+                                  zIndex: 'var(--z-layer-page-dropdown)'
                                 }}
                               >
                                 {/* Tags atuais do motorista */}

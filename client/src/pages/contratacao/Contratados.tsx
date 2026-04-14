@@ -6,7 +6,6 @@ import {
   FileText,
   MessageCircle,
   Filter,
-  ChevronDown,
   X,
   User,
   Loader2,
@@ -30,6 +29,9 @@ import type {
 } from "../../types/database"; // Adicionando tipos necessários
 import { formatCPF, formatPhone, formatDate } from "../../utils/format";
 import UnifiedAgregadoModal from "../../components/UnifiedAgregadoModal";
+import AddAgregadoModal from "../../components/AddAgregadoModal";
+import AddMotoristaModal from "../../components/AddMotoristaModal";
+import { BaseModal } from "../../components/BaseModal";
 import DocumentViewer from "../../components/DocumentViewer";
 import DocumentUploadModal from "../../components/DocumentUploadModal";
 import EditMotoristaModal from "../../components/EditMotoristaModal";
@@ -47,6 +49,7 @@ import Pagination from "../../components/Pagination";
 import ScrollableTableIndicator from "../../components/ScrollableTableIndicator";
 import ContextMenu from "../../components/ContextMenu";
 import UnifiedMotoristaModal from "../../components/UnifiedMotoristaModal";
+import FilterTags from "../../components/FilterTags";
 import { TableDropdown } from "../../components/TableDropdown";
 import {
   getListRefreshSkeletonPreset,
@@ -195,6 +198,11 @@ const Contratados = () => {
   const [isDocumentUploadOpen, setIsDocumentUploadOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isCreateContratadoModalOpen, setIsCreateContratadoModalOpen] =
+    useState(false);
+  const [isAddMotoristaModalOpen, setIsAddMotoristaModalOpen] =
+    useState(false);
+  const [isAddAgregadoModalOpen, setIsAddAgregadoModalOpen] = useState(false);
   const [isBulkActionsModalOpen, setIsBulkActionsModalOpen] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
   const [isMassMessageWithChatModalOpen, setIsMassMessageWithChatModalOpen] =
@@ -359,7 +367,6 @@ const Contratados = () => {
     motoristaId: number;
   } | null>(null);
   const [tempDate, setTempDate] = useState<string>("");
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Funções auxiliares para filtros
   const hasActiveFilters = () => {
@@ -368,6 +375,7 @@ const Contratados = () => {
       cidadeFilter.length > 0 ||
       clienteFilter.length > 0 ||
       ativoFilter !== "" ||
+      funcaoFilter.length > 0 ||
       tipoVeiculoFilter.length > 0 ||
       dateFilter !== "all" ||
       tagFilter.length > 0
@@ -386,10 +394,26 @@ const Contratados = () => {
       cidadeFilter.length > 0 ? 1 : 0,
       clienteFilter.length > 0 ? 1 : 0,
       ativoFilter !== "" ? 1 : 0,
+      funcaoFilter.length > 0 ? 1 : 0,
       tipoVeiculoFilter.length > 0 ? 1 : 0,
       dateFilter !== "all" ? 1 : 0,
       tagFilter.length > 0 ? 1 : 0,
     ].reduce((a, b) => a + b, 0);
+  };
+
+  const clearAllFilters = () => {
+    setStatusFilter([]);
+    setCidadeFilter([]);
+    setClienteFilter([]);
+    setAtivoFilter("");
+    setFuncaoFilter([]);
+    setTipoVeiculoFilter([]);
+    setTagFilter([]);
+    setDateFilter("all");
+    setCustomDateRange({
+      startDate: null,
+      endDate: null,
+    });
   };
 
   const convertToMotorista = (
@@ -700,6 +724,23 @@ const Contratados = () => {
   const handleUploadDocument = (motorista: ViewContratado) => {
     setSelectedMotorista(motorista);
     setIsDocumentUploadOpen(true);
+  };
+
+  const handleOpenCreateContratado = () => {
+    setSelectedMotorista(null);
+    setIsUnifiedModalOpen(false);
+    setIsUnifiedAgregadoModalOpen(false);
+    setIsCreateContratadoModalOpen(true);
+  };
+
+  const handleOpenAddMotorista = () => {
+    setIsCreateContratadoModalOpen(false);
+    setIsAddMotoristaModalOpen(true);
+  };
+
+  const handleOpenAddAgregado = () => {
+    setIsCreateContratadoModalOpen(false);
+    setIsAddAgregadoModalOpen(true);
   };
 
   const handleEdit = (motorista: ViewContratado) => {
@@ -1705,83 +1746,101 @@ const Contratados = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div className="p-4">
-          {/* Compact header with search and add button */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            {/* Search bar */}
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Buscar por nome, CPF, email ou telefone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-              />
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              {isRefreshing && (
-                <Loader2 className="absolute right-10 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-blue-500" />
-              )}
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
+      <div className="search-section-surface p-6">
+        <div className="relative mb-4">
+          <input
+            type="text"
+            placeholder="Buscar por nome, CPF, email ou telefone..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+          />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          {isRefreshing && (
+            <Loader2 className="absolute right-10 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-blue-500" />
+          )}
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
 
-            {/* Filter toggle and add button */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className={`inline-flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-lg border transition-colors ${
-                  showAdvancedFilters || hasActiveFilters()
-                    ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-300"
-                    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600"
-                }`}
-              >
-                <Filter size={16} />
-                Filtros
-                {hasActiveFilters() && (
-                  <span className="bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded-full">
-                    {getActiveFiltersCount()}
-                  </span>
-                )}
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform ${showAdvancedFilters ? "transform rotate-180" : ""}`}
-                />
-              </button>
-
-              <button
-                onClick={() => setIsUnifiedAgregadoModalOpen(true)}
-                className="inline-flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                title="Novo Contratado"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
+        <div className="search-toolbar-meta mb-4">
+          <div className="search-toolbar-summary">
+            {hasActiveFilters() && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
+                <Filter className="w-3 h-3" />
+                <span>{getActiveFiltersCount()}</span>
+              </div>
+            )}
           </div>
+        </div>
 
-          {/* Advanced filters - collapsible */}
-          {showAdvancedFilters && (
-            <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              {/* Filtros modernos */}
-              <div className="flex flex-wrap gap-3 items-center justify-between mb-4 relative z-[100]">
-                <div className="flex flex-wrap gap-2">
+        <div className="mb-4">
+          <FilterTags
+            statusFilter={statusFilter}
+            ativoFilter={ativoFilter}
+            clienteFilter={clienteFilter}
+            cidadeFilter={cidadeFilter}
+            funcaoFilter={funcaoFilter}
+            tipoVeiculoFilter={tipoVeiculoFilter}
+            tagFilter={tagFilter}
+            dateFilter={dateFilter}
+            customDateRange={customDateRange}
+            onRemoveStatus={(status) => {
+              setStatusFilter(statusFilter.filter((item) => item !== status));
+            }}
+            onRemoveAtivo={() => {
+              setAtivoFilter("");
+            }}
+            onRemoveCliente={(clienteId) => {
+              setClienteFilter(clienteFilter.filter((item) => item !== clienteId));
+            }}
+            onRemoveCidade={(cidade) => {
+              setCidadeFilter(cidadeFilter.filter((item) => item !== cidade));
+            }}
+            onRemoveFuncao={(funcao) => {
+              setFuncaoFilter(funcaoFilter.filter((item) => item !== funcao));
+            }}
+            onRemoveTipoVeiculo={(tipo) => {
+              setTipoVeiculoFilter(tipoVeiculoFilter.filter((item) => item !== tipo));
+            }}
+            onRemoveTag={(tagId) => {
+              setTagFilter(tagFilter.filter((item) => item !== tagId));
+            }}
+            onRemoveDate={() => {
+              setDateFilter("all");
+              setCustomDateRange({
+                startDate: null,
+                endDate: null,
+              });
+            }}
+            onClearAll={clearAllFilters}
+            clientes={clientes}
+            tags={tags}
+            cidades={cidades}
+            tiposVeiculo={tiposVeiculo}
+          />
+        </div>
+
+        <div className="search-toolbar-row mb-4 relative">
+          <div className="search-filter-grid">
                   {/* Status Filter */}
-                  <div className="relative z-[50]">
+                  <div className="relative">
                     <div className="relative group" ref={statusDropdownRef}>
                       <button
                         type="button"
-                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                        className="search-filter-trigger"
                         onClick={() =>
                           setShowStatusDropdown(!showStatusDropdown)
                         }
                       >
                         <div className="flex items-center gap-2">
-                          <Filter className="h-4 w-4" />
+                          <Filter className="h-4 w-4 search-filter-icon-status" />
                           <span>
                             {statusFilter.length === 0
                               ? "Status"
@@ -1798,7 +1857,7 @@ const Contratados = () => {
                             bottom: "100%",
                             left: 0,
                             marginBottom: "4px",
-                            zIndex: 999999,
+                            zIndex: 'var(--z-layer-page-dropdown)',
                           }}
                         >
                           <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -1863,18 +1922,18 @@ const Contratados = () => {
                   </div>
 
                   {/* Cliente Filter */}
-                  <div className="relative z-[40]">
+                  <div className="relative">
                     <div className="relative group" ref={clienteDropdownRef}>
                       <button
                         type="button"
-                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                        className="search-filter-trigger"
                         onClick={() =>
                           setShowClienteDropdown(!showClienteDropdown)
                         }
                       >
                         <div className="flex items-center gap-2">
                           <svg
-                            className="h-4 w-4"
+                            className="h-4 w-4 search-filter-icon-cliente"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
@@ -1900,7 +1959,7 @@ const Contratados = () => {
                             bottom: "100%",
                             left: 0,
                             marginBottom: "4px",
-                            zIndex: 999999,
+                            zIndex: 'var(--z-layer-page-dropdown)',
                           }}
                         >
                           <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -1989,17 +2048,17 @@ const Contratados = () => {
                   </div>
 
                   {/* Cidade Filter */}
-                  <div className="relative z-[35]">
+                  <div className="relative">
                     <div className="relative group" ref={cidadeDropdownRef}>
                       <button
                         type="button"
-                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                        className="search-filter-trigger"
                         onClick={() =>
                           setShowCidadeDropdown(!showCidadeDropdown)
                         }
                       >
                         <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
+                          <MapPin className="h-4 w-4 search-filter-icon-cidade" />
                           <span>
                             {cidadeFilter.length === 0
                               ? "Cidade"
@@ -2016,7 +2075,7 @@ const Contratados = () => {
                             bottom: "100%",
                             left: 0,
                             marginBottom: "4px",
-                            zIndex: 999999,
+                            zIndex: 'var(--z-layer-page-dropdown)',
                           }}
                         >
                           <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -2074,20 +2133,20 @@ const Contratados = () => {
                   </div>
 
                   {/* Tipo Veículo Filter */}
-                  <div className="relative z-[25]">
+                  <div className="relative">
                     <div
                       className="relative group"
                       ref={tipoVeiculoDropdownRef}
                     >
                       <button
                         type="button"
-                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                        className="search-filter-trigger"
                         onClick={() =>
                           setShowTipoVeiculoDropdown(!showTipoVeiculoDropdown)
                         }
                       >
                         <div className="flex items-center gap-2">
-                          <Truck className="h-4 w-4" />
+                          <Truck className="h-4 w-4 search-filter-icon-veiculo" />
                           <span>
                             {tipoVeiculoFilter.length === 0
                               ? "Veículo"
@@ -2104,7 +2163,7 @@ const Contratados = () => {
                             bottom: "100%",
                             left: 0,
                             marginBottom: "4px",
-                            zIndex: 999999,
+                            zIndex: 'var(--z-layer-page-dropdown)',
                           }}
                         >
                           <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -2191,17 +2250,17 @@ const Contratados = () => {
                   </div>
 
                   {/* Função Filter */}
-                  <div className="relative z-[30]">
+                  <div className="relative">
                     <div className="relative group" ref={funcaoDropdownRef}>
                       <button
                         type="button"
-                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                        className="search-filter-trigger"
                         onClick={() =>
                           setShowFuncaoDropdown(!showFuncaoDropdown)
                         }
                       >
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
+                          <User className="h-4 w-4 search-filter-icon-funcao" />
                           <span>
                             {funcaoFilter.length === 0
                               ? "Função"
@@ -2218,7 +2277,7 @@ const Contratados = () => {
                             bottom: "100%",
                             left: 0,
                             marginBottom: "4px",
-                            zIndex: 999999,
+                            zIndex: 'var(--z-layer-page-dropdown)',
                           }}
                         >
                           <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-600">
@@ -2303,15 +2362,15 @@ const Contratados = () => {
                   </div>
 
                   {/* Status Ativo Filter */}
-                  <div className="relative z-[50]">
+                  <div className="relative">
                     <div className="relative group" ref={ativoDropdownRef}>
                       <button
                         type="button"
-                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9 w-auto"
+                        className="search-filter-trigger"
                         onClick={handleToggleAtivoDropdown}
                       >
                         <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4" />
+                          <CheckCircle className="h-4 w-4 search-filter-icon-ativo" />
                           <span>
                             {!ativoFilter
                               ? "Ativo"
@@ -2333,7 +2392,7 @@ const Contratados = () => {
                               top: ativoDropdownPosition.top,
                               left: ativoDropdownPosition.left,
                               width: ativoDropdownPosition.width,
-                              zIndex: 9999,
+                              zIndex: 'var(--z-layer-page-dropdown)',
                             }}
                           >
                             <div
@@ -2373,14 +2432,14 @@ const Contratados = () => {
                   </div>
 
                   {/* Date Filter */}
-                  <div className="relative z-[10]">
+                  <div className="relative">
                     <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
-                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <Calendar className="h-4 w-4 search-filter-icon-periodo" />
                     </div>
                     <select
                       value={dateFilter}
                       onChange={(e) => setDateFilter(e.target.value)}
-                      className="px-3 py-2 pl-10 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-3 h-9 w-[120px]"
+                      className="search-filter-select pl-10"
                     >
                       <option value="all">Período</option>
                       <option value="today">Hoje</option>
@@ -2391,48 +2450,55 @@ const Contratados = () => {
                     </select>
                   </div>
                 </div>
+
+          <div className="search-toolbar-actions">
+            <button
+              onClick={handleOpenCreateContratado}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              title="Novo Contratado"
+            >
+              <Plus size={16} />
+              <span>Novo Contratado</span>
+            </button>
+          </div>
               </div>
 
-              {/* Custom Date Range */}
-              {dateFilter === "custom" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Data inicial
-                    </label>
-                    <input
-                      type="date"
-                      value={customDateRange.startDate}
-                      onChange={(e) =>
-                        setCustomDateRange((prev) => ({
-                          ...prev,
-                          startDate: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Data final
-                    </label>
-                    <input
-                      type="date"
-                      value={customDateRange.endDate}
-                      onChange={(e) =>
-                        setCustomDateRange((prev) => ({
-                          ...prev,
-                          endDate: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    />
-                  </div>
-                </div>
-              )}
+        {dateFilter === "custom" && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Data inicial
+              </label>
+              <input
+                type="date"
+                value={customDateRange.startDate}
+                onChange={(e) =>
+                  setCustomDateRange((prev) => ({
+                    ...prev,
+                    startDate: e.target.value,
+                  }))
+                }
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              />
             </div>
-          )}
-        </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Data final
+              </label>
+              <input
+                type="date"
+                value={customDateRange.endDate}
+                onChange={(e) =>
+                  setCustomDateRange((prev) => ({
+                    ...prev,
+                    endDate: e.target.value,
+                  }))
+                }
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 relative z-[1]">
@@ -3055,8 +3121,72 @@ const Contratados = () => {
       )}
 
       {/* Modals */}
+      <BaseModal
+        isOpen={isCreateContratadoModalOpen}
+        onClose={() => setIsCreateContratadoModalOpen(false)}
+        title="Novo Contratado"
+        size="md"
+        maxHeight="420px"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Escolha o tipo de cadastro que deseja criar nesta lista de
+            contratados.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={handleOpenAddMotorista}
+              className="flex flex-col items-start gap-3 rounded-xl border border-gray-200 bg-white px-4 py-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50 dark:border-gray-700 dark:bg-gray-900/40 dark:hover:border-blue-500/60 dark:hover:bg-blue-950/30"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300">
+                <User className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                  Motorista
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Cadastro de contratado sem dados de veiculo agregado.
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenAddAgregado}
+              className="flex flex-col items-start gap-3 rounded-xl border border-gray-200 bg-white px-4 py-4 text-left transition-colors hover:border-amber-300 hover:bg-amber-50 dark:border-gray-700 dark:bg-gray-900/40 dark:hover:border-amber-500/60 dark:hover:bg-amber-950/30"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300">
+                <Truck className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                  Agregado
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Cadastro com informacoes do veiculo e dados do agregado.
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </BaseModal>
+
+      <AddMotoristaModal
+        isOpen={isAddMotoristaModalOpen}
+        onClose={() => setIsAddMotoristaModalOpen(false)}
+        onSuccess={fetchContratados}
+      />
+
+      <AddAgregadoModal
+        isOpen={isAddAgregadoModalOpen}
+        onClose={() => setIsAddAgregadoModalOpen(false)}
+        onSuccess={fetchContratados}
+      />
+
       <UnifiedMotoristaModal
-        isOpen={isUnifiedModalOpen}
+        isOpen={isUnifiedModalOpen && !!selectedMotorista}
         onClose={() => setIsUnifiedModalOpen(false)}
         motorista={
           selectedMotorista ? convertToMotorista(selectedMotorista) : null

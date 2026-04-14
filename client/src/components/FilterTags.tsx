@@ -6,6 +6,7 @@ export interface FilterTagsProps {
   ativoFilter?: string;
   clienteFilter?: string[];
   cidadeFilter?: string[];
+  funcaoFilter?: string[];
   tagFilter?: string[];
   tipoVeiculoFilter?: string[];
   bauFilter?: string[];
@@ -19,6 +20,7 @@ export interface FilterTagsProps {
   onRemoveAtivo?: () => void;
   onRemoveCliente?: (cliente: string) => void;
   onRemoveCidade?: (cidade: string) => void;
+  onRemoveFuncao?: (funcao: string) => void;
   onRemoveTag?: (tag: string) => void;
   onRemoveTipoVeiculo?: (tipo: string) => void;
   onRemoveBau?: (bau: string) => void;
@@ -27,7 +29,7 @@ export interface FilterTagsProps {
   onClearAll?: () => void;
   
   // Data para labels personalizados
-  clientes?: Array<{ cliente_id: number; nome_cliente: string }>;
+  clientes?: Array<{ cliente_id: number; nome_cliente?: string; nome?: string }>;
   tags?: Array<{ id: number; nome: string; cor?: string }>;
   cidades?: string[];
   tiposVeiculo?: string[];
@@ -58,6 +60,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
   ativoFilter = '',
   clienteFilter = [],
   cidadeFilter = [],
+  funcaoFilter = [],
   tagFilter = [],
   tipoVeiculoFilter = [],
   bauFilter = [],
@@ -68,6 +71,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
   onRemoveAtivo,
   onRemoveCliente,
   onRemoveCidade,
+  onRemoveFuncao,
   onRemoveTag,
   onRemoveTipoVeiculo,
   onRemoveBau,
@@ -85,6 +89,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
     ativoFilter !== '' ||
     clienteFilter.length > 0 ||
     cidadeFilter.length > 0 ||
+    funcaoFilter.length > 0 ||
     tagFilter.length > 0 ||
     tipoVeiculoFilter.length > 0 ||
     bauFilter.length > 0 ||
@@ -97,7 +102,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
 
   const getClienteName = (clienteId: string | number) => {
     const cliente = clientes.find(c => c.cliente_id.toString() === clienteId.toString());
-    return cliente?.nome_cliente || `Cliente ${clienteId}`;
+    return cliente?.nome_cliente || cliente?.nome || `Cliente ${clienteId}`;
   };
 
   const getTagInfo = (tagId: string | number) => {
@@ -114,12 +119,45 @@ const FilterTags: React.FC<FilterTagsProps> = ({
     return DATE_LABELS[dateFilter] || dateFilter;
   };
 
+  const activeFiltersCount =
+    statusFilter.length +
+    (ativoFilter ? 1 : 0) +
+    clienteFilter.length +
+    cidadeFilter.length +
+    funcaoFilter.length +
+    tagFilter.length +
+    tipoVeiculoFilter.length +
+    bauFilter.length +
+    areaAtuacaoFilter.length +
+    (dateFilter !== 'all' && dateFilter !== '' ? 1 : 0);
+
+  const isActiveFilter = ativoFilter === 'ativo' || ativoFilter === 'true';
+
   return (
-    <div className="mb-4" data-testid="filter-tags-container">
+    <div className="filter-tags-panel" data-testid="filter-tags-container">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+            Filtros ativos
+          </span>
+          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-100 px-2 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+            {activeFiltersCount}
+          </span>
+        </div>
+
+        {hasFilters && onClearAll && (
+          <button
+            onClick={onClearAll}
+            className="inline-flex items-center gap-1.5 self-start rounded-lg bg-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
+            data-testid="clear-all-filters"
+          >
+            <X className="h-3 w-3" />
+            <span>Limpar todos</span>
+          </button>
+        )}
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-          Filtros ativos:
-        </span>
 
         {/* Status Filters */}
         {statusFilter.map((status) => {
@@ -127,11 +165,11 @@ const FilterTags: React.FC<FilterTagsProps> = ({
           return (
             <div
               key={`status-${status}`}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${statusInfo?.color || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
+              className={`filter-tags-chip ${statusInfo?.color || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}
               data-testid={`filter-tag-status-${status}`}
             >
               <CheckCircle className="h-3 w-3" />
-              <span>Status: {statusInfo?.label || status}</span>
+              <span className="filter-tags-chip-label">Status: {statusInfo?.label || status}</span>
               {onRemoveStatus && (
                 <button
                   onClick={() => onRemoveStatus(status)}
@@ -148,19 +186,19 @@ const FilterTags: React.FC<FilterTagsProps> = ({
         {/* Ativo Filter */}
         {ativoFilter && (
           <div
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${
-              ativoFilter === 'true' 
+            className={`filter-tags-chip ${
+              isActiveFilter
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                 : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
             }`}
             data-testid={`filter-tag-ativo-${ativoFilter}`}
           >
-            {ativoFilter === 'true' ? (
+            {isActiveFilter ? (
               <CheckCircle className="h-3 w-3" />
             ) : (
               <AlertTriangle className="h-3 w-3" />
             )}
-            <span>{ativoFilter === 'true' ? 'Ativo' : 'Desativo'}</span>
+            <span className="filter-tags-chip-label">{isActiveFilter ? 'Ativo' : 'Desativo'}</span>
             {onRemoveAtivo && (
               <button
                 onClick={onRemoveAtivo}
@@ -177,11 +215,11 @@ const FilterTags: React.FC<FilterTagsProps> = ({
         {clienteFilter.map((clienteId) => (
           <div
             key={`cliente-${clienteId}`}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300"
+            className="filter-tags-chip bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300"
             data-testid={`filter-tag-cliente-${clienteId}`}
           >
             <User className="h-3 w-3" />
-            <span>Cliente: {getClienteName(clienteId)}</span>
+            <span className="filter-tags-chip-label">Cliente: {getClienteName(clienteId)}</span>
             {onRemoveCliente && (
               <button
                 onClick={() => onRemoveCliente(clienteId)}
@@ -198,11 +236,11 @@ const FilterTags: React.FC<FilterTagsProps> = ({
         {areaAtuacaoFilter.map((area) => (
           <div
             key={`area-${area}`}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300"
+            className="filter-tags-chip bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300"
             data-testid={`filter-tag-area-atuacao-${area}`}
           >
             <MapPin className="h-3 w-3" />
-            <span>Região: {area}</span>
+            <span className="filter-tags-chip-label">Região: {area}</span>
             {onRemoveAreaAtuacao && (
               <button
                 onClick={() => onRemoveAreaAtuacao(area)}
@@ -219,16 +257,39 @@ const FilterTags: React.FC<FilterTagsProps> = ({
         {cidadeFilter.map((cidade) => (
           <div
             key={`cidade-${cidade}`}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300"
+            className="filter-tags-chip bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300"
             data-testid={`filter-tag-cidade-${cidade}`}
           >
             <MapPin className="h-3 w-3" />
-            <span>Cidade: {cidade}</span>
+            <span className="filter-tags-chip-label">Cidade: {cidade}</span>
             {onRemoveCidade && (
               <button
                 onClick={() => onRemoveCidade(cidade)}
                 className="hover:bg-black/10 dark:hover:bg-white/10 rounded-sm p-0.5 transition-colors"
                 data-testid={`remove-cidade-${cidade}`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        ))}
+
+        {/* Função Filters */}
+        {funcaoFilter.map((funcao) => (
+          <div
+            key={`funcao-${funcao}`}
+            className="filter-tags-chip bg-violet-100 dark:bg-violet-900/30 text-violet-800 dark:text-violet-300"
+            data-testid={`filter-tag-funcao-${funcao}`}
+          >
+            <User className="h-3 w-3" />
+            <span className="filter-tags-chip-label">
+              Função: {funcao === 'sem_funcao' ? 'Sem função' : funcao}
+            </span>
+            {onRemoveFuncao && (
+              <button
+                onClick={() => onRemoveFuncao(funcao)}
+                className="hover:bg-black/10 dark:hover:bg-white/10 rounded-sm p-0.5 transition-colors"
+                data-testid={`remove-funcao-${funcao}`}
               >
                 <X className="h-3 w-3" />
               </button>
@@ -242,7 +303,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
           return (
             <div
               key={`tag-${tagId}`}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium ${
+              className={`filter-tags-chip ${
                 tagInfo.cor 
                   ? `text-white` 
                   : 'bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-300'
@@ -251,7 +312,7 @@ const FilterTags: React.FC<FilterTagsProps> = ({
               data-testid={`filter-tag-tag-${tagId}`}
             >
               <TagIcon className="h-3 w-3" />
-              <span>Tag: {tagInfo.nome}</span>
+              <span className="filter-tags-chip-label">Tag: {tagInfo.nome}</span>
               {onRemoveTag && (
                 <button
                   onClick={() => onRemoveTag(tagId.toString())}
@@ -269,11 +330,11 @@ const FilterTags: React.FC<FilterTagsProps> = ({
         {tipoVeiculoFilter.map((tipo) => (
           <div
             key={`tipo-${tipo}`}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300"
+            className="filter-tags-chip bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300"
             data-testid={`filter-tag-tipo-veiculo-${tipo}`}
           >
             <Truck className="h-3 w-3" />
-            <span>Tipo: {tipo}</span>
+            <span className="filter-tags-chip-label">Tipo: {tipo}</span>
             {onRemoveTipoVeiculo && (
               <button
                 onClick={() => onRemoveTipoVeiculo(tipo)}
@@ -290,11 +351,11 @@ const FilterTags: React.FC<FilterTagsProps> = ({
         {bauFilter.map((bau) => (
           <div
             key={`bau-${bau}`}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
+            className="filter-tags-chip bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
             data-testid={`filter-tag-bau-${bau}`}
           >
             <Package className="h-3 w-3" />
-            <span>Baú: {bau === 'sem_bau' ? 'Sem baú' : bau}</span>
+            <span className="filter-tags-chip-label">Baú: {bau === 'sem_bau' ? 'Sem baú' : bau}</span>
             {onRemoveBau && (
               <button
                 onClick={() => onRemoveBau(bau)}
@@ -310,11 +371,11 @@ const FilterTags: React.FC<FilterTagsProps> = ({
         {/* Date Filter */}
         {dateFilter !== 'all' && dateFilter !== '' && (
           <div
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300"
+            className="filter-tags-chip bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300"
             data-testid={`filter-tag-date-${dateFilter}`}
           >
             <Calendar className="h-3 w-3" />
-            <span>Data: {formatDateRange()}</span>
+            <span className="filter-tags-chip-label">Data: {formatDateRange()}</span>
             {onRemoveDate && (
               <button
                 onClick={onRemoveDate}
@@ -327,17 +388,6 @@ const FilterTags: React.FC<FilterTagsProps> = ({
           </div>
         )}
 
-        {/* Clear All Button */}
-        {hasFilters && onClearAll && (
-          <button
-            onClick={onClearAll}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-            data-testid="clear-all-filters"
-          >
-            <X className="h-3 w-3" />
-            <span>Limpar todos</span>
-          </button>
-        )}
       </div>
     </div>
   );

@@ -68,7 +68,7 @@ const ScrollableTableIndicator: React.FC<ScrollableTableIndicatorProps> = ({ con
         top,
         left,
         transform: 'translateY(-50%)',
-        zIndex: 9999,
+        zIndex: 'var(--z-layer-page-floating)',
         pointerEvents: 'auto',
       }}
     >
