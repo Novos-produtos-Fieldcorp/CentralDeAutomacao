@@ -231,7 +231,7 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black/50 z-[1000001] flex items-center justify-center">
         <div className="bg-white dark:bg-gray-800 rounded-lg p-8">
           <div className="flex flex-col items-center">
             <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
@@ -243,7 +243,7 @@ const CreateWeeklyChecklistModal = ({ isOpen, onClose, onSuccess }: CreateWeekly
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[1000001] flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-md border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">

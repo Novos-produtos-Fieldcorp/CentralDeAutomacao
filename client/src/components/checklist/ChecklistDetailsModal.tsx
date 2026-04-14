@@ -1072,7 +1072,7 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
   // Show error state
   if (error) {
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50 z-[1000001] flex items-center justify-center p-4">
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-lg">
           <div className="flex items-center gap-3 mb-4">
             <AlertCircle className="w-6 h-6 text-red-500" />
@@ -1119,14 +1119,14 @@ const ChecklistDetailsModal = ({ isOpen, onClose, checklist, onEdit }: Checklist
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50 z-[1000001] flex items-center justify-center p-4">
         <LoadingSpinner />
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className="fixed inset-0 z-[1000001] overflow-hidden">
       {/* Overlay background */}
       <div className="fixed inset-0 bg-black/50" onClick={isEditing ? undefined : onClose}></div>
       
