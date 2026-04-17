@@ -1,1 +1,2 @@
 attached_assets/vagas_1775135702556.har filter=lfs diff=lfs merge=lfs -text
+*.sh text eol=lf
