@@ -29,7 +29,7 @@ const DeleteChecklistModal = ({ isOpen, onClose, onConfirm, checklist }: DeleteC
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[1000001] flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-md border border-gray-200 dark:border-gray-700">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
