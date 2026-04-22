@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ptBR } from 'date-fns/locale';
@@ -992,10 +993,10 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       )}
 
       {/* Edit Modal */}
-      {isEditModalOpen && selectedReading && (
+      {isEditModalOpen && selectedReading && createPortal(
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-[1000001] flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-5xl 2xl:max-w-6xl w-full max-h-[92vh] overflow-y-auto shadow-md border border-gray-200 dark:border-gray-700">
-            <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-2xl">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-5xl 2xl:max-w-6xl w-full max-h-[92vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 flex flex-col">
+            <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0 bg-white dark:bg-gray-800">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Editar Leitura de Hodômetro
               </h2>
@@ -1007,8 +1008,8 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
               </button>
             </div>
 
-            <form onSubmit={handleSaveEdit}>
-              <div className="p-4 sm:p-6 space-y-6">
+            <form onSubmit={handleSaveEdit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6">
                 {/* Card: Informações do Registro */}
                 <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
                   <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
@@ -1411,7 +1412,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
                 </div>
               </div>
 
-              <div className="flex flex-wrap justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-gray-800/80 rounded-b-2xl">
+              <div className="flex flex-wrap justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 shrink-0 bg-white dark:bg-gray-800">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
@@ -1440,11 +1441,12 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Photo Lightbox */}
-      {expandedPhoto && (
+      {expandedPhoto && createPortal(
         <div
           className="fixed inset-0 bg-black/80 z-[1000002] flex items-center justify-center p-4"
           onClick={() => setExpandedPhoto(null)}
@@ -1473,7 +1475,8 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
               />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
