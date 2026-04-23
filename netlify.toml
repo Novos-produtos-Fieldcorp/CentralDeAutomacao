@@ -23,6 +23,18 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/cpf/*"
+  to = "/.netlify/functions/cpf"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/vehicle-plate/*"
+  to = "/.netlify/functions/vehicle-plate"
+  status = 200
+  force = true
+
 # SPA fallback (must be last)
 [[redirects]]
   from = "/*"
