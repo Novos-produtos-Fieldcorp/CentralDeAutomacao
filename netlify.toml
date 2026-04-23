@@ -24,13 +24,13 @@
   force = true
 
 [[redirects]]
-  from = "/api/cpf/:cpf"
+  from = "/api/cpf/*"
   to = "/.netlify/functions/cpf"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/api/vehicle-plate/:plate"
+  from = "/api/vehicle-plate/*"
   to = "/.netlify/functions/vehicle-plate"
   status = 200
   force = true
