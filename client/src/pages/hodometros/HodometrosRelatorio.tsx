@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ptBR } from 'date-fns/locale';
 registerLocale('pt-BR', ptBR);
-import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save, Gauge, Fuel } from 'lucide-react';
+import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save, Gauge, Fuel, Maximize2 } from 'lucide-react';
+import ContextMenu from '../../components/ContextMenu';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import { useModuleAccess } from '../../hooks/useModuleAccess';
@@ -105,6 +107,9 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
   });
   const [submitting, setSubmitting] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [expandedPhoto, setExpandedPhoto] = useState<{ url: string; label: string } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; reading: HodometroReading } | null>(null);
+  const [showRightClickHint, setShowRightClickHint] = useState(false);
 
   const fetchReadings = useCallback(async () => {
     try {
@@ -219,6 +224,22 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
     }
   }, [showPeriodDropdown]);
 
+  useEffect(() => {
+    const key = 'hodometros_leituras_right_click_hint_shown';
+    if (!localStorage.getItem(key)) {
+      setShowRightClickHint(true);
+      localStorage.setItem(key, '1');
+      const timer = setTimeout(() => setShowRightClickHint(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleRowContextMenu = (e: React.MouseEvent, reading: HodometroReading) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, reading });
+  };
+
   // Format date from YYYY-MM-DD to DD/MM/YYYY
   const formatDateBR = (dateStr: string) => {
     const parts = dateStr.split('-');
@@ -245,9 +266,19 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
     }
   };
 
+  const blockNumberWheel = (e: React.WheelEvent<HTMLInputElement>) => {
+    e.currentTarget.blur();
+  };
+
+  const blockNumberKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+    }
+  };
+
   const handleEditReading = (reading: HodometroReading, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     // Set the selected reading and initialize form data
     setSelectedReading(reading);
     setEditFormData({
@@ -816,7 +847,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
                 {paginatedReadings.map((reading) => {
                   const isElectric = reading.bateria !== null && reading.bateria !== undefined;
                   return (
-                    <tr key={reading.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <tr key={reading.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-context-menu" onContextMenu={(e) => handleRowContextMenu(e, reading)}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 text-gray-400 mr-1" />
@@ -934,16 +965,18 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       )}
 
       {/* Photo Modal */}
-      {showPhotoModal && selectedPhoto && (
-        <div 
-          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4"
+      {showPhotoModal && selectedPhoto && createPortal(
+        <div
+          className="fixed inset-0 bg-black/80 z-[1000002] flex items-center justify-center p-4"
+          style={{ top: 0, left: 0, right: 0, bottom: 0 }}
           onClick={() => setShowPhotoModal(false)}
         >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
+          <div
+            className="bg-white dark:bg-gray-800 rounded-lg w-full max-h-[90vh] overflow-hidden shadow-xl border border-gray-200 dark:border-gray-700 flex flex-col"
+            style={{ maxWidth: 'min(90vw, 900px)' }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                 {photoType === 'hodometro' ? 'Foto do Hodômetro' : 'Foto da Bomba de Gasolina'}
               </h3>
@@ -954,21 +987,22 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
                 <X size={24} />
               </button>
             </div>
-            <div className="relative aspect-video">
+            <div className="flex items-center justify-center p-4 overflow-hidden" style={{ maxHeight: 'calc(90vh - 120px)' }}>
               <img
                 src={selectedPhoto}
                 alt={photoType === 'hodometro' ? 'Foto do Hodômetro' : 'Foto da Bomba de Gasolina'}
-                className="absolute inset-0 w-full h-full object-contain"
+                className="max-w-full max-h-full object-contain rounded"
+                style={{ maxHeight: 'calc(90vh - 140px)' }}
               />
             </div>
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end shrink-0">
               <a
                 href={selectedPhoto}
                 download={photoType === 'hodometro' ? 'hodometro.jpg' : 'bomba_gasolina.jpg'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
                          transition-colors flex items-center gap-2"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -977,356 +1011,431 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
               </a>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Edit Modal */}
-      {isEditModalOpen && selectedReading && (
-        <div 
-          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4"
-          onClick={() => setIsEditModalOpen(false)}
-        >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-md border border-gray-200 dark:border-gray-700"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+      {isEditModalOpen && selectedReading && createPortal(
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-[1000001] flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-5xl 2xl:max-w-6xl w-full max-h-[92vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 flex flex-col">
+            <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0 bg-white dark:bg-gray-800">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Editar Leitura de Hodômetro
-              </h3>
+              </h2>
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <X size={24} />
               </button>
             </div>
-            
-            <form onSubmit={handleSaveEdit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Basic Information */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Data
-                  </label>
-                  <DatePicker
-                    selected={editFormData.data ? new Date(editFormData.data + 'T00:00:00') : null}
-                    onChange={(date: Date | null) => {
-                      if (date) {
-                        setEditFormData(prev => ({ ...prev, data: date.toLocaleDateString('en-CA') }));
-                      }
-                    }}
-                    dateFormat="dd/MM/yyyy"
-                    locale="pt-BR"
-                    calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
-                    wrapperClassName="w-full"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Hora
-                  </label>
-                  <input
-                    type="time"
-                    value={editFormData.hora}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, hora: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-                
-                {/* Vehicle Information */}
-                <div className="md:col-span-2 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Truck className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Veículo: {selectedReading.veiculo?.placa?.toUpperCase()} - {selectedReading.veiculo?.marca} {selectedReading.veiculo?.tipo}
-                    </h4>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mb-3">
-                    <User className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Motorista: {selectedReading.motorista?.nome}
-                    </h4>
-                  </div>
-                </div>
-                
-                {/* Hodometer Fields - Show based on vehicle type */}
-                {selectedReading.bateria !== null && selectedReading.bateria !== undefined ? (
-                  <>
-                    {/* Electric Vehicle Fields */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Bateria (%)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={editFormData.bateria}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, bateria: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Trip Lida
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={editFormData.trip_lida}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, trip_lida: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Trip Informada
-                      </label>
-                      <input
-                        type="text"
-                        value={editFormData.trip_informada}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, trip_informada: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {/* Regular Vehicle Fields */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Hodômetro Informado
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={editFormData.hod_informado}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, hod_informado: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Hodômetro Lido
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={editFormData.hod_lido}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, hod_lido: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Trip Lida
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={editFormData.trip_lida}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, trip_lida: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
+            <form onSubmit={handleSaveEdit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6">
+                {/* Card: Informações do Registro */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+                  <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Informações do Registro
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Data e hora da leitura, e dados do veículo e motorista.
+                    </p>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Trip Informada
-                      </label>
-                      <input
-                        type="text"
-                        value={editFormData.trip_informada}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, trip_informada: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                      />
-                    </div>
-                  </>
-                )}
-                
-                {/* Common Fields */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    KM Rodado
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={editFormData.km_rodado}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, km_rodado: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-                
-                {/* Fuel Pump Fields */}
-                {moduleAccess.bomba && (
-                  <div className="md:col-span-2 border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                      Dados da Bomba de Gasolina
-                    </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Preço Lido
+                        Data
                       </label>
-                      <input
-                        type="text"
-                        value={editFormData.preco_lido}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, preco_lido: e.target.value }))}
+                      <DatePicker
+                        selected={editFormData.data ? new Date(editFormData.data + 'T00:00:00') : null}
+                        onChange={(date: Date | null) => {
+                          if (date) {
+                            setEditFormData(prev => ({ ...prev, data: date.toLocaleDateString('en-CA') }));
+                          }
+                        }}
+                        dateFormat="dd/MM/yyyy"
+                        locale="pt-BR"
+                        calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
+                        wrapperClassName="w-full"
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        placeholder="Ex: R$ 5.89"
-                        data-testid="input-preco-lido"
                       />
                     </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Preço Informado
+                        Hora
                       </label>
                       <input
-                        type="text"
-                        value={editFormData.preco_informado}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, preco_informado: e.target.value }))}
+                        type="time"
+                        value={editFormData.hora}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, hora: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        placeholder="Ex: R$ 5.90"
-                        data-testid="input-preco-informado"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Litros Lido
-                      </label>
-                      <input
-                        type="text"
-                        value={editFormData.litro_lido}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, litro_lido: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        placeholder="Ex: 45.5"
-                        data-testid="input-litro-lido"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Litros Informado
-                      </label>
-                      <input
-                        type="text"
-                        value={editFormData.litro_informado}
-                        onChange={(e) => setEditFormData(prev => ({ ...prev, litro_informado: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        placeholder="Ex: 45.0"
-                        data-testid="input-litro-informado"
                       />
                     </div>
                   </div>
-                  </div>
-                )}
-                
-                <div className="md:col-span-2 border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <Gauge className="w-4 h-4" />
-                    Foto do Hodômetro
-                  </h4>
-                  <div className="flex flex-col md:flex-row gap-4 items-center">
-                    {editFormData.foto_hodometro && (
-                      <div className="relative w-40 h-40 border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-                        <img 
-                          src={editFormData.foto_hodometro} 
-                          alt="Foto do Hodômetro"
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setEditFormData(prev => ({ ...prev, foto_hodometro: '' }))}
-                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                          title="Remover foto"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <label className="block">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handlePhotoUpload(file, 'hodometro');
-                          }}
-                          className="hidden"
-                          disabled={uploadingPhoto}
-                          data-testid="input-foto-hodometro"
-                        />
-                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                          {editFormData.foto_hodometro ? 'Substituir' : 'Adicionar'}
-                        </span>
-                      </label>
-                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        Clique para {editFormData.foto_hodometro ? 'substituir' : 'adicionar'} a foto do hodômetro
-                      </p>
+
+                  <div className="flex flex-col gap-2 bg-white dark:bg-gray-700/50 rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2">
+                      <Truck className="w-5 h-5 text-gray-500 dark:text-gray-400 shrink-0" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 break-words">
+                        Veículo: {selectedReading.veiculo?.placa?.toUpperCase()} - {selectedReading.veiculo?.marca} {selectedReading.veiculo?.tipo}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <User className="w-5 h-5 text-gray-500 dark:text-gray-400 shrink-0" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 break-words">
+                        Motorista: {selectedReading.motorista?.nome}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {moduleAccess.bomba && (
-                  <div className="md:col-span-2 border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                      <Fuel className="w-4 h-4" />
-                      Foto da Bomba de Gasolina
-                    </h4>
-                  <div className="flex flex-col md:flex-row gap-4 items-center">
-                    {editFormData.foto_bomba && (
-                      <div className="relative w-40 h-40 border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-                        <img 
-                          src={editFormData.foto_bomba} 
-                          alt="Foto da Bomba"
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setEditFormData(prev => ({ ...prev, foto_bomba: '' }))}
-                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                          title="Remover foto"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <label className="block">
+                {/* Leituras + Bomba lado a lado */}
+                <div className={`grid gap-6 ${moduleAccess.bomba ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'}`}>
+                {/* Card: Leituras do Hodômetro */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+                  <div className="border-b border-gray-200 dark:border-gray-700 pb-3 flex items-center gap-2">
+                    <Gauge className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Leituras do Hodômetro
+                    </h3>
+                  </div>
+
+                  {selectedReading.bateria !== null && selectedReading.bateria !== undefined ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Bateria (%)
+                        </label>
                         <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handlePhotoUpload(file, 'bomba');
-                          }}
-                          className="hidden"
-                          disabled={uploadingPhoto}
-                          data-testid="input-foto-bomba"
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={editFormData.bateria}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, bateria: e.target.value }))}
+                          onWheel={blockNumberWheel}
+                          onKeyDown={blockNumberKeys}
+                          className="no-spinner w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         />
-                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                          {editFormData.foto_bomba ? 'Substituir' : 'Adicionar'}
-                        </span>
-                      </label>
-                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        Clique para {editFormData.foto_bomba ? 'substituir' : 'adicionar'} a foto da bomba de gasolina
-                      </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Trip Lida
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={editFormData.trip_lida}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, trip_lida: e.target.value }))}
+                          onWheel={blockNumberWheel}
+                          onKeyDown={blockNumberKeys}
+                          className="no-spinner w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Trip Informada
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.trip_informada}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, trip_informada: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          KM Rodado
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={editFormData.km_rodado}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, km_rodado: e.target.value }))}
+                          onWheel={blockNumberWheel}
+                          onKeyDown={blockNumberKeys}
+                          className="no-spinner w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Hodômetro Informado
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={editFormData.hod_informado}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, hod_informado: e.target.value }))}
+                          onWheel={blockNumberWheel}
+                          onKeyDown={blockNumberKeys}
+                          className="no-spinner w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Hodômetro Lido
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={editFormData.hod_lido}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, hod_lido: e.target.value }))}
+                          onWheel={blockNumberWheel}
+                          onKeyDown={blockNumberKeys}
+                          className="no-spinner w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Trip Lida
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={editFormData.trip_lida}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, trip_lida: e.target.value }))}
+                          onWheel={blockNumberWheel}
+                          onKeyDown={blockNumberKeys}
+                          className="no-spinner w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Trip Informada
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.trip_informada}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, trip_informada: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          KM Rodado
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={editFormData.km_rodado}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, km_rodado: e.target.value }))}
+                          onWheel={blockNumberWheel}
+                          onKeyDown={blockNumberKeys}
+                          className="no-spinner w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Card: Dados da Bomba de Gasolina */}
+                {moduleAccess.bomba && (
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+                    <div className="border-b border-gray-200 dark:border-gray-700 pb-3 flex items-center gap-2">
+                      <Fuel className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Dados da Bomba de Gasolina
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Preço Lido
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.preco_lido}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, preco_lido: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          placeholder="Ex: R$ 5.89"
+                          data-testid="input-preco-lido"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Preço Informado
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.preco_informado}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, preco_informado: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          placeholder="Ex: R$ 5.90"
+                          data-testid="input-preco-informado"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Litros Lido
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.litro_lido}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, litro_lido: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          placeholder="Ex: 45.5"
+                          data-testid="input-litro-lido"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Litros Informado
+                        </label>
+                        <input
+                          type="text"
+                          value={editFormData.litro_informado}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, litro_informado: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          placeholder="Ex: 45.0"
+                          data-testid="input-litro-informado"
+                        />
+                      </div>
                     </div>
                   </div>
-                  </div>
                 )}
+                </div>
+
+                {/* Cards de Foto — lado a lado quando há bomba */}
+                <div className={`grid gap-6 ${moduleAccess.bomba ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'}`}>
+                  {/* Card: Foto do Hodômetro */}
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+                    <div className="border-b border-gray-200 dark:border-gray-700 pb-3 flex items-center gap-2">
+                      <Gauge className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Foto do Hodômetro
+                      </h3>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+                      {editFormData.foto_hodometro && (
+                        <div className="relative w-40 h-40 border-2 border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden shrink-0 group">
+                          <img
+                            src={editFormData.foto_hodometro}
+                            alt="Foto do Hodômetro"
+                            className="w-full h-full object-cover cursor-zoom-in"
+                            onClick={() => setExpandedPhoto({ url: editFormData.foto_hodometro, label: 'Foto do Hodômetro' })}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setExpandedPhoto({ url: editFormData.foto_hodometro, label: 'Foto do Hodômetro' })}
+                            className="absolute bottom-1 right-1 p-1.5 bg-white/85 dark:bg-gray-800/85 text-gray-700 dark:text-gray-200 rounded-full shadow-md hover:bg-white dark:hover:bg-gray-700 transition-colors"
+                            title="Expandir foto"
+                          >
+                            <Maximize2 size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditFormData(prev => ({ ...prev, foto_hodometro: '' }))}
+                            className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                            title="Remover foto"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <label className="block">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handlePhotoUpload(file, 'hodometro');
+                            }}
+                            className="hidden"
+                            disabled={uploadingPhoto}
+                            data-testid="input-foto-hodometro"
+                          />
+                          <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                            {editFormData.foto_hodometro ? 'Substituir' : 'Adicionar'}
+                          </span>
+                        </label>
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                          Clique para {editFormData.foto_hodometro ? 'substituir' : 'adicionar'} a foto do hodômetro
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card: Foto da Bomba de Gasolina */}
+                  {moduleAccess.bomba && (
+                    <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+                      <div className="border-b border-gray-200 dark:border-gray-700 pb-3 flex items-center gap-2">
+                        <Fuel className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          Foto da Bomba de Gasolina
+                        </h3>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+                        {editFormData.foto_bomba && (
+                          <div className="relative w-40 h-40 border-2 border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden shrink-0 group">
+                            <img
+                              src={editFormData.foto_bomba}
+                              alt="Foto da Bomba"
+                              className="w-full h-full object-cover cursor-zoom-in"
+                              onClick={() => setExpandedPhoto({ url: editFormData.foto_bomba, label: 'Foto da Bomba de Gasolina' })}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setExpandedPhoto({ url: editFormData.foto_bomba, label: 'Foto da Bomba de Gasolina' })}
+                              className="absolute bottom-1 right-1 p-1.5 bg-white/85 dark:bg-gray-800/85 text-gray-700 dark:text-gray-200 rounded-full shadow-md hover:bg-white dark:hover:bg-gray-700 transition-colors"
+                              title="Expandir foto"
+                            >
+                              <Maximize2 size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditFormData(prev => ({ ...prev, foto_bomba: '' }))}
+                              className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                              title="Remover foto"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <label className="block">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handlePhotoUpload(file, 'bomba');
+                              }}
+                              className="hidden"
+                              disabled={uploadingPhoto}
+                              data-testid="input-foto-bomba"
+                            />
+                            <span className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                              {editFormData.foto_bomba ? 'Substituir' : 'Adicionar'}
+                            </span>
+                          </label>
+                          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            Clique para {editFormData.foto_bomba ? 'substituir' : 'adicionar'} a foto da bomba de gasolina
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+
+              <div className="flex flex-wrap justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 shrink-0 bg-white dark:bg-gray-800">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
@@ -1355,7 +1464,124 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
               </div>
             </form>
           </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          actions={[
+            {
+              icon: <Gauge size={16} />,
+              label: 'Ver foto hodômetro',
+              color: 'text-blue-600 dark:text-blue-400',
+              disabled: !contextMenu.reading.foto_hodometro,
+              onClick: () => {
+                if (contextMenu.reading.foto_hodometro) {
+                  setSelectedPhoto(contextMenu.reading.foto_hodometro);
+                  setPhotoType('hodometro');
+                  setShowPhotoModal(true);
+                }
+              }
+            },
+            ...(moduleAccess.bomba ? [{
+              icon: <Fuel size={16} />,
+              label: 'Ver foto bomba',
+              color: 'text-green-600 dark:text-green-400',
+              disabled: !contextMenu.reading.bomba_gasolina?.foto_bomba,
+              onClick: () => {
+                if (contextMenu.reading.bomba_gasolina?.foto_bomba) {
+                  setSelectedPhoto(contextMenu.reading.bomba_gasolina.foto_bomba);
+                  setPhotoType('bomba');
+                  setShowPhotoModal(true);
+                }
+              }
+            }] : []),
+            {
+              icon: <Edit size={16} />,
+              label: 'Editar',
+              color: 'text-yellow-600 dark:text-yellow-400',
+              onClick: () => {
+                const reading = contextMenu.reading;
+                setSelectedReading(reading);
+                setEditFormData({
+                  data: reading.data,
+                  hora: reading.hora,
+                  hod_informado: reading.hod_informado?.toString() || '',
+                  hod_lido: reading.hod_lido?.toString() || '',
+                  trip_lida: reading.trip_lida?.toString() || '',
+                  trip_informada: reading.trip_informada || '',
+                  km_rodado: reading.km_rodado?.toString() || '',
+                  bateria: reading.bateria?.toString() || '',
+                  preco_lido: reading.bomba_gasolina?.preco_lido || '',
+                  preco_informado: reading.bomba_gasolina?.preco_informado || '',
+                  litro_lido: reading.bomba_gasolina?.litro_lido || '',
+                  litro_informado: reading.bomba_gasolina?.litro_informado || '',
+                  foto_hodometro: reading.foto_hodometro || '',
+                  foto_bomba: reading.bomba_gasolina?.foto_bomba || ''
+                });
+                setIsEditModalOpen(true);
+              }
+            }
+          ]}
+        />
+      )}
+
+      {/* First-visit right-click hint */}
+      {showRightClickHint && (
+        <div
+          className="fixed bottom-8 left-1/2 z-[1000003] pointer-events-none"
+          style={{ transform: 'translateX(-50%)' }}
+        >
+          <div className="bg-gray-900 dark:bg-gray-700 text-white text-sm px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-bounce">
+            <span className="text-base">🖱️</span>
+            <span>Clique com o botão direito em uma linha para ver opções rápidas</span>
+            <button
+              className="pointer-events-auto ml-2 text-gray-400 hover:text-white"
+              onClick={() => setShowRightClickHint(false)}
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
+      )}
+
+      {/* Photo Lightbox */}
+      {expandedPhoto && createPortal(
+        <div
+          className="fixed inset-0 bg-black/80 z-[1000002] flex items-center justify-center p-4"
+          onClick={() => setExpandedPhoto(null)}
+        >
+          <div
+            className="relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center gap-3 shrink-0">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
+                {expandedPhoto.label}
+              </h3>
+              <button
+                onClick={() => setExpandedPhoto(null)}
+                className="shrink-0 p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                title="Fechar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex items-center justify-center bg-gray-100 dark:bg-gray-700 overflow-hidden">
+              <img
+                src={expandedPhoto.url}
+                alt={expandedPhoto.label}
+                className="block max-w-[90vw] max-h-[calc(90vh-5rem)] w-auto h-auto object-contain"
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );
