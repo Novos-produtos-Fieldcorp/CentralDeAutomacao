@@ -5,6 +5,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { ptBR } from 'date-fns/locale';
 registerLocale('pt-BR', ptBR);
 import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save, Gauge, Fuel, Maximize2 } from 'lucide-react';
+import ContextMenu from '../../components/ContextMenu';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import { useModuleAccess } from '../../hooks/useModuleAccess';
@@ -107,6 +108,8 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
   const [submitting, setSubmitting] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [expandedPhoto, setExpandedPhoto] = useState<{ url: string; label: string } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; reading: HodometroReading } | null>(null);
+  const [showRightClickHint, setShowRightClickHint] = useState(false);
 
   const fetchReadings = useCallback(async () => {
     try {
@@ -220,6 +223,22 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       };
     }
   }, [showPeriodDropdown]);
+
+  useEffect(() => {
+    const key = 'hodometros_leituras_right_click_hint_shown';
+    if (!localStorage.getItem(key)) {
+      setShowRightClickHint(true);
+      localStorage.setItem(key, '1');
+      const timer = setTimeout(() => setShowRightClickHint(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleRowContextMenu = (e: React.MouseEvent, reading: HodometroReading) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, reading });
+  };
 
   // Format date from YYYY-MM-DD to DD/MM/YYYY
   const formatDateBR = (dateStr: string) => {
@@ -828,7 +847,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
                 {paginatedReadings.map((reading) => {
                   const isElectric = reading.bateria !== null && reading.bateria !== undefined;
                   return (
-                    <tr key={reading.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <tr key={reading.id_hodometro} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-context-menu" onContextMenu={(e) => handleRowContextMenu(e, reading)}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 text-gray-400 mr-1" />
@@ -946,16 +965,18 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       )}
 
       {/* Photo Modal */}
-      {showPhotoModal && selectedPhoto && (
-        <div 
-          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4"
+      {showPhotoModal && selectedPhoto && createPortal(
+        <div
+          className="fixed inset-0 bg-black/80 z-[1000002] flex items-center justify-center p-4"
+          style={{ top: 0, left: 0, right: 0, bottom: 0 }}
           onClick={() => setShowPhotoModal(false)}
         >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
+          <div
+            className="bg-white dark:bg-gray-800 rounded-lg w-full max-h-[90vh] overflow-hidden shadow-xl border border-gray-200 dark:border-gray-700 flex flex-col"
+            style={{ maxWidth: 'min(90vw, 900px)' }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                 {photoType === 'hodometro' ? 'Foto do Hodômetro' : 'Foto da Bomba de Gasolina'}
               </h3>
@@ -966,21 +987,22 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
                 <X size={24} />
               </button>
             </div>
-            <div className="relative aspect-video">
+            <div className="flex items-center justify-center p-4 overflow-hidden" style={{ maxHeight: 'calc(90vh - 120px)' }}>
               <img
                 src={selectedPhoto}
                 alt={photoType === 'hodometro' ? 'Foto do Hodômetro' : 'Foto da Bomba de Gasolina'}
-                className="absolute inset-0 w-full h-full object-contain"
+                className="max-w-full max-h-full object-contain rounded"
+                style={{ maxHeight: 'calc(90vh - 140px)' }}
               />
             </div>
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end shrink-0">
               <a
                 href={selectedPhoto}
                 download={photoType === 'hodometro' ? 'hodometro.jpg' : 'bomba_gasolina.jpg'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700
+                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
                          transition-colors flex items-center gap-2"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -989,7 +1011,8 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
               </a>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Edit Modal */}
@@ -1443,6 +1466,88 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          actions={[
+            {
+              icon: <Gauge size={16} />,
+              label: 'Ver foto hodômetro',
+              color: 'text-blue-600 dark:text-blue-400',
+              disabled: !contextMenu.reading.foto_hodometro,
+              onClick: () => {
+                if (contextMenu.reading.foto_hodometro) {
+                  setSelectedPhoto(contextMenu.reading.foto_hodometro);
+                  setPhotoType('hodometro');
+                  setShowPhotoModal(true);
+                }
+              }
+            },
+            ...(moduleAccess.bomba ? [{
+              icon: <Fuel size={16} />,
+              label: 'Ver foto bomba',
+              color: 'text-green-600 dark:text-green-400',
+              disabled: !contextMenu.reading.bomba_gasolina?.foto_bomba,
+              onClick: () => {
+                if (contextMenu.reading.bomba_gasolina?.foto_bomba) {
+                  setSelectedPhoto(contextMenu.reading.bomba_gasolina.foto_bomba);
+                  setPhotoType('bomba');
+                  setShowPhotoModal(true);
+                }
+              }
+            }] : []),
+            {
+              icon: <Edit size={16} />,
+              label: 'Editar',
+              color: 'text-yellow-600 dark:text-yellow-400',
+              onClick: () => {
+                const reading = contextMenu.reading;
+                setSelectedReading(reading);
+                setEditFormData({
+                  data: reading.data,
+                  hora: reading.hora,
+                  hod_informado: reading.hod_informado?.toString() || '',
+                  hod_lido: reading.hod_lido?.toString() || '',
+                  trip_lida: reading.trip_lida?.toString() || '',
+                  trip_informada: reading.trip_informada || '',
+                  km_rodado: reading.km_rodado?.toString() || '',
+                  bateria: reading.bateria?.toString() || '',
+                  preco_lido: reading.bomba_gasolina?.preco_lido || '',
+                  preco_informado: reading.bomba_gasolina?.preco_informado || '',
+                  litro_lido: reading.bomba_gasolina?.litro_lido || '',
+                  litro_informado: reading.bomba_gasolina?.litro_informado || '',
+                  foto_hodometro: reading.foto_hodometro || '',
+                  foto_bomba: reading.bomba_gasolina?.foto_bomba || ''
+                });
+                setIsEditModalOpen(true);
+              }
+            }
+          ]}
+        />
+      )}
+
+      {/* First-visit right-click hint */}
+      {showRightClickHint && (
+        <div
+          className="fixed bottom-8 left-1/2 z-[1000003] pointer-events-none"
+          style={{ transform: 'translateX(-50%)' }}
+        >
+          <div className="bg-gray-900 dark:bg-gray-700 text-white text-sm px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-bounce">
+            <span className="text-base">🖱️</span>
+            <span>Clique com o botão direito em uma linha para ver opções rápidas</span>
+            <button
+              className="pointer-events-auto ml-2 text-gray-400 hover:text-white"
+              onClick={() => setShowRightClickHint(false)}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Photo Lightbox */}
