@@ -23,12 +23,12 @@ import {
 } from "./utils/api-retry";
 import { getBulkMotoristaTags } from "./bulk-tags-api";
 import { registerBulkContactTagsRoute } from "./bulk-contact-tags-sync";
+import { registerCpfRoute } from "./cpf-api";
 import archiver from 'archiver';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { z } from 'zod';
 import { startGroupSummaryCron } from './cron/groupSummaryCron';
-// CPF agora é consultado diretamente do frontend
 
 // Job tracking system for progress monitoring
 interface JobStatus {
@@ -139,6 +139,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+
+  registerCpfRoute(app);
 
   // Rota para buscar token WiseApp por company_id
   app.get("/api/wiseapp-token/:companyId", async (req, res) => {
@@ -4328,6 +4330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Secure Vehicle Plate Lookup endpoint
   app.get("/api/vehicle-plate/:plate", async (req, res) => {
+    res.set('Cache-Control', 'no-store');
     try {
       const { plate } = req.params;
       
@@ -4377,9 +4380,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const data = await response.json();
-      const vehicle = data.data?.veiculo;
+      console.log('FIPE raw response keys:', JSON.stringify(Object.keys(data || {})));
+      console.log('FIPE data.data keys:', JSON.stringify(Object.keys(data?.data || {})));
+
+      // API may nest as data.data.data.veiculo or data.data.veiculo or data.veiculo
+      const vehicle = data.data?.data?.veiculo ?? data.data?.veiculo ?? data.veiculo;
 
       if (!vehicle) {
+        console.log('FIPE full response:', JSON.stringify(data));
         return res.status(404).json({ error: "Vehicle data not found" });
       }
 
@@ -4395,8 +4403,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         year: vehicle.ano || '',
         color: vehicle.cor || '',
         fuel: vehicle.combustivel || '',
-        state: vehicle.uf || '',
-        city: vehicle.municipio || '',
         chassi: vehicle.chassi || ''
       };
 
@@ -5094,6 +5100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Secure Vehicle Plate Lookup endpoint
   app.get("/api/vehicle-plate/:plate", async (req, res) => {
+    res.set('Cache-Control', 'no-store');
     try {
       const { plate } = req.params;
       
@@ -5143,9 +5150,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const data = await response.json();
-      const vehicle = data.data?.veiculo;
+      console.log('FIPE raw response keys:', JSON.stringify(Object.keys(data || {})));
+      console.log('FIPE data.data keys:', JSON.stringify(Object.keys(data?.data || {})));
+
+      // API may nest as data.data.data.veiculo or data.data.veiculo or data.veiculo
+      const vehicle = data.data?.data?.veiculo ?? data.data?.veiculo ?? data.veiculo;
 
       if (!vehicle) {
+        console.log('FIPE full response:', JSON.stringify(data));
         return res.status(404).json({ error: "Vehicle data not found" });
       }
 
@@ -5161,8 +5173,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         year: vehicle.ano || '',
         color: vehicle.cor || '',
         fuel: vehicle.combustivel || '',
-        state: vehicle.uf || '',
-        city: vehicle.municipio || '',
         chassi: vehicle.chassi || ''
       };
 

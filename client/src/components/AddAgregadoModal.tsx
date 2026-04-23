@@ -134,13 +134,6 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
         nome: data.nome || prev.nome,
         dt_nascimento: data.dt_nascimento || prev.dt_nascimento,
         telefone: data.telefone || prev.telefone,
-        logradouro: data.logradouro || prev.logradouro,
-        numero: data.numero || prev.numero,
-        complemento: data.complemento || prev.complemento,
-        bairro: data.bairro || prev.bairro,
-        cidade: data.cidade || prev.cidade,
-        estado: data.estado || prev.estado,
-        cep: data.cep || prev.cep
       }));
       
       // Verifica se dados foram retornados
@@ -200,8 +193,8 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
     try {
       setSubmitting(true);
 
-      // Validate CPF format
-      if (!/^\d{11}$/.test(formData.cpf)) {
+      // Validate CPF format (optional for company 14)
+      if (companyId !== 14 && !/^\d{11}$/.test(formData.cpf)) {
         throw new Error('CPF inválido. Digite 11 números.');
       }
 
@@ -210,7 +203,7 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
         throw new Error('O telefone é obrigatório.');
       }
 
-      if (!formData.dt_nascimento) {
+      if (companyId !== 14 && !formData.dt_nascimento) {
         throw new Error('A data de nascimento é obrigatória.');
       }
 
@@ -443,6 +436,25 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
       }
 
       toast.success('Agregado cadastrado com sucesso');
+
+      if (companyId === 14) {
+        try {
+          const webhookPayload: Record<string, string> = {
+            nome: formData.nome,
+            telefone: formData.telefone,
+          };
+          if (formData.email) webhookPayload.email = formData.email;
+
+          await fetch('https://n8nqp.wiseapp360.com/webhook/contato-mensagem', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(webhookPayload),
+          });
+        } catch (webhookErr) {
+          console.error('Webhook error (non-blocking):', webhookErr);
+        }
+      }
+
       onSuccess();
       onClose();
     } catch (error) {
@@ -482,7 +494,7 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    CPF *
+                    {companyId === 14 ? 'CPF' : 'CPF *'}
                   </label>
                   <input
                     type="text"
@@ -496,7 +508,7 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
                     }}
                     onBlur={() => consultarCpfLocal(formData.cpf)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    required
+                    required={companyId !== 14}
                     maxLength={11}
                     placeholder="Digite o CPF (somente números)"
                   />
@@ -549,7 +561,7 @@ const AddAgregadoModal = ({ isOpen, onClose, onSuccess }: AddAgregadoModalProps)
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Data de Nascimento *
+                    {companyId === 14 ? 'Data de Nascimento' : 'Data de Nascimento *'}
                   </label>
                   <input
                     type="date"
