@@ -24,20 +24,16 @@
   force = true
 
 [[redirects]]
-  from = "/api/cpf"
+  from = "/api/cpf/:cpf"
   to = "/.netlify/functions/cpf"
   status = 200
   force = true
-  conditions = {Language = [], Country = []}
-  headers = {X-Forward-Path = "/api/cpf"}
 
 [[redirects]]
-  from = "/api/vehicle-plate"
+  from = "/api/vehicle-plate/:plate"
   to = "/.netlify/functions/vehicle-plate"
   status = 200
   force = true
-  conditions = {Language = [], Country = []}
-  headers = {X-Forward-Path = "/api/vehicle-plate"}
 
 # SPA fallback (must be last)
 [[redirects]]
