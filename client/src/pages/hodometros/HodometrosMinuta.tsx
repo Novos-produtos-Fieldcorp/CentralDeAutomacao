@@ -4,7 +4,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { ptBR } from 'date-fns/locale';
 registerLocale('pt-BR', ptBR);
 import { createPortal } from 'react-dom';
-import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, Edit2, Plus, Trash2, Copy, Check, FilePen, ArrowUpDown } from 'lucide-react';
+import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, Edit2, Plus, Trash2, Copy, Check, FilePen, ArrowUpDown, Building2 } from 'lucide-react';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import { useTheme } from '../../context/ThemeContext';
 import toast from 'react-hot-toast';
@@ -274,6 +274,11 @@ const HodometrosMinuta: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [sortLabelMode, setSortLabelMode] = useState<'default' | 'asc' | 'desc'>('default');
+  const [filialFilter, setFilialFilter] = useState<string>('all');
+  const [showPlateDropdown, setShowPlateDropdown] = useState(false);
+  const [showFilialDropdown, setShowFilialDropdown] = useState(false);
+  const [plateSearch, setPlateSearch] = useState('');
+  const [filialSearch, setFilialSearch] = useState('');
   
   // Validate date is within acceptable range
   const validateDate = (dateString: string): boolean => {
@@ -292,6 +297,8 @@ const HodometrosMinuta: React.FC = () => {
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
+  const plateDropdownRef = useRef<HTMLDivElement>(null);
+  const filialDropdownRef = useRef<HTMLDivElement>(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedMinuta, setSelectedMinuta] = useState<Minuta | null>(null);
@@ -401,6 +408,30 @@ const HodometrosMinuta: React.FC = () => {
     }
   }, [showPeriodDropdown]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (plateDropdownRef.current && !plateDropdownRef.current.contains(event.target as Node)) {
+        setShowPlateDropdown(false);
+      }
+    };
+    if (showPlateDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showPlateDropdown]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filialDropdownRef.current && !filialDropdownRef.current.contains(event.target as Node)) {
+        setShowFilialDropdown(false);
+      }
+    };
+    if (showFilialDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showFilialDropdown]);
+
   const uniquePlates = React.useMemo(() => {
     const plates = new Set<string>();
     let hasNoPlate = false;
@@ -416,12 +447,35 @@ const HodometrosMinuta: React.FC = () => {
     return { plates: sorted, hasNoPlate };
   }, [minutas]);
 
+  const uniqueFiliais = React.useMemo(() => {
+    const filiais = new Set<string>();
+    let hasNoFilial = false;
+    minutas.forEach(m => {
+      const filial = m.filial?.filial?.trim();
+      if (filial) {
+        filiais.add(filial);
+      } else {
+        hasNoFilial = true;
+      }
+    });
+    const sorted = Array.from(filiais).sort();
+    return { filiais: sorted, hasNoFilial };
+  }, [minutas]);
+
   const filteredMinutas = minutas.filter(m => {
     if (plateFilter !== 'all') {
       if (plateFilter === '__no_plate__') {
         if (m.veiculo?.placa?.trim()) return false;
       } else {
         if ((m.veiculo?.placa?.trim()?.toUpperCase() || '') !== plateFilter) return false;
+      }
+    }
+
+    if (filialFilter !== 'all') {
+      if (filialFilter === '__no_filial__') {
+        if (m.filial?.filial?.trim()) return false;
+      } else {
+        if ((m.filial?.filial?.trim() || '') !== filialFilter) return false;
       }
     }
 
@@ -709,20 +763,121 @@ const HodometrosMinuta: React.FC = () => {
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
         </div>
 
-        <select
-          value={plateFilter}
-          onChange={(e) => setPlateFilter(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[150px] h-[38px]"
-          data-testid="select-plate-filter"
-        >
-          <option value="all">Todas as placas</option>
-          {uniquePlates.plates.map(plate => (
-            <option key={plate} value={plate}>{plate}</option>
-          ))}
-          {uniquePlates.hasNoPlate && (
-            <option value="__no_plate__">Não informados</option>
+        <div className="relative z-[40]" ref={plateDropdownRef}>
+          <button
+            type="button"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+            onClick={() => { setPlateSearch(''); setShowPlateDropdown(!showPlateDropdown); }}
+            data-testid="select-plate-filter"
+          >
+            <Truck className="h-4 w-4" />
+            <span>
+              {plateFilter === 'all' ? 'Placas' :
+               plateFilter === '__no_plate__' ? 'Sem placa' :
+               plateFilter}
+            </span>
+            <ChevronDown className="h-4 w-4" />
+          </button>
+
+          {showPlateDropdown && (
+            <div
+              className="bg-white dark:bg-gray-700 shadow-xl rounded-md border border-gray-200 dark:border-gray-600 w-48 animate-in slide-in-from-top-2 fade-in duration-200"
+              style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', zIndex: 999999 }}
+            >
+              <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-600">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar placa..."
+                    value={plateSearch}
+                    onChange={(e) => setPlateSearch(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    autoFocus
+                    className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="max-h-52 overflow-y-auto py-1">
+                {[
+                  { value: 'all', label: 'Todas as placas' },
+                  ...uniquePlates.plates.map(p => ({ value: p, label: p })),
+                  ...(uniquePlates.hasNoPlate ? [{ value: '__no_plate__', label: 'Não informados' }] : [])
+                ]
+                  .filter(({ label }) => label.toLowerCase().includes(plateSearch.toLowerCase()))
+                  .map(({ value, label }) => (
+                    <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <button
+                        type="button"
+                        className={`w-full text-left text-sm ${plateFilter === value ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'}`}
+                        onClick={() => { setPlateFilter(value); setShowPlateDropdown(false); }}
+                      >
+                        {label}
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
           )}
-        </select>
+        </div>
+
+        <div className="relative z-[40]" ref={filialDropdownRef}>
+          <button
+            type="button"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+            onClick={() => { setFilialSearch(''); setShowFilialDropdown(!showFilialDropdown); }}
+            data-testid="select-filial-filter"
+          >
+            <Building2 className="h-4 w-4" />
+            <span>
+              {filialFilter === 'all' ? 'Filiais' :
+               filialFilter === '__no_filial__' ? 'Sem filial' :
+               filialFilter}
+            </span>
+            <ChevronDown className="h-4 w-4" />
+          </button>
+
+          {showFilialDropdown && (
+            <div
+              className="bg-white dark:bg-gray-700 shadow-xl rounded-md border border-gray-200 dark:border-gray-600 w-52 animate-in slide-in-from-top-2 fade-in duration-200"
+              style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', zIndex: 999999 }}
+            >
+              <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-600">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar filial..."
+                    value={filialSearch}
+                    onChange={(e) => setFilialSearch(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    autoFocus
+                    className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="max-h-52 overflow-y-auto py-1">
+                {[
+                  { value: 'all', label: 'Todas as filiais' },
+                  ...uniqueFiliais.filiais.map(f => ({ value: f, label: f })),
+                  ...(uniqueFiliais.hasNoFilial ? [{ value: '__no_filial__', label: 'Sem filial' }] : [])
+                ]
+                  .filter(({ label }) => label.toLowerCase().includes(filialSearch.toLowerCase()))
+                  .map(({ value, label }) => (
+                    <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <button
+                        type="button"
+                        className={`w-full text-left text-sm ${filialFilter === value ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'}`}
+                        onClick={() => { setFilialFilter(value); setShowFilialDropdown(false); }}
+                      >
+                        {label}
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="relative z-[40]" ref={periodDropdownRef}>
           <button
