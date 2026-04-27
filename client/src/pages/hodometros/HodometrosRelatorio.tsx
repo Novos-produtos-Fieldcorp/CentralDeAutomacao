@@ -4,7 +4,7 @@ import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ptBR } from 'date-fns/locale';
 registerLocale('pt-BR', ptBR);
-import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save, Gauge, Fuel, Maximize2 } from 'lucide-react';
+import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save, Gauge, Fuel, Maximize2, Car } from 'lucide-react';
 import ContextMenu from '../../components/ContextMenu';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
@@ -83,6 +83,8 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
   const [showPlateDropdown, setShowPlateDropdown] = useState(false);
   const [plateSearch, setPlateSearch] = useState('');
   const plateDropdownRef = useRef<HTMLDivElement>(null);
+  const [showVehicleTypeDropdown, setShowVehicleTypeDropdown] = useState(false);
+  const vehicleTypeDropdownRef = useRef<HTMLDivElement>(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -212,6 +214,18 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
   }, [fetchReadings]);
 
   // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (vehicleTypeDropdownRef.current && !vehicleTypeDropdownRef.current.contains(event.target as Node)) {
+        setShowVehicleTypeDropdown(false);
+      }
+    };
+    if (showVehicleTypeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showVehicleTypeDropdown]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (periodDropdownRef.current && !periodDropdownRef.current.contains(event.target as Node)) {
@@ -778,37 +792,43 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
         </div>
 
         {/* Vehicle Type Filter */}
-        <div className="flex gap-2">
+        <div className="relative z-[40]" ref={vehicleTypeDropdownRef}>
           <button
-            onClick={() => setVehicleTypeFilter('all')}
-            className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-              vehicleTypeFilter === 'all'
-                ? 'bg-blue-600 text-white dark:bg-blue-400 dark:text-black'
-                : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
-            }`}
+            type="button"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+            onClick={() => setShowVehicleTypeDropdown(!showVehicleTypeDropdown)}
           >
-            Todos
+            <Car className="h-4 w-4" />
+            <span>
+              {vehicleTypeFilter === 'all' ? 'Tipo' :
+               vehicleTypeFilter === 'automovel' ? 'Automóveis' :
+               'Ciclomotores'}
+            </span>
+            <ChevronDown className="h-4 w-4" />
           </button>
-          <button
-            onClick={() => setVehicleTypeFilter('automovel')}
-            className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-              vehicleTypeFilter === 'automovel'
-                ? 'bg-blue-600 text-white dark:bg-blue-400 dark:text-black'
-                : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
-            }`}
-          >
-            Automóveis
-          </button>
-          <button
-            onClick={() => setVehicleTypeFilter('ciclomotor')}
-            className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-              vehicleTypeFilter === 'ciclomotor'
-                ? 'bg-blue-600 text-white dark:bg-blue-400 dark:text-black'
-                : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
-            }`}
-          >
-            Ciclomotores
-          </button>
+
+          {showVehicleTypeDropdown && (
+            <div
+              className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 w-44 animate-in slide-in-from-top-2 fade-in duration-200"
+              style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', zIndex: 999999 }}
+            >
+              {[
+                { value: 'all', label: 'Todos os tipos' },
+                { value: 'automovel', label: 'Automóveis' },
+                { value: 'ciclomotor', label: 'Ciclomotores' }
+              ].map(({ value, label }) => (
+                <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                  <button
+                    type="button"
+                    className={`w-full text-left text-sm ${vehicleTypeFilter === value ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'}`}
+                    onClick={() => { setVehicleTypeFilter(value as 'all' | 'automovel' | 'ciclomotor'); setShowVehicleTypeDropdown(false); }}
+                  >
+                    {label}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Export Button */}
