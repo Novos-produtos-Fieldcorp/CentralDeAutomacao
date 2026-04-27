@@ -1045,8 +1045,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       {/* Photo Modal */}
       {showPhotoModal && selectedPhoto && createPortal(
         <div
-          className="fixed inset-0 bg-black/80 z-[1000002] flex items-center justify-center p-4"
-          style={{ top: 0, left: 0, right: 0, bottom: 0 }}
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-[1000001] flex items-center justify-center p-4"
           onClick={() => setShowPhotoModal(false)}
         >
           <div
@@ -1631,7 +1630,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       {/* Photo Lightbox */}
       {expandedPhoto && createPortal(
         <div
-          className="fixed inset-0 bg-black/80 z-[1000002] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-[1000002] flex items-center justify-center p-4"
           onClick={() => setExpandedPhoto(null)}
         >
           <div

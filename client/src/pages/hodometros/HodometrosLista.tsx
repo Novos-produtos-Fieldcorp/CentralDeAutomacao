@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ptBR } from 'date-fns/locale';
@@ -1231,9 +1232,9 @@ const HodometrosLista = () => {
       )}
 
       {/* Photo Modal */}
-      {showPhotoModal && selectedPhotoData && (
-        <div 
-          className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4"
+      {showPhotoModal && selectedPhotoData && createPortal(
+        <div
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-[1000001] flex items-center justify-center p-4"
           onClick={() => setShowPhotoModal(false)}
         >
           <div 
@@ -1274,7 +1275,8 @@ const HodometrosLista = () => {
               </a>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
