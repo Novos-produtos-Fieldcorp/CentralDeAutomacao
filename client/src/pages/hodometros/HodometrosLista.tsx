@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ptBR } from 'date-fns/locale';
@@ -92,6 +93,10 @@ const HodometrosLista = () => {
     url: string;
     type: 'hodometro' | 'bomba';
   } | null>(null);
+  const [plateFilter, setPlateFilter] = useState<string>('all');
+  const [showPlateDropdown, setShowPlateDropdown] = useState(false);
+  const [plateSearch, setPlateSearch] = useState('');
+  const plateDropdownRef = useRef<HTMLDivElement>(null);
 
   // Photo title mapping
   const PHOTO_TITLES = {
@@ -498,6 +503,18 @@ const HodometrosLista = () => {
     }
   }, [showPeriodDropdown]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (plateDropdownRef.current && !plateDropdownRef.current.contains(event.target as Node)) {
+        setShowPlateDropdown(false);
+      }
+    };
+    if (showPlateDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showPlateDropdown]);
+
   const handleViewChart = (vehicle: VehicleData) => {
     setSelectedVehicle(vehicle);
     setShowChartModal(true);
@@ -646,7 +663,29 @@ const HodometrosLista = () => {
     }
   };
 
+  const uniquePlates = React.useMemo(() => {
+    const plates = new Set<string>();
+    let hasNoPlate = false;
+    vehicleData.forEach(v => {
+      const placa = v.placa?.trim();
+      if (placa) {
+        plates.add(placa.toUpperCase());
+      } else {
+        hasNoPlate = true;
+      }
+    });
+    return { plates: Array.from(plates).sort(), hasNoPlate };
+  }, [vehicleData]);
+
   const filteredVehicleData = vehicleData.filter(vehicle => {
+    if (plateFilter !== 'all') {
+      if (plateFilter === '__no_plate__') {
+        if (vehicle.placa?.trim()) return false;
+      } else {
+        if ((vehicle.placa?.trim()?.toUpperCase() || '') !== plateFilter) return false;
+      }
+    }
+
     const searchString = searchTerm.toLowerCase();
     return (
       !searchTerm ||
@@ -712,6 +751,65 @@ const HodometrosLista = () => {
                      focus:border-blue-500 text-gray-900 dark:text-gray-100"
           />
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+        </div>
+
+        {/* Plate Filter */}
+        <div className="relative z-[40]" ref={plateDropdownRef}>
+          <button
+            type="button"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+            onClick={() => { setPlateSearch(''); setShowPlateDropdown(!showPlateDropdown); }}
+            data-testid="select-plate-filter"
+          >
+            <Truck className="h-4 w-4" />
+            <span>
+              {plateFilter === 'all' ? 'Placas' :
+               plateFilter === '__no_plate__' ? 'Sem placa' :
+               plateFilter}
+            </span>
+            <ChevronDown className="h-4 w-4" />
+          </button>
+
+          {showPlateDropdown && (
+            <div
+              className="bg-white dark:bg-gray-700 shadow-xl rounded-md border border-gray-200 dark:border-gray-600 w-48 animate-in slide-in-from-top-2 fade-in duration-200"
+              style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', zIndex: 999999 }}
+            >
+              <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-600">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar placa..."
+                    value={plateSearch}
+                    onChange={(e) => setPlateSearch(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    autoFocus
+                    className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="max-h-52 overflow-y-auto py-1">
+                {[
+                  { value: 'all', label: 'Todas as placas' },
+                  ...uniquePlates.plates.map(p => ({ value: p, label: p })),
+                  ...(uniquePlates.hasNoPlate ? [{ value: '__no_plate__', label: 'Não informados' }] : [])
+                ]
+                  .filter(({ label }) => label.toLowerCase().includes(plateSearch.toLowerCase()))
+                  .map(({ value, label }) => (
+                    <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <button
+                        type="button"
+                        className={`w-full text-left text-sm ${plateFilter === value ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'}`}
+                        onClick={() => { setPlateFilter(value); setShowPlateDropdown(false); }}
+                      >
+                        {label}
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Período Filter */}
@@ -837,7 +935,7 @@ const HodometrosLista = () => {
       )}
 
       {/* Vehicle Mileage Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -1110,19 +1208,18 @@ const HodometrosLista = () => {
             </tbody>
           </table>
         </div>
-        
-        {/* Pagination */}
-        {filteredVehicleData.length > 0 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            totalItems={totalItems}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-          />
-        )}
       </div>
+
+      {filteredVehicleData.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
+      )}
 
       {/* Chart Modal */}
       {selectedVehicle && (
@@ -1135,9 +1232,9 @@ const HodometrosLista = () => {
       )}
 
       {/* Photo Modal */}
-      {showPhotoModal && selectedPhotoData && (
-        <div 
-          className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4"
+      {showPhotoModal && selectedPhotoData && createPortal(
+        <div
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-[1000001] flex items-center justify-center p-4"
           onClick={() => setShowPhotoModal(false)}
         >
           <div 
@@ -1178,7 +1275,8 @@ const HodometrosLista = () => {
               </a>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

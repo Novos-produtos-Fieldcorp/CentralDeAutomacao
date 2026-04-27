@@ -13,6 +13,7 @@ import { formatCPF } from '../../utils/format';
 import { supabase } from '../../lib/supabase';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Pagination from '../../components/Pagination';
+import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 
 const formatCreatedAt = (created_at: string): { data: string; hora: string } => {
   if (!created_at) return { data: '-', hora: '-' };
@@ -299,6 +300,7 @@ const HodometrosMinuta: React.FC = () => {
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   const plateDropdownRef = useRef<HTMLDivElement>(null);
   const filialDropdownRef = useRef<HTMLDivElement>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedMinuta, setSelectedMinuta] = useState<Minuta | null>(null);
@@ -1061,7 +1063,8 @@ const HodometrosMinuta: React.FC = () => {
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" ref={tableContainerRef}>
+          <ScrollableTableIndicator containerRef={tableContainerRef} />
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-white dark:bg-gray-800">
               <tr className="bg-gray-50 dark:bg-gray-800">

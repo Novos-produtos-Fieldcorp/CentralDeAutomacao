@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, BarChart2, Download } from 'lucide-react';
 import DriverMileageChart from './DriverMileageChart';
 import { jsPDF } from 'jspdf';
@@ -56,13 +57,13 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
     }
   };
 
-  return (
-    <div 
-      className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4"
+  return createPortal(
+    <div
+      className="fixed inset-0 bg-black/50 dark:bg-black/70 z-[1000001] flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div 
-        className="bg-card rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-xl"
+      <div
+        className="bg-card rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-xl flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
@@ -87,7 +88,7 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
           </div>
         </div>
         
-        <div className="p-6" ref={chartRef}>
+        <div className="p-6 overflow-y-auto" ref={chartRef}>
           <DriverMileageChart data={data} driverName={driverName} />
           
           {/* Data table */}
@@ -132,7 +133,8 @@ const MileageChartModal: React.FC<MileageChartModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

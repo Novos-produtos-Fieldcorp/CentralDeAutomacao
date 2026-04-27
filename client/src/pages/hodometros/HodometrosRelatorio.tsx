@@ -4,7 +4,7 @@ import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ptBR } from 'date-fns/locale';
 registerLocale('pt-BR', ptBR);
-import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save, Gauge, Fuel, Maximize2 } from 'lucide-react';
+import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save, Gauge, Fuel, Maximize2, Car } from 'lucide-react';
 import ContextMenu from '../../components/ContextMenu';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
@@ -80,6 +80,11 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
   const [photoType, setPhotoType] = useState<'hodometro' | 'bomba'>('hodometro');
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
   const [plateFilter, setPlateFilter] = useState<string>('all');
+  const [showPlateDropdown, setShowPlateDropdown] = useState(false);
+  const [plateSearch, setPlateSearch] = useState('');
+  const plateDropdownRef = useRef<HTMLDivElement>(null);
+  const [showVehicleTypeDropdown, setShowVehicleTypeDropdown] = useState(false);
+  const vehicleTypeDropdownRef = useRef<HTMLDivElement>(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -211,6 +216,18 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      if (vehicleTypeDropdownRef.current && !vehicleTypeDropdownRef.current.contains(event.target as Node)) {
+        setShowVehicleTypeDropdown(false);
+      }
+    };
+    if (showVehicleTypeDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showVehicleTypeDropdown]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
       if (periodDropdownRef.current && !periodDropdownRef.current.contains(event.target as Node)) {
         setShowPeriodDropdown(false);
       }
@@ -223,6 +240,18 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       };
     }
   }, [showPeriodDropdown]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (plateDropdownRef.current && !plateDropdownRef.current.contains(event.target as Node)) {
+        setShowPlateDropdown(false);
+      }
+    };
+    if (showPlateDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showPlateDropdown]);
 
   useEffect(() => {
     const key = 'hodometros_leituras_right_click_hint_shown';
@@ -648,20 +677,63 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
         </div>
 
         {/* Vehicle Plate Filter */}
-        <select
-          value={plateFilter}
-          onChange={(e) => setPlateFilter(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[150px] h-[38px]"
-          data-testid="select-plate-filter-leituras"
-        >
-          <option value="all">Todas as placas</option>
-          {uniquePlates.plates.map(plate => (
-            <option key={plate} value={plate}>{plate}</option>
-          ))}
-          {uniquePlates.hasNoPlate && (
-            <option value="__no_plate__">Não informados</option>
+        <div className="relative z-[40]" ref={plateDropdownRef}>
+          <button
+            type="button"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+            onClick={() => { setPlateSearch(''); setShowPlateDropdown(!showPlateDropdown); }}
+            data-testid="select-plate-filter-leituras"
+          >
+            <Truck className="h-4 w-4" />
+            <span>
+              {plateFilter === 'all' ? 'Placas' :
+               plateFilter === '__no_plate__' ? 'Sem placa' :
+               plateFilter}
+            </span>
+            <ChevronDown className="h-4 w-4" />
+          </button>
+
+          {showPlateDropdown && (
+            <div
+              className="bg-white dark:bg-gray-700 shadow-xl rounded-md border border-gray-200 dark:border-gray-600 w-48 animate-in slide-in-from-top-2 fade-in duration-200"
+              style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', zIndex: 999999 }}
+            >
+              <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-600">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar placa..."
+                    value={plateSearch}
+                    onChange={(e) => setPlateSearch(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    autoFocus
+                    className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="max-h-52 overflow-y-auto py-1">
+                {[
+                  { value: 'all', label: 'Todas as placas' },
+                  ...uniquePlates.plates.map(p => ({ value: p, label: p })),
+                  ...(uniquePlates.hasNoPlate ? [{ value: '__no_plate__', label: 'Não informados' }] : [])
+                ]
+                  .filter(({ label }) => label.toLowerCase().includes(plateSearch.toLowerCase()))
+                  .map(({ value, label }) => (
+                    <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <button
+                        type="button"
+                        className={`w-full text-left text-sm ${plateFilter === value ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'}`}
+                        onClick={() => { setPlateFilter(value); setShowPlateDropdown(false); }}
+                      >
+                        {label}
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
           )}
-        </select>
+        </div>
 
         {/* Período Filter */}
         <div className="relative z-[40]" ref={periodDropdownRef}>
@@ -720,37 +792,43 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
         </div>
 
         {/* Vehicle Type Filter */}
-        <div className="flex gap-2">
+        <div className="relative z-[40]" ref={vehicleTypeDropdownRef}>
           <button
-            onClick={() => setVehicleTypeFilter('all')}
-            className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-              vehicleTypeFilter === 'all'
-                ? 'bg-blue-600 text-white dark:bg-blue-400 dark:text-black'
-                : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
-            }`}
+            type="button"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+            onClick={() => setShowVehicleTypeDropdown(!showVehicleTypeDropdown)}
           >
-            Todos
+            <Car className="h-4 w-4" />
+            <span>
+              {vehicleTypeFilter === 'all' ? 'Tipo' :
+               vehicleTypeFilter === 'automovel' ? 'Automóveis' :
+               'Ciclomotores'}
+            </span>
+            <ChevronDown className="h-4 w-4" />
           </button>
-          <button
-            onClick={() => setVehicleTypeFilter('automovel')}
-            className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-              vehicleTypeFilter === 'automovel'
-                ? 'bg-blue-600 text-white dark:bg-blue-400 dark:text-black'
-                : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
-            }`}
-          >
-            Automóveis
-          </button>
-          <button
-            onClick={() => setVehicleTypeFilter('ciclomotor')}
-            className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
-              vehicleTypeFilter === 'ciclomotor'
-                ? 'bg-blue-600 text-white dark:bg-blue-400 dark:text-black'
-                : 'bg-gray-100 text-gray-700 dark:bg-[#334155] dark:text-gray-300'
-            }`}
-          >
-            Ciclomotores
-          </button>
+
+          {showVehicleTypeDropdown && (
+            <div
+              className="bg-white dark:bg-gray-700 shadow-xl rounded-md py-1 border border-gray-200 dark:border-gray-600 w-44 animate-in slide-in-from-top-2 fade-in duration-200"
+              style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', zIndex: 999999 }}
+            >
+              {[
+                { value: 'all', label: 'Todos os tipos' },
+                { value: 'automovel', label: 'Automóveis' },
+                { value: 'ciclomotor', label: 'Ciclomotores' }
+              ].map(({ value, label }) => (
+                <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                  <button
+                    type="button"
+                    className={`w-full text-left text-sm ${vehicleTypeFilter === value ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'}`}
+                    onClick={() => { setVehicleTypeFilter(value as 'all' | 'automovel' | 'ciclomotor'); setShowVehicleTypeDropdown(false); }}
+                  >
+                    {label}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Export Button */}
@@ -820,7 +898,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       )}
 
       {/* Readings Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto" ref={tableContainerRef}>
             <ScrollableTableIndicator containerRef={tableContainerRef} />
             {/* ...existing readings table markup... */}
@@ -967,8 +1045,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       {/* Photo Modal */}
       {showPhotoModal && selectedPhoto && createPortal(
         <div
-          className="fixed inset-0 bg-black/80 z-[1000002] flex items-center justify-center p-4"
-          style={{ top: 0, left: 0, right: 0, bottom: 0 }}
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-[1000001] flex items-center justify-center p-4"
           onClick={() => setShowPhotoModal(false)}
         >
           <div
@@ -1553,7 +1630,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       {/* Photo Lightbox */}
       {expandedPhoto && createPortal(
         <div
-          className="fixed inset-0 bg-black/80 z-[1000002] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-[1000002] flex items-center justify-center p-4"
           onClick={() => setExpandedPhoto(null)}
         >
           <div
