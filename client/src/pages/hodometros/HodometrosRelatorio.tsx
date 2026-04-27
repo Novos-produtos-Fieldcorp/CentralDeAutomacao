@@ -898,7 +898,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       )}
 
       {/* Readings Table */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto" ref={tableContainerRef}>
             <ScrollableTableIndicator containerRef={tableContainerRef} />
             {/* ...existing readings table markup... */}
