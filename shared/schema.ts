@@ -293,6 +293,9 @@ export const romaneio = pgTable("romaneio", {
   id_motorista: bigint("id_motorista", { mode: "number" }).references(() => motorista.motorista_id),
   id_veiculo: bigint("id_veiculo", { mode: "number" }).references(() => veiculo.veiculo_id),
   foto_romaneio: text("foto_romaneio"),
+  data: text("data"),
+  hora: text("hora"),
+  filial_id: bigint("filial_id", { mode: "number" }),
 });
 
 // Comprovante de Rota table
