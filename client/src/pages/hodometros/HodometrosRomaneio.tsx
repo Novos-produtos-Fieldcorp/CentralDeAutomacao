@@ -326,7 +326,12 @@ const HodometrosRomaneio: React.FC = () => {
         .eq('company_id', companyId)
         .order('filial');
       if (error) throw error;
-      setFiliais(data || []);
+      const map = new Map<string, { id: number; filial: string }>();
+      (data || []).forEach(f => {
+        const key = f.filial.trim().toLowerCase();
+        if (!map.has(key)) map.set(key, f);
+      });
+      setFiliais(Array.from(map.values()));
     } catch (err) {
       console.error('Error fetching filiais:', err);
       toast.error('Erro ao carregar filiais');
