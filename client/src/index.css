@@ -439,6 +439,11 @@
 .scroll-slingshot {
   animation: slingshot 2.8s ease-in-out infinite;
 }
+/* react-datepicker z-index fix — library default is z-index:1, must override */
+.react-datepicker-popper {
+  z-index: 999999 !important;
+}
+
 /* react-datepicker dark mode */
 .dark-datepicker {
   background: #1e2a3a !important;

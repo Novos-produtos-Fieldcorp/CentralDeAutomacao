@@ -80,6 +80,9 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
   const [photoType, setPhotoType] = useState<'hodometro' | 'bomba'>('hodometro');
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<'all' | 'automovel' | 'ciclomotor'>('all');
   const [plateFilter, setPlateFilter] = useState<string>('all');
+  const [showPlateDropdown, setShowPlateDropdown] = useState(false);
+  const [plateSearch, setPlateSearch] = useState('');
+  const plateDropdownRef = useRef<HTMLDivElement>(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -223,6 +226,18 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       };
     }
   }, [showPeriodDropdown]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (plateDropdownRef.current && !plateDropdownRef.current.contains(event.target as Node)) {
+        setShowPlateDropdown(false);
+      }
+    };
+    if (showPlateDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showPlateDropdown]);
 
   useEffect(() => {
     const key = 'hodometros_leituras_right_click_hint_shown';
@@ -648,20 +663,63 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
         </div>
 
         {/* Vehicle Plate Filter */}
-        <select
-          value={plateFilter}
-          onChange={(e) => setPlateFilter(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[150px] h-[38px]"
-          data-testid="select-plate-filter-leituras"
-        >
-          <option value="all">Todas as placas</option>
-          {uniquePlates.plates.map(plate => (
-            <option key={plate} value={plate}>{plate}</option>
-          ))}
-          {uniquePlates.hasNoPlate && (
-            <option value="__no_plate__">Não informados</option>
+        <div className="relative z-[40]" ref={plateDropdownRef}>
+          <button
+            type="button"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-9"
+            onClick={() => { setPlateSearch(''); setShowPlateDropdown(!showPlateDropdown); }}
+            data-testid="select-plate-filter-leituras"
+          >
+            <Truck className="h-4 w-4" />
+            <span>
+              {plateFilter === 'all' ? 'Placas' :
+               plateFilter === '__no_plate__' ? 'Sem placa' :
+               plateFilter}
+            </span>
+            <ChevronDown className="h-4 w-4" />
+          </button>
+
+          {showPlateDropdown && (
+            <div
+              className="bg-white dark:bg-gray-700 shadow-xl rounded-md border border-gray-200 dark:border-gray-600 w-48 animate-in slide-in-from-top-2 fade-in duration-200"
+              style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', zIndex: 999999 }}
+            >
+              <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-600">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar placa..."
+                    value={plateSearch}
+                    onChange={(e) => setPlateSearch(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    autoFocus
+                    className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="max-h-52 overflow-y-auto py-1">
+                {[
+                  { value: 'all', label: 'Todas as placas' },
+                  ...uniquePlates.plates.map(p => ({ value: p, label: p })),
+                  ...(uniquePlates.hasNoPlate ? [{ value: '__no_plate__', label: 'Não informados' }] : [])
+                ]
+                  .filter(({ label }) => label.toLowerCase().includes(plateSearch.toLowerCase()))
+                  .map(({ value, label }) => (
+                    <div key={value} className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <button
+                        type="button"
+                        className={`w-full text-left text-sm ${plateFilter === value ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'}`}
+                        onClick={() => { setPlateFilter(value); setShowPlateDropdown(false); }}
+                      >
+                        {label}
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
           )}
-        </select>
+        </div>
 
         {/* Período Filter */}
         <div className="relative z-[40]" ref={periodDropdownRef}>
