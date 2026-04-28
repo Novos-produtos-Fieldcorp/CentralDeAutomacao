@@ -853,144 +853,148 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
               </div>
 
               {/* Visualização das Informações */}
-              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-gray-400" />
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-6">
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Briefcase className="w-5 h-5" />
                     Informações da Vaga
                   </h3>
-                  <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Detalhes completos da vaga de trabalho.
                   </p>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700">
-                  <dl>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <User className="w-4 h-4 mr-2" />
                         Nome da Vaga
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {currentVaga.nome}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <div className="md:col-span-2">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                         Descrição
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {currentVaga.descricao}
                       </dd>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <Users className="w-4 h-4 mr-2" />
-                        Quantidade de Vagas
+                        Quantidade
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {currentVaga.quantidade}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <Clock className="w-4 h-4 mr-2" />
-                        Horário de Trabalho
+                        Horário
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {currentVaga.horario || 'Não informado'}
                       </dd>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <Briefcase className="w-4 h-4 mr-2" />
-                        Tipo de Contrato
+                        Tipo Contrato
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {currentVaga.tipo_contrato || 'Não informado'}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <MapPin className="w-4 h-4 mr-2" />
-                        Distância Limite
+                        Distância
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {currentVaga.distancia || 'Sem limite'}
                       </dd>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <Calendar className="w-4 h-4 mr-2" />
-                        Dias de Trabalho
+                        Dias Trabalho
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {getDiasTrabalhoFormatted()}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <Calendar className="w-4 h-4 mr-2" />
                         Data Limite
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {formatDate(currentVaga.dt_limite?.toString())}
                       </dd>
                     </div>
-                  </dl>
+                  </div>
                 </div>
               </div>
 
               {/* Informações de Relacionamento */}
-              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                    <Building className="w-5 h-5 text-gray-400" />
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Building className="w-5 h-5" />
                     Cliente e Unidade
                   </h3>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700">
-                  <dl>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        <Building className="w-4 h-4 mr-2" />
-                        Cliente
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {currentVaga.cliente_nome || 'Não informado'}
-                      </dd>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        <MapPin className="w-4 h-4 mr-2" />
-                        Unidade
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {currentVaga.unidade_nome || 'Não informado'}
-                      </dd>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Operação
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {currentVaga.operacao_nome || 'Não informado'}
-                      </dd>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Status
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          currentVaga.status_nome === 'Ativa' ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' :
-                          currentVaga.status_nome === 'Em Andamento' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100' :
-                          'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
-                        }`}>
-                          {currentVaga.status_nome || 'Não informado'}
-                        </span>
-                      </dd>
-                    </div>
-                  </dl>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
+                      <Building className="w-4 h-4 mr-2" />
+                      Cliente
+                    </dt>
+                    <dd className="text-sm text-gray-900 dark:text-white">
+                      {currentVaga.cliente_nome || 'Não informado'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      Unidade
+                    </dt>
+                    <dd className="text-sm text-gray-900 dark:text-white">
+                      {currentVaga.unidade_nome || 'Não informado'}
+                    </dd>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Operação
+                    </dt>
+                    <dd className="text-sm text-gray-900 dark:text-white">
+                      {currentVaga.operacao_nome || 'Não informado'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Status
+                    </dt>
+                    <dd className="text-sm">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        currentVaga.status_nome === 'Ativa' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                        currentVaga.status_nome === 'Em Andamento' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                        'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                      }`}>
+                        {currentVaga.status_nome || 'Não informado'}
+                      </span>
+                    </dd>
+                  </div>
                 </div>
               </div>
             </>
