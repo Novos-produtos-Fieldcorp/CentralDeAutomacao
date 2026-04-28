@@ -318,6 +318,12 @@ const HodometrosMinuta: React.FC = () => {
   const [veiculos, setVeiculos] = useState<Array<{ veiculo_id: number; placa: string }>>([]);
   const [loadingMotoristas, setLoadingMotoristas] = useState(false);
   const [loadingVeiculos, setLoadingVeiculos] = useState(false);
+  const [showMotoristaDropdown, setShowMotoristaDropdown] = useState(false);
+  const [showVeiculoDropdown, setShowVeiculoDropdown] = useState(false);
+  const [motoristaSearch, setMotoristaSearch] = useState('');
+  const [veiculoSearch, setVeiculoSearch] = useState('');
+  const motoristaDropdownRef = useRef<HTMLDivElement>(null);
+  const veiculoDropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchMinutas = useCallback(async (overrideRange?: { startDate: string; endDate: string }) => {
     try {
@@ -433,6 +439,19 @@ const HodometrosMinuta: React.FC = () => {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showFilialDropdown]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (motoristaDropdownRef.current && !motoristaDropdownRef.current.contains(event.target as Node)) {
+        setShowMotoristaDropdown(false);
+      }
+      if (veiculoDropdownRef.current && !veiculoDropdownRef.current.contains(event.target as Node)) {
+        setShowVeiculoDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const uniquePlates = React.useMemo(() => {
     const plates = new Set<string>();
@@ -1157,44 +1176,44 @@ const HodometrosMinuta: React.FC = () => {
 
       {/* Photo Modal */}
       {showPhotoModal && selectedPhoto && (
-        <div 
-          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowPhotoModal(false)}
-        >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Foto da Minuta</h3>
-              <button
-                onClick={() => setShowPhotoModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="relative aspect-video">
-              <img
-                src={selectedPhoto}
-                alt="Foto da Minuta"
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-            </div>
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-              <a
-                href={selectedPhoto}
-                download="minuta.jpg"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 
-                         transition-colors flex items-center gap-2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Download size={16} />
-                Baixar Imagem
-              </a>
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 dark:bg-black/70" onClick={() => setShowPhotoModal(false)} />
+          <div className="flex items-center justify-center min-h-screen p-4">
+            <div
+              className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 relative z-50"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Foto da Minuta</h3>
+                <button
+                  onClick={() => setShowPhotoModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="relative aspect-video">
+                <img
+                  src={selectedPhoto}
+                  alt="Foto da Minuta"
+                  className="absolute inset-0 w-full h-full object-contain"
+                />
+              </div>
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                <a
+                  href={selectedPhoto}
+                  download="minuta.jpg"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                           transition-colors flex items-center gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Download size={16} />
+                  Baixar Imagem
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -1202,16 +1221,15 @@ const HodometrosMinuta: React.FC = () => {
 
       {/* Edit Modal */}
       {showEditModal && selectedMinuta && (
-        <div 
-          className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowEditModal(false)}
-        >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-md border border-gray-200 dark:border-gray-700"
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 dark:bg-black/70" onClick={() => setShowEditModal(false)} />
+          <div className="flex items-center justify-center min-h-screen p-2 sm:p-4">
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-md border border-gray-200 dark:border-gray-700 relative z-50"
             onClick={e => e.stopPropagation()}
           >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Editar Minuta</h3>
+            <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-2xl">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Editar Minuta</h2>
               <button
                 onClick={() => setShowEditModal(false)}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -1221,88 +1239,177 @@ const HodometrosMinuta: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              {/* Minuta Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Minuta Informada
-                  </label>
-                  <input
-                    type="text"
-                    value={editFormData.minuta_informada}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, minuta_informada: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    data-testid="input-minuta-informada"
-                  />
+            <div className="p-4 sm:p-6 space-y-6">
+              {/* Informações da Minuta Section */}
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">Informações da Minuta</h3>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Minuta Lida
-                  </label>
-                  <input
-                    type="text"
-                    value={editFormData.minuta_lida}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, minuta_lida: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    data-testid="input-minuta-lida"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Minuta Informada
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.minuta_informada}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, minuta_informada: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      data-testid="input-minuta-informada"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Minuta Lida
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.minuta_lida}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, minuta_lida: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      data-testid="input-minuta-lida"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Motorista e Veículo Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Motorista
-                  </label>
-                  <select
-                    value={editFormData.motorista_id || ''}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, motorista_id: e.target.value ? Number(e.target.value) : null }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    data-testid="select-motorista"
-                    disabled={loadingMotoristas}
-                  >
-                    <option value="">Selecione um motorista</option>
-                    {motoristas.map((m) => (
-                      <option key={m.motorista_id} value={m.motorista_id}>
-                        {m.nome}
-                      </option>
-                    ))}
-                  </select>
+              {/* Motorista e Veículo Section */}
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">Motorista e Veículo</h3>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Veículo
-                  </label>
-                  <select
-                    value={editFormData.veiculo_id || ''}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, veiculo_id: e.target.value ? Number(e.target.value) : null }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    data-testid="select-veiculo"
-                    disabled={loadingVeiculos}
-                  >
-                    <option value="">Selecione um veículo</option>
-                    {veiculos.map((v) => (
-                      <option key={v.veiculo_id} value={v.veiculo_id}>
-                        {v.placa}
-                      </option>
-                    ))}
-                  </select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Motorista dropdown */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Motorista
+                    </label>
+                    <div className="relative" ref={motoristaDropdownRef}>
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-10"
+                        onClick={() => { setShowMotoristaDropdown(p => !p); setShowVeiculoDropdown(false); }}
+                        disabled={loadingMotoristas}
+                        data-testid="select-motorista"
+                      >
+                        <User className="h-4 w-4 text-gray-400 shrink-0" />
+                        <span className="flex-1 text-left truncate">
+                          {loadingMotoristas
+                            ? 'Carregando...'
+                            : motoristas.find(m => m.motorista_id === editFormData.motorista_id)?.nome || 'Selecione um motorista'}
+                        </span>
+                        <ChevronDown className="h-4 w-4 shrink-0" />
+                      </button>
+                      {showMotoristaDropdown && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-700 shadow-xl rounded-lg border border-gray-200 dark:border-gray-600 z-[999]">
+                          <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-600">
+                            <div className="relative">
+                              <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                              <input
+                                type="text"
+                                placeholder="Buscar motorista..."
+                                value={motoristaSearch}
+                                onChange={(e) => setMotoristaSearch(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                autoFocus
+                                className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="max-h-44 overflow-y-auto py-1">
+                            <div
+                              className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm text-gray-500 dark:text-gray-400"
+                              onClick={() => { setEditFormData(prev => ({ ...prev, motorista_id: null })); setShowMotoristaDropdown(false); setMotoristaSearch(''); }}
+                            >
+                              Nenhum
+                            </div>
+                            {motoristas.filter(m => m.nome.toLowerCase().includes(motoristaSearch.toLowerCase())).map(m => (
+                              <div
+                                key={m.motorista_id}
+                                className={`px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm ${editFormData.motorista_id === m.motorista_id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
+                                onClick={() => { setEditFormData(prev => ({ ...prev, motorista_id: m.motorista_id })); setShowMotoristaDropdown(false); setMotoristaSearch(''); }}
+                              >
+                                {m.nome}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Veículo dropdown */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Veículo
+                    </label>
+                    <div className="relative" ref={veiculoDropdownRef}>
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-10"
+                        onClick={() => { setShowVeiculoDropdown(p => !p); setShowMotoristaDropdown(false); }}
+                        disabled={loadingVeiculos}
+                        data-testid="select-veiculo"
+                      >
+                        <Truck className="h-4 w-4 text-gray-400 shrink-0" />
+                        <span className="flex-1 text-left truncate">
+                          {loadingVeiculos
+                            ? 'Carregando...'
+                            : veiculos.find(v => v.veiculo_id === editFormData.veiculo_id)?.placa || 'Selecione um veículo'}
+                        </span>
+                        <ChevronDown className="h-4 w-4 shrink-0" />
+                      </button>
+                      {showVeiculoDropdown && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-700 shadow-xl rounded-lg border border-gray-200 dark:border-gray-600 z-[999]">
+                          <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-600">
+                            <div className="relative">
+                              <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                              <input
+                                type="text"
+                                placeholder="Buscar placa..."
+                                value={veiculoSearch}
+                                onChange={(e) => setVeiculoSearch(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                autoFocus
+                                className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="max-h-44 overflow-y-auto py-1">
+                            <div
+                              className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm text-gray-500 dark:text-gray-400"
+                              onClick={() => { setEditFormData(prev => ({ ...prev, veiculo_id: null })); setShowVeiculoDropdown(false); setVeiculoSearch(''); }}
+                            >
+                              Nenhum
+                            </div>
+                            {veiculos.filter(v => v.placa.toLowerCase().includes(veiculoSearch.toLowerCase())).map(v => (
+                              <div
+                                key={v.veiculo_id}
+                                className={`px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm ${editFormData.veiculo_id === v.veiculo_id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
+                                onClick={() => { setEditFormData(prev => ({ ...prev, veiculo_id: v.veiculo_id })); setShowVeiculoDropdown(false); setVeiculoSearch(''); }}
+                              >
+                                {v.placa}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Romaneios Section */}
-              <div className="border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Romaneios
-                </h4>
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">Romaneios</h3>
+                </div>
 
-                {/* Current Romaneios List */}
                 {editFormData.romaneios.length > 0 && (
-                  <div className="mb-3 flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 pb-3">
                     {editFormData.romaneios.map((rom, idx) => (
                       <div key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
                         <span className="text-sm">{rom}</span>
@@ -1319,7 +1426,6 @@ const HodometrosMinuta: React.FC = () => {
                   </div>
                 )}
 
-                {/* Add New Romaneio */}
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -1347,22 +1453,22 @@ const HodometrosMinuta: React.FC = () => {
               </div>
 
               {/* Foto da Minuta Section */}
-              <div className="border border-gray-300 dark:border-gray-600 p-4 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Foto da Minuta
-                </h4>
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">Foto da Minuta</h3>
+                </div>
 
                 {editFormData.foto_minuta ? (
                   <div className="space-y-3">
                     <div className="relative w-full h-48 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                      <img 
-                        src={editFormData.foto_minuta} 
-                        alt="Preview da foto" 
+                      <img
+                        src={editFormData.foto_minuta}
+                        alt="Preview da foto"
                         className="w-full h-full object-contain"
                       />
                     </div>
                     <div className="flex gap-2">
-                      <label className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-center">
+                      <label className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-center text-sm font-medium">
                         <input
                           type="file"
                           accept="image/*"
@@ -1374,7 +1480,7 @@ const HodometrosMinuta: React.FC = () => {
                       </label>
                       <button
                         onClick={handleRemovePhoto}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                         data-testid="button-remove-photo"
                       >
                         Remover
@@ -1398,10 +1504,10 @@ const HodometrosMinuta: React.FC = () => {
             </div>
 
             {/* Modal Actions */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 sticky bottom-0 bg-white dark:bg-gray-800">
+            <div className="flex flex-wrap justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-gray-800/80">
               <button
                 onClick={() => setShowEditModal(false)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
                 data-testid="button-cancel-edit"
               >
                 Cancelar
@@ -1409,12 +1515,13 @@ const HodometrosMinuta: React.FC = () => {
               <button
                 onClick={handleSaveMinuta}
                 disabled={isSaving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
                 data-testid="button-save-minuta"
               >
                 {isSaving ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
+          </div>
           </div>
         </div>
       )}
