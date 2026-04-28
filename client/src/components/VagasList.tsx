@@ -112,7 +112,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
       updateVagaStatus(vagaId, statusId, companyId!),
     onSuccess: () => {
       toast.success('Status atualizado com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['vagas'] });
+      queryClient.invalidateQueries({ queryKey: ['vagas'], refetchType: 'active' });
       onRefresh();
       setUpdatingStatusVaga(null);
     },
@@ -132,7 +132,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
       );
       setVagaToDelete(null);
       toast.success('Vaga deletada com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['vagas'] });
+      queryClient.invalidateQueries({ queryKey: ['vagas'], refetchType: 'active' });
       onRefresh();
     },
     onError: (error) => {
@@ -171,7 +171,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
         })
       )
     ).then(() => {
-      queryClient.invalidateQueries({ queryKey: ['vagas'] });
+      queryClient.invalidateQueries({ queryKey: ['vagas'], refetchType: 'active' });
     });
   }, [vagas, companyId]);
 
@@ -980,7 +980,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
             setSelectedVaga(null);
           }}
           onUpdate={() => {
-            queryClient.invalidateQueries({ queryKey: ['vagas'] });
+            queryClient.invalidateQueries({ queryKey: ['vagas'], refetchType: 'active' });
             onRefresh();
           }}
         />
