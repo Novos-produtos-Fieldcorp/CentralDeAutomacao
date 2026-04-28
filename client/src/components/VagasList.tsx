@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus, LayoutGrid, LayoutList, Briefcase, AlertTriangle } from 'lucide-react';
+import { Calendar, MapPin, Users, Building, Clock, Edit2, Trash2, Eye, ChevronDown, Search, Filter, X, Plus, LayoutGrid, LayoutList, Briefcase, AlertTriangle, Loader2 } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { Vaga } from '@shared/schema';
@@ -11,6 +11,7 @@ import VagaDetailsModal from './VagaDetailsModal';
 import Pagination from './Pagination';
 import ScrollableTableIndicator from './ScrollableTableIndicator';
 import { usePagination } from '../hooks/usePagination';
+import { TableDropdown } from './TableDropdown';
 import { API_BASE_URL } from '../lib/api-config-supabase';
 import {
   fetchVagasWithRelations,
@@ -28,6 +29,17 @@ interface VagasListProps {
   onRefresh: () => void;
   onAddClick?: () => void;
 }
+
+const getStatusColor = (statusName: string | null | undefined): string => {
+  if (!statusName) return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200';
+
+  const lower = statusName.toLowerCase();
+  if (lower.includes('aberta')) return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
+  if (lower.includes('fechada')) return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
+  if (lower.includes('pausada')) return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
+
+  return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200';
+};
 
 const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const { accountId } = useCurrentAccount();
@@ -49,6 +61,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showUnidadeDropdown, setShowUnidadeDropdown] = useState(false);
   const [showOperacaoDropdown, setShowOperacaoDropdown] = useState(false);
+  const [updatingStatusVaga, setUpdatingStatusVaga] = useState<number | null>(null);
 
   // Table and pagination
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -101,10 +114,12 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
       toast.success('Status atualizado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['vagas'] });
       onRefresh();
+      setUpdatingStatusVaga(null);
     },
     onError: (error) => {
       console.error('Error updating status:', error);
       toast.error('Erro ao atualizar status');
+      setUpdatingStatusVaga(null);
     },
   });
 
@@ -364,24 +379,12 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   };
 
   const handleStatusChange = (vagaId: number, newStatusId: number) => {
+    setUpdatingStatusVaga(vagaId);
     updateStatusMutation.mutate({ vagaId, statusId: newStatusId });
   };
 
   const handleDeleteVaga = (vaga: VagaWithRelations) => {
     setVagaToDelete(vaga);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'aberta':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'fechada':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-      case 'pausada':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      default:
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-    }
   };
 
   if (loading) {
@@ -904,22 +907,24 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="relative">
-                      <select
-                        value={vaga.st_vaga_id || ''}
-                        onChange={(e) => handleStatusChange(vaga.id, Number(e.target.value))}
-                        className={`appearance-none px-3 py-1 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer ${getStatusColor((vaga as any).status_nome || 'Ativa')}`}
-                        style={{ paddingRight: '24px' }}
-                      >
-                        {statusOptions.map((status) => (
-                          <option key={status.id} value={status.id} className="bg-white text-gray-900">
-                            {status.status_vaga}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown 
-                        size={12} 
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-current" 
+                      <TableDropdown
+                        value={vaga.st_vaga_id?.toString() || ''}
+                        options={statusOptions.map(status => ({
+                          value: status.id.toString(),
+                          label: status.status_vaga,
+                          color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+                        }))}
+                        onSelect={(value) => handleStatusChange(vaga.id, Number(value))}
+                        placeholder="Selecionar Status"
+                        disabled={updatingStatusVaga === vaga.id}
+                        buttonClassName={getStatusColor((vaga as any).status_nome)}
                       />
+
+                      {updatingStatusVaga === vaga.id && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded-full">
+                          <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
