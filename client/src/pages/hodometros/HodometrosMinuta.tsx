@@ -553,7 +553,7 @@ const HodometrosMinuta: React.FC = () => {
           'Hora': horaFormatada,
           'Motorista': m.motorista?.nome || 'Não informado',
           'CPF': m.motorista?.cpf ? formatCPF(m.motorista.cpf) : 'Não informado',
-          'Veículo': m.veiculo?.placa || 'Não informado',
+          'Veículo': m.veiculo?.placa?.toUpperCase() || 'Não informado',
           'Marca/Modelo': `${m.veiculo?.marca || ''} ${m.veiculo?.tipo || ''}`.trim() || 'Não informado',
           'Nº Minuta Informada': m.minuta_informada || '-',
           'Nº Minuta Lida': m.minuta_lida || '-',
@@ -1119,7 +1119,7 @@ const HodometrosMinuta: React.FC = () => {
                         <div className="text-xs text-gray-500 dark:text-gray-400 ml-5">{m.motorista?.cpf ? formatCPF(m.motorista.cpf) : ''}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center"><Truck className="h-4 w-4 text-gray-400 mr-1" /><div className="text-sm text-gray-900 dark:text-white">{m.veiculo?.placa || 'Não informado'}</div></div>
+                        <div className="flex items-center"><Truck className="h-4 w-4 text-gray-400 mr-1" /><div className="text-sm text-gray-900 dark:text-white">{m.veiculo?.placa?.toUpperCase() || 'Não informado'}</div></div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 ml-5">{m.veiculo?.marca} {m.veiculo?.tipo}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1358,7 +1358,7 @@ const HodometrosMinuta: React.FC = () => {
                         <span className="flex-1 text-left truncate">
                           {loadingVeiculos
                             ? 'Carregando...'
-                            : veiculos.find(v => v.veiculo_id === editFormData.veiculo_id)?.placa || 'Selecione um veículo'}
+                            : veiculos.find(v => v.veiculo_id === editFormData.veiculo_id)?.placa?.toUpperCase() || 'Selecione um veículo'}
                         </span>
                         <ChevronDown className="h-4 w-4 shrink-0" />
                       </button>
@@ -1391,7 +1391,7 @@ const HodometrosMinuta: React.FC = () => {
                                 className={`px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm ${editFormData.veiculo_id === v.veiculo_id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
                                 onClick={() => { setEditFormData(prev => ({ ...prev, veiculo_id: v.veiculo_id })); setShowVeiculoDropdown(false); setVeiculoSearch(''); }}
                               >
-                                {v.placa}
+                                {v.placa.toUpperCase()}
                               </div>
                             ))}
                           </div>
