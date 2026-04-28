@@ -67,7 +67,7 @@ app.use((req, res, next) => {
 // Cache strategy otimizado por tipo de rota
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
-    if (req.path.includes('/wiseapp/') || req.path.includes('/inboxes')) {
+    if (req.path.includes('/wiseapp/') || req.path.includes('/inboxes') || req.path.includes('/vagas')) {
       // APIs dinâmicas - força no-cache agressivo para resolver problemas de cache
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
       res.setHeader('Pragma', 'no-cache');
