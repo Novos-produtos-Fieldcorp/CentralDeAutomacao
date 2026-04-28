@@ -8,6 +8,9 @@ import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { queryClient } from '../lib/queryClient';
 import VagaDetailsModal from './VagaDetailsModal';
+import Pagination from './Pagination';
+import ScrollableTableIndicator from './ScrollableTableIndicator';
+import { usePagination } from '../hooks/usePagination';
 import { API_BASE_URL } from '../lib/api-config-supabase';
 import {
   fetchVagasWithRelations,
@@ -46,6 +49,9 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const [showClienteDropdown, setShowClienteDropdown] = useState(false);
   const [showUnidadeDropdown, setShowUnidadeDropdown] = useState(false);
   const [showOperacaoDropdown, setShowOperacaoDropdown] = useState(false);
+
+  // Table and pagination
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Get company data first
   const { data: companyData, isLoading: companyLoading, error: companyError } = useQuery({
@@ -343,6 +349,10 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
     
     return searchMatch && statusMatch && clienteMatch && unidadeMatch && operacaoMatch && quantidadeMatch && dataMatch;
   });
+
+  const { currentPage, pageSize, totalPages, totalItems, paginatedData,
+          handlePageChange, handlePageSizeChange } =
+    usePagination({ data: filteredVagas, initialPageSize: 25 });
 
   const formatDate = (date: string | null) => {
     if (!date) return '-';
@@ -810,8 +820,9 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <div className="relative">
+          <div ref={tableContainerRef} className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -841,7 +852,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredVagas.map((vaga) => (
+              {paginatedData.map((vaga) => (
                 <tr key={vaga.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
@@ -936,9 +947,23 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
               ))}
             </tbody>
           </table>
+          </div>
+          <ScrollableTableIndicator containerRef={tableContainerRef} />
         </div>
       )}
       </div>
+
+      {/* Pagination */}
+      {filteredVagas.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
+      )}
       
       {/* Modal de Detalhes/Edição */}
       {selectedVaga && (
@@ -958,8 +983,10 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
 
       {/* Diálogo de confirmação de exclusão */}
       {vagaToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6">
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 dark:bg-black/70" onClick={() => setVagaToDelete(null)} />
+          <div className="flex items-center justify-center min-h-screen p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full p-6 relative z-50" onClick={e => e.stopPropagation()}>
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30">
                 <AlertTriangle size={20} className="text-red-600 dark:text-red-400" />
@@ -999,6 +1026,7 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
                   'Excluir'
                 )}
               </button>
+            </div>
             </div>
           </div>
         </div>
