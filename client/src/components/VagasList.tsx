@@ -568,10 +568,10 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
               <button
                 type="button"
                 onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                className="search-filter-trigger justify-between pl-10 pr-3"
+                className="search-filter-trigger justify-between pl-10 pr-8"
               >
                 <span className="truncate">{getFilterButtonText('status')}</span>
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
               </button>
               <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-status" />
               {showStatusDropdown && (
@@ -612,10 +612,10 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
               <button
                 type="button"
                 onClick={() => setShowClienteDropdown(!showClienteDropdown)}
-                className="search-filter-trigger justify-between pl-10 pr-3"
+                className="search-filter-trigger justify-between pl-10 pr-8"
               >
                 <span className="truncate">{getFilterButtonText('cliente')}</span>
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${showClienteDropdown ? 'transform rotate-180' : ''}`} />
               </button>
               <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-cliente" />
               {showClienteDropdown && (
@@ -656,10 +656,10 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
               <button
                 type="button"
                 onClick={() => setShowUnidadeDropdown(!showUnidadeDropdown)}
-                className="search-filter-trigger justify-between pl-10 pr-3"
+                className="search-filter-trigger justify-between pl-10 pr-8"
               >
                 <span className="truncate">{getFilterButtonText('unidade')}</span>
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showUnidadeDropdown ? 'transform rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${showUnidadeDropdown ? 'transform rotate-180' : ''}`} />
               </button>
               <Building className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-unidade" />
               {showUnidadeDropdown && (
@@ -700,10 +700,10 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
               <button
                 type="button"
                 onClick={() => setShowOperacaoDropdown(!showOperacaoDropdown)}
-                className="search-filter-trigger justify-between pl-10 pr-3"
+                className="search-filter-trigger justify-between pl-10 pr-8"
               >
                 <span className="truncate">{getFilterButtonText('operacao')}</span>
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${showOperacaoDropdown ? 'transform rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${showOperacaoDropdown ? 'transform rotate-180' : ''}`} />
               </button>
               <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-operacao" />
               {showOperacaoDropdown && (
