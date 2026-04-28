@@ -324,9 +324,11 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="fixed inset-0 bg-black/50 dark:bg-black/70" onClick={onClose} />
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-hidden relative z-50 shadow-md" onClick={e => e.stopPropagation()}>
+        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-2xl">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             Adicionar Nova Vaga
           </h2>
@@ -339,9 +341,10 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-          {/* Ativo Toggle */}
-          <div className="flex items-center justify-between py-3 px-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-[calc(92vh-64px)]">
+          <div className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1">
+            {/* Ativo Toggle */}
+          <div className="flex items-center justify-between py-3 px-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 shadow-sm">
             <div>
               <span className="text-sm font-medium text-gray-900 dark:text-white">Vaga Ativa</span>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">A vaga estará visível e disponível para candidaturas</p>
@@ -358,15 +361,25 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           </div>
 
           {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-6">
+            <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Informações Básicas
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Preencha os dados principais da vaga
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Nome da Vaga *
               </label>
               <input
                 {...register('nome')}
                 type="text"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Ex: Motorista Categoria D"
               />
               {errors.nome && (
@@ -375,14 +388,14 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Quantidade de Vagas *
               </label>
               <input
                 {...register('quantidade')}
                 type="number"
                 min="1"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Ex: 5"
               />
               {errors.quantidade && (
@@ -390,16 +403,17 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               )}
             </div>
           </div>
+          </div>
 
           {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Descrição *
             </label>
             <textarea
               {...register('descricao')}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Descreva os requisitos e responsabilidades da vaga"
             />
             {errors.descricao && (
@@ -410,12 +424,12 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           {/* Dropdowns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Cliente *
               </label>
               <select
                 {...register('cliente_id', { setValueAs: (value) => value ? Number(value) : null })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="">Selecione um cliente</option>
                 {clientes.map((cliente) => (
@@ -430,7 +444,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Unidade *
               </label>
               {showNewUnidadeInput ? (
@@ -464,7 +478,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               ) : (
                 <select
                   {...register('unidade_id')}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   onChange={(e) => {
                     if (e.target.value === '__new__') {
                       setShowNewUnidadeInput(true);
@@ -491,7 +505,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Operação *
               </label>
               {showNewOperacaoInput ? (
@@ -525,7 +539,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               ) : (
                 <select
                   {...register('operacao_id')}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   onChange={(e) => {
                     if (e.target.value === '__new__') {
                       setShowNewOperacaoInput(true);
@@ -550,7 +564,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Status *
               </label>
               {showNewStatusInput ? (
@@ -584,7 +598,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               ) : (
                 <select
                   {...register('st_vaga_id')}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   onChange={(e) => {
                     if (e.target.value === '__new__') {
                       setShowNewStatusInput(true);
@@ -610,13 +624,13 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           </div>
 
           {/* Tipo de Contrato */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Tipo de Contrato
             </label>
             <select
               {...register('tipo_contrato')}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="">Selecione o tipo de contrato</option>
               <option value="CLT">CLT</option>
@@ -630,38 +644,17 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           </div>
 
           {/* Distância Limite — Slider */}
-          <div
-            style={{
-              background: isDark ? '#243044' : '#f1f5f9',
-              borderRadius: '8px',
-              padding: '1rem 1.25rem',
-              border: isDark ? '0.5px solid rgba(255,255,255,0.08)' : '0.5px solid rgba(0,0,0,0.08)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-              <span style={{ fontSize: '14px', fontWeight: 500, color: isDark ? '#cbd5e1' : '#374151' }}>
+          <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Distância Limite
               </span>
               {distanciaKm === 0 ? (
-                <span style={{
-                  background: isDark ? 'rgba(138,155,181,0.1)' : 'rgba(0,0,0,0.06)',
-                  color: isDark ? '#8a9bb5' : '#6b7280',
-                  padding: '2px 10px',
-                  borderRadius: '20px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                }}>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
                   Sem limite
                 </span>
               ) : (
-                <span style={{
-                  background: isDark ? 'rgba(79,142,247,0.12)' : 'rgba(59,130,246,0.1)',
-                  color: isDark ? '#4f8ef7' : '#2563eb',
-                  padding: '2px 10px',
-                  borderRadius: '20px',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                }}>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                   {distanciaKm} km
                 </span>
               )}
@@ -677,12 +670,12 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                 setDistanciaKm(val);
                 setValue('distancia', val === 0 ? '' : `${val} km`);
               }}
-              style={{ width: '100%', accentColor: isDark ? '#4f8ef7' : '#2563eb', cursor: 'pointer' }}
+              className="w-full accent-blue-500 cursor-pointer"
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-              <span style={{ fontSize: '11px', color: isDark ? '#4a5a72' : '#9ca3af' }}>0 km</span>
-              <span style={{ fontSize: '11px', color: isDark ? '#4a5a72' : '#9ca3af' }}>50 km</span>
-              <span style={{ fontSize: '11px', color: isDark ? '#4a5a72' : '#9ca3af' }}>100 km</span>
+            <div className="flex justify-between mt-1">
+              <span className="text-xs text-gray-500 dark:text-gray-400">0 km</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">50 km</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">100 km</span>
             </div>
           </div>
 
@@ -739,7 +732,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Horário *
               </label>
               <div className="flex items-center gap-2">
@@ -815,7 +808,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               dateFormat="dd/MM/yyyy HH:mm"
               placeholderText="Selecione data e hora"
               isClearable
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               wrapperClassName="w-full"
               calendarClassName={isDark ? 'dark-datepicker' : 'light-datepicker'}
               locale="pt-BR"
@@ -835,7 +828,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Logradouro
                 </label>
                 <div className="space-y-2">
@@ -844,7 +837,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
                     value={logradouroSearchFilter}
                     onChange={(e) => setLogradouroSearchFilter(e.target.value)}
                     placeholder="Pesquisar logradouro..."
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                   {logradouroSearchFilter && (
                     <div className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 max-h-48 overflow-y-auto">
@@ -878,27 +871,27 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Número
                 </label>
                 <input
                   type="text"
                   value={enderecoData.numero}
                   onChange={(e) => setEnderecoData({...enderecoData, numero: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Ex: 123"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Complemento
                 </label>
                 <input
                   type="text"
                   value={enderecoData.ds_complemento}
                   onChange={(e) => setEnderecoData({...enderecoData, ds_complemento: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Ex: Apto 12, Fundos"
                 />
               </div>
@@ -965,9 +958,10 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               </div>
             )}
           </div>
+          </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-gray-800/80">
             <button
               type="button"
               onClick={handleClose}
@@ -992,6 +986,7 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ptBR } from 'date-fns/locale';
 import { format, parse } from 'date-fns';
 registerLocale('pt-BR', ptBR);
-import { X, Edit2, Calendar, Users, Building, Clock, MapPin, User, Briefcase } from 'lucide-react';
+import { X, Edit2, Calendar, Users, Building, Clock, MapPin, User, Briefcase, Search, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
 import { useTheme } from '../context/ThemeContext';
@@ -83,6 +83,27 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
     initialVaga.dt_limite ? new Date(initialVaga.dt_limite) : null
   );
 
+  // Dropdown state for 5 custom dropdowns
+  const [showClienteDropdown, setShowClienteDropdown] = useState(false);
+  const [showUnidadeDropdown, setShowUnidadeDropdown] = useState(false);
+  const [showOperacaoDropdown, setShowOperacaoDropdown] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showTipoContratoDropdown, setShowTipoContratoDropdown] = useState(false);
+
+  // Search state for dropdowns
+  const [clienteSearch, setClienteSearch] = useState('');
+  const [unidadeSearch, setUnidadeSearch] = useState('');
+  const [operacaoSearch, setOperacaoSearch] = useState('');
+  const [statusSearch, setStatusSearch] = useState('');
+  const [tipoContratoSearch, setTipoContratoSearch] = useState('');
+
+  // Refs for click-outside detection
+  const clienteDropdownRef = useRef<HTMLDivElement>(null);
+  const unidadeDropdownRef = useRef<HTMLDivElement>(null);
+  const operacaoDropdownRef = useRef<HTMLDivElement>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const tipoContratoDropdownRef = useRef<HTMLDivElement>(null);
+
   const resetEditState = (vaga: VagaWithRelations) => {
     setFormData(initFormData(vaga));
     setAtivoEdit(vaga.ativo !== false);
@@ -129,6 +150,19 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
     setHorarioAte(parsedHorario.ate);
     setDtLimitePicker(initialVaga.dt_limite ? new Date(initialVaga.dt_limite) : null);
   }, [initialVaga]);
+
+  // Click-outside handler for all 5 dropdowns
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (clienteDropdownRef.current && !clienteDropdownRef.current.contains(e.target as Node)) setShowClienteDropdown(false);
+      if (unidadeDropdownRef.current && !unidadeDropdownRef.current.contains(e.target as Node)) setShowUnidadeDropdown(false);
+      if (operacaoDropdownRef.current && !operacaoDropdownRef.current.contains(e.target as Node)) setShowOperacaoDropdown(false);
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) setShowStatusDropdown(false);
+      if (tipoContratoDropdownRef.current && !tipoContratoDropdownRef.current.contains(e.target as Node)) setShowTipoContratoDropdown(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchDropdownData = async () => {
     if (!accountId) return;
@@ -265,8 +299,10 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="fixed inset-0 bg-black/50 dark:bg-black/70" onClick={onClose} />
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full h-[92vh] flex flex-col relative z-50 shadow-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             {isEditing ? 'Editar Vaga' : 'Detalhes da Vaga'}
@@ -289,7 +325,7 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="overflow-y-auto flex-1 p-6 space-y-6">
           {isEditing ? (
             <>
               {/* Ativo Toggle */}
@@ -354,96 +390,283 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
 
               {/* Cliente + Unidade */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Cliente Dropdown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Cliente *
                   </label>
-                  <select
-                    value={formData.cliente_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                  >
-                    <option value="">Selecione um cliente</option>
-                    {dropdownData.clientes.map((cliente) => (
-                      <option key={cliente.cliente_id} value={cliente.cliente_id}>
-                        {cliente.nome}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative" ref={clienteDropdownRef}>
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-10"
+                      onClick={() => { setShowClienteDropdown(p => !p); setShowUnidadeDropdown(false); setShowOperacaoDropdown(false); setShowStatusDropdown(false); setShowTipoContratoDropdown(false); }}
+                    >
+                      <Building className="h-4 w-4 text-gray-400 shrink-0" />
+                      <span className="flex-1 text-left truncate">
+                        {dropdownData.clientes.find(c => c.cliente_id == formData.cliente_id)?.nome || 'Selecione um cliente'}
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0" />
+                    </button>
+                    {showClienteDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-700 shadow-xl rounded-lg border border-gray-200 dark:border-gray-600 z-[999]">
+                        <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-600">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                            <input
+                              type="text"
+                              placeholder="Buscar cliente..."
+                              value={clienteSearch}
+                              onChange={(e) => setClienteSearch(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                              className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-44 overflow-y-auto py-1">
+                          <div
+                            className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm text-gray-500 dark:text-gray-400"
+                            onClick={() => { setFormData(prev => ({ ...prev, cliente_id: '' })); setShowClienteDropdown(false); setClienteSearch(''); }}
+                          >
+                            Nenhum
+                          </div>
+                          {dropdownData.clientes.filter(c => c.nome.toLowerCase().includes(clienteSearch.toLowerCase())).map(c => (
+                            <div
+                              key={c.cliente_id}
+                              className={`px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm ${formData.cliente_id == c.cliente_id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
+                              onClick={() => { setFormData(prev => ({ ...prev, cliente_id: c.cliente_id })); setShowClienteDropdown(false); setClienteSearch(''); }}
+                            >
+                              {c.nome}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {/* Unidade Dropdown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Unidade *
                   </label>
-                  <select
-                    value={formData.unidade_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, unidade_id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                  >
-                    <option value="">Selecione uma unidade</option>
-                    {dropdownData.unidades.map((unidade) => (
-                      <option key={unidade.id} value={unidade.id}>
-                        {unidade.unidade}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative" ref={unidadeDropdownRef}>
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-10"
+                      onClick={() => { setShowUnidadeDropdown(p => !p); setShowClienteDropdown(false); setShowOperacaoDropdown(false); setShowStatusDropdown(false); setShowTipoContratoDropdown(false); }}
+                    >
+                      <Building className="h-4 w-4 text-gray-400 shrink-0" />
+                      <span className="flex-1 text-left truncate">
+                        {dropdownData.unidades.find(u => u.id == formData.unidade_id)?.unidade || 'Selecione uma unidade'}
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0" />
+                    </button>
+                    {showUnidadeDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-700 shadow-xl rounded-lg border border-gray-200 dark:border-gray-600 z-[999]">
+                        <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-600">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                            <input
+                              type="text"
+                              placeholder="Buscar unidade..."
+                              value={unidadeSearch}
+                              onChange={(e) => setUnidadeSearch(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                              className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-44 overflow-y-auto py-1">
+                          <div
+                            className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm text-gray-500 dark:text-gray-400"
+                            onClick={() => { setFormData(prev => ({ ...prev, unidade_id: '' })); setShowUnidadeDropdown(false); setUnidadeSearch(''); }}
+                          >
+                            Nenhum
+                          </div>
+                          {dropdownData.unidades.filter(u => u.unidade.toLowerCase().includes(unidadeSearch.toLowerCase())).map(u => (
+                            <div
+                              key={u.id}
+                              className={`px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm ${formData.unidade_id == u.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
+                              onClick={() => { setFormData(prev => ({ ...prev, unidade_id: u.id })); setShowUnidadeDropdown(false); setUnidadeSearch(''); }}
+                            >
+                              {u.unidade}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Operação + Status */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Operação Dropdown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Operação *
                   </label>
-                  <select
-                    value={formData.operacao_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, operacao_id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                  >
-                    <option value="">Selecione uma operação</option>
-                    {dropdownData.operacoes.map((operacao) => (
-                      <option key={operacao.id} value={operacao.id}>
-                        {operacao.operacao}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative" ref={operacaoDropdownRef}>
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-10"
+                      onClick={() => { setShowOperacaoDropdown(p => !p); setShowClienteDropdown(false); setShowUnidadeDropdown(false); setShowStatusDropdown(false); setShowTipoContratoDropdown(false); }}
+                    >
+                      <Briefcase className="h-4 w-4 text-gray-400 shrink-0" />
+                      <span className="flex-1 text-left truncate">
+                        {dropdownData.operacoes.find(o => o.id == formData.operacao_id)?.operacao || 'Selecione uma operação'}
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0" />
+                    </button>
+                    {showOperacaoDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-700 shadow-xl rounded-lg border border-gray-200 dark:border-gray-600 z-[999]">
+                        <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-600">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                            <input
+                              type="text"
+                              placeholder="Buscar operação..."
+                              value={operacaoSearch}
+                              onChange={(e) => setOperacaoSearch(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                              className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-44 overflow-y-auto py-1">
+                          <div
+                            className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm text-gray-500 dark:text-gray-400"
+                            onClick={() => { setFormData(prev => ({ ...prev, operacao_id: '' })); setShowOperacaoDropdown(false); setOperacaoSearch(''); }}
+                          >
+                            Nenhum
+                          </div>
+                          {dropdownData.operacoes.filter(o => o.operacao.toLowerCase().includes(operacaoSearch.toLowerCase())).map(o => (
+                            <div
+                              key={o.id}
+                              className={`px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm ${formData.operacao_id == o.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
+                              onClick={() => { setFormData(prev => ({ ...prev, operacao_id: o.id })); setShowOperacaoDropdown(false); setOperacaoSearch(''); }}
+                            >
+                              {o.operacao}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {/* Status Dropdown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Status *
                   </label>
-                  <select
-                    value={formData.st_vaga_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, st_vaga_id: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                  >
-                    <option value="">Selecione um status</option>
-                    {dropdownData.statusVagas.map((status) => (
-                      <option key={status.id} value={status.id}>
-                        {status.status_vaga}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative" ref={statusDropdownRef}>
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-10"
+                      onClick={() => { setShowStatusDropdown(p => !p); setShowClienteDropdown(false); setShowUnidadeDropdown(false); setShowOperacaoDropdown(false); setShowTipoContratoDropdown(false); }}
+                    >
+                      <Users className="h-4 w-4 text-gray-400 shrink-0" />
+                      <span className="flex-1 text-left truncate">
+                        {dropdownData.statusVagas.find(s => s.id == formData.st_vaga_id)?.status_vaga || 'Selecione um status'}
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0" />
+                    </button>
+                    {showStatusDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-700 shadow-xl rounded-lg border border-gray-200 dark:border-gray-600 z-[999]">
+                        <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-600">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                            <input
+                              type="text"
+                              placeholder="Buscar status..."
+                              value={statusSearch}
+                              onChange={(e) => setStatusSearch(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                              className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-44 overflow-y-auto py-1">
+                          <div
+                            className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm text-gray-500 dark:text-gray-400"
+                            onClick={() => { setFormData(prev => ({ ...prev, st_vaga_id: '' })); setShowStatusDropdown(false); setStatusSearch(''); }}
+                          >
+                            Nenhum
+                          </div>
+                          {dropdownData.statusVagas.filter(s => s.status_vaga.toLowerCase().includes(statusSearch.toLowerCase())).map(s => (
+                            <div
+                              key={s.id}
+                              className={`px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm ${formData.st_vaga_id == s.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
+                              onClick={() => { setFormData(prev => ({ ...prev, st_vaga_id: s.id })); setShowStatusDropdown(false); setStatusSearch(''); }}
+                            >
+                              {s.status_vaga}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Tipo de Contrato */}
+              {/* Tipo de Contrato Dropdown */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Tipo de Contrato
                 </label>
-                <select
-                  value={formData.tipo_contrato}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tipo_contrato: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-                >
-                  <option value="">Selecione o tipo de contrato</option>
-                  <option value="CLT">CLT</option>
-                  <option value="PJ">PJ</option>
-                  <option value="Temporário">Temporário</option>
-                  <option value="Autônomo">Autônomo</option>
-                </select>
+                <div className="relative" ref={tipoContratoDropdownRef}>
+                  <button
+                    type="button"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center gap-2 h-10"
+                    onClick={() => { setShowTipoContratoDropdown(p => !p); setShowClienteDropdown(false); setShowUnidadeDropdown(false); setShowOperacaoDropdown(false); setShowStatusDropdown(false); }}
+                  >
+                    <Briefcase className="h-4 w-4 text-gray-400 shrink-0" />
+                    <span className="flex-1 text-left truncate">
+                      {formData.tipo_contrato || 'Selecione o tipo de contrato'}
+                    </span>
+                    <ChevronDown className="h-4 w-4 shrink-0" />
+                  </button>
+                  {showTipoContratoDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-700 shadow-xl rounded-lg border border-gray-200 dark:border-gray-600 z-[999]">
+                      <div className="px-2 py-2 border-b border-gray-200 dark:border-gray-600">
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Buscar tipo de contrato..."
+                            value={tipoContratoSearch}
+                            onChange={(e) => setTipoContratoSearch(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            autoFocus
+                            className="w-full pl-6 pr-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-44 overflow-y-auto py-1">
+                        <div
+                          className="px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm text-gray-500 dark:text-gray-400"
+                          onClick={() => { setFormData(prev => ({ ...prev, tipo_contrato: '' })); setShowTipoContratoDropdown(false); setTipoContratoSearch(''); }}
+                        >
+                          Nenhum
+                        </div>
+                        {['CLT', 'PJ', 'Temporário', 'Autônomo'].filter(t => t.toLowerCase().includes(tipoContratoSearch.toLowerCase())).map(t => (
+                          <div
+                            key={t}
+                            className={`px-3 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm ${formData.tipo_contrato === t ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
+                            onClick={() => { setFormData(prev => ({ ...prev, tipo_contrato: t })); setShowTipoContratoDropdown(false); setTipoContratoSearch(''); }}
+                          >
+                            {t}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Distância Limite — Slider */}
@@ -598,27 +821,11 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
                 />
               </div>
 
-              {/* Botões de Ação */}
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => { resetEditState(currentVaga); setIsEditing(false); }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={loading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Salvando...' : 'Salvar'}
-                </button>
-              </div>
             </>
           ) : (
             <>
               {/* Ativo Badge */}
-              <div className="flex items-center gap-2 py-2 px-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 py-2 px-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 shadow-sm">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status da Vaga:</span>
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                   currentVaga.ativo !== false
@@ -630,148 +837,170 @@ const VagaDetailsModal: React.FC<VagaDetailsModalProps> = ({ vaga: initialVaga, 
               </div>
 
               {/* Visualização das Informações */}
-              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-gray-400" />
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-6">
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Briefcase className="w-5 h-5" />
                     Informações da Vaga
                   </h3>
-                  <p className="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Detalhes completos da vaga de trabalho.
                   </p>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700">
-                  <dl>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <User className="w-4 h-4 mr-2" />
                         Nome da Vaga
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {currentVaga.nome}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <div className="md:col-span-2">
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                         Descrição
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {currentVaga.descricao}
                       </dd>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <Users className="w-4 h-4 mr-2" />
-                        Quantidade de Vagas
+                        Quantidade
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {currentVaga.quantidade}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <Clock className="w-4 h-4 mr-2" />
-                        Horário de Trabalho
+                        Horário
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {currentVaga.horario || 'Não informado'}
                       </dd>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <Briefcase className="w-4 h-4 mr-2" />
-                        Tipo de Contrato
+                        Tipo Contrato
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {currentVaga.tipo_contrato || 'Não informado'}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <MapPin className="w-4 h-4 mr-2" />
-                        Distância Limite
+                        Distância
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {currentVaga.distancia || 'Sem limite'}
                       </dd>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <Calendar className="w-4 h-4 mr-2" />
-                        Dias de Trabalho
+                        Dias Trabalho
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {getDiasTrabalhoFormatted()}
                       </dd>
                     </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
                         <Calendar className="w-4 h-4 mr-2" />
                         Data Limite
                       </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
+                      <dd className="text-sm text-gray-900 dark:text-white">
                         {formatDate(currentVaga.dt_limite?.toString())}
                       </dd>
                     </div>
-                  </dl>
+                  </div>
                 </div>
               </div>
 
               {/* Informações de Relacionamento */}
-              <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                    <Building className="w-5 h-5 text-gray-400" />
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md space-y-4">
+                <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Building className="w-5 h-5" />
                     Cliente e Unidade
                   </h3>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700">
-                  <dl>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        <Building className="w-4 h-4 mr-2" />
-                        Cliente
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {currentVaga.cliente_nome || 'Não informado'}
-                      </dd>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
-                        <MapPin className="w-4 h-4 mr-2" />
-                        Unidade
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {currentVaga.unidade_nome || 'Não informado'}
-                      </dd>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Operação
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        {currentVaga.operacao_nome || 'Não informado'}
-                      </dd>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Status
-                      </dt>
-                      <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          currentVaga.status_nome === 'Ativa' ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' :
-                          currentVaga.status_nome === 'Em Andamento' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100' :
-                          'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
-                        }`}>
-                          {currentVaga.status_nome || 'Não informado'}
-                        </span>
-                      </dd>
-                    </div>
-                  </dl>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
+                      <Building className="w-4 h-4 mr-2" />
+                      Cliente
+                    </dt>
+                    <dd className="text-sm text-gray-900 dark:text-white">
+                      {currentVaga.cliente_nome || 'Não informado'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center mb-1">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      Unidade
+                    </dt>
+                    <dd className="text-sm text-gray-900 dark:text-white">
+                      {currentVaga.unidade_nome || 'Não informado'}
+                    </dd>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Operação
+                    </dt>
+                    <dd className="text-sm text-gray-900 dark:text-white">
+                      {currentVaga.operacao_nome || 'Não informado'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      Status
+                    </dt>
+                    <dd className="text-sm">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        currentVaga.status_nome === 'Ativa' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                        currentVaga.status_nome === 'Em Andamento' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                        'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                      }`}>
+                        {currentVaga.status_nome || 'Não informado'}
+                      </span>
+                    </dd>
+                  </div>
                 </div>
               </div>
             </>
           )}
+        </div>
+        {isEditing && (
+          <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <button
+              onClick={() => { resetEditState(currentVaga); setIsEditing(false); }}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        )}
         </div>
       </div>
     </div>
