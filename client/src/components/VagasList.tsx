@@ -568,9 +568,9 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
               <button
                 type="button"
                 onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                className="search-filter-trigger justify-between !pl-10 !pr-14"
+                className="search-filter-trigger !pl-10 !pr-14"
               >
-                <span className="truncate">{getFilterButtonText('status')}</span>
+                <span className="truncate flex-1">{getFilterButtonText('status')}</span>
                 <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${showStatusDropdown ? 'transform rotate-180' : ''}`} />
               </button>
               <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 search-filter-icon-status" />
