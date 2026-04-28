@@ -110,9 +110,24 @@ const VagasList: React.FC<VagasListProps> = ({ onRefresh, onAddClick }) => {
   const updateStatusMutation = useMutation({
     mutationFn: ({ vagaId, statusId }: { vagaId: number; statusId: number }) =>
       updateVagaStatus(vagaId, statusId, companyId!),
-    onSuccess: () => {
+    onSuccess: (_, { vagaId, statusId }) => {
+      // Update cache directly so UI reflects immediately
+      queryClient.setQueryData(
+        ['vagas', companyId],
+        (old: VagaWithRelations[] | undefined) =>
+          old
+            ? old.map(v =>
+                v.id === vagaId
+                  ? {
+                      ...v,
+                      st_vaga_id: statusId,
+                      status_nome: statusOptions.find(s => s.id === statusId)?.status_vaga ?? v.status_nome,
+                    }
+                  : v
+              )
+            : old
+      );
       toast.success('Status atualizado com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['vagas'], exact: false });
       onRefresh();
       setUpdatingStatusVaga(null);
     },
