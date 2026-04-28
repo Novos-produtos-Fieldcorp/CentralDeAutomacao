@@ -341,8 +341,9 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-4 sm:p-6 space-y-6 overflow-y-auto max-h-[calc(92vh-120px)]">
-          {/* Ativo Toggle */}
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-[calc(92vh-64px)]">
+          <div className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1">
+            {/* Ativo Toggle */}
           <div className="flex items-center justify-between py-3 px-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 shadow-sm">
             <div>
               <span className="text-sm font-medium text-gray-900 dark:text-white">Vaga Ativa</span>
@@ -957,9 +958,10 @@ const AddVagaModal: React.FC<AddVagaModalProps> = ({ isOpen, onClose, onSuccess 
               </div>
             )}
           </div>
+          </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-gray-800/80">
+          <div className="flex justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:dark:bg-gray-800/80">
             <button
               type="button"
               onClick={handleClose}
