@@ -33,6 +33,9 @@ const Vagas = lazy(() => import("./pages/Vagas"));
 const ComprovRota = lazy(() => import("./pages/ComprovRota"));
 const Operacoes = lazy(() => import("./pages/Operacoes"));
 const Logs = lazy(() => import("./pages/Logs"));
+const JpdTransportes = lazy(() => import("./pages/JpdTransportes"));
+const BlixxGrupos = lazy(() => import("./pages/BlixxGrupos"));
+const PainelControleBlixx = lazy(() => import("./pages/PainelControleBlixx"));
 
 // Componente de loading para lazy loading
 const PageLoader = () => (
@@ -118,6 +121,18 @@ const AppRoutes = () => {
                   <Route
                     path="/logs"
                     element={<Logs />}
+                  />
+                  <Route
+                    path="/jpd-transportes/*"
+                    element={<JpdTransportes />}
+                  />
+                  <Route
+                    path="/blixx-grupos/*"
+                    element={<BlixxGrupos />}
+                  />
+                  <Route
+                    path="/painel-controle-blixx/*"
+                    element={<PainelControleBlixx />}
                   />
                 </Routes>
               </Suspense>

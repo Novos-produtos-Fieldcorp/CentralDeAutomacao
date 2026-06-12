@@ -6853,6 +6853,226 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     }
   });
 
+  // =====================================================
+  // JPD Transportes routes
+  // (Ingestao e extracao sao feitas externamente — n8n grava
+  //  direto nas tabelas jpd_documents / jpd_extractions via Supabase)
+  // =====================================================
+  function jpdCompanyId(req: any): number | null {
+    const raw = req.query.company_id || req.body?.company_id || req.headers["company_id"] || req.headers["x-company-id"];
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+
+  // GET /api/jpd/documents?company_id=&status=
+  app.get("/api/jpd/documents", async (req, res) => {
+    try {
+      const company_id = jpdCompanyId(req);
+      if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
+      const status = req.query.status as string | undefined;
+      let q = supabaseBackend.from("jpd_documents").select("*").eq("company_id", company_id).order("created_at", { ascending: false });
+      if (status) q = q.eq("status", status);
+      const { data, error } = await q;
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/jpd/documents/:id  => { document, extraction }
+  app.get("/api/jpd/documents/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { data: doc, error: dErr } = await supabaseBackend.from("jpd_documents").select("*").eq("id", id).single();
+      if (dErr) return res.status(404).json({ error: dErr.message });
+      const { data: ext } = await supabaseBackend
+        .from("jpd_extractions").select("*").eq("document_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      res.json({ document: doc, extraction: ext, file_url: null });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PUT /api/jpd/extractions/:id  body: { fields }
+  app.put("/api/jpd/extractions/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { fields } = req.body || {};
+      if (!fields || typeof fields !== "object") return res.status(400).json({ error: "fields obrigatorio" });
+      const { data, error } = await supabaseBackend
+        .from("jpd_extractions").update({ fields, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/jpd/extractions/:id/approve  body: { approved_by? }
+  app.post("/api/jpd/extractions/:id/approve", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { approved_by } = req.body || {};
+      const { data: ext, error: eErr } = await supabaseBackend.from("jpd_extractions").select("*").eq("id", id).single();
+      if (eErr) return res.status(404).json({ error: eErr.message });
+      const { data: doc, error: dErr } = await supabaseBackend.from("jpd_documents").select("*").eq("id", ext.document_id).single();
+      if (dErr) return res.status(404).json({ error: dErr.message });
+      const f = ext.fields || {};
+
+      const freightRow = {
+        company_id: doc.company_id,
+        document_id: doc.id,
+        bv: f.numero_do_bv ?? null,
+        data_emissao: f.data_do_bv ?? null,
+        data_viagem: f.data_da_carga ?? null,
+        data_retorno: f.data_da_descarga ?? null,
+        motorista_nome: f.motorista ?? null,
+        motorista_cpf: f.motorista_cpf ?? null,
+        placa_cavalo: f.placa_do_carro ?? null,
+        placa_carreta: f.placa_carreta ?? null,
+        cliente: f.destinatario ?? null,
+        origem: f.origem ?? null,
+        destino: f.destinatario ?? null,
+        km_saida: f.km_saida ?? null,
+        km_chegada: f.km_chegada ?? null,
+        km_rodado: f.total_km ?? null,
+        valor_frete: f.valor_do_frete ?? null,
+        valor_pedagio: f.valor_pedagio ?? null,
+        valor_combustivel: f.abastecimento_pago_pela_jpd ?? null,
+        litros_combustivel: f.faltas_em_litros ?? null,
+        valor_adiantamento: f.valor_adiantamento ?? null,
+        valor_descarga: f.valor_descarga ?? null,
+        valor_seguro: f.seguros ?? null,
+        valor_comissao: f.valor_comissao ?? null,
+        valor_liquido: f.valor_faturado ?? f.valor_do_frete ?? null,
+        observacoes: null,
+        status: "aprovado",
+        approved_by: approved_by || null,
+      };
+      const { error: fErr } = await supabaseBackend.from("jpd_freights").insert(freightRow);
+      if (fErr) return res.status(500).json({ error: fErr.message });
+
+      await supabaseBackend.from("jpd_documents").update({ status: "approved", updated_at: new Date().toISOString() }).eq("id", doc.id);
+
+      // sync drivers/vehicles
+      if (f.motorista) {
+        const { data: existing } = await supabaseBackend.from("jpd_drivers").select("id").eq("company_id", doc.company_id).eq("nome", f.motorista).maybeSingle();
+        if (!existing) await supabaseBackend.from("jpd_drivers").insert({ company_id: doc.company_id, nome: f.motorista });
+      }
+      if (f.placa_do_carro) {
+        const { data: existing } = await supabaseBackend.from("jpd_vehicles").select("id").eq("company_id", doc.company_id).eq("placa", f.placa_do_carro).maybeSingle();
+        if (!existing) await supabaseBackend.from("jpd_vehicles").insert({ company_id: doc.company_id, placa: f.placa_do_carro });
+      }
+
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/jpd/documents/:id/reject
+  app.post("/api/jpd/documents/:id/reject", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { error } = await supabaseBackend.from("jpd_documents").update({ status: "rejected", updated_at: new Date().toISOString() }).eq("id", id);
+      if (error) return res.status(500).json({ error: error.message });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/jpd/dashboard?company_id=&from=&to=
+  app.get("/api/jpd/dashboard", async (req, res) => {
+    try {
+      const company_id = jpdCompanyId(req);
+      if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
+      const from = req.query.from as string | undefined;
+      const to = req.query.to as string | undefined;
+      let q = supabaseBackend.from("jpd_freights").select("*").eq("company_id", company_id);
+      if (from) q = q.gte("data_viagem", from);
+      if (to) q = q.lte("data_viagem", to);
+      const { data: freights, error } = await q;
+      if (error) return res.status(500).json({ error: error.message });
+
+      const num = (v: any) => (v == null ? 0 : Number(v) || 0);
+      const total_viagens = (freights || []).length;
+      const total_frete = (freights || []).reduce((s: number, r: any) => s + num(r.valor_frete), 0);
+      const total_combustivel = (freights || []).reduce((s: number, r: any) => s + num(r.valor_combustivel), 0);
+      const total_km = (freights || []).reduce((s: number, r: any) => s + num(r.km_rodado), 0);
+
+      const byMotorista: Record<string, { motorista: string; viagens: number; valor: number }> = {};
+      const byVeiculo: Record<string, { placa: string; viagens: number; valor: number }> = {};
+      for (const r of freights || []) {
+        const m = r.motorista_nome || "—";
+        const p = r.placa_cavalo || "—";
+        byMotorista[m] ??= { motorista: m, viagens: 0, valor: 0 };
+        byMotorista[m].viagens += 1;
+        byMotorista[m].valor += num(r.valor_frete);
+        byVeiculo[p] ??= { placa: p, viagens: 0, valor: 0 };
+        byVeiculo[p].viagens += 1;
+        byVeiculo[p].valor += num(r.valor_frete);
+      }
+
+      const { count: pending_count } = await supabaseBackend.from("jpd_documents")
+        .select("id", { count: "exact", head: true }).eq("company_id", company_id).eq("status", "pending");
+
+      res.json({
+        kpis: { total_viagens, total_frete, total_combustivel, total_km, pendentes: pending_count || 0 },
+        por_motorista: Object.values(byMotorista).sort((a, b) => b.valor - a.valor),
+        por_veiculo: Object.values(byVeiculo).sort((a, b) => b.valor - a.valor),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/jpd/export.xlsx?company_id=&from=&to=
+  app.get("/api/jpd/export.xlsx", async (req, res) => {
+    try {
+      const company_id = jpdCompanyId(req);
+      if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
+      const from = req.query.from as string | undefined;
+      const to = req.query.to as string | undefined;
+      let q = supabaseBackend.from("jpd_freights").select("*").eq("company_id", company_id).order("data_viagem", { ascending: true });
+      if (from) q = q.gte("data_viagem", from);
+      if (to) q = q.lte("data_viagem", to);
+      const { data, error } = await q;
+      if (error) return res.status(500).json({ error: error.message });
+
+      const XLSX = await import("xlsx");
+      const rows = (data || []).map((r: any) => ({
+        "Numero do BV": r.bv,
+        "Data Emissao": r.data_emissao,
+        "Data Viagem": r.data_viagem,
+        "Motorista": r.motorista_nome,
+        "Placa Cavalo": r.placa_cavalo,
+        "Placa Carreta": r.placa_carreta,
+        "Cliente": r.cliente,
+        "Origem": r.origem,
+        "Destino": r.destino,
+        "KM Rodado": r.km_rodado,
+        "Valor Frete": r.valor_frete,
+        "Combustivel (R$)": r.valor_combustivel,
+        "Litros Comb.": r.litros_combustivel,
+        "Pedagio": r.valor_pedagio,
+        "Seguro": r.valor_seguro,
+        "Comissao": r.valor_comissao,
+        "Valor Liquido": r.valor_liquido,
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Fretes");
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", `attachment; filename="jpd_fretes_${Date.now()}.xlsx"`);
+      res.send(buf);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   startGroupSummaryCron();

@@ -21,6 +21,7 @@ export const company = pgTable("company", {
   bomba_gasolina_access: boolean("bomba_gasolina_access").default(false),
   comprov_rota_access: boolean("comprov_rota_access").default(false),
   calculo_um_por_dia: boolean("calculo_um_por_dia").default(false),
+  jpd_transportes_access: boolean("jpd_transportes_access").default(false),
 
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
@@ -881,6 +882,154 @@ export type Comprovante = typeof comprovante.$inferSelect;
 export type InsertComprovante = z.infer<typeof insertComprovanteSchema>;
 export type EndComprovanteEntrega = typeof end_comprovante_entrega.$inferSelect;
 export type InsertEndComprovanteEntrega = z.infer<typeof insertEndComprovanteEntregaSchema>;
+
+// =====================================================
+// JPD Transportes — Freight documents automation
+// =====================================================
+
+export const jpd_documents = pgTable("jpd_documents", {
+  id: serial("id").primaryKey(),
+  company_id: integer("company_id").references(() => company.company_id),
+  filename: text("filename").notNull(),
+  file_path: text("file_path"),
+  mime_type: text("mime_type"),
+  document_type: text("document_type"),
+  status: text("status").default("pending"),
+  raw_text: text("raw_text"),
+  source: text("source").default("upload"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const jpd_extractions = pgTable("jpd_extractions", {
+  id: serial("id").primaryKey(),
+  document_id: integer("document_id").references(() => jpd_documents.id, { onDelete: "cascade" }),
+  fields: jsonb("fields"),
+  confidence: real("confidence").default(0),
+  alerts: jsonb("alerts"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const jpd_drivers = pgTable("jpd_drivers", {
+  id: serial("id").primaryKey(),
+  company_id: integer("company_id").references(() => company.company_id),
+  nome: text("nome").notNull(),
+  cpf: text("cpf"),
+  telefone: text("telefone"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export const jpd_vehicles = pgTable("jpd_vehicles", {
+  id: serial("id").primaryKey(),
+  company_id: integer("company_id").references(() => company.company_id),
+  placa: text("placa").notNull(),
+  modelo: text("modelo"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export const jpd_freights = pgTable("jpd_freights", {
+  id: serial("id").primaryKey(),
+  company_id: integer("company_id").references(() => company.company_id),
+  document_id: integer("document_id").references(() => jpd_documents.id),
+  bv: text("bv"),
+  data_emissao: date("data_emissao"),
+  data_viagem: date("data_viagem"),
+  data_retorno: date("data_retorno"),
+  motorista_nome: text("motorista_nome"),
+  motorista_cpf: text("motorista_cpf"),
+  placa_cavalo: text("placa_cavalo"),
+  placa_carreta: text("placa_carreta"),
+  cliente: text("cliente"),
+  origem: text("origem"),
+  destino: text("destino"),
+  km_saida: numeric("km_saida"),
+  km_chegada: numeric("km_chegada"),
+  km_rodado: numeric("km_rodado"),
+  valor_frete: numeric("valor_frete"),
+  valor_pedagio: numeric("valor_pedagio"),
+  valor_combustivel: numeric("valor_combustivel"),
+  litros_combustivel: numeric("litros_combustivel"),
+  valor_adiantamento: numeric("valor_adiantamento"),
+  valor_descarga: numeric("valor_descarga"),
+  valor_seguro: numeric("valor_seguro"),
+  valor_comissao: numeric("valor_comissao"),
+  valor_liquido: numeric("valor_liquido"),
+  observacoes: text("observacoes"),
+  status: text("status").default("aprovado"),
+  approved_by: text("approved_by"),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const jpdDocumentsRelations = relations(jpd_documents, ({ one, many }) => ({
+  company: one(company, {
+    fields: [jpd_documents.company_id],
+    references: [company.company_id],
+  }),
+  extractions: many(jpd_extractions),
+  freight: one(jpd_freights, {
+    fields: [jpd_documents.id],
+    references: [jpd_freights.document_id],
+  }),
+}));
+
+export const jpdExtractionsRelations = relations(jpd_extractions, ({ one }) => ({
+  document: one(jpd_documents, {
+    fields: [jpd_extractions.document_id],
+    references: [jpd_documents.id],
+  }),
+}));
+
+export const jpdFreightsRelations = relations(jpd_freights, ({ one }) => ({
+  company: one(company, {
+    fields: [jpd_freights.company_id],
+    references: [company.company_id],
+  }),
+  document: one(jpd_documents, {
+    fields: [jpd_freights.document_id],
+    references: [jpd_documents.id],
+  }),
+}));
+
+export const insertJpdDocumentSchema = createInsertSchema(jpd_documents).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const insertJpdExtractionSchema = createInsertSchema(jpd_extractions).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const insertJpdFreightSchema = createInsertSchema(jpd_freights).omit({
+  id: true,
+  created_at: true,
+  updated_at: true,
+});
+
+export const insertJpdDriverSchema = createInsertSchema(jpd_drivers).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertJpdVehicleSchema = createInsertSchema(jpd_vehicles).omit({
+  id: true,
+  created_at: true,
+});
+
+export type JpdDocument = typeof jpd_documents.$inferSelect;
+export type InsertJpdDocument = z.infer<typeof insertJpdDocumentSchema>;
+export type JpdExtraction = typeof jpd_extractions.$inferSelect;
+export type InsertJpdExtraction = z.infer<typeof insertJpdExtractionSchema>;
+export type JpdFreight = typeof jpd_freights.$inferSelect;
+export type InsertJpdFreight = z.infer<typeof insertJpdFreightSchema>;
+export type JpdDriver = typeof jpd_drivers.$inferSelect;
+export type InsertJpdDriver = z.infer<typeof insertJpdDriverSchema>;
+export type JpdVehicle = typeof jpd_vehicles.$inferSelect;
+export type InsertJpdVehicle = z.infer<typeof insertJpdVehicleSchema>;
 
 export interface MotoristaWithAddress extends Motorista {
   endereco?: {

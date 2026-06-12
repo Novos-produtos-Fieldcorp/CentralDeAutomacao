@@ -20,6 +20,9 @@ interface ModuleAccess {
   bau: boolean;
   operacoes: boolean;
   logs: boolean;
+  jpdTransportes: boolean;
+  blixxGrupos: boolean;
+  painelControleBlixx: boolean;
 }
 
 export const useModuleAccess = () => {
@@ -42,6 +45,9 @@ export const useModuleAccess = () => {
     bau: false,
     operacoes: false,
     logs: false,
+    jpdTransportes: false,
+    blixxGrupos: false,
+    painelControleBlixx: false,
   });
 
   useEffect(() => {
@@ -58,7 +64,7 @@ export const useModuleAccess = () => {
         const { data: company, error: companyError } = await supabase
           .from("company")
           .select(
-            "checklist_access, motorista_access, hodometro_acsess, minuta_access, romaneio_access, resumo_access, tags_access, comprovante_access, comprov_rota_access, bomba_gasolina_access, calculo_um_por_dia, bau_access, operacoes_access, logs_access",
+            "checklist_access, motorista_access, hodometro_acsess, minuta_access, romaneio_access, resumo_access, tags_access, comprovante_access, comprov_rota_access, bomba_gasolina_access, calculo_um_por_dia, bau_access, operacoes_access, logs_access, jpd_transportes_access, blixx_grupos_access, painel_controle_blixx_access",
           )
           .eq("company_id", companyId)
           .maybeSingle();
@@ -83,6 +89,9 @@ export const useModuleAccess = () => {
             bau: false,
             operacoes: false,
             logs: false,
+            jpdTransportes: false,
+            blixxGrupos: false,
+            painelControleBlixx: false,
           });
           return;
         }
@@ -105,6 +114,9 @@ export const useModuleAccess = () => {
             bau: company.bau_access || false,
             operacoes: company.operacoes_access || false,
             logs: (company as any).logs_access || false,
+            jpdTransportes: (company as any).jpd_transportes_access || false,
+            blixxGrupos: (company as any).blixx_grupos_access || false,
+            painelControleBlixx: (company as any).painel_controle_blixx_access || false,
           });
         } else {
           // Default to all modules enabled if company data doesn't exist
@@ -125,6 +137,9 @@ export const useModuleAccess = () => {
             bau: false,
             operacoes: false,
             logs: false,
+            jpdTransportes: false,
+            blixxGrupos: false,
+            painelControleBlixx: false,
           });
         }
       } catch (error) {
@@ -151,6 +166,9 @@ export const useModuleAccess = () => {
           bau: false,
           operacoes: false,
           logs: false,
+          jpdTransportes: false,
+          blixxGrupos: false,
+          painelControleBlixx: false,
         });
       } finally {
         setLoading(false);
