@@ -1,14 +1,36 @@
-import { useMemo, useState } from 'react';
-import { Search, UserPlus, Phone, Mail, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Search, UserPlus, Phone, Mail, RefreshCw, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { Contato } from './lib/painelTypes';
-import { CONTATOS_EXEMPLO } from './lib/painelMock';
+import { buscarContatos, cadastrarContato } from './lib/painelEdge';
 
 const ContatosTab = () => {
-  const [contatos, setContatos] = useState<Contato[]>(CONTATOS_EXEMPLO);
+  const [contatos, setContatos] = useState<Contato[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
   const [busca, setBusca] = useState('');
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
+  const [salvando, setSalvando] = useState(false);
+
+  const carregar = useCallback(async () => {
+    try {
+      setCarregando(true);
+      setErro(null);
+      const dados = await buscarContatos();
+      setContatos(dados);
+    } catch (e) {
+      console.error('Erro ao buscar contatos:', e);
+      setErro('Erro ao carregar contatos. Tente novamente.');
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -21,24 +43,27 @@ const ContatosTab = () => {
     );
   }, [contatos, busca]);
 
-  const criarContato = (e: React.FormEvent) => {
+  const criarContato = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome.trim() || !telefone.trim()) return;
-    const novo: Contato = {
-      id: `c-${contatos.length + 1}-${nome.slice(0, 3)}`,
-      nome: nome.trim(),
-      telefone: telefone.trim(),
-      email: email.trim() || undefined,
-      criadoEm: new Date().toISOString().slice(0, 10),
-    };
-    setContatos((prev) => [novo, ...prev]);
-    setNome('');
-    setTelefone('');
-    setEmail('');
-  };
-
-  const removerContato = (id: string) => {
-    setContatos((prev) => prev.filter((c) => c.id !== id));
+    if (!nome.trim() || !telefone.trim() || salvando) return;
+    try {
+      setSalvando(true);
+      await cadastrarContato({
+        nome: nome.trim(),
+        telefone: telefone.trim(),
+        email: email.trim() || undefined,
+      });
+      toast.success('Contato cadastrado com sucesso');
+      setNome('');
+      setTelefone('');
+      setEmail('');
+      await carregar();
+    } catch (err) {
+      console.error('Erro ao cadastrar contato:', err);
+      toast.error('Erro ao cadastrar contato');
+    } finally {
+      setSalvando(false);
+    }
   };
 
   return (
@@ -73,28 +98,47 @@ const ContatosTab = () => {
           />
           <button
             type="submit"
-            disabled={!nome.trim() || !telefone.trim()}
-            className="w-full py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled={!nome.trim() || !telefone.trim() || salvando}
+            className="w-full py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
-            Adicionar contato
+            {salvando && <Loader2 className="w-4 h-4 animate-spin" />}
+            {salvando ? 'Salvando...' : 'Adicionar contato'}
           </button>
         </form>
       </div>
 
       {/* Busca + lista */}
       <div className="lg:col-span-2 space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar contatos..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar contatos..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+          <button
+            onClick={carregar}
+            disabled={carregando}
+            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+            aria-label="Recarregar"
+          >
+            <RefreshCw className={`w-4 h-4 ${carregando ? 'animate-spin' : ''}`} />
+          </button>
         </div>
 
-        {filtrados.length === 0 ? (
+        {carregando ? (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400">
+            <Loader2 className="w-5 h-5 animate-spin" /> Carregando contatos...
+          </div>
+        ) : erro ? (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 text-center text-red-600 dark:text-red-400">
+            {erro}
+          </div>
+        ) : filtrados.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 text-center text-gray-500 dark:text-gray-400">
             Nenhum contato encontrado.
           </div>
@@ -106,11 +150,13 @@ const ContatosTab = () => {
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 flex items-center justify-between gap-4"
               >
                 <div className="min-w-0">
-                  <p className="font-medium text-gray-900 dark:text-white truncate">{c.nome}</p>
+                  <p className="font-medium text-gray-900 dark:text-white truncate">{c.nome || '—'}</p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5" /> {c.telefone}
-                    </span>
+                    {c.telefone && (
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5" /> {c.telefone}
+                      </span>
+                    )}
                     {c.email && (
                       <span className="flex items-center gap-1">
                         <Mail className="w-3.5 h-3.5" /> {c.email}
@@ -118,13 +164,6 @@ const ContatosTab = () => {
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => removerContato(c.id)}
-                  className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  aria-label="Remover contato"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
               </div>
             ))}
           </div>

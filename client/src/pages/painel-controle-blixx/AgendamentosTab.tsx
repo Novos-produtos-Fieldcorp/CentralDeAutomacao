@@ -1,18 +1,50 @@
-import { useState } from 'react';
-import { CalendarClock, Clock, Trash2, Users, User } from 'lucide-react';
-import type { Agendamento } from './lib/painelTypes';
-import { AUTOMACOES_EXEMPLO, CONTATOS_EXEMPLO, GRUPOS_EXEMPLO } from './lib/painelMock';
+import { useCallback, useEffect, useState } from 'react';
+import { CalendarClock, Clock, Trash2, Users, User, Loader2 } from 'lucide-react';
+import { useCurrentAccount } from '../../hooks/useCurrentAccount';
+import type { Agendamento, Automacao, Contato, Grupo } from './lib/painelTypes';
+import { buscarAutomacoes, buscarContatos } from './lib/painelEdge';
+import { buscarGrupos } from './lib/painelGroups';
 
 const AgendamentosTab = () => {
-  const contatos = CONTATOS_EXEMPLO;
-  const grupos = GRUPOS_EXEMPLO;
-  const automacoes = AUTOMACOES_EXEMPLO;
+  const { companyId } = useCurrentAccount();
 
+  const [automacoes, setAutomacoes] = useState<Automacao[]>([]);
+  const [contatos, setContatos] = useState<Contato[]>([]);
+  const [grupos, setGrupos] = useState<Grupo[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+
+  // Agendamentos ainda locais — rota de atribuir/iniciar automação será integrada depois.
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [automacaoId, setAutomacaoId] = useState('');
   const [contatoIds, setContatoIds] = useState<string[]>([]);
   const [grupoIds, setGrupoIds] = useState<string[]>([]);
+  const [dataInicio, setDataInicio] = useState('');
   const [horarioInicio, setHorarioInicio] = useState('');
+
+  const carregar = useCallback(async () => {
+    try {
+      setCarregando(true);
+      setErro(null);
+      const [autos, cts, grps] = await Promise.all([
+        buscarAutomacoes(),
+        buscarContatos(),
+        buscarGrupos(companyId ?? null),
+      ]);
+      setAutomacoes(autos);
+      setContatos(cts);
+      setGrupos(grps);
+    } catch (e) {
+      console.error('Erro ao carregar dados de agendamento:', e);
+      setErro('Erro ao carregar dados. Tente novamente.');
+    } finally {
+      setCarregando(false);
+    }
+  }, [companyId]);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
 
   const toggle = (
     id: string,
@@ -24,6 +56,7 @@ const AgendamentosTab = () => {
 
   const podeSalvar =
     automacaoId !== '' &&
+    dataInicio !== '' &&
     horarioInicio !== '' &&
     (contatoIds.length > 0 || grupoIds.length > 0);
 
@@ -35,6 +68,7 @@ const AgendamentosTab = () => {
       automacaoId,
       contatoIds,
       grupoIds,
+      dataInicio,
       horarioInicio,
       criadoEm: new Date().toISOString().slice(0, 10),
     };
@@ -42,6 +76,7 @@ const AgendamentosTab = () => {
     setAutomacaoId('');
     setContatoIds([]);
     setGrupoIds([]);
+    setDataInicio('');
     setHorarioInicio('');
   };
 
@@ -61,89 +96,113 @@ const AgendamentosTab = () => {
           <CalendarClock className="w-5 h-5 text-blue-600" />
           Novo agendamento
         </h2>
-        <form onSubmit={criarAgendamento} className="space-y-4">
-          {/* Automação */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Automação
-            </label>
-            <select
-              value={automacaoId}
-              onChange={(e) => setAutomacaoId(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+        {carregando ? (
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 py-6 justify-center">
+            <Loader2 className="w-4 h-4 animate-spin" /> Carregando...
+          </div>
+        ) : erro ? (
+          <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>
+        ) : (
+          <form onSubmit={criarAgendamento} className="space-y-4">
+            {/* Automação */}
+            <div>
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                Automação
+              </label>
+              <select
+                value={automacaoId}
+                onChange={(e) => setAutomacaoId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="">Selecione...</option>
+                {automacoes.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Data e horário de início */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  Data de início
+                </label>
+                <input
+                  type="date"
+                  value={dataInicio}
+                  onChange={(e) => setDataInicio(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  Horário
+                </label>
+                <input
+                  type="time"
+                  value={horarioInicio}
+                  onChange={(e) => setHorarioInicio(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Grupos */}
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Grupos</p>
+              <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                {grupos.length === 0 && (
+                  <p className="text-sm text-gray-400">Nenhum grupo criado.</p>
+                )}
+                {grupos.map((g) => (
+                  <label
+                    key={g.id}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={grupoIds.includes(g.id)}
+                      onChange={() => toggle(g.id, grupoIds, setGrupoIds)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{g.nome}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Contatos */}
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Contatos</p>
+              <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                {contatos.map((c) => (
+                  <label
+                    key={c.id}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={contatoIds.includes(c.id)}
+                      onChange={() => toggle(c.id, contatoIds, setContatoIds)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{c.nome}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={!podeSalvar}
+              className="w-full py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <option value="">Selecione...</option>
-              {automacoes.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Horário de início */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Horário de início
-            </label>
-            <input
-              type="time"
-              value={horarioInicio}
-              onChange={(e) => setHorarioInicio(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-          </div>
-
-          {/* Grupos */}
-          <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Grupos</p>
-            <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
-              {grupos.map((g) => (
-                <label
-                  key={g.id}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={grupoIds.includes(g.id)}
-                    onChange={() => toggle(g.id, grupoIds, setGrupoIds)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-800 dark:text-gray-200">{g.nome}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Contatos */}
-          <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Contatos</p>
-            <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
-              {contatos.map((c) => (
-                <label
-                  key={c.id}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={contatoIds.includes(c.id)}
-                    onChange={() => toggle(c.id, contatoIds, setContatoIds)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-800 dark:text-gray-200">{c.nome}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={!podeSalvar}
-            className="w-full py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Agendar
-          </button>
-        </form>
+              Agendar
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Lista de agendamentos */}
@@ -161,8 +220,10 @@ const AgendamentosTab = () => {
                   <p className="font-medium text-gray-900 dark:text-white truncate">
                     {nomeAutomacao(ag.automacaoId)}
                   </p>
-                  <span className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
-                    <Clock className="w-3.5 h-3.5" /> {ag.horarioInicio}
+                  <span className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    <Clock className="w-3.5 h-3.5" />
+                    {ag.dataInicio ? `${ag.dataInicio.split('-').reverse().join('/')} ` : ''}
+                    {ag.horarioInicio}
                   </span>
                 </div>
                 <button

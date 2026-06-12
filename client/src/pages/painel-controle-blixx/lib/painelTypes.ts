@@ -11,10 +11,18 @@ export interface Contato {
   criadoEm: string; // ISO date
 }
 
+// Snapshot de um contato dentro de um grupo (os contatos vêm do WiseApp/Chatwoot,
+// sistema externo, então guardamos nome/telefone junto do id).
+export interface MembroGrupo {
+  id: string;
+  nome: string;
+  telefone?: string;
+}
+
 export interface Grupo {
   id: string;
   nome: string;
-  contatoIds: string[];
+  membros: MembroGrupo[];
   criadoEm: string; // ISO date
 }
 
@@ -30,6 +38,7 @@ export interface Agendamento {
   automacaoId: string;
   contatoIds: string[];
   grupoIds: string[];
+  dataInicio: string; // formato YYYY-MM-DD
   horarioInicio: string; // formato HH:mm
   criadoEm: string; // ISO date
 }
