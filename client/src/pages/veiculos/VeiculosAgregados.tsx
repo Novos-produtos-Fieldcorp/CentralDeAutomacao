@@ -13,6 +13,8 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 import ScrollableTableIndicator from '../../components/ScrollableTableIndicator';
 import ContextMenu from '../../components/ContextMenu';
 import { supabase } from '../../lib/supabase';
+import { useBlixxSources } from '../../lib/blixxSource';
+import BlixxVeiculoModal from '../../components/blixx/BlixxVeiculoModal';
 import { useDebounce } from '../../hooks/useDebounce';
 import CombinedVehicleModal from '../../components/veiculos/CombinedVehicleModal';
 
@@ -32,6 +34,7 @@ interface VeiculoWithMotorista extends Veiculo {
 
 const VeiculosAgregados = () => {
   const { companyId } = useCompanyData();
+  const { agregadosView, veiculoTable, veiculoPk, motoristaTable, isBlixx } = useBlixxSources();
   const [veiculos, setVeiculos] = useState<VeiculoWithMotorista[]>([]);
   const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   
@@ -119,7 +122,7 @@ const VeiculosAgregados = () => {
 
       // Buscar apenas vínculos ativos de veículos dos agregados.
       let query = supabase
-        .from('vw_agregados_completo')
+        .from(agregadosView)
         .select('*', { count: 'exact' })
         .eq('company_id', companyId)
         .eq('ativo', true)
@@ -174,7 +177,7 @@ const VeiculosAgregados = () => {
     try {
       setError(null);
       const { data: motoristasData, error: motoristasError } = await supabase
-        .from('motorista')
+        .from(motoristaTable)
         .select('*')
         .eq('funcao', 'Agregado')
         .eq('ativo', true)
@@ -203,9 +206,9 @@ const VeiculosAgregados = () => {
     if (!selectedVeiculo) return;
     try {
       const { error } = await supabase
-        .from('veiculo')
+        .from(veiculoTable)
         .update({ status_veiculo: false })
-        .eq('veiculo_id', selectedVeiculo.veiculo_id);
+        .eq(veiculoPk, selectedVeiculo.veiculo_id);
 
       if (error) throw error;
 
@@ -226,10 +229,10 @@ const VeiculosAgregados = () => {
       setUpdatingStatus(veiculo.veiculo_id);
       
       const { error } = await supabase
-        .from('veiculo')
+        .from(veiculoTable)
         .update({ status_veiculo: !veiculo.status_veiculo })
-        .eq('veiculo_id', veiculo.veiculo_id);
-        
+        .eq(veiculoPk, veiculo.veiculo_id);
+
       if (error) throw error;
       
       // Update local state
@@ -255,9 +258,9 @@ const VeiculosAgregados = () => {
 
     try {
       const { error } = await supabase
-        .from('veiculo')
+        .from(veiculoTable)
         .update({ status_veiculo: newStatus })
-        .in('veiculo_id', Array.from(selectedItems));
+        .in(veiculoPk, Array.from(selectedItems));
 
       if (error) throw error;
 
@@ -311,9 +314,9 @@ const VeiculosAgregados = () => {
     try {
       for (const id of selectedItems) {
         const { error } = await supabase
-          .from('veiculo')
+          .from(veiculoTable)
           .update({ status_veiculo: false })
-          .eq('veiculo_id', id);
+          .eq(veiculoPk, id);
 
         if (error) throw error;
       }
@@ -702,12 +705,26 @@ const VeiculosAgregados = () => {
         />
       )}
 
-      <AddVeiculoModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSuccess={fetchVeiculos}
-        motoristas={motoristas}
-      />
+      {isBlixx ? (
+        <BlixxVeiculoModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={fetchVeiculos}
+          companyId={companyId as number | null}
+          motoristas={motoristas.map((m: any) => ({
+            motorista_blixx_id: m.motorista_blixx_id,
+            nome: m.nome,
+            cpf: m.cpf,
+          }))}
+        />
+      ) : (
+        <AddVeiculoModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={fetchVeiculos}
+          motoristas={motoristas}
+        />
+      )}
 
       <EditVeiculoModal
         isOpen={isEditModalOpen}
@@ -717,12 +734,27 @@ const VeiculosAgregados = () => {
         motoristas={motoristas}
       />
 
-      <CombinedVehicleModal
-        isOpen={isCombinedModalOpen}
-        onClose={() => setIsCombinedModalOpen(false)}
-        veiculo={selectedVeiculo}
-        onUploadSuccess={fetchVeiculos}
-      />
+      {isBlixx ? (
+        <BlixxVeiculoModal
+          isOpen={isCombinedModalOpen}
+          onClose={() => setIsCombinedModalOpen(false)}
+          onSuccess={fetchVeiculos}
+          companyId={companyId as number | null}
+          veiculoId={selectedVeiculo?.veiculo_id ?? null}
+          motoristas={motoristas.map((m: any) => ({
+            motorista_blixx_id: m.motorista_blixx_id,
+            nome: m.nome,
+            cpf: m.cpf,
+          }))}
+        />
+      ) : (
+        <CombinedVehicleModal
+          isOpen={isCombinedModalOpen}
+          onClose={() => setIsCombinedModalOpen(false)}
+          veiculo={selectedVeiculo}
+          onUploadSuccess={fetchVeiculos}
+        />
+      )}
 
       <DeleteVehicleModal
         isOpen={isDeleteModalOpen}

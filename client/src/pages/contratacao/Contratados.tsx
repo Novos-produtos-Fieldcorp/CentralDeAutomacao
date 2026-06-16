@@ -35,6 +35,7 @@ import { BaseModal } from "../../components/BaseModal";
 import DocumentViewer from "../../components/DocumentViewer";
 import DocumentUploadModal from "../../components/DocumentUploadModal";
 import EditMotoristaModal from "../../components/EditMotoristaModal";
+import BlixxAgregadoModal from "../../components/blixx/BlixxAgregadoModal";
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
 import BulkActionsModal from "../../components/BulkActionsModal";
 import BulkDeleteConfirmationModal from "../../components/BulkDeleteConfirmationModal";
@@ -58,6 +59,7 @@ import {
 
 const contratadosSkeletonPreset = getListRefreshSkeletonPreset("contratados");
 import { useWiseAppAccess } from "../../context/WiseAppAccessContext";
+import { getBlixxSources } from "../../lib/blixxSource";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   searchWiseAppContact,
@@ -168,6 +170,7 @@ const Contratados = () => {
   const { startChat } = useFloatingChat();
   // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
   const { token: wiseAppToken, accountId } = useWiseAppAccess();
+  const { contratadosView, agregadosView, motoristaTable, motoristaPk, isBlixx } = getBlixxSources(accountId);
   const queryClient = useQueryClient();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -538,7 +541,7 @@ const Contratados = () => {
       const [motoristasIds, agregadosIds] = await Promise.all([
         // Buscar motoristas contratados
         supabase
-          .from("vw_contratados_completo")
+          .from(contratadosView)
           .select("motorista_id")
           .eq("company_id", companyId)
           .eq("st_cadastro", "contratado")
@@ -547,7 +550,7 @@ const Contratados = () => {
 
         // Buscar agregados contratados
         supabase
-          .from("vw_agregados_completo")
+          .from(agregadosView)
           .select("motorista_id")
           .eq("company_id", companyId)
           .eq("st_cadastro", "contratado")
@@ -582,7 +585,7 @@ const Contratados = () => {
 
       // STEP 2: Buscar detalhes completos apenas dos IDs paginados
       const { data: detailedData, error: detailsError } = await supabase
-        .from("vw_contratados_completo")
+        .from(contratadosView)
         .select("*")
         .in("motorista_id", paginatedIds)
         .eq("company_id", companyId)
@@ -621,14 +624,14 @@ const Contratados = () => {
       // Buscar dados para filtros de forma eficiente
       const [motoristasFilters, agregadosFilters] = await Promise.all([
         supabase
-          .from("vw_contratados_completo")
+          .from(contratadosView)
           .select("nome_cidade, tipologia, funcao")
           .eq("company_id", companyId)
           .eq("st_cadastro", "contratado")
           .eq("funcao", "Motorista"),
 
         supabase
-          .from("vw_agregados_completo")
+          .from(agregadosView)
           .select("nome_cidade, tipologia, funcao")
           .eq("company_id", companyId)
           .eq("st_cadastro", "contratado")
@@ -752,9 +755,14 @@ const Contratados = () => {
     if (!selectedMotorista) return;
 
     try {
-      const { error } = await query("motorista")
-        .delete()
-        .eq("motorista_id", selectedMotorista.motorista_id);
+      const { error } = isBlixx
+        ? await supabase
+            .from(motoristaTable)
+            .delete()
+            .eq(motoristaPk, selectedMotorista.motorista_id)
+        : await query("motorista")
+            .delete()
+            .eq("motorista_id", selectedMotorista.motorista_id);
 
       if (error) throw error;
 
@@ -3173,28 +3181,60 @@ const Contratados = () => {
         </div>
       </BaseModal>
 
-      <AddMotoristaModal
-        isOpen={isAddMotoristaModalOpen}
-        onClose={() => setIsAddMotoristaModalOpen(false)}
-        onSuccess={fetchContratados}
-      />
+      {isBlixx && (
+        <BlixxAgregadoModal
+          isOpen={isAddMotoristaModalOpen || isAddAgregadoModalOpen}
+          onClose={() => {
+            setIsAddMotoristaModalOpen(false);
+            setIsAddAgregadoModalOpen(false);
+          }}
+          onSuccess={fetchContratados}
+          companyId={companyId as number | null}
+        />
+      )}
 
-      <AddAgregadoModal
-        isOpen={isAddAgregadoModalOpen}
-        onClose={() => setIsAddAgregadoModalOpen(false)}
-        onSuccess={fetchContratados}
-      />
+      {!isBlixx && (
+        <AddMotoristaModal
+          isOpen={isAddMotoristaModalOpen}
+          onClose={() => setIsAddMotoristaModalOpen(false)}
+          onSuccess={fetchContratados}
+        />
+      )}
 
-      <UnifiedMotoristaModal
-        isOpen={isUnifiedModalOpen && !!selectedMotorista}
-        onClose={() => setIsUnifiedModalOpen(false)}
-        motorista={
-          selectedMotorista ? convertToMotorista(selectedMotorista) : null
-        }
-        onSuccess={fetchContratados}
-      />
+      {!isBlixx && (
+        <AddAgregadoModal
+          isOpen={isAddAgregadoModalOpen}
+          onClose={() => setIsAddAgregadoModalOpen(false)}
+          onSuccess={fetchContratados}
+        />
+      )}
+
+      {isBlixx && (
+        <BlixxAgregadoModal
+          isOpen={isUnifiedModalOpen || isUnifiedAgregadoModalOpen || isEditModalOpen}
+          onClose={() => {
+            setIsUnifiedModalOpen(false);
+            setIsUnifiedAgregadoModalOpen(false);
+            setIsEditModalOpen(false);
+          }}
+          onSuccess={fetchContratados}
+          companyId={companyId as number | null}
+          motoristaId={(selectedMotorista?.motorista_id as number | undefined) ?? null}
+        />
+      )}
+
+      {!isBlixx && (
+        <UnifiedMotoristaModal
+          isOpen={isUnifiedModalOpen && !!selectedMotorista}
+          onClose={() => setIsUnifiedModalOpen(false)}
+          motorista={
+            selectedMotorista ? convertToMotorista(selectedMotorista) : null
+          }
+          onSuccess={fetchContratados}
+        />
+      )}
       {/* modal de agregado */}
-      {selectedMotorista && selectedMotorista.funcao === "Agregado" && (
+      {!isBlixx && selectedMotorista && selectedMotorista.funcao === "Agregado" && (
         <UnifiedAgregadoModal
           isOpen={isUnifiedAgregadoModalOpen}
           onClose={() => setIsUnifiedAgregadoModalOpen(false)}
@@ -3245,6 +3285,7 @@ const Contratados = () => {
         onUploadSuccess={fetchContratados}
       />
 
+      {!isBlixx && (
       <EditMotoristaModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
@@ -3295,6 +3336,7 @@ const Contratados = () => {
         }
         onUpdate={fetchContratados}
       />
+      )}
 
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}

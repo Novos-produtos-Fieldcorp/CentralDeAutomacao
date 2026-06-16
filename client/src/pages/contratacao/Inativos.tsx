@@ -20,6 +20,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../../lib/supabase";
 import { useCompanyData } from "../../hooks/useCompanyData";
+import { useBlixxSources } from "../../lib/blixxSource";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import BulkActionsModal from "../../components/BulkActionsModal";
 import Pagination from "../../components/Pagination";
@@ -48,6 +49,7 @@ const DEFAULT_PAGE_SIZE = 50;
 
 const Inativos: React.FC = () => {
   const { companyId } = useCompanyData();
+  const { inativosRpc } = useBlixxSources();
   const [items, setItems] = useState<InativoItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -128,7 +130,7 @@ const Inativos: React.FC = () => {
               ? "contains"
               : "not_contains";
 
-        const { data, error } = await supabase.rpc("inativos_list_page", {
+        const { data, error } = await supabase.rpc(inativosRpc, {
           p_company_id: companyId,
           p_search: debouncedSearch.trim(),
           p_funcao: funcaoFilter,

@@ -32,13 +32,22 @@ export interface Automacao {
   descricao?: string;
 }
 
-// Item resultante de atrelar contatos/grupos a uma automação + horário de início.
-export interface Agendamento {
+// Snapshot de um contato dentro de um agendamento (nome/telefone guardados
+// junto do id para o disparo do webhook não depender de relookup).
+export interface AgendamentoContato {
   id: string;
-  automacaoId: string;
-  contatoIds: string[];
-  grupoIds: string[];
+  name: string;
+  phone: string;
+}
+
+// Item resultante de atrelar contatos/grupos a uma automação + horário de início.
+// Persistido na tabela public.blixx_automacoes.
+export interface Agendamento {
+  id: string; // id da linha (serial -> string)
+  automacaoName: string; // typebot_name enviado no payload
+  contatos: AgendamentoContato[];
   dataInicio: string; // formato YYYY-MM-DD
-  horarioInicio: string; // formato HH:mm
+  horario: string; // formato HH:mm (armazenado em UTC)
+  isActive: boolean;
   criadoEm: string; // ISO date
 }

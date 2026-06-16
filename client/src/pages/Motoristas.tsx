@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { Users, TruckIcon, LayoutDashboard, Kanban, CheckCircle2, Lock, ChevronRight, Building, Plus, Calendar, Clock, XCircle } from 'lucide-react';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
+import { isBlixxAccount } from '../lib/blixxSource';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
@@ -25,6 +26,7 @@ const Motoristas = () => {
   const location = useLocation();
   const { query, companyId: legacyCompanyId } = useCompanyData();
   const { accountId, companyId } = useCurrentAccount();
+  const isBlixx = isBlixxAccount(accountId);
   const effectiveCompanyId = companyId || legacyCompanyId;
   const { moduleAccess } = useModuleAccess();
   const [loading, setLoading] = useState(true);
@@ -102,7 +104,8 @@ const Motoristas = () => {
 
   const tabs = [
     { path: '/motoristas/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/motoristas/lista', icon: Users, label: 'Motoristas' },
+    // A aba "Motoristas" não se aplica ao ambiente Blixx (account 53) — só agregados.
+    ...(isBlixx ? [] : [{ path: '/motoristas/lista', icon: Users, label: 'Motoristas' }]),
     { path: '/motoristas/agregados', icon: TruckIcon, label: 'Agregados' },
     { path: '/motoristas/contratados', icon: CheckCircle2, label: 'Contratados' },
     { path: '/motoristas/inativos', icon: XCircle, label: 'Inativos' },
@@ -169,7 +172,7 @@ const Motoristas = () => {
         <div className="p-6">
           <Routes>
             <Route index element={<Navigate to="/motoristas/dashboard\" replace />} />
-            <Route path="lista" element={<MotoristasLista />} />
+            <Route path="lista" element={isBlixx ? <Navigate to="/motoristas/agregados" replace /> : <MotoristasLista />} />
             <Route path="lista-infinita" element={<Navigate to="/motoristas/lista\" replace />} />
             <Route path="agregados" element={<AgregadosLista />} />
             <Route path="contratados" element={<Contratados />} />

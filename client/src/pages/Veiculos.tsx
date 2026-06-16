@@ -7,12 +7,14 @@ import VeiculosInfinito from './veiculos/VeiculosInfinito';
 import { useCallback } from 'react';
 import { useCompanyData } from '../hooks/useCompanyData';
 import { useCurrentAccount } from '../hooks/useCurrentAccount';
+import { isBlixxAccount } from '../lib/blixxSource';
 import { supabase } from '../lib/supabase';
 
 const Veiculos = () => {
   const location = useLocation();
   const { companyId: legacyCompanyId } = useCompanyData();
   const { accountId, companyId } = useCurrentAccount();
+  const isBlixx = isBlixxAccount(accountId);
   const effectiveCompanyId = companyId || legacyCompanyId;
   const [missingDataCount, setMissingDataCount] = useState(0);
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -54,11 +56,11 @@ const Veiculos = () => {
 
   const fetchMissingDataCount = useCallback(async () => {
     try {
-      if (!accountId || !companyId) {
+      if (!accountId || !companyId || isBlixx) {
         setMissingDataCount(0);
         return;
       }
-      
+
       const query = supabase
         .from('veiculo')
         .select('veiculo_id')
@@ -81,11 +83,14 @@ const Veiculos = () => {
 
   const tabs = [
     { path: '/veiculos/agregados', icon: Truck, label: 'Veículos de Agregados' },
-    { 
-      path: '/veiculos/empresa', 
-      icon: Building2, 
-      label: 'Veículos Próprios'
-    },
+    // A aba "Veículos Próprios" não se aplica ao ambiente Blixx (account 53).
+    ...(isBlixx
+      ? []
+      : [{
+          path: '/veiculos/empresa',
+          icon: Building2,
+          label: 'Veículos Próprios',
+        }]),
   ];
 
   const isActive = (path: string) => {
@@ -136,7 +141,7 @@ const Veiculos = () => {
           <Routes>
             <Route index element={<Navigate to="/veiculos/agregados" replace />} />
             <Route path="agregados" element={<VeiculosAgregados />} />
-            <Route path="empresa" element={<VeiculosEmpresa />} />
+            <Route path="empresa" element={isBlixx ? <Navigate to="/veiculos/agregados" replace /> : <VeiculosEmpresa />} />
             <Route path="infinito" element={<Navigate to="/veiculos/empresa" replace />} />
           </Routes>
         </div>

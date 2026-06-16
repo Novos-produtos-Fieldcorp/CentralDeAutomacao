@@ -50,11 +50,13 @@ import Pagination from "../../components/Pagination";
 import ScrollableTableIndicator from "../../components/ScrollableTableIndicator";
 import ContextMenu from "../../components/ContextMenu";
 import UnifiedAgregadoModal from "../../components/UnifiedAgregadoModal";
+import BlixxAgregadoModal from "../../components/blixx/BlixxAgregadoModal";
 import { TableDropdown } from "../../components/TableDropdown";
 import { WiseAppBulkSyncPanel } from "../../components/WiseAppSyncButton";
 import { API_BASE_URL, createApiUrl } from "@/lib/api-config-supabase";
 import FilterTags from "../../components/FilterTags";
 import { useModuleAccess } from "../../hooks/useModuleAccess";
+import { getBlixxSources } from "../../lib/blixxSource";
 import {
   getListRefreshSkeletonPreset,
   default as ListRefreshSkeleton,
@@ -256,6 +258,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
   const { startChat } = useFloatingChat();
   // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
   const { token: wiseAppToken, accountId } = useWiseAppAccess();
+  const { agregadosView, veiculoTable, isBlixx } = getBlixxSources(accountId);
   const { moduleAccess } = useModuleAccess();
   const [contratados, setContratados] = useState<ViewContratado[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1593,7 +1596,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
       // Buscar os agregados da view vw_agregados_completo que já inclui dados de endereço
       let query = supabase
-        .from("vw_agregados_completo")
+        .from(agregadosView)
         .select("*", { count: "exact" })
         .eq("company_id", companyId)
         .eq("funcao", "Agregado")
@@ -1858,7 +1861,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
 
       const { data, error } = await supabase
-        .from("veiculo")
+        .from(veiculoTable)
         .select("tipo, tipologia")
         .eq("status_veiculo", true) // Apenas veículos ativos
         .eq("company_id", companyId); // Filtrar pela empresa atual
@@ -1967,7 +1970,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
 
       // Buscar da view vw_agregados_completo que contém os dados de veículos dos agregados
       const { data, error } = await supabase
-        .from("vw_agregados_completo")
+        .from(agregadosView)
         .select("bau")
         .eq("company_id", companyId)
         .eq("funcao", "Agregado");
@@ -2315,7 +2318,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       }
 
       let q = supabase
-        .from("vw_agregados_completo")
+        .from(agregadosView)
         .select("motorista_id")
         .eq("company_id", companyId)
         .eq("funcao", "Agregado")
@@ -4632,6 +4635,20 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         onUploadSuccess={fetchContratados}
       />
 
+      {isBlixx && (
+        <BlixxAgregadoModal
+          isOpen={isEditModalOpen || isUnifiedAgregadoModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setIsUnifiedAgregadoModalOpen(false);
+          }}
+          onSuccess={fetchContratados}
+          companyId={companyId as number | null}
+          motoristaId={(selectedMotorista?.motorista_id as number | undefined) ?? null}
+        />
+      )}
+
+      {!isBlixx && (
       <EditMotoristaModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
@@ -4682,6 +4699,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         }
         onUpdate={fetchContratados}
       />
+      )}
 
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
@@ -4691,7 +4709,7 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
         message={`Tem certeza que deseja excluir o motorista ${selectedMotorista?.nome_motorista || ""}?`}
       />
 
-      {selectedMotorista && (
+      {!isBlixx && selectedMotorista && (
         <UnifiedAgregadoModal
           isOpen={isUnifiedAgregadoModalOpen}
           onClose={() => setIsUnifiedAgregadoModalOpen(false)}
@@ -4758,16 +4776,29 @@ const Contratados = ({ onSuccess }: AgregadosListaProps) => {
       />
 
       {/* Add Agregado Modal */}
-      <AddAgregadoModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSuccess={() => {
-          setShowAddModal(false);
-          // Refresh the list after successful addition
-          fetchContratados();
-          if (onSuccess) onSuccess();
-        }}
-      />
+      {isBlixx ? (
+        <BlixxAgregadoModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            setShowAddModal(false);
+            fetchContratados();
+            if (onSuccess) onSuccess();
+          }}
+          companyId={companyId as number | null}
+        />
+      ) : (
+        <AddAgregadoModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            setShowAddModal(false);
+            // Refresh the list after successful addition
+            fetchContratados();
+            if (onSuccess) onSuccess();
+          }}
+        />
+      )}
 
       {/* Role Change Confirmation Modal */}
       {roleChangeModal.isOpen &&

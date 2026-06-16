@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { corsMiddleware } from "./cors-middleware";
 import { startOilChangeCron } from "./cron/oilChangeCron";
+import { startBlixxAutomacaoCron } from "./cron/blixxAutomacaoCron";
 
 // Declaração para process global do Node.js
 declare const process: {
@@ -125,6 +126,7 @@ app.use((req, res, next) => {
   console.log('✅ Rotas registradas com sucesso');
 
   startOilChangeCron();
+  startBlixxAutomacaoCron();
 
   // Sistema de error handling robusto com fallbacks
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {

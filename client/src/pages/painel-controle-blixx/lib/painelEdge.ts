@@ -9,6 +9,7 @@ const ENDPOINTS = {
   buscaContatos: `${BASE}/busca-contatos`, // GET
   buscarAutomacao: `${BASE}/buscar-automacao`, // GET
   cadastraContatos: `${BASE}/cadastra-contatos`, // POST
+  recebeAutomacao: `${BASE}/recebe-automacao`, // POST
 };
 
 // Os webhooks podem responder de formas diferentes ({ data: [...] }, [...],
@@ -91,4 +92,24 @@ export async function cadastrarContato(c: NovoContato): Promise<void> {
     }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} ao cadastrar contato`);
+}
+
+// POST /recebe-automacao
+// Dispara a automação para um único contato. Quando há vários contatos, o
+// chamador faz um loop com intervalo de 3s entre cada disparo.
+export async function dispararAutomacao(
+  c: { id: string; name: string; phone: string },
+  typebotName: string,
+): Promise<void> {
+  const res = await fetch(ENDPOINTS.recebeAutomacao, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: c.name,
+      phone: c.phone,
+      id: c.id,
+      typebot_name: typebotName,
+    }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} ao disparar automação`);
 }
