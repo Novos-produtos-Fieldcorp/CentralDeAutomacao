@@ -3,7 +3,7 @@ import { CalendarClock, Clock, Trash2, User, Loader2, Play } from 'lucide-react'
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import type { Agendamento, AgendamentoContato, Automacao, Contato, Grupo } from './lib/painelTypes';
-import { buscarAutomacoes, buscarContatos, dispararAutomacao } from './lib/painelEdge';
+import { buscarAutomacoes, buscarContatos, carregarMapaContactId, dispararAutomacao } from './lib/painelEdge';
 import { buscarGrupos } from './lib/painelGroups';
 import {
   buscarAgendamentos,
@@ -154,11 +154,12 @@ const AgendamentosTab = () => {
       return;
     }
     setProgresso((p) => ({ ...p, [ag.id]: { atual: 0, total } }));
+    const mapaContactId = await carregarMapaContactId();
     let enviados = 0;
     for (let i = 0; i < total; i++) {
       const c = ag.contatos[i];
       try {
-        await dispararAutomacao(c, ag.automacaoName);
+        await dispararAutomacao(c, ag.automacaoName, mapaContactId);
         enviados++;
       } catch (err) {
         console.error('Erro ao disparar para', c.name, err);

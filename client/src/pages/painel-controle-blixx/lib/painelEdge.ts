@@ -2,8 +2,33 @@
 // As rotas são chamadas exatamente como fornecidas (sem company_id — o n8n
 // resolve a empresa internamente).
 import type { Automacao, Contato } from './painelTypes';
+import { supabase } from '../../../lib/supabase';
 
 const BASE = 'https://n8nqp.wiseapp360.com/webhook';
+
+// Normaliza telefone para apenas dígitos (ignora +55, espaços, parênteses etc.).
+const soDigitos = (s: string) => (s || '').replace(/\D/g, '');
+
+// Carrega de blixx_contatos_automacao um mapa telefone(dígitos) -> contact_id.
+// Usado para resolver, no momento do disparo, o id que o n8n espera receber.
+export async function carregarMapaContactId(): Promise<Map<string, string>> {
+  const mapa = new Map<string, string>();
+  const { data, error } = await supabase
+    .from('blixx_contatos_automacao')
+    .select('contact_id, phone');
+  if (error) {
+    console.error('Erro ao carregar blixx_contatos_automacao:', error);
+    return mapa;
+  }
+  for (const row of data ?? []) {
+    const tel = soDigitos((row as { phone?: string }).phone ?? '');
+    const cid = (row as { contact_id?: string | null }).contact_id;
+    if (tel && cid != null && String(cid).trim() !== '') {
+      mapa.set(tel, String(cid));
+    }
+  }
+  return mapa;
+}
 
 const ENDPOINTS = {
   buscaContatos: `${BASE}/busca-contatos`, // GET
@@ -100,14 +125,21 @@ export async function cadastrarContato(c: NovoContato): Promise<void> {
 export async function dispararAutomacao(
   c: { id: string; name: string; phone: string },
   typebotName: string,
+  mapaContactId?: Map<string, string>,
 ): Promise<void> {
+  const contactId = mapaContactId?.get(soDigitos(c.phone));
+  if (mapaContactId && !contactId) {
+    console.warn(
+      `Sem contact_id em blixx_contatos_automacao para ${c.name} (${c.phone}); usando id antigo.`,
+    );
+  }
   const res = await fetch(ENDPOINTS.recebeAutomacao, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: c.name,
       phone: c.phone,
-      id: c.id,
+      id: contactId ?? c.id,
       typebot_name: typebotName,
     }),
   });

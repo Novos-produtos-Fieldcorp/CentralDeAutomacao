@@ -40,6 +40,28 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Normaliza telefone para apenas dígitos (ignora +55, espaços, parênteses etc.).
+const soDigitos = (s: string) => (s || '').replace(/\D/g, '');
+
+// Carrega de blixx_contatos_automacao um mapa telefone(dígitos) -> contact_id.
+async function carregarMapaContactId(): Promise<Map<string, string>> {
+  const mapa = new Map<string, string>();
+  const { data, error } = await supabase
+    .from('blixx_contatos_automacao')
+    .select('contact_id, phone');
+  if (error) {
+    console.error('[BLIXX-CRON] Erro ao carregar blixx_contatos_automacao:', error);
+    return mapa;
+  }
+  for (const row of (data ?? []) as { contact_id: string | null; phone: string | null }[]) {
+    const tel = soDigitos(row.phone ?? '');
+    if (tel && row.contact_id != null && String(row.contact_id).trim() !== '') {
+      mapa.set(tel, String(row.contact_id));
+    }
+  }
+  return mapa;
+}
+
 async function processScheduledAutomacoes() {
   const currentTimeUTC = getCurrentUTCTime();
   const today = getCurrentUTCDate();
@@ -84,15 +106,23 @@ async function dispararAgendamento(ag: BlixxAutomacao) {
     .update({ is_active: false, disparado_em: new Date().toISOString() })
     .eq('id', ag.id);
 
+  const mapaContactId = await carregarMapaContactId();
+
   for (let i = 0; i < contatos.length; i++) {
     const c = contatos[i];
+    const contactId = mapaContactId.get(soDigitos(c.phone));
+    if (!contactId) {
+      console.warn(
+        `[BLIXX-CRON] Sem contact_id em blixx_contatos_automacao para ${c.name} (${c.phone}); usando id antigo.`,
+      );
+    }
     try {
       await axios.post(
         N8N_WEBHOOK_URL,
         {
           name: c.name,
           phone: c.phone,
-          id: c.id,
+          id: contactId ?? c.id,
           typebot_name: typebotName,
         },
         { timeout: 120000 },
