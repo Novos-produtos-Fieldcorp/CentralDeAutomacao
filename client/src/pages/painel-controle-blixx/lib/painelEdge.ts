@@ -1,23 +1,25 @@
 // Camada de acesso às rotas do n8n para o módulo "Painel de Controle Blixx".
 // As rotas são chamadas exatamente como fornecidas (sem company_id — o n8n
 // resolve a empresa internamente).
-import type { Automacao, Contato } from './painelTypes';
+import type { AgendamentoContato, Automacao, Contato } from './painelTypes';
 import { supabase } from '../../../lib/supabase';
 
 const BASE = 'https://n8nqp.wiseapp360.com/webhook';
 
 // Normaliza telefone para apenas dígitos (ignora +55, espaços, parênteses etc.).
-const soDigitos = (s: string) => (s || '').replace(/\D/g, '');
+export const soDigitos = (s: string) => (s || '').replace(/\D/g, '');
 
-// Carrega de blixx_contatos_automacao um mapa telefone(dígitos) -> contact_id.
-// Usado para resolver, no momento do disparo, o id que o n8n espera receber.
+const TABELA_CONTATOS = 'blixx_contato_automacoes';
+
+// Carrega de blixx_contato_automacoes um mapa telefone(dígitos) -> contact_id.
+// Usado para pré-resolver o contact_id no momento do agendamento (fallback).
 export async function carregarMapaContactId(): Promise<Map<string, string>> {
   const mapa = new Map<string, string>();
   const { data, error } = await supabase
-    .from('blixx_contatos_automacao')
+    .from(TABELA_CONTATOS)
     .select('contact_id, phone');
   if (error) {
-    console.error('Erro ao carregar blixx_contatos_automacao:', error);
+    console.error(`Erro ao carregar ${TABELA_CONTATOS}:`, error);
     return mapa;
   }
   for (const row of data ?? []) {
@@ -28,6 +30,29 @@ export async function carregarMapaContactId(): Promise<Map<string, string>> {
     }
   }
   return mapa;
+}
+
+// Busca o contact_id de um único contato (pelo telefone) em blixx_contato_automacoes.
+// Feita no momento do disparo, garantindo o valor mais atual.
+export async function buscarContactId(phone: string): Promise<string> {
+  const digitos = soDigitos(phone);
+  if (!digitos) return '';
+  // Usa os últimos dígitos significativos para tolerar variações de formato
+  // (+55, DDI, parênteses) entre o telefone do contato e o gravado na tabela.
+  const alvo = digitos.slice(-8);
+  const { data, error } = await supabase
+    .from(TABELA_CONTATOS)
+    .select('contact_id, phone')
+    .ilike('phone', `%${alvo}%`);
+  if (error) {
+    console.error(`Erro ao buscar contact_id em ${TABELA_CONTATOS}:`, error);
+    return '';
+  }
+  const rows = (data ?? []) as { contact_id: string | null; phone: string | null }[];
+  // Prefere correspondência exata de dígitos; senão, o 1º candidato com contact_id.
+  const exato = rows.find((r) => soDigitos(r.phone ?? '') === digitos && r.contact_id);
+  const fallback = rows.find((r) => r.contact_id);
+  return String((exato ?? fallback)?.contact_id ?? '');
 }
 
 const ENDPOINTS = {
@@ -122,15 +147,17 @@ export async function cadastrarContato(c: NovoContato): Promise<void> {
 // POST /recebe-automacao
 // Dispara a automação para um único contato. Quando há vários contatos, o
 // chamador faz um loop com intervalo de 3s entre cada disparo.
+// O campo `id` do payload recebe o contact_id: consultado em
+// blixx_contato_automacoes pelo telefone no momento do disparo; na falta, usa
+// o contactId já gravado no agendamento.
 export async function dispararAutomacao(
-  c: { id: string; name: string; phone: string },
+  c: AgendamentoContato,
   typebotName: string,
-  mapaContactId?: Map<string, string>,
 ): Promise<void> {
-  const contactId = mapaContactId?.get(soDigitos(c.phone));
-  if (mapaContactId && !contactId) {
+  const contactId = (await buscarContactId(c.phone)) || c.contactId || '';
+  if (!contactId) {
     console.warn(
-      `Sem contact_id em blixx_contatos_automacao para ${c.name} (${c.phone}); usando id antigo.`,
+      `Sem contact_id em ${TABELA_CONTATOS} para ${c.name} (${c.phone}).`,
     );
   }
   const res = await fetch(ENDPOINTS.recebeAutomacao, {
@@ -139,7 +166,7 @@ export async function dispararAutomacao(
     body: JSON.stringify({
       name: c.name,
       phone: c.phone,
-      id: contactId ?? c.id,
+      id: contactId,
       typebot_name: typebotName,
     }),
   });

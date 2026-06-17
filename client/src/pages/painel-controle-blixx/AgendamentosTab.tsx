@@ -3,7 +3,7 @@ import { CalendarClock, Clock, Trash2, User, Loader2, Play } from 'lucide-react'
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import type { Agendamento, AgendamentoContato, Automacao, Contato, Grupo } from './lib/painelTypes';
-import { buscarAutomacoes, buscarContatos, carregarMapaContactId, dispararAutomacao } from './lib/painelEdge';
+import { buscarAutomacoes, buscarContatos, carregarMapaContactId, dispararAutomacao, soDigitos } from './lib/painelEdge';
 import { buscarGrupos } from './lib/painelGroups';
 import {
   buscarAgendamentos,
@@ -27,6 +27,8 @@ const AgendamentosTab = () => {
   const [contatos, setContatos] = useState<Contato[]>([]);
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
+  // telefone(dígitos) -> contact_id de blixx_contatos_automacao.
+  const [mapaContactId, setMapaContactId] = useState<Map<string, string>>(new Map());
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -44,16 +46,18 @@ const AgendamentosTab = () => {
     try {
       setCarregando(true);
       setErro(null);
-      const [autos, cts, grps, ags] = await Promise.all([
+      const [autos, cts, grps, ags, mapa] = await Promise.all([
         buscarAutomacoes(),
         buscarContatos(),
         buscarGrupos(companyId ?? null),
         buscarAgendamentos(companyId ?? null),
+        carregarMapaContactId(),
       ]);
       setAutomacoes(autos);
       setContatos(cts);
       setGrupos(grps);
       setAgendamentos(ags);
+      setMapaContactId(mapa);
     } catch (e) {
       console.error('Erro ao carregar dados de agendamento:', e);
       setErro('Erro ao carregar dados. Tente novamente.');
@@ -83,19 +87,22 @@ const AgendamentosTab = () => {
   // Expande grupos selecionados em seus membros + contatos individuais num
   // único array de { id, name, phone }, sem duplicados por id.
   const montarContatos = (): AgendamentoContato[] => {
+    const resolverContactId = (phone: string) =>
+      mapaContactId.get(soDigitos(phone ?? '')) ?? '';
     const mapa = new Map<string, AgendamentoContato>();
     for (const gid of grupoIds) {
       const g = grupos.find((x) => x.id === gid);
       g?.membros.forEach((m) => {
+        const phone = m.telefone ?? '';
         if (!mapa.has(m.id)) {
-          mapa.set(m.id, { id: m.id, name: m.nome, phone: m.telefone ?? '' });
+          mapa.set(m.id, { id: m.id, name: m.nome, phone, contactId: resolverContactId(phone) });
         }
       });
     }
     for (const cid of contatoIds) {
       const c = contatos.find((x) => x.id === cid);
       if (c && !mapa.has(c.id)) {
-        mapa.set(c.id, { id: c.id, name: c.nome, phone: c.telefone });
+        mapa.set(c.id, { id: c.id, name: c.nome, phone: c.telefone, contactId: resolverContactId(c.telefone) });
       }
     }
     return Array.from(mapa.values());
@@ -154,12 +161,12 @@ const AgendamentosTab = () => {
       return;
     }
     setProgresso((p) => ({ ...p, [ag.id]: { atual: 0, total } }));
-    const mapaContactId = await carregarMapaContactId();
     let enviados = 0;
     for (let i = 0; i < total; i++) {
       const c = ag.contatos[i];
       try {
-        await dispararAutomacao(c, ag.automacaoName, mapaContactId);
+        // dispararAutomacao consulta blixx_contato_automacoes pelo telefone.
+        await dispararAutomacao(c, ag.automacaoName);
         enviados++;
       } catch (err) {
         console.error('Erro ao disparar para', c.name, err);
@@ -321,7 +328,7 @@ const AgendamentosTab = () => {
                     <span className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                       <Clock className="w-3.5 h-3.5" />
                       {ag.dataInicio ? `${ag.dataInicio.split('-').reverse().join('/')} ` : ''}
-                      {ag.horario} UTC
+                      {ag.horario}
                     </span>
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${

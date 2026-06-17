@@ -1,7 +1,7 @@
 // Acesso à tabela public.blixx_automacoes (Supabase) para os agendamentos do
-// módulo "Painel de Controle Blixx". O horário é digitado em horário de Brasília
-// (UTC-3) e armazenado em UTC, no mesmo padrão usado por grupo_resumo / o cron
-// de backend (que compara contra o horário UTC atual).
+// módulo "Painel de Controle Blixx". O horário é digitado e armazenado em
+// horário de Brasília (UTC-3), exatamente como escolhido pelo usuário; o cron
+// de backend compara contra o horário de Brasília atual.
 import { supabase } from '../../../lib/supabase';
 import type { Agendamento, AgendamentoContato } from './painelTypes';
 
@@ -26,21 +26,6 @@ function fromRow(row: AgendamentoRow): Agendamento {
     isActive: row.is_active ?? false,
     criadoEm: row.created_at,
   };
-}
-
-// Converte "HH:mm" + data (Brasília, UTC-3) para { dataUTC, horarioUTC }.
-// Brasília = UTC-3, então o horário UTC = local + 3h (com rollover de dia).
-function brasiliaParaUTC(dataLocal: string, horarioLocal: string): {
-  dataUTC: string;
-  horarioUTC: string;
-} {
-  const [h, m] = horarioLocal.split(':').map((n) => parseInt(n, 10));
-  const [ano, mes, dia] = dataLocal.split('-').map((n) => parseInt(n, 10));
-  // Cria a data como horário local de Brasília e soma 3h para chegar em UTC.
-  const base = new Date(Date.UTC(ano, mes - 1, dia, h + 3, m));
-  const dataUTC = base.toISOString().slice(0, 10);
-  const horarioUTC = base.toISOString().slice(11, 16);
-  return { dataUTC, horarioUTC };
 }
 
 export async function buscarAgendamentos(
@@ -68,7 +53,6 @@ export interface NovoAgendamento {
 
 export async function criarAgendamento(a: NovoAgendamento): Promise<Agendamento> {
   if (!a.companyId) throw new Error('company_id ausente');
-  const { dataUTC, horarioUTC } = brasiliaParaUTC(a.dataInicio, a.horario);
   const { data, error } = await supabase
     .from('blixx_automacoes')
     .insert({
@@ -77,8 +61,9 @@ export async function criarAgendamento(a: NovoAgendamento): Promise<Agendamento>
       contatos: a.contatos,
       // chatid recebe o phone_number do contato (1º contato do agendamento).
       chatid: a.contatos[0]?.phone ?? '',
-      data_inicio: dataUTC,
-      horario: horarioUTC,
+      // Gravados em horário de Brasília, exatamente como escolhido.
+      data_inicio: a.dataInicio,
+      horario: a.horario,
       is_active: true,
     })
     .select(

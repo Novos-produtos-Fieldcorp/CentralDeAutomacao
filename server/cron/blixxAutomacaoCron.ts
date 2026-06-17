@@ -13,65 +13,75 @@ interface AgendamentoContato {
   id: string;
   name: string;
   phone: string;
+  contactId: string; // contact_id de blixx_contatos_automacao
 }
 
 interface BlixxAutomacao {
   id: number;
   company_id: number | null;
   automacao_name: string | null;
-  data_inicio: string | null; // YYYY-MM-DD (UTC)
-  horario: string | null; // HH:mm (UTC)
+  data_inicio: string | null; // YYYY-MM-DD (Brasília)
+  horario: string | null; // HH:mm (Brasília)
   contatos: AgendamentoContato[] | null;
   is_active: boolean | null;
 }
 
-function getCurrentUTCTime(): string {
-  const now = new Date();
-  const hours = now.getUTCHours().toString().padStart(2, '0');
-  const minutes = now.getUTCMinutes().toString().padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
-function getCurrentUTCDate(): string {
-  return new Date().toISOString().slice(0, 10);
+// Retorna { date: 'YYYY-MM-DD', time: 'HH:mm' } no fuso de Brasília (America/Sao_Paulo).
+function getBrasiliaNow(): { date: string; time: string } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+  const date = `${get('year')}-${get('month')}-${get('day')}`;
+  // hour pode vir "24" à meia-noite em alguns ambientes; normaliza para "00".
+  const hour = get('hour') === '24' ? '00' : get('hour');
+  return { date, time: `${hour}:${get('minute')}` };
 }
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const TABELA_CONTATOS = 'blixx_contato_automacoes';
+
 // Normaliza telefone para apenas dígitos (ignora +55, espaços, parênteses etc.).
 const soDigitos = (s: string) => (s || '').replace(/\D/g, '');
 
-// Carrega de blixx_contatos_automacao um mapa telefone(dígitos) -> contact_id.
-async function carregarMapaContactId(): Promise<Map<string, string>> {
-  const mapa = new Map<string, string>();
+// Busca o contact_id de um contato (pelo telefone) em blixx_contato_automacoes,
+// no momento do disparo.
+async function buscarContactId(phone: string): Promise<string> {
+  const digitos = soDigitos(phone);
+  if (!digitos) return '';
+  const alvo = digitos.slice(-8);
   const { data, error } = await supabase
-    .from('blixx_contatos_automacao')
-    .select('contact_id, phone');
+    .from(TABELA_CONTATOS)
+    .select('contact_id, phone')
+    .ilike('phone', `%${alvo}%`);
   if (error) {
-    console.error('[BLIXX-CRON] Erro ao carregar blixx_contatos_automacao:', error);
-    return mapa;
+    console.error(`[BLIXX-CRON] Erro ao buscar contact_id em ${TABELA_CONTATOS}:`, error);
+    return '';
   }
-  for (const row of (data ?? []) as { contact_id: string | null; phone: string | null }[]) {
-    const tel = soDigitos(row.phone ?? '');
-    if (tel && row.contact_id != null && String(row.contact_id).trim() !== '') {
-      mapa.set(tel, String(row.contact_id));
-    }
-  }
-  return mapa;
+  const rows = (data ?? []) as { contact_id: string | null; phone: string | null }[];
+  const exato = rows.find((r) => soDigitos(r.phone ?? '') === digitos && r.contact_id);
+  const fallback = rows.find((r) => r.contact_id);
+  return String((exato ?? fallback)?.contact_id ?? '');
 }
 
 async function processScheduledAutomacoes() {
-  const currentTimeUTC = getCurrentUTCTime();
-  const today = getCurrentUTCDate();
+  const { date: today, time: currentTime } = getBrasiliaNow();
 
   try {
     const { data: agendamentos, error } = await supabase
       .from('blixx_automacoes')
       .select('id, company_id, automacao_name, data_inicio, horario, contatos, is_active')
       .eq('is_active', true)
-      .eq('horario', currentTimeUTC)
+      .eq('horario', currentTime)
       .eq('data_inicio', today);
 
     if (error) {
@@ -83,7 +93,7 @@ async function processScheduledAutomacoes() {
       return;
     }
 
-    console.log(`[BLIXX-CRON] ${agendamentos.length} agendamento(s) para disparar às ${currentTimeUTC} UTC`);
+    console.log(`[BLIXX-CRON] ${agendamentos.length} agendamento(s) para disparar às ${currentTime} (Brasília)`);
 
     for (const ag of agendamentos as BlixxAutomacao[]) {
       await dispararAgendamento(ag);
@@ -106,14 +116,13 @@ async function dispararAgendamento(ag: BlixxAutomacao) {
     .update({ is_active: false, disparado_em: new Date().toISOString() })
     .eq('id', ag.id);
 
-  const mapaContactId = await carregarMapaContactId();
-
   for (let i = 0; i < contatos.length; i++) {
     const c = contatos[i];
-    const contactId = mapaContactId.get(soDigitos(c.phone));
+    // Consulta blixx_contato_automacoes pelo telefone; fallback no gravado.
+    const contactId = (await buscarContactId(c.phone)) || c.contactId || '';
     if (!contactId) {
       console.warn(
-        `[BLIXX-CRON] Sem contact_id em blixx_contatos_automacao para ${c.name} (${c.phone}); usando id antigo.`,
+        `[BLIXX-CRON] Sem contact_id em ${TABELA_CONTATOS} para ${c.name} (${c.phone}).`,
       );
     }
     try {
@@ -122,7 +131,7 @@ async function dispararAgendamento(ag: BlixxAutomacao) {
         {
           name: c.name,
           phone: c.phone,
-          id: contactId ?? c.id,
+          id: contactId,
           typebot_name: typebotName,
         },
         { timeout: 120000 },

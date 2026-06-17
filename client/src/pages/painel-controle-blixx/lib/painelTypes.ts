@@ -38,6 +38,9 @@ export interface AgendamentoContato {
   id: string;
   name: string;
   phone: string;
+  // contact_id de blixx_contato_automacoes, resolvido no momento do agendamento.
+  // É o valor enviado no campo `id` do payload do webhook recebe-automacao.
+  contactId: string;
 }
 
 // Item resultante de atrelar contatos/grupos a uma automação + horário de início.
