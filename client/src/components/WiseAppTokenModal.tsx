@@ -56,6 +56,7 @@ export default function WiseAppTokenModal({
               method: 'POST',
               headers: {
                 'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
@@ -142,6 +143,7 @@ export default function WiseAppTokenModal({
           method: 'POST',
           headers: {
             'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ token: token.trim(), accountId }),
