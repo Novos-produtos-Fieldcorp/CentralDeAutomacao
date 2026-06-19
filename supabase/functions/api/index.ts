@@ -1698,8 +1698,8 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
 
       // 3. Buscar todos os contatos ativos com telefone
       const { data: contatos, error: contatosError } = await supabase
-        .from('contato')
-        .select('contato_id, nome, telefone, foto_whatsapp')
+        .from('motorista')
+        .select('contato_id:motorista_id, nome, telefone, foto_whatsapp')
         .eq('company_id', companyId)
         .eq('ativo', true)
         .not('telefone', 'is', null);

@@ -17,7 +17,7 @@ export async function carregarMapaContactId(): Promise<Map<string, string>> {
   const mapa = new Map<string, string>();
   const { data, error } = await supabase
     .from(TABELA_CONTATOS)
-    .select('contact_id, phone');
+    .select('contact_id,phone');
   if (error) {
     console.error(`Erro ao carregar ${TABELA_CONTATOS}:`, error);
     return mapa;
