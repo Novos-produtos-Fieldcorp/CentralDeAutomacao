@@ -111,6 +111,8 @@ export const getSupabaseEdgeFunctionHeaders = (additionalHeaders: Record<string,
   return {
     'Content-Type': 'application/json',
     'apikey': supabaseAnonKey,
+    // O gateway das Edge Functions exige o header Authorization (Bearer) — sem ele retorna 401
+    'Authorization': `Bearer ${supabaseAnonKey}`,
     ...additionalHeaders
   };
 };
