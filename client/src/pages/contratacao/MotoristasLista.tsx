@@ -151,7 +151,7 @@ export interface ViewMotorista extends Omit<ViewMotoristaBase, 'nome_motorista'>
 const MotoristasLista = () => {
   const { companyId } = useCompanyData();
   const { startChat } = useFloatingChat();
-  const { syncAllContatos, isBulkSyncing } = useWiseAppContactsSync();
+  const { syncAllContatos, isBulkSyncing, bulkSyncProgress } = useWiseAppContactsSync();
   const [motoristas, setMotoristas] = useState<ViewMotorista[]>([]);
   const [loading, setLoading] = useState(true);
   const [listLoading, setListLoading] = useState(false);
@@ -2053,8 +2053,37 @@ const MotoristasLista = () => {
                 <path d="M23 20v-6h-6" />
                 <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
               </svg>
-              <span>{isBulkSyncing ? 'Sincronizando...' : 'Sincronizar Contatos'}</span>
+              <span>
+                {isBulkSyncing
+                  ? bulkSyncProgress && bulkSyncProgress.total > 0
+                    ? `Sincronizando ${bulkSyncProgress.processed}/${bulkSyncProgress.total}...`
+                    : 'Sincronizando...'
+                  : 'Sincronizar Contatos'}
+              </span>
             </button>
+
+            {/* Barra de progresso da sincronização */}
+            {isBulkSyncing && (
+              <div className="flex items-center gap-2 w-full sm:w-56">
+                <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-green-600 rounded-full transition-all duration-300 ease-out"
+                    style={{
+                      width: `${
+                        bulkSyncProgress && bulkSyncProgress.total > 0
+                          ? Math.round((bulkSyncProgress.processed / bulkSyncProgress.total) * 100)
+                          : 5
+                      }%`
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
+                  {bulkSyncProgress && bulkSyncProgress.total > 0
+                    ? `${Math.round((bulkSyncProgress.processed / bulkSyncProgress.total) * 100)}%`
+                    : '...'}
+                </span>
+              </div>
+            )}
 
             {/* Botão Novo Motorista */}
             <button

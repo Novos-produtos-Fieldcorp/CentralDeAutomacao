@@ -19,6 +19,11 @@ interface BulkSyncResult {
   errors: Array<{ contato_id: number; nome: string; error: string }>;
 }
 
+interface BulkSyncProgress {
+  processed: number;
+  total: number;
+}
+
 interface WiseAppContactsSyncHookReturn {
   syncContato: (contatoId: number) => Promise<void>;
   syncAllContatos: () => Promise<void>;
@@ -28,10 +33,12 @@ interface WiseAppContactsSyncHookReturn {
   isBulkSyncing: boolean;
   isValidating: boolean;
   configValid: boolean | null;
+  bulkSyncProgress: BulkSyncProgress | null;
 }
 
 export function useWiseAppContactsSync(): WiseAppContactsSyncHookReturn {
   const [configValid, setConfigValid] = useState<boolean | null>(null);
+  const [bulkSyncProgress, setBulkSyncProgress] = useState<BulkSyncProgress | null>(null);
   const queryClient = useQueryClient();
   const { companyId } = useCurrentAccount();
   // IMPORTANT: Use accountId from WiseAppAccess (associated with authenticated email)
@@ -74,33 +81,75 @@ export function useWiseAppContactsSync(): WiseAppContactsSyncHookReturn {
     }
   });
 
-  // Bulk sync mutation using Supabase Edge Function
+  // Bulk sync mutation using Supabase Edge Function (processamento em lotes)
   const bulkSyncMutation = useMutation({
     mutationFn: async () => {
-      if (!companyId) throw new Error('Company ID not found');        
+      if (!companyId) throw new Error('Company ID not found');
       // Chamar Supabase Edge Function diretamente
       const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
       const requestUrl = `${supabaseUrl}/functions/v1/api/wiseapp/sync-all-contacts`;
-      const body = { companyId: companyId };
 
-      const response = await fetch(requestUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Bulk sync failed');
+      const BATCH_SIZE = 25;
+
+      // Acumula os resultados de todos os lotes
+      const acc: BulkSyncResult = {
+        totalProcessed: 0,
+        successful: 0,
+        failed: 0,
+        created: 0,
+        photoUpdated: 0,
+        errors: []
+      };
+
+      let offset = 0;
+      let total = 0;
+      setBulkSyncProgress({ processed: 0, total: 0 });
+
+      // Itera lote a lote até o backend indicar que não há mais contatos
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const response = await fetch(requestUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ companyId, offset, limit: BATCH_SIZE })
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.message || error.error || 'Bulk sync failed');
+        }
+
+        const json = await response.json();
+        const d = json.data ?? {};
+
+        total = typeof d.total === 'number' ? d.total : total;
+        acc.successful += d.successful || 0;
+        acc.failed += d.failed || 0;
+        acc.created += d.created || 0;
+        acc.photoUpdated += d.photoUpdated || 0;
+        if (Array.isArray(d.errors)) acc.errors.push(...d.errors);
+
+        const processedSoFar = offset + (d.processedNow || 0);
+        setBulkSyncProgress({
+          processed: total ? Math.min(processedSoFar, total) : processedSoFar,
+          total
+        });
+
+        if (!d.hasMore) break;
+        offset += BATCH_SIZE;
       }
-      
-      return response.json();
+
+      acc.totalProcessed = total || acc.successful + acc.failed;
+      return { data: acc };
+    },
+    onSettled: () => {
+      // Mantém a barra visível só durante o processo
+      setBulkSyncProgress(null);
     },
     onSuccess: (data) => {
       const result = data.data;
@@ -284,7 +333,8 @@ export function useWiseAppContactsSync(): WiseAppContactsSyncHookReturn {
     isSyncing: syncContatoMutation.isPending,
     isBulkSyncing: bulkSyncMutation.isPending,
     isValidating: validateConfigMutation.isPending,
-    configValid
+    configValid,
+    bulkSyncProgress
   };
 }
 

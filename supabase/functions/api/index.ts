@@ -1581,8 +1581,31 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
   if (path === '/wiseapp/sync-all-contacts' && method === 'POST') {
     console.log('🎯 Sync all contacts route matched!')
     try {
-      const { companyId } = await req.json();
-      
+      const { companyId, offset: rawOffset, limit: rawLimit } = await req.json();
+
+      // Processamento em lotes para não estressar o WiseApp (evita 429).
+      // Se offset/limit não forem informados, processa o lote inteiro a partir de 0.
+      const offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? Math.floor(rawOffset) : 0;
+      const batchSize = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(Math.floor(rawLimit), 100) : 25;
+
+      // Pausa entre chamadas ao WiseApp + retry com backoff exponencial em caso de 429
+      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+      const DELAY_BETWEEN_CALLS_MS = 350;
+      const fetchWiseApp = async (url: string, init?: RequestInit, maxRetries = 4): Promise<Response> => {
+        let attempt = 0;
+        while (true) {
+          const resp = await fetch(url, init);
+          if (resp.status !== 429 || attempt >= maxRetries) return resp;
+          // Respeita Retry-After quando presente; senão usa backoff exponencial (1s, 2s, 4s, 8s)
+          const retryAfterHeader = resp.headers.get('Retry-After');
+          const retryAfterMs = retryAfterHeader ? parseInt(retryAfterHeader, 10) * 1000 : 0;
+          const backoffMs = retryAfterMs > 0 ? retryAfterMs : Math.min(1000 * 2 ** attempt, 8000);
+          console.warn(`⏳ WiseApp respondeu 429. Aguardando ${backoffMs}ms (tentativa ${attempt + 1}/${maxRetries})`);
+          await sleep(backoffMs);
+          attempt++;
+        }
+      };
+
       if (!companyId) {
         return new Response(
           JSON.stringify({ error: 'Company ID é obrigatório' }),
@@ -1696,14 +1719,16 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
 
       console.log(`Using WiseApp account ID: ${accountId}`);
 
-      // 3. Buscar todos os contatos ativos com telefone
-      const { data: contatos, error: contatosError } = await supabase
+      // 3. Buscar os contatos ativos com telefone (apenas o lote atual)
+      const { data: contatos, error: contatosError, count: totalContatos } = await supabase
         .from('motorista')
-        .select('contato_id:motorista_id, nome, telefone, foto_whatsapp')
+        .select('contato_id:motorista_id, nome, telefone, foto_whatsapp', { count: 'exact' })
         .eq('company_id', companyId)
         .eq('ativo', true)
-        .not('telefone', 'is', null);
-      
+        .not('telefone', 'is', null)
+        .order('motorista_id', { ascending: true })
+        .range(offset, offset + batchSize - 1);
+
       if (contatosError) {
         console.error('Erro ao buscar contatos:', contatosError);
         return new Response(
@@ -1728,13 +1753,20 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
       };
       
       if (!contatos || contatos.length === 0) {
-        console.log('Nenhum contato ativo encontrado');
+        console.log('Nenhum contato ativo encontrado neste lote');
         return new Response(
-          JSON.stringify({ 
-            success: true, 
-            data: results 
+          JSON.stringify({
+            success: true,
+            data: {
+              ...results,
+              total: totalContatos || 0,
+              offset,
+              limit: batchSize,
+              processedNow: 0,
+              hasMore: false
+            }
           }),
-          { 
+          {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
@@ -1753,10 +1785,10 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
 
           const phone = `55${contato.telefone}`;
           console.log(`Processando ${contato.nome} - ${phone}`);
-          
+
           // Buscar contato no WiseApp
           const searchUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/search?q=${phone}`;
-          const searchResponse = await fetch(searchUrl, {
+          const searchResponse = await fetchWiseApp(searchUrl, {
             headers: {
               'api_access_token': token,
               'Content-Type': 'application/json'
@@ -1782,7 +1814,7 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
             // Se contato já existe, apenas atualizar foto se necessário
             if (contact.avatar !== contato.foto_whatsapp && contato.foto_whatsapp) {
               const updateUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts/${contact.id}`;
-              const updateResponse = await fetch(updateUrl, {
+              const updateResponse = await fetchWiseApp(updateUrl, {
                 method: 'PUT',
                 headers: {
                   'api_access_token': token,
@@ -1807,7 +1839,7 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
             };
 
             const createUrl = `https://chat.wiseapp360.com/api/v1/accounts/${accountId}/contacts`;
-            const createResponse = await fetch(createUrl, {
+            const createResponse = await fetchWiseApp(createUrl, {
               method: 'POST',
               headers: {
                 'api_access_token': token,
@@ -1829,6 +1861,9 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
               });
             }
           }
+
+          // Pausa entre cada contato para não estressar o WiseApp (evita 429)
+          await sleep(DELAY_BETWEEN_CALLS_MS);
         } catch (error) {
           console.error(`Erro processando ${contato.nome}:`, error);
           results.failed++;
@@ -1840,11 +1875,19 @@ async function handleWiseAppRoutes(req: Request, path: string, method: string, s
         }
       }
 
+      const processedNow = contatos.length;
+      const hasMore = offset + processedNow < (totalContatos || 0);
+
       const result = {
         success: true,
         data: {
           ...results,
-          message: `Sincronização concluída: ${results.successful} sucessos, ${results.failed} falhas, ${results.created} criados, ${results.photoUpdated} fotos atualizadas`
+          total: totalContatos || 0,
+          offset,
+          limit: batchSize,
+          processedNow,
+          hasMore,
+          message: `Lote sincronizado: ${results.successful} sucessos, ${results.failed} falhas, ${results.created} criados, ${results.photoUpdated} fotos atualizadas`
         }
       };
 
