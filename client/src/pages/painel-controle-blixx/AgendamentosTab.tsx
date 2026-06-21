@@ -3,7 +3,7 @@ import { CalendarClock, Clock, Trash2, User, Loader2, Play } from 'lucide-react'
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import type { Agendamento, AgendamentoContato, Automacao, Contato, Grupo } from './lib/painelTypes';
-import { buscarAutomacoes, buscarContatos, carregarMapaContactId, dispararAutomacao, soDigitos } from './lib/painelEdge';
+import { buscarAutomacoes, buscarContatos, carregarMapaContatoAutomacao, dispararAutomacao, soDigitos } from './lib/painelEdge';
 import { buscarGrupos } from './lib/painelGroups';
 import {
   buscarAgendamentos,
@@ -27,8 +27,8 @@ const AgendamentosTab = () => {
   const [contatos, setContatos] = useState<Contato[]>([]);
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
-  // telefone(dígitos) -> contact_id de blixx_contatos_automacao.
-  const [mapaContactId, setMapaContactId] = useState<Map<string, string>>(new Map());
+  // telefone(dígitos) -> linha completa de blixx_contato_automacoes.
+  const [mapaContato, setMapaContato] = useState<Map<string, Record<string, unknown>>>(new Map());
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -51,13 +51,13 @@ const AgendamentosTab = () => {
         buscarContatos(),
         buscarGrupos(companyId ?? null),
         buscarAgendamentos(companyId ?? null),
-        carregarMapaContactId(),
+        carregarMapaContatoAutomacao(),
       ]);
       setAutomacoes(autos);
       setContatos(cts);
       setGrupos(grps);
       setAgendamentos(ags);
-      setMapaContactId(mapa);
+      setMapaContato(mapa);
     } catch (e) {
       console.error('Erro ao carregar dados de agendamento:', e);
       setErro('Erro ao carregar dados. Tente novamente.');
@@ -87,22 +87,31 @@ const AgendamentosTab = () => {
   // Expande grupos selecionados em seus membros + contatos individuais num
   // único array de { id, name, phone }, sem duplicados por id.
   const montarContatos = (): AgendamentoContato[] => {
-    const resolverContactId = (phone: string) =>
-      mapaContactId.get(soDigitos(phone ?? '')) ?? '';
+    // Busca a linha completa de blixx_contato_automacoes pelo telefone e monta
+    // o AgendamentoContato com contactId + snapshot (dados) de todos os campos.
+    const montar = (id: string, name: string, phone: string): AgendamentoContato => {
+      const dados = mapaContato.get(soDigitos(phone ?? ''));
+      return {
+        id,
+        name,
+        phone,
+        contactId: String(dados?.contact_id ?? ''),
+        dados,
+      };
+    };
     const mapa = new Map<string, AgendamentoContato>();
     for (const gid of grupoIds) {
       const g = grupos.find((x) => x.id === gid);
       g?.membros.forEach((m) => {
-        const phone = m.telefone ?? '';
         if (!mapa.has(m.id)) {
-          mapa.set(m.id, { id: m.id, name: m.nome, phone, contactId: resolverContactId(phone) });
+          mapa.set(m.id, montar(m.id, m.nome, m.telefone ?? ''));
         }
       });
     }
     for (const cid of contatoIds) {
       const c = contatos.find((x) => x.id === cid);
       if (c && !mapa.has(c.id)) {
-        mapa.set(c.id, { id: c.id, name: c.nome, phone: c.telefone, contactId: resolverContactId(c.telefone) });
+        mapa.set(c.id, montar(c.id, c.nome, c.telefone));
       }
     }
     return Array.from(mapa.values());

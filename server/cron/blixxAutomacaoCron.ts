@@ -14,6 +14,7 @@ interface AgendamentoContato {
   name: string;
   phone: string;
   contactId: string; // contact_id de blixx_contatos_automacao
+  dados?: Record<string, unknown>; // snapshot da linha completa (fallback)
 }
 
 interface BlixxAutomacao {
@@ -53,24 +54,26 @@ const TABELA_CONTATOS = 'blixx_contato_automacoes';
 // Normaliza telefone para apenas dígitos (ignora +55, espaços, parênteses etc.).
 const soDigitos = (s: string) => (s || '').replace(/\D/g, '');
 
-// Busca o contact_id de um contato (pelo telefone) em blixx_contato_automacoes,
-// no momento do disparo.
-async function buscarContactId(phone: string): Promise<string> {
+// Busca a linha completa de um contato (pelo telefone) em
+// blixx_contato_automacoes, no momento do disparo.
+async function buscarContato(phone: string): Promise<Record<string, unknown> | null> {
   const digitos = soDigitos(phone);
-  if (!digitos) return '';
+  if (!digitos) return null;
   const alvo = digitos.slice(-8);
   const { data, error } = await supabase
     .from(TABELA_CONTATOS)
-    .select('contact_id, phone')
+    .select('*')
     .ilike('phone', `%${alvo}%`);
   if (error) {
-    console.error(`[BLIXX-CRON] Erro ao buscar contact_id em ${TABELA_CONTATOS}:`, error);
-    return '';
+    console.error(`[BLIXX-CRON] Erro ao buscar contato em ${TABELA_CONTATOS}:`, error);
+    return null;
   }
-  const rows = (data ?? []) as { contact_id: string | null; phone: string | null }[];
-  const exato = rows.find((r) => soDigitos(r.phone ?? '') === digitos && r.contact_id);
-  const fallback = rows.find((r) => r.contact_id);
-  return String((exato ?? fallback)?.contact_id ?? '');
+  const rows = (data ?? []) as Record<string, unknown>[];
+  const exato = rows.find(
+    (r) => soDigitos(String(r.phone ?? '')) === digitos && r.contact_id,
+  );
+  const fallback = rows.find((r) => r.contact_id) ?? rows[0];
+  return exato ?? fallback ?? null;
 }
 
 async function processScheduledAutomacoes() {
@@ -118,8 +121,10 @@ async function dispararAgendamento(ag: BlixxAutomacao) {
 
   for (let i = 0; i < contatos.length; i++) {
     const c = contatos[i];
-    // Consulta blixx_contato_automacoes pelo telefone; fallback no gravado.
-    const contactId = (await buscarContactId(c.phone)) || c.contactId || '';
+    // Consulta a linha completa em blixx_contato_automacoes pelo telefone;
+    // fallback no snapshot gravado no agendamento.
+    const row = (await buscarContato(c.phone)) ?? c.dados ?? {};
+    const contactId = String((row as any).contact_id ?? c.contactId ?? '');
     if (!contactId) {
       console.warn(
         `[BLIXX-CRON] Sem contact_id em ${TABELA_CONTATOS} para ${c.name} (${c.phone}).`,
@@ -129,9 +134,10 @@ async function dispararAgendamento(ag: BlixxAutomacao) {
       await axios.post(
         N8N_WEBHOOK_URL,
         {
+          ...row, // todas as colunas de blixx_contato_automacoes (flat)
+          id: contactId, // mantém contrato atual (id = contact_id)
           name: c.name,
           phone: c.phone,
-          id: contactId,
           typebot_name: typebotName,
         },
         { timeout: 120000 },

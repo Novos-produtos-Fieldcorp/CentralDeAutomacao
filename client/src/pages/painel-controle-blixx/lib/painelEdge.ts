@@ -11,48 +11,47 @@ export const soDigitos = (s: string) => (s || '').replace(/\D/g, '');
 
 const TABELA_CONTATOS = 'blixx_contato_automacoes';
 
-// Carrega de blixx_contato_automacoes um mapa telefone(dígitos) -> contact_id.
-// Usado para pré-resolver o contact_id no momento do agendamento (fallback).
-export async function carregarMapaContactId(): Promise<Map<string, string>> {
-  const mapa = new Map<string, string>();
-  const { data, error } = await supabase
-    .from(TABELA_CONTATOS)
-    .select('contact_id,phone');
+// Carrega de blixx_contato_automacoes um mapa telefone(dígitos) -> linha completa.
+// Usado para snapshotar todos os dados do contato no momento do agendamento.
+export async function carregarMapaContatoAutomacao(): Promise<
+  Map<string, Record<string, unknown>>
+> {
+  const mapa = new Map<string, Record<string, unknown>>();
+  const { data, error } = await supabase.from(TABELA_CONTATOS).select('*');
   if (error) {
     console.error(`Erro ao carregar ${TABELA_CONTATOS}:`, error);
     return mapa;
   }
-  for (const row of data ?? []) {
-    const tel = soDigitos((row as { phone?: string }).phone ?? '');
-    const cid = (row as { contact_id?: string | null }).contact_id;
-    if (tel && cid != null && String(cid).trim() !== '') {
-      mapa.set(tel, String(cid));
-    }
+  for (const row of (data ?? []) as Record<string, unknown>[]) {
+    const tel = soDigitos(String(row.phone ?? ''));
+    if (tel) mapa.set(tel, row);
   }
   return mapa;
 }
 
-// Busca o contact_id de um único contato (pelo telefone) em blixx_contato_automacoes.
-// Feita no momento do disparo, garantindo o valor mais atual.
-export async function buscarContactId(phone: string): Promise<string> {
+// Busca a linha completa de um único contato (pelo telefone) em
+// blixx_contato_automacoes. Feita no momento do disparo, garantindo dados atuais.
+export async function buscarContatoAutomacao(
+  phone: string,
+): Promise<Record<string, unknown> | null> {
   const digitos = soDigitos(phone);
-  if (!digitos) return '';
-  // Usa os últimos dígitos significativos para tolerar variações de formato
-  // (+55, DDI, parênteses) entre o telefone do contato e o gravado na tabela.
+  if (!digitos) return null;
   const alvo = digitos.slice(-8);
   const { data, error } = await supabase
     .from(TABELA_CONTATOS)
-    .select('contact_id, phone')
+    .select('*')
     .ilike('phone', `%${alvo}%`);
   if (error) {
-    console.error(`Erro ao buscar contact_id em ${TABELA_CONTATOS}:`, error);
-    return '';
+    console.error(`Erro ao buscar contato em ${TABELA_CONTATOS}:`, error);
+    return null;
   }
-  const rows = (data ?? []) as { contact_id: string | null; phone: string | null }[];
-  // Prefere correspondência exata de dígitos; senão, o 1º candidato com contact_id.
-  const exato = rows.find((r) => soDigitos(r.phone ?? '') === digitos && r.contact_id);
-  const fallback = rows.find((r) => r.contact_id);
-  return String((exato ?? fallback)?.contact_id ?? '');
+  const rows = (data ?? []) as Record<string, unknown>[];
+  // Prefere correspondência exata de dígitos; senão, o 1º com contact_id.
+  const exato = rows.find(
+    (r) => soDigitos(String(r.phone ?? '')) === digitos && r.contact_id,
+  );
+  const fallback = rows.find((r) => r.contact_id) ?? rows[0];
+  return exato ?? fallback ?? null;
 }
 
 const ENDPOINTS = {
@@ -154,7 +153,9 @@ export async function dispararAutomacao(
   c: AgendamentoContato,
   typebotName: string,
 ): Promise<void> {
-  const contactId = (await buscarContactId(c.phone)) || c.contactId || '';
+  // Busca a linha completa fresca; fallback no snapshot gravado no agendamento.
+  const row = (await buscarContatoAutomacao(c.phone)) ?? c.dados ?? {};
+  const contactId = String((row as any).contact_id ?? c.contactId ?? '');
   if (!contactId) {
     console.warn(
       `Sem contact_id em ${TABELA_CONTATOS} para ${c.name} (${c.phone}).`,
@@ -164,9 +165,10 @@ export async function dispararAutomacao(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      ...row, // todas as colunas de blixx_contato_automacoes (flat)
+      id: contactId, // mantém contrato atual (id = contact_id)
       name: c.name,
       phone: c.phone,
-      id: contactId,
       typebot_name: typebotName,
     }),
   });
