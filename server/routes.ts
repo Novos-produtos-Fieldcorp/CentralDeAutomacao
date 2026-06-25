@@ -6923,34 +6923,34 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
       const freightRow = {
         company_id: doc.company_id,
         document_id: doc.id,
-        bv: f.numero_do_bv ?? null,
-        data_emissao: f.data_do_bv ?? null,
-        data_viagem: f.data_da_carga ?? null,
-        data_retorno: f.data_da_descarga ?? null,
-        motorista_nome: f.motorista ?? null,
-        motorista_cpf: f.motorista_cpf ?? null,
-        placa_cavalo: f.placa_do_carro ?? null,
-        placa_carreta: f.placa_carreta ?? null,
-        cliente: f.destinatario ?? null,
         origem: f.origem ?? null,
-        destino: f.destinatario ?? null,
-        km_saida: f.km_saida ?? null,
-        km_chegada: f.km_chegada ?? null,
-        km_rodado: f.total_km ?? null,
-        valor_frete: f.valor_do_frete ?? null,
-        valor_pedagio: f.valor_pedagio ?? null,
-        valor_combustivel: f.abastecimento_pago_pela_jpd ?? null,
-        litros_combustivel: f.faltas_em_litros ?? null,
-        valor_adiantamento: f.valor_adiantamento ?? null,
-        valor_descarga: f.valor_descarga ?? null,
-        valor_seguro: f.seguros ?? null,
-        valor_comissao: f.valor_comissao ?? null,
-        valor_liquido: f.valor_faturado ?? f.valor_do_frete ?? null,
-        observacoes: null,
-        status: "aprovado",
-        approved_by: approved_by || null,
+        destinatario: f.destinatario ?? null,
+        motorista: f.motorista ?? null,
+        placa_do_carro: f.placa_do_carro ?? null,
+        numero_do_bv: f.numero_do_bv ?? null,
+        total_km: f.total_km ?? null,
+        data_do_bv: f.data_do_bv ?? null,
+        data_da_carga: f.data_da_carga ?? null,
+        data_da_descarga: f.data_da_descarga ?? null,
+        valor_do_frete: f.valor_do_frete ?? null,
+        outras_receitas: f.outras_receitas ?? null,
+        abastecimento_pago_pela_jpd: f.abastecimento_pago_pela_jpd ?? null,
+        abastecimento_descontado_do_frete: f.abastecimento_descontado_do_frete ?? null,
+        demais_despesas: f.demais_despesas ?? null,
+        seguros: f.seguros ?? null,
+        aluguel: f.aluguel ?? null,
+        pneus: f.pneus ?? null,
+        parcela_pneus: f.parcela_pneus ?? null,
+        plano_manutencao_ipva: f.plano_manutencao_ipva ?? null,
+        faltas_em_litros: f.faltas_em_litros ?? null,
+        faltas_abonadas_rs: f.faltas_abonadas_rs ?? null,
+        faltas_cobradas_rs: f.faltas_cobradas_rs ?? null,
+        data_do_faturamento: f.data_do_faturamento ?? null,
+        valor_faturado: f.valor_faturado ?? null,
+        numero_do_cte: f.numero_do_cte ?? null,
+        situacao_do_bv: f.situacao_do_bv ?? null,
       };
-      const { error: fErr } = await supabaseBackend.from("jpd_freights").insert(freightRow);
+      const { error: fErr } = await supabaseBackend.from("jpd_fretes").insert(freightRow);
       if (fErr) return res.status(500).json({ error: fErr.message });
 
       await supabaseBackend.from("jpd_documents").update({ status: "approved", updated_at: new Date().toISOString() }).eq("id", doc.id);
@@ -6983,6 +6983,101 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     }
   });
 
+  // =====================================================
+  // CRUD de fretes (tabela jpd_fretes — espelha exemplo.csv)
+  // =====================================================
+  // Colunas do CSV aceitas no body de POST/PUT
+  const JPD_FRETE_COLS = [
+    "document_id",
+    "origem", "destinatario", "motorista", "placa_do_carro", "numero_do_bv", "total_km",
+    "data_do_bv", "data_da_carga", "data_da_descarga", "valor_do_frete", "outras_receitas",
+    "abastecimento_pago_pela_jpd", "abastecimento_descontado_do_frete", "demais_despesas",
+    "seguros", "aluguel", "pneus", "parcela_pneus", "plano_manutencao_ipva", "faltas_em_litros",
+    "faltas_abonadas_rs", "faltas_cobradas_rs", "data_do_faturamento", "valor_faturado",
+    "numero_do_cte", "situacao_do_bv",
+  ] as const;
+  const JPD_NUMERIC_COLS = new Set([
+    "total_km", "valor_do_frete", "outras_receitas", "abastecimento_pago_pela_jpd",
+    "abastecimento_descontado_do_frete", "demais_despesas", "seguros", "aluguel", "pneus",
+    "parcela_pneus", "plano_manutencao_ipva", "faltas_em_litros", "faltas_abonadas_rs",
+    "faltas_cobradas_rs", "valor_faturado", "document_id",
+  ]);
+
+  function buildFreteRow(body: any) {
+    const row: Record<string, any> = {};
+    for (const col of JPD_FRETE_COLS) {
+      if (!(col in (body || {}))) continue;
+      let v = body[col];
+      if (v === "" || v === undefined) v = null;
+      if (v !== null && JPD_NUMERIC_COLS.has(col)) {
+        const n = Number(v);
+        v = Number.isFinite(n) ? n : null;
+      }
+      row[col] = v;
+    }
+    return row;
+  }
+
+  // GET /api/jpd/fretes?company_id=&from=&to=&motorista=&placa=&situacao=
+  app.get("/api/jpd/fretes", async (req, res) => {
+    try {
+      const company_id = jpdCompanyId(req);
+      if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
+      const { from, to, motorista, placa, situacao } = req.query as Record<string, string>;
+      let q = supabaseBackend.from("jpd_fretes").select("*").eq("company_id", company_id)
+        .order("data_da_carga", { ascending: false });
+      if (from) q = q.gte("data_da_carga", from);
+      if (to) q = q.lte("data_da_carga", to);
+      if (motorista) q = q.eq("motorista", motorista);
+      if (placa) q = q.eq("placa_do_carro", placa);
+      if (situacao) q = q.eq("situacao_do_bv", situacao);
+      const { data, error } = await q;
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/jpd/fretes
+  app.post("/api/jpd/fretes", async (req, res) => {
+    try {
+      const company_id = jpdCompanyId(req);
+      if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
+      const row = { ...buildFreteRow(req.body), company_id };
+      const { data, error } = await supabaseBackend.from("jpd_fretes").insert(row).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PUT /api/jpd/fretes/:id
+  app.put("/api/jpd/fretes/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const row = { ...buildFreteRow(req.body), updated_at: new Date().toISOString() };
+      const { data, error } = await supabaseBackend.from("jpd_fretes").update(row).eq("id", id).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // DELETE /api/jpd/fretes/:id
+  app.delete("/api/jpd/fretes/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { error } = await supabaseBackend.from("jpd_fretes").delete().eq("id", id);
+      if (error) return res.status(500).json({ error: error.message });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/jpd/dashboard?company_id=&from=&to=
   app.get("/api/jpd/dashboard", async (req, res) => {
     try {
@@ -6990,36 +7085,52 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
       if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
       const from = req.query.from as string | undefined;
       const to = req.query.to as string | undefined;
-      let q = supabaseBackend.from("jpd_freights").select("*").eq("company_id", company_id);
-      if (from) q = q.gte("data_viagem", from);
-      if (to) q = q.lte("data_viagem", to);
-      const { data: freights, error } = await q;
+      let q = supabaseBackend.from("jpd_fretes").select("*").eq("company_id", company_id);
+      if (from) q = q.gte("data_da_carga", from);
+      if (to) q = q.lte("data_da_carga", to);
+      const { data: fretes, error } = await q;
       if (error) return res.status(500).json({ error: error.message });
 
       const num = (v: any) => (v == null ? 0 : Number(v) || 0);
-      const total_viagens = (freights || []).length;
-      const total_frete = (freights || []).reduce((s: number, r: any) => s + num(r.valor_frete), 0);
-      const total_combustivel = (freights || []).reduce((s: number, r: any) => s + num(r.valor_combustivel), 0);
-      const total_km = (freights || []).reduce((s: number, r: any) => s + num(r.km_rodado), 0);
+      const rows = fretes || [];
+      const total_viagens = rows.length;
+      const total_frete = rows.reduce((s: number, r: any) => s + num(r.valor_do_frete), 0);
+      const total_faturado = rows.reduce((s: number, r: any) => s + num(r.valor_faturado), 0);
+      const total_km = rows.reduce((s: number, r: any) => s + num(r.total_km), 0);
 
+      const custos = {
+        demais_despesas: rows.reduce((s: number, r: any) => s + num(r.demais_despesas), 0),
+        seguros: rows.reduce((s: number, r: any) => s + num(r.seguros), 0),
+        abastecimento_jpd: rows.reduce((s: number, r: any) => s + num(r.abastecimento_pago_pela_jpd), 0),
+        pneus: rows.reduce((s: number, r: any) => s + num(r.pneus), 0),
+      };
+      const total_custos = custos.demais_despesas + custos.seguros + custos.abastecimento_jpd + custos.pneus;
+
+      const bySituacao: Record<string, number> = {};
       const byMotorista: Record<string, { motorista: string; viagens: number; valor: number }> = {};
       const byVeiculo: Record<string, { placa: string; viagens: number; valor: number }> = {};
-      for (const r of freights || []) {
-        const m = r.motorista_nome || "—";
-        const p = r.placa_cavalo || "—";
+      for (const r of rows) {
+        const s = (r.situacao_do_bv || "sem_status").toString();
+        bySituacao[s] = (bySituacao[s] || 0) + 1;
+        const m = r.motorista || "—";
+        const p = r.placa_do_carro || "—";
         byMotorista[m] ??= { motorista: m, viagens: 0, valor: 0 };
         byMotorista[m].viagens += 1;
-        byMotorista[m].valor += num(r.valor_frete);
+        byMotorista[m].valor += num(r.valor_do_frete);
         byVeiculo[p] ??= { placa: p, viagens: 0, valor: 0 };
         byVeiculo[p].viagens += 1;
-        byVeiculo[p].valor += num(r.valor_frete);
+        byVeiculo[p].valor += num(r.valor_faturado);
       }
 
-      const { count: pending_count } = await supabaseBackend.from("jpd_documents")
-        .select("id", { count: "exact", head: true }).eq("company_id", company_id).eq("status", "pending");
-
       res.json({
-        kpis: { total_viagens, total_frete, total_combustivel, total_km, pendentes: pending_count || 0 },
+        kpis: { total_viagens, total_frete, total_faturado, total_custos, total_km },
+        custos: [
+          { label: "Demais despesas", value: custos.demais_despesas },
+          { label: "Seguros", value: custos.seguros },
+          { label: "Abastecimento JPD", value: custos.abastecimento_jpd },
+          { label: "Pneus", value: custos.pneus },
+        ],
+        situacao_bvs: Object.entries(bySituacao).map(([label, value]) => ({ label, value })),
         por_motorista: Object.values(byMotorista).sort((a, b) => b.valor - a.valor),
         por_veiculo: Object.values(byVeiculo).sort((a, b) => b.valor - a.valor),
       });
@@ -7035,31 +7146,40 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
       if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
       const from = req.query.from as string | undefined;
       const to = req.query.to as string | undefined;
-      let q = supabaseBackend.from("jpd_freights").select("*").eq("company_id", company_id).order("data_viagem", { ascending: true });
-      if (from) q = q.gte("data_viagem", from);
-      if (to) q = q.lte("data_viagem", to);
+      let q = supabaseBackend.from("jpd_fretes").select("*").eq("company_id", company_id).order("data_da_carga", { ascending: true });
+      if (from) q = q.gte("data_da_carga", from);
+      if (to) q = q.lte("data_da_carga", to);
       const { data, error } = await q;
       if (error) return res.status(500).json({ error: error.message });
 
       const XLSX = await import("xlsx");
       const rows = (data || []).map((r: any) => ({
-        "Numero do BV": r.bv,
-        "Data Emissao": r.data_emissao,
-        "Data Viagem": r.data_viagem,
-        "Motorista": r.motorista_nome,
-        "Placa Cavalo": r.placa_cavalo,
-        "Placa Carreta": r.placa_carreta,
-        "Cliente": r.cliente,
-        "Origem": r.origem,
-        "Destino": r.destino,
-        "KM Rodado": r.km_rodado,
-        "Valor Frete": r.valor_frete,
-        "Combustivel (R$)": r.valor_combustivel,
-        "Litros Comb.": r.litros_combustivel,
-        "Pedagio": r.valor_pedagio,
-        "Seguro": r.valor_seguro,
-        "Comissao": r.valor_comissao,
-        "Valor Liquido": r.valor_liquido,
+        "ORIGEM": r.origem,
+        "DESTINATÁRIO": r.destinatario,
+        "MOTORISTA": r.motorista,
+        "PLACA DO CARRO": r.placa_do_carro,
+        "Número do BV": r.numero_do_bv,
+        "Total KM": r.total_km,
+        "DATA DO BV": r.data_do_bv,
+        "DATA DA CARGA": r.data_da_carga,
+        "DATA DA DESCARGA": r.data_da_descarga,
+        "VALOR DO FRETE": r.valor_do_frete,
+        "OUTRAS RECEITAS": r.outras_receitas,
+        "ABASTECIMENTO PAGO PELA JPD": r.abastecimento_pago_pela_jpd,
+        "ABASTECIMENTO DESCONTADO DO FRETE": r.abastecimento_descontado_do_frete,
+        "DEMAIS DESPESAS": r.demais_despesas,
+        "SEGUROS": r.seguros,
+        "ALUGUEL": r.aluguel,
+        "PNEUS": r.pneus,
+        "PARCELA PNEUS": r.parcela_pneus,
+        "PLANO MANUTENÇÃO + IPVA": r.plano_manutencao_ipva,
+        "FALTAS EM LITROS": r.faltas_em_litros,
+        "FALTAS ABONADAS EM R$": r.faltas_abonadas_rs,
+        "FALTAS COBRADAS EM R$": r.faltas_cobradas_rs,
+        "DATA DO FATURAMENTO": r.data_do_faturamento,
+        "VALOR FATURADO": r.valor_faturado,
+        "NÚMERO DO CTE": r.numero_do_cte,
+        "SITUAÇÃO DO BV": r.situacao_do_bv,
       }));
       const ws = XLSX.utils.json_to_sheet(rows);
       const wb = XLSX.utils.book_new();

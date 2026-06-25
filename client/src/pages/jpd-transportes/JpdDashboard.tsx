@@ -1,36 +1,24 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Download, Truck, DollarSign, Receipt, TrendingDown } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 
-const fmtBRL = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtBRL = (n: number) => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-const MOCK = {
-  kpis: { viagens: 128, valor_frete: 482300, valor_faturado: 511450, custos: 192870 },
-  situacao_bvs: [
-    { label: 'pago', value: 74 },
-    { label: 'pendente', value: 38 },
-    { label: 'em_analise', value: 12 },
-    { label: 'sem_status', value: 4 },
-  ],
-  custos: [
-    { label: 'Demais despesas', value: 48220 },
-    { label: 'Seguros', value: 22110 },
-    { label: 'Abastecimento JPD', value: 91430 },
-    { label: 'Pneus', value: 18770 },
-  ],
-  motoristas: [
-    { motorista: 'Rafael Soares', viagens: 22, valor: 98420 },
-    { motorista: 'Lucas Andrade', viagens: 18, valor: 81300 },
-    { motorista: 'Marcos Vinicius', viagens: 16, valor: 74150 },
-    { motorista: 'João Pereira', viagens: 14, valor: 62880 },
-    { motorista: 'Anderson Lima', viagens: 11, valor: 49700 },
-  ],
-  veiculos: [
-    { placa: 'JZ447-2', viagens: 24, valor: 112330 },
-    { placa: 'LM404-3', viagens: 19, valor: 88910 },
-    { placa: 'QPR1A23', viagens: 17, valor: 79420 },
-    { placa: 'RKT5B89', viagens: 13, valor: 61180 },
-    { placa: 'SBV7C12', viagens: 10, valor: 44560 },
-  ],
+type DashboardData = {
+  kpis: { total_viagens: number; total_frete: number; total_faturado: number; total_custos: number; total_km: number };
+  custos: { label: string; value: number }[];
+  situacao_bvs: { label: string; value: number }[];
+  por_motorista: { motorista: string; viagens: number; valor: number }[];
+  por_veiculo: { placa: string; viagens: number; valor: number }[];
+};
+
+const EMPTY: DashboardData = {
+  kpis: { total_viagens: 0, total_frete: 0, total_faturado: 0, total_custos: 0, total_km: 0 },
+  custos: [],
+  situacao_bvs: [],
+  por_motorista: [],
+  por_veiculo: [],
 };
 
 const KpiCard = ({ icon: Icon, label, value, color }: any) => (
@@ -49,15 +37,45 @@ const inputCls =
   'border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 text-sm bg-white dark:bg-gray-700 dark:text-white';
 
 const JpdDashboard = () => {
-  const [filters, setFilters] = useState({
-    de: '2026-05-01',
-    ate: '2026-05-22',
-    motorista: 'Rafael Soares',
-    placa: 'JZ447-2',
-    situacao: 'pendente',
-  });
+  const { companyId } = useCurrentAccount();
+  const [filters, setFilters] = useState({ de: '', ate: '' });
+  const [data, setData] = useState<DashboardData>(EMPTY);
+  const [loading, setLoading] = useState(false);
 
   const set = (k: string, v: string) => setFilters((f) => ({ ...f, [k]: v }));
+
+  const load = useCallback(async () => {
+    if (!companyId) return;
+    setLoading(true);
+    try {
+      const url = new URL('/api/jpd/dashboard', window.location.origin);
+      url.searchParams.set('company_id', String(companyId));
+      if (filters.de) url.searchParams.set('from', filters.de);
+      if (filters.ate) url.searchParams.set('to', filters.ate);
+      const res = await fetch(url.toString());
+      if (!res.ok) throw new Error('Falha ao carregar dashboard');
+      const json = await res.json();
+      setData({ ...EMPTY, ...json });
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao carregar dashboard');
+    } finally {
+      setLoading(false);
+    }
+  }, [companyId, filters.de, filters.ate]);
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId]);
+
+  const handleExport = () => {
+    if (!companyId) return;
+    const url = new URL('/api/jpd/export.xlsx', window.location.origin);
+    url.searchParams.set('company_id', String(companyId));
+    if (filters.de) url.searchParams.set('from', filters.de);
+    if (filters.ate) url.searchParams.set('to', filters.ate);
+    window.location.href = url.toString();
+  };
 
   return (
     <div className="space-y-6">
@@ -68,97 +86,91 @@ const JpdDashboard = () => {
           </p>
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Dashboard operacional JPD</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 max-w-2xl">
-            Acompanhe documentos recebidos, revisões pendentes e consolidação dos fretes.
+            Acompanhe fretes lançados, faturamento e custos consolidados.
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
+        <button
+          onClick={handleExport}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+        >
           <Download className="w-4 h-4" /> Exportar Excel
         </button>
       </div>
 
       <form
-        onSubmit={(e) => e.preventDefault()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          load();
+        }}
         className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-wrap items-end gap-3"
       >
         <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
-          <span className="mb-1">De</span>
+          <span className="mb-1">De (data da carga)</span>
           <input type="date" value={filters.de} onChange={(e) => set('de', e.target.value)} className={inputCls} />
         </label>
         <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
           <span className="mb-1">Até</span>
           <input type="date" value={filters.ate} onChange={(e) => set('ate', e.target.value)} className={inputCls} />
         </label>
-        <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
-          <span className="mb-1">Motorista</span>
-          <select value={filters.motorista} onChange={(e) => set('motorista', e.target.value)} className={inputCls}>
-            <option>Todos</option>
-            <option>Rafael Soares</option>
-            <option>Lucas Andrade</option>
-          </select>
-        </label>
-        <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
-          <span className="mb-1">Placa</span>
-          <select value={filters.placa} onChange={(e) => set('placa', e.target.value)} className={inputCls}>
-            <option>Todos</option>
-            <option>JZ447-2</option>
-            <option>LM404-3</option>
-          </select>
-        </label>
-        <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
-          <span className="mb-1">Situação BV</span>
-          <select value={filters.situacao} onChange={(e) => set('situacao', e.target.value)} className={inputCls}>
-            <option>Todos</option>
-            <option>pago</option>
-            <option>pendente</option>
-          </select>
-        </label>
         <button type="submit" className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
           Filtrar
         </button>
         <button
           type="button"
-          onClick={() => setFilters({ de: '', ate: '', motorista: 'Todos', placa: 'Todos', situacao: 'Todos' })}
+          onClick={() => {
+            setFilters({ de: '', ate: '' });
+            load();
+          }}
           className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md text-sm hover:bg-gray-200"
         >
           Limpar
         </button>
+        {loading && <span className="text-xs text-gray-500">Carregando...</span>}
       </form>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard icon={Truck} label="Viagens" value={MOCK.kpis.viagens} color="bg-blue-500" />
-        <KpiCard icon={DollarSign} label="Valor do frete" value={fmtBRL(MOCK.kpis.valor_frete)} color="bg-emerald-500" />
-        <KpiCard icon={Receipt} label="Valor faturado" value={fmtBRL(MOCK.kpis.valor_faturado)} color="bg-violet-500" />
-        <KpiCard icon={TrendingDown} label="Custos" value={fmtBRL(MOCK.kpis.custos)} color="bg-rose-500" />
+        <KpiCard icon={Truck} label="Viagens" value={data.kpis.total_viagens} color="bg-blue-500" />
+        <KpiCard icon={DollarSign} label="Valor do frete" value={fmtBRL(data.kpis.total_frete)} color="bg-emerald-500" />
+        <KpiCard icon={Receipt} label="Valor faturado" value={fmtBRL(data.kpis.total_faturado)} color="bg-violet-500" />
+        <KpiCard icon={TrendingDown} label="Custos" value={fmtBRL(data.kpis.total_custos)} color="bg-rose-500" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Situação dos BVs</h3>
-          <ul className="space-y-2">
-            {MOCK.situacao_bvs.map((s) => (
-              <li
-                key={s.label}
-                className="flex justify-between items-center px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm"
-              >
-                <strong className="text-gray-800 dark:text-gray-100">{s.label}</strong>
-                <span className="text-gray-600 dark:text-gray-300">{s.value}</span>
-              </li>
-            ))}
-          </ul>
+          {data.situacao_bvs.length === 0 ? (
+            <p className="text-sm text-gray-500">Sem dados.</p>
+          ) : (
+            <ul className="space-y-2">
+              {data.situacao_bvs.map((s) => (
+                <li
+                  key={s.label}
+                  className="flex justify-between items-center px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm"
+                >
+                  <strong className="text-gray-800 dark:text-gray-100">{s.label}</strong>
+                  <span className="text-gray-600 dark:text-gray-300">{s.value}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Custos principais</h3>
-          <ul className="space-y-2">
-            {MOCK.custos.map((c) => (
-              <li
-                key={c.label}
-                className="flex justify-between items-center px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm"
-              >
-                <span className="text-gray-700 dark:text-gray-200">{c.label}</span>
-                <span className="font-medium text-gray-900 dark:text-white">{fmtBRL(c.value)}</span>
-              </li>
-            ))}
-          </ul>
+          {data.custos.length === 0 ? (
+            <p className="text-sm text-gray-500">Sem dados.</p>
+          ) : (
+            <ul className="space-y-2">
+              {data.custos.map((c) => (
+                <li
+                  key={c.label}
+                  className="flex justify-between items-center px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm"
+                >
+                  <span className="text-gray-700 dark:text-gray-200">{c.label}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{fmtBRL(c.value)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
@@ -176,7 +188,7 @@ const JpdDashboard = () => {
               </tr>
             </thead>
             <tbody className="text-gray-800 dark:text-gray-200">
-              {MOCK.motoristas.map((m) => (
+              {data.por_motorista.slice(0, 10).map((m) => (
                 <tr key={m.motorista} className="border-t border-gray-100 dark:border-gray-700">
                   <td className="py-2">{m.motorista}</td>
                   <td className="py-2">{m.viagens}</td>
@@ -187,9 +199,7 @@ const JpdDashboard = () => {
           </table>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
-            Veículos com maior faturamento
-          </h3>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Veículos com maior faturamento</h3>
           <table className="min-w-full text-sm">
             <thead className="text-gray-600 dark:text-gray-300">
               <tr>
@@ -199,7 +209,7 @@ const JpdDashboard = () => {
               </tr>
             </thead>
             <tbody className="text-gray-800 dark:text-gray-200">
-              {MOCK.veiculos.map((v) => (
+              {data.por_veiculo.slice(0, 10).map((v) => (
                 <tr key={v.placa} className="border-t border-gray-100 dark:border-gray-700">
                   <td className="py-2">{v.placa}</td>
                   <td className="py-2">{v.viagens}</td>

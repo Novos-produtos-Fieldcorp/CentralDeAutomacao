@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link, useLocation, Routes, Route, Navigate } from 'react-router-dom';
-import { Truck, LayoutDashboard, FileText, Car, Lock } from 'lucide-react';
+import { Truck, LayoutDashboard, FileText, Car, Lock, ClipboardList } from 'lucide-react';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import LoadingSpinner from '../components/LoadingSpinner';
 import JpdDashboard from './jpd-transportes/JpdDashboard';
+import JpdFretes from './jpd-transportes/JpdFretes';
 import JpdDocumentos from './jpd-transportes/JpdDocumentos';
 import JpdRevisao from './jpd-transportes/JpdRevisao';
 import JpdVeiculos from './jpd-transportes/JpdVeiculos';
@@ -15,6 +16,7 @@ const JpdTransportes = () => {
 
   const tabs = [
     { path: '/jpd-transportes/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/jpd-transportes/fretes', icon: ClipboardList, label: 'Fretes' },
     { path: '/jpd-transportes/veiculos', icon: Car, label: 'Veículos' },
     { path: '/jpd-transportes/documentos', icon: FileText, label: 'Documentos' },
   ];
@@ -78,6 +80,7 @@ const JpdTransportes = () => {
           <Routes>
             <Route path="/" element={<Navigate to="/jpd-transportes/dashboard" replace />} />
             <Route path="/dashboard" element={<JpdDashboard />} />
+            <Route path="/fretes" element={<JpdFretes />} />
             <Route path="/veiculos" element={<JpdVeiculos />} />
             <Route path="/veiculos/:placa" element={<JpdVeiculoDetalhe />} />
             <Route path="/documentos" element={<JpdDocumentos />} />
