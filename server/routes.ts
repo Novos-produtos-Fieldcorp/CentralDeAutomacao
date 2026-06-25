@@ -7078,6 +7078,67 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     }
   });
 
+  // GET /api/jpd/veiculos?company_id=&placa=  (agregado por placa a partir de jpd_fretes)
+  app.get("/api/jpd/veiculos", async (req, res) => {
+    try {
+      const company_id = jpdCompanyId(req);
+      if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
+      const placa = req.query.placa as string | undefined;
+      const { data: fretes, error } = await supabaseBackend.from("jpd_fretes").select("*").eq("company_id", company_id);
+      if (error) return res.status(500).json({ error: error.message });
+      const num = (v: any) => (v == null ? 0 : Number(v) || 0);
+      const rows = fretes || [];
+
+      if (placa) {
+        const viagens = rows
+          .filter((r: any) => (r.placa_do_carro || "") === placa)
+          .sort((a: any, b: any) => String(b.data_da_carga || "").localeCompare(String(a.data_da_carga || "")));
+        const resumo = {
+          placa,
+          viagens: viagens.length,
+          faturado: viagens.reduce((s: number, r: any) => s + num(r.valor_faturado), 0),
+          frete: viagens.reduce((s: number, r: any) => s + num(r.valor_do_frete), 0),
+          km: viagens.reduce((s: number, r: any) => s + num(r.total_km), 0),
+          combustivel: viagens.reduce((s: number, r: any) => s + num(r.abastecimento_pago_pela_jpd), 0),
+        };
+        return res.json({ resumo, viagens });
+      }
+
+      const byPlaca: Record<string, any> = {};
+      for (const r of rows) {
+        const p = r.placa_do_carro || "—";
+        byPlaca[p] ??= { placa: p, viagens: 0, faturado: 0, frete: 0, km: 0, combustivel: 0, ultimo_bv: "", _ultima_data: "" };
+        const v = byPlaca[p];
+        v.viagens += 1;
+        v.faturado += num(r.valor_faturado);
+        v.frete += num(r.valor_do_frete);
+        v.km += num(r.total_km);
+        v.combustivel += num(r.abastecimento_pago_pela_jpd);
+        const d = String(r.data_da_carga || r.data_do_bv || "");
+        if (r.numero_do_bv && d >= v._ultima_data) {
+          v.ultimo_bv = r.numero_do_bv;
+          v._ultima_data = d;
+        }
+      }
+      const resumo = Object.values(byPlaca)
+        .map(({ _ultima_data, ...rest }: any) => ({ ...rest, ultimo_bv: rest.ultimo_bv || "(pendente)" }))
+        .sort((a: any, b: any) => b.faturado - a.faturado);
+      const em_andamento = rows
+        .filter((r: any) => !r.numero_do_bv)
+        .map((r: any) => ({
+          id: r.id,
+          placa: r.placa_do_carro || "—",
+          motorista: r.motorista || "—",
+          origem: r.origem || "—",
+          destinatario: r.destinatario || "—",
+          data: r.data_da_carga || r.data_do_bv || "—",
+        }));
+      res.json({ resumo, em_andamento });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/jpd/dashboard?company_id=&from=&to=
   app.get("/api/jpd/dashboard", async (req, res) => {
     try {

@@ -44,6 +44,11 @@ CREATE TABLE IF NOT EXISTS public.jpd_fretes (
 CREATE INDEX IF NOT EXISTS jpd_fretes_company_idx ON public.jpd_fretes(company_id);
 CREATE INDEX IF NOT EXISTS jpd_fretes_carga_idx   ON public.jpd_fretes(data_da_carga);
 
+-- IMPORTANTE: o acesso é feito pelas Netlify Functions via service role (padrão das
+-- demais tabelas jpd_*). Deixe a RLS DESLIGADA — se ligar sem policy, a function
+-- recebe [] e a central não renderiza nada.
+ALTER TABLE public.jpd_fretes DISABLE ROW LEVEL SECURITY;
+
 -- =====================================================
 -- FIM. Confira no Table Editor que a tabela jpd_fretes foi criada.
 -- =====================================================

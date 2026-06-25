@@ -1,104 +1,63 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useCurrentAccount } from '../../hooks/useCurrentAccount';
+import JpdFreteForm from './JpdFreteForm';
 
-type Viagem = {
-  id: number;
-  numero_bv: string;
-  data_bv: string;
-  motorista: string;
-  placa: string;
-  origem: string;
-  destinatario: string;
-  total_km: string;
-  valor_frete: string;
-  valor_faturado: string;
-  situacao_bv: string;
-};
+type Frete = Record<string, any>;
+type Resumo = { placa: string; viagens: number; faturado: number; frete: number; km: number; combustivel: number };
 
-const MOCK_VIAGENS: Record<string, Viagem[]> = {
-  'JZ447-2': [
-    {
-      id: 142,
-      numero_bv: 'BV-2026-0084',
-      data_bv: '2026-05-18',
-      motorista: 'Rafael Soares',
-      placa: 'JZ447-2',
-      origem: 'Itajaí/SC',
-      destinatario: 'Carrefour SP',
-      total_km: '1.820,00',
-      valor_frete: '6.420,00',
-      valor_faturado: '6.890,00',
-      situacao_bv: 'pago',
-    },
-    {
-      id: 143,
-      numero_bv: '',
-      data_bv: '',
-      motorista: 'Rafael Soares',
-      placa: 'JZ447-2',
-      origem: 'Itajaí/SC',
-      destinatario: 'Atacadão Campinas',
-      total_km: '1.640,00',
-      valor_frete: '5.910,00',
-      valor_faturado: '',
-      situacao_bv: 'pendente',
-    },
-  ],
-};
+const fmtBRL = (n: any) => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtNum = (n: any) => (Number(n) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 
-const FIELDS: { key: keyof Viagem; label: string }[] = [
-  { key: 'numero_bv', label: 'Número do BV' },
-  { key: 'data_bv', label: 'Data do BV' },
-  { key: 'motorista', label: 'Motorista' },
-  { key: 'placa', label: 'Placa do carro' },
-  { key: 'origem', label: 'Origem' },
-  { key: 'destinatario', label: 'Destinatário' },
-  { key: 'total_km', label: 'Total KM' },
-  { key: 'valor_frete', label: 'Valor do frete' },
-  { key: 'valor_faturado', label: 'Valor faturado' },
-  { key: 'situacao_bv', label: 'Situação do BV' },
-];
-
-const inputCls =
-  'border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 text-sm bg-white dark:bg-gray-700 dark:text-white';
-
-const ViagemForm = ({ viagem }: { viagem: Viagem }) => {
-  const [data, setData] = useState(viagem);
-  const set = (k: keyof Viagem, v: string) => setData((d) => ({ ...d, [k]: v }));
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
-        Viagem #{viagem.id} • {viagem.numero_bv || '(BV pendente)'}
-      </h3>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          toast.success(`Viagem #${viagem.id} salva (mock)`);
-        }}
-        className="grid grid-cols-1 md:grid-cols-2 gap-3"
-      >
-        {FIELDS.map((f) => (
-          <label key={f.key} className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
-            <span className="mb-1">{f.label}</span>
-            <input value={data[f.key]} onChange={(e) => set(f.key, e.target.value)} className={inputCls} />
-          </label>
-        ))}
-        <button
-          type="submit"
-          className="md:col-span-2 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-        >
-          <Save className="w-4 h-4" /> Salvar alterações
-        </button>
-      </form>
-    </div>
-  );
-};
+const Kpi = ({ label, value }: { label: string; value: string }) => (
+  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+    <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+    <p className="text-lg font-semibold text-gray-900 dark:text-white">{value}</p>
+  </div>
+);
 
 const JpdVeiculoDetalhe = () => {
   const { placa = '' } = useParams<{ placa: string }>();
-  const viagens = MOCK_VIAGENS[placa] || MOCK_VIAGENS['JZ447-2'];
+  const { companyId } = useCurrentAccount();
+  const [resumo, setResumo] = useState<Resumo | null>(null);
+  const [viagens, setViagens] = useState<Frete[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState<Frete | null>(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!companyId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/jpd/veiculos?company_id=${companyId}&placa=${encodeURIComponent(placa)}`);
+      if (!res.ok) throw new Error('Falha ao carregar viagens');
+      const json = await res.json();
+      setResumo(json.resumo || null);
+      setViagens(json.viagens || []);
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao carregar viagens');
+    } finally {
+      setLoading(false);
+    }
+  }, [companyId, placa]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Excluir esta viagem?')) return;
+    try {
+      const res = await fetch(`/api/jpd/fretes/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Falha ao excluir');
+      toast.success('Viagem excluída');
+      load();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao excluir');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -109,7 +68,7 @@ const JpdVeiculoDetalhe = () => {
           </p>
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Veículo {placa}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {viagens.length} viagem(ns) registrada(s). Edite e salve cada viagem individualmente.
+            {loading ? 'Carregando...' : `${viagens.length} viagem(ns) registrada(s).`}
           </p>
         </div>
         <Link
@@ -120,9 +79,83 @@ const JpdVeiculoDetalhe = () => {
         </Link>
       </div>
 
-      {viagens.map((v) => (
-        <ViagemForm key={v.id} viagem={v} />
-      ))}
+      {resumo && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Kpi label="Viagens" value={String(resumo.viagens)} />
+          <Kpi label="Valor faturado" value={fmtBRL(resumo.faturado)} />
+          <Kpi label="KM total" value={fmtNum(resumo.km)} />
+          <Kpi label="Combustível JPD" value={fmtBRL(resumo.combustivel)} />
+        </div>
+      )}
+
+      <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-md">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+            <tr>
+              <th className="px-3 py-2 text-left">BV</th>
+              <th className="px-3 py-2 text-left">Data carga</th>
+              <th className="px-3 py-2 text-left">Motorista</th>
+              <th className="px-3 py-2 text-left">Origem</th>
+              <th className="px-3 py-2 text-left">Destinatário</th>
+              <th className="px-3 py-2 text-left">Valor frete</th>
+              <th className="px-3 py-2 text-left">Faturado</th>
+              <th className="px-3 py-2 text-left">Situação</th>
+              <th className="px-3 py-2 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody className="text-gray-800 dark:text-gray-200">
+            {viagens.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="px-3 py-6 text-center text-gray-500">
+                  {loading ? 'Carregando...' : 'Nenhuma viagem para esta placa.'}
+                </td>
+              </tr>
+            ) : (
+              viagens.map((v) => (
+                <tr key={v.id} className="border-t border-gray-100 dark:border-gray-700">
+                  <td className="px-3 py-2">{v.numero_do_bv || '(pendente)'}</td>
+                  <td className="px-3 py-2">{v.data_da_carga || '—'}</td>
+                  <td className="px-3 py-2">{v.motorista || '—'}</td>
+                  <td className="px-3 py-2">{v.origem || '—'}</td>
+                  <td className="px-3 py-2">{v.destinatario || '—'}</td>
+                  <td className="px-3 py-2">{fmtBRL(v.valor_do_frete)}</td>
+                  <td className="px-3 py-2">{fmtBRL(v.valor_faturado)}</td>
+                  <td className="px-3 py-2">{v.situacao_do_bv || '—'}</td>
+                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                    <button
+                      onClick={() => {
+                        setEditing(v);
+                        setShowForm(true);
+                      }}
+                      className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline mr-3"
+                    >
+                      <Pencil className="w-4 h-4" /> Editar
+                    </button>
+                    <button
+                      onClick={() => handleDelete(v.id)}
+                      className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 hover:underline"
+                    >
+                      <Trash2 className="w-4 h-4" /> Excluir
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {showForm && (
+        <JpdFreteForm
+          companyId={companyId}
+          initial={editing}
+          onClose={() => setShowForm(false)}
+          onSaved={() => {
+            setShowForm(false);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 };

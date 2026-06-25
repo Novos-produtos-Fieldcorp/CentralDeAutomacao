@@ -225,6 +225,71 @@ exports.handler = async (event) => {
       };
     }
 
+    // ---------- VEICULOS (agregado por placa a partir de jpd_fretes) ----------
+    if (segs[0] === "veiculos" && method === "GET") {
+      const company_id = companyIdFrom(qs, body);
+      if (!company_id) return json(400, { error: "company_id obrigatorio" });
+      const { data: fretes, error } = await supabase.from("jpd_fretes").select("*")
+        .eq("company_id", company_id);
+      if (error) return json(500, { error: error.message });
+      const num = (v) => (v == null ? 0 : Number(v) || 0);
+      const rows = fretes || [];
+
+      // Detalhe de uma placa específica
+      if (qs.placa) {
+        const viagens = rows
+          .filter((r) => (r.placa_do_carro || "") === qs.placa)
+          .sort((a, b) => String(b.data_da_carga || "").localeCompare(String(a.data_da_carga || "")));
+        const resumo = {
+          placa: qs.placa,
+          viagens: viagens.length,
+          faturado: viagens.reduce((s, r) => s + num(r.valor_faturado), 0),
+          frete: viagens.reduce((s, r) => s + num(r.valor_do_frete), 0),
+          km: viagens.reduce((s, r) => s + num(r.total_km), 0),
+          combustivel: viagens.reduce((s, r) => s + num(r.abastecimento_pago_pela_jpd), 0),
+        };
+        return json(200, { resumo, viagens });
+      }
+
+      // Lista agregada de veículos
+      const byPlaca = {};
+      for (const r of rows) {
+        const p = r.placa_do_carro || "—";
+        byPlaca[p] = byPlaca[p] || {
+          placa: p, viagens: 0, faturado: 0, frete: 0, km: 0, combustivel: 0,
+          ultimo_bv: "", _ultima_data: "",
+        };
+        const v = byPlaca[p];
+        v.viagens += 1;
+        v.faturado += num(r.valor_faturado);
+        v.frete += num(r.valor_do_frete);
+        v.km += num(r.total_km);
+        v.combustivel += num(r.abastecimento_pago_pela_jpd);
+        const d = String(r.data_da_carga || r.data_do_bv || "");
+        if (r.numero_do_bv && d >= v._ultima_data) {
+          v.ultimo_bv = r.numero_do_bv;
+          v._ultima_data = d;
+        }
+      }
+      const resumo = Object.values(byPlaca)
+        .map(({ _ultima_data, ...rest }) => ({ ...rest, ultimo_bv: rest.ultimo_bv || "(pendente)" }))
+        .sort((a, b) => b.faturado - a.faturado);
+
+      // Viagens "em andamento" = sem número do BV preenchido
+      const em_andamento = rows
+        .filter((r) => !r.numero_do_bv)
+        .map((r) => ({
+          id: r.id,
+          placa: r.placa_do_carro || "—",
+          motorista: r.motorista || "—",
+          origem: r.origem || "—",
+          destinatario: r.destinatario || "—",
+          data: r.data_da_carga || r.data_do_bv || "—",
+        }));
+
+      return json(200, { resumo, em_andamento });
+    }
+
     // ---------- DOCUMENTS ----------
     if (segs[0] === "documents") {
       const id = segs[1] ? Number(segs[1]) : null;
