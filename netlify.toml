@@ -12,6 +12,12 @@
 
 # API redirects - functions first (force=true ensures priority)
 [[redirects]]
+  from = "/api/jpd/*"
+  to = "/.netlify/functions/jpd/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/validate-wiseapp-token"
   to = "/.netlify/functions/validate-wiseapp-token"
   status = 200
