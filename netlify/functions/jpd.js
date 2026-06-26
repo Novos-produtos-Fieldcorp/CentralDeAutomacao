@@ -322,9 +322,9 @@ exports.handler = async (event) => {
       // Consumo global (todos os veículos)
       const consumo = calcConsumo(rows, lancamentos);
 
-      // Viagens "em andamento" = sem número do BV preenchido
+      // Viagens "em andamento" = tem BV mas ainda sem data de descarga
       const em_andamento = rows
-        .filter((r) => !r.numero_do_bv)
+        .filter((r) => r.numero_do_bv && !r.data_da_descarga)
         .map((r) => ({
           id: r.id,
           placa: r.placa_do_carro || "—",

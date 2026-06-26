@@ -7164,7 +7164,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
         })
         .sort((a: any, b: any) => b.faturado - a.faturado);
       const em_andamento = rows
-        .filter((r: any) => !r.numero_do_bv)
+        .filter((r: any) => r.numero_do_bv && !r.data_da_descarga)
         .map((r: any) => ({
           id: r.id,
           placa: r.placa_do_carro || "—",

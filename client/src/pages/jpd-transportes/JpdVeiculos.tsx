@@ -93,7 +93,7 @@ const JpdVeiculos = () => {
             {emAndamento.length}
           </span>
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Viagens com número do BV ainda não preenchido.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Viagens com BV mas sem data de descarga preenchida.</p>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
