@@ -20,8 +20,8 @@ const JpdFretes = () => {
     if (!companyId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/jpd/fretes?company_id=${companyId}`);
-      if (!res.ok) throw new Error('Falha ao carregar fretes');
+      const res = await fetch(`/api/jpd/fretes`);
+      if (!res.ok) throw new Error('Falha ao carregar boletins');
       setFretes(await res.json());
     } catch (err: any) {
       toast.error(err.message || 'Erro ao carregar');
@@ -62,8 +62,8 @@ const JpdFretes = () => {
           <p className="text-xs uppercase tracking-wider text-blue-600 dark:text-blue-400 font-semibold">
             Lançamentos
           </p>
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Fretes</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Cadastre e edite os fretes com todos os campos do BV.</p>
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Boletim de Viagem</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Cadastre e edite os boletins de viagem com todos os campos do BV.</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -76,7 +76,7 @@ const JpdFretes = () => {
             onClick={openNew}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
           >
-            <Plus className="w-4 h-4" /> Novo frete
+            <Plus className="w-4 h-4" /> Novo BV
           </button>
         </div>
       </div>
@@ -107,7 +107,7 @@ const JpdFretes = () => {
             ) : fretes.length === 0 ? (
               <tr>
                 <td colSpan={10} className="px-3 py-6 text-center text-gray-500">
-                  Nenhum frete cadastrado.
+                  Nenhum boletim de viagem cadastrado.
                 </td>
               </tr>
             ) : (

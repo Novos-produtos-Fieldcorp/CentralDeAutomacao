@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export type FieldType = 'text' | 'number' | 'date' | 'select';
 
-export type FieldDef = { key: string; label: string; type: FieldType; options?: string[] };
+export type FieldDef = {
+  key: string;
+  label: string;
+  type: FieldType;
+  options?: string[];
+  dynamicOptions?: 'veiculos' | 'motoristas';
+};
 
 // Os 26 campos do exemplo.csv (na mesma ordem do arquivo)
 export const FRETE_FIELDS: FieldDef[] = [
   { key: 'origem', label: 'Origem', type: 'text' },
   { key: 'destinatario', label: 'Destinatário', type: 'text' },
-  { key: 'motorista', label: 'Motorista', type: 'text' },
-  { key: 'placa_do_carro', label: 'Placa do carro', type: 'text' },
+  { key: 'motorista', label: 'Motorista', type: 'select', dynamicOptions: 'motoristas' },
+  { key: 'placa_do_carro', label: 'Placa do carro', type: 'select', dynamicOptions: 'veiculos' },
   { key: 'numero_do_bv', label: 'Número do BV', type: 'text' },
   { key: 'total_km', label: 'Total KM', type: 'number' },
   { key: 'data_do_bv', label: 'Data do BV', type: 'date' },
@@ -36,6 +42,17 @@ export const FRETE_FIELDS: FieldDef[] = [
   { key: 'situacao_do_bv', label: 'Situação do BV', type: 'select', options: ['pago', 'pendente', 'em_analise'] },
 ];
 
+// Campos de custo de abastecimento (preenchidos ao vincular um lançamento, ou manualmente)
+export const CUSTO_FIELDS: FieldDef[] = [
+  { key: 'fornecedor', label: 'Fornecedor', type: 'text' },
+  { key: 'combustivel', label: 'Combustível', type: 'text' },
+  { key: 'litros', label: 'Litros', type: 'number' },
+  { key: 'valor_unitario', label: 'Valor Unitário', type: 'number' },
+  { key: 'valor_bruto', label: 'Valor Bruto', type: 'number' },
+  { key: 'desconto', label: 'Desconto', type: 'number' },
+  { key: 'arla', label: 'Arla', type: 'number' },
+];
+
 const inputCls =
   'border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1.5 text-sm bg-white dark:bg-gray-700 dark:text-white w-full';
 
@@ -50,23 +67,40 @@ interface Props {
 
 const toFormValue = (v: any) => (v === null || v === undefined ? '' : String(v));
 
-const JpdFreteForm: React.FC<Props> = ({ companyId, initial, onClose, onSaved }) => {
+const ALL_FIELDS = [...FRETE_FIELDS, ...CUSTO_FIELDS];
+
+const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
   const [fields, setFields] = useState<Frete>(() => {
     const init: Frete = {};
-    for (const f of FRETE_FIELDS) init[f.key] = toFormValue(initial?.[f.key]);
+    for (const f of ALL_FIELDS) init[f.key] = toFormValue(initial?.[f.key]);
     return init;
   });
   const [saving, setSaving] = useState(false);
+  const [opcoes, setOpcoes] = useState<{ veiculos: string[]; motoristas: string[] }>({ veiculos: [], motoristas: [] });
   const isEdit = !!initial?.id;
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/jpd/opcoes');
+        if (res.ok) setOpcoes(await res.json());
+      } catch {
+        /* opções vazias = campos viram texto livre */
+      }
+    })();
+  }, []);
 
   const set = (k: string, v: string) => setFields((f) => ({ ...f, [k]: v }));
 
+  const optionsFor = (f: FieldDef): string[] | null => {
+    if (f.dynamicOptions === 'veiculos') return opcoes.veiculos;
+    if (f.dynamicOptions === 'motoristas') return opcoes.motoristas;
+    if (f.options) return f.options;
+    return null;
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!companyId) {
-      toast.error('Empresa não identificada');
-      return;
-    }
     setSaving(true);
     try {
       const url = isEdit ? `/api/jpd/fretes/${initial!.id}` : '/api/jpd/fretes';
@@ -74,13 +108,13 @@ const JpdFreteForm: React.FC<Props> = ({ companyId, initial, onClose, onSaved })
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...fields, company_id: companyId }),
+        body: JSON.stringify(fields),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Falha ao salvar');
       }
-      toast.success(isEdit ? 'Frete atualizado' : 'Frete criado');
+      toast.success(isEdit ? 'Boletim atualizado' : 'Boletim criado');
       onSaved();
     } catch (err: any) {
       toast.error(err.message || 'Erro ao salvar');
@@ -89,12 +123,39 @@ const JpdFreteForm: React.FC<Props> = ({ companyId, initial, onClose, onSaved })
     }
   };
 
+  const renderField = (f: FieldDef) => {
+    const opts = optionsFor(f);
+    return (
+      <label key={f.key} className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
+        <span className="mb-1">{f.label}</span>
+        {f.type === 'select' && opts ? (
+          <select value={fields[f.key]} onChange={(e) => set(f.key, e.target.value)} className={inputCls}>
+            <option value="">—</option>
+            {opts.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'}
+            step={f.type === 'number' ? 'any' : undefined}
+            value={fields[f.key]}
+            onChange={(e) => set(f.key, e.target.value)}
+            className={inputCls}
+          />
+        )}
+      </label>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-            {isEdit ? `Editar frete #${initial!.id}` : 'Novo frete'}
+            {isEdit ? `Editar BV #${initial!.id}` : 'Novo Boletim de Viagem'}
           </h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
             <X className="w-5 h-5" />
@@ -102,29 +163,14 @@ const JpdFreteForm: React.FC<Props> = ({ companyId, initial, onClose, onSaved })
         </div>
         <form onSubmit={submit} className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {FRETE_FIELDS.map((f) => (
-              <label key={f.key} className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
-                <span className="mb-1">{f.label}</span>
-                {f.type === 'select' ? (
-                  <select value={fields[f.key]} onChange={(e) => set(f.key, e.target.value)} className={inputCls}>
-                    <option value="">—</option>
-                    {f.options!.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'}
-                    step={f.type === 'number' ? 'any' : undefined}
-                    value={fields[f.key]}
-                    onChange={(e) => set(f.key, e.target.value)}
-                    className={inputCls}
-                  />
-                )}
-              </label>
-            ))}
+            {FRETE_FIELDS.map(renderField)}
+          </div>
+
+          <h4 className="mt-6 mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200 border-t border-gray-200 dark:border-gray-700 pt-4">
+            Custos de abastecimento
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {CUSTO_FIELDS.map(renderField)}
           </div>
           <div className="mt-6 flex justify-end gap-3">
             <button

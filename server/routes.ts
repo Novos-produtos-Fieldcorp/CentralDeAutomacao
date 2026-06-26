@@ -6921,8 +6921,6 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
       const f = ext.fields || {};
 
       const freightRow = {
-        company_id: doc.company_id,
-        document_id: doc.id,
         origem: f.origem ?? null,
         destinatario: f.destinatario ?? null,
         motorista: f.motorista ?? null,
@@ -6988,20 +6986,43 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
   // =====================================================
   // Colunas do CSV aceitas no body de POST/PUT
   const JPD_FRETE_COLS = [
-    "document_id",
     "origem", "destinatario", "motorista", "placa_do_carro", "numero_do_bv", "total_km",
     "data_do_bv", "data_da_carga", "data_da_descarga", "valor_do_frete", "outras_receitas",
     "abastecimento_pago_pela_jpd", "abastecimento_descontado_do_frete", "demais_despesas",
     "seguros", "aluguel", "pneus", "parcela_pneus", "plano_manutencao_ipva", "faltas_em_litros",
     "faltas_abonadas_rs", "faltas_cobradas_rs", "data_do_faturamento", "valor_faturado",
     "numero_do_cte", "situacao_do_bv",
+    "fornecedor", "combustivel", "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
   ] as const;
   const JPD_NUMERIC_COLS = new Set([
     "total_km", "valor_do_frete", "outras_receitas", "abastecimento_pago_pela_jpd",
     "abastecimento_descontado_do_frete", "demais_despesas", "seguros", "aluguel", "pneus",
     "parcela_pneus", "plano_manutencao_ipva", "faltas_em_litros", "faltas_abonadas_rs",
-    "faltas_cobradas_rs", "valor_faturado", "document_id",
+    "faltas_cobradas_rs", "valor_faturado",
+    "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
   ]);
+  const JPD_ABAST_COLS = [
+    "hodometro", "placa", "fornecedor", "combustivel", "litros",
+    "valor_unitario", "valor_bruto", "desconto", "arla",
+  ] as const;
+  const JPD_ABAST_NUMERIC = new Set([
+    "hodometro", "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
+  ]);
+  const JPD_CUSTO_COLS = ["fornecedor", "combustivel", "litros", "valor_unitario", "valor_bruto", "desconto", "arla"];
+  function buildAbastecimentoRow(body: any) {
+    const row: Record<string, any> = {};
+    for (const col of JPD_ABAST_COLS) {
+      if (!(col in (body || {}))) continue;
+      let v = body[col];
+      if (v === "" || v === undefined) v = null;
+      if (v !== null && JPD_ABAST_NUMERIC.has(col)) {
+        const n = Number(v);
+        v = Number.isFinite(n) ? n : null;
+      }
+      row[col] = v;
+    }
+    return row;
+  }
 
   function buildFreteRow(body: any) {
     const row: Record<string, any> = {};
@@ -7021,16 +7042,15 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
   // GET /api/jpd/fretes?company_id=&from=&to=&motorista=&placa=&situacao=
   app.get("/api/jpd/fretes", async (req, res) => {
     try {
-      const company_id = jpdCompanyId(req);
-      if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
-      const { from, to, motorista, placa, situacao } = req.query as Record<string, string>;
-      let q = supabaseBackend.from("jpd_fretes").select("*").eq("company_id", company_id)
+      const { from, to, motorista, placa, situacao, abertos } = req.query as Record<string, string>;
+      let q = supabaseBackend.from("jpd_fretes").select("*")
         .order("data_da_carga", { ascending: false });
       if (from) q = q.gte("data_da_carga", from);
       if (to) q = q.lte("data_da_carga", to);
       if (motorista) q = q.eq("motorista", motorista);
       if (placa) q = q.eq("placa_do_carro", placa);
       if (situacao) q = q.eq("situacao_do_bv", situacao);
+      if (abertos) q = q.neq("situacao_do_bv", "pago");
       const { data, error } = await q;
       if (error) return res.status(500).json({ error: error.message });
       res.json(data || []);
@@ -7042,9 +7062,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
   // POST /api/jpd/fretes
   app.post("/api/jpd/fretes", async (req, res) => {
     try {
-      const company_id = jpdCompanyId(req);
-      if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
-      const row = { ...buildFreteRow(req.body), company_id };
+      const row = buildFreteRow(req.body);
       const { data, error } = await supabaseBackend.from("jpd_fretes").insert(row).select().single();
       if (error) return res.status(500).json({ error: error.message });
       res.json(data);
@@ -7081,18 +7099,36 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
   // GET /api/jpd/veiculos?company_id=&placa=  (agregado por placa a partir de jpd_fretes)
   app.get("/api/jpd/veiculos", async (req, res) => {
     try {
-      const company_id = jpdCompanyId(req);
-      if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
       const placa = req.query.placa as string | undefined;
-      const { data: fretes, error } = await supabaseBackend.from("jpd_fretes").select("*").eq("company_id", company_id);
+      const { data: fretes, error } = await supabaseBackend.from("jpd_fretes").select("*");
       if (error) return res.status(500).json({ error: error.message });
+      const { data: abasts } = await supabaseBackend.from("homedometro_abastecimento_jpd").select("*");
       const num = (v: any) => (v == null ? 0 : Number(v) || 0);
       const rows = fretes || [];
+      const lancamentos = abasts || [];
+
+      const calcConsumo = (viagensArr: any[], lancArr: any[]) => {
+        const km = viagensArr.reduce((s: number, r: any) => s + num(r.total_km), 0);
+        const litros = lancArr.reduce((s: number, l: any) => s + num(l.litros), 0);
+        const dias = new Set(viagensArr.map((r: any) => r.data_da_carga).filter(Boolean)).size;
+        const gasto_combustivel = lancArr.reduce((s: number, l: any) => s + (num(l.valor_bruto) - num(l.desconto)), 0);
+        const arla_total = lancArr.reduce((s: number, l: any) => s + num(l.arla), 0);
+        return {
+          km_por_litro: litros > 0 ? km / litros : 0,
+          media_km_diaria: dias > 0 ? km / dias : 0,
+          total_leituras: lancArr.length,
+          litros_totais: litros,
+          gasto_combustivel,
+          custo_medio_litro: litros > 0 ? gasto_combustivel / litros : 0,
+          custo_extra_arla: arla_total,
+        };
+      };
 
       if (placa) {
         const viagens = rows
           .filter((r: any) => (r.placa_do_carro || "") === placa)
           .sort((a: any, b: any) => String(b.data_da_carga || "").localeCompare(String(a.data_da_carga || "")));
+        const lancPlaca = lancamentos.filter((l: any) => (l.placa || "") === placa);
         const resumo = {
           placa,
           viagens: viagens.length,
@@ -7101,7 +7137,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
           km: viagens.reduce((s: number, r: any) => s + num(r.total_km), 0),
           combustivel: viagens.reduce((s: number, r: any) => s + num(r.abastecimento_pago_pela_jpd), 0),
         };
-        return res.json({ resumo, viagens });
+        return res.json({ resumo, viagens, consumo: calcConsumo(viagens, lancPlaca) });
       }
 
       const byPlaca: Record<string, any> = {};
@@ -7121,7 +7157,11 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
         }
       }
       const resumo = Object.values(byPlaca)
-        .map(({ _ultima_data, ...rest }: any) => ({ ...rest, ultimo_bv: rest.ultimo_bv || "(pendente)" }))
+        .map(({ _ultima_data, ...rest }: any) => {
+          const viagensPlaca = rows.filter((r: any) => (r.placa_do_carro || "—") === rest.placa);
+          const lancPlaca = lancamentos.filter((l: any) => (l.placa || "") === rest.placa);
+          return { ...rest, ultimo_bv: rest.ultimo_bv || "(pendente)", consumo: calcConsumo(viagensPlaca, lancPlaca) };
+        })
         .sort((a: any, b: any) => b.faturado - a.faturado);
       const em_andamento = rows
         .filter((r: any) => !r.numero_do_bv)
@@ -7133,7 +7173,93 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
           destinatario: r.destinatario || "—",
           data: r.data_da_carga || r.data_do_bv || "—",
         }));
-      res.json({ resumo, em_andamento });
+      res.json({ resumo, em_andamento, consumo: calcConsumo(rows, lancamentos) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/jpd/opcoes  => { veiculos: [placa...], motoristas: [nome...] }
+  app.get("/api/jpd/opcoes", async (_req, res) => {
+    try {
+      const { data: veics } = await supabaseBackend.from("veiculo").select("placa");
+      const { data: mots } = await supabaseBackend.from("motorista").select("nome");
+      const uniqSorted = (arr: any[]) =>
+        Array.from(new Set((arr || []).filter((x) => x != null && String(x).trim() !== "")))
+          .sort((a, b) => String(a).localeCompare(String(b)));
+      res.json({
+        veiculos: uniqSorted((veics || []).map((v: any) => v.placa)),
+        motoristas: uniqSorted((mots || []).map((m: any) => m.nome)),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ---------- ABASTECIMENTOS ----------
+  app.get("/api/jpd/abastecimentos", async (req, res) => {
+    try {
+      let q = supabaseBackend.from("homedometro_abastecimento_jpd").select("*")
+        .order("created_at", { ascending: false });
+      if (req.query.placa) q = q.eq("placa", req.query.placa as string);
+      const { data, error } = await q;
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/jpd/abastecimentos", async (req, res) => {
+    try {
+      const row = buildAbastecimentoRow(req.body);
+      const { data, error } = await supabaseBackend.from("homedometro_abastecimento_jpd").insert(row).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/jpd/abastecimentos/:id/vincular", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const frete_id = Number(req.body?.frete_id);
+      if (!Number.isFinite(frete_id)) return res.status(400).json({ error: "frete_id obrigatorio" });
+      const { data: lanc, error: lErr } = await supabaseBackend.from("homedometro_abastecimento_jpd").select("*").eq("id", id).single();
+      if (lErr) return res.status(404).json({ error: lErr.message });
+      const custos: Record<string, any> = {};
+      for (const c of JPD_CUSTO_COLS) custos[c] = lanc[c];
+      const { error: fErr } = await supabaseBackend.from("jpd_fretes")
+        .update({ ...custos, updated_at: new Date().toISOString() }).eq("id", frete_id);
+      if (fErr) return res.status(500).json({ error: fErr.message });
+      const { data, error } = await supabaseBackend.from("homedometro_abastecimento_jpd")
+        .update({ frete_id, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/jpd/abastecimentos/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const row = { ...buildAbastecimentoRow(req.body), updated_at: new Date().toISOString() };
+      const { data, error } = await supabaseBackend.from("homedometro_abastecimento_jpd").update(row).eq("id", id).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/jpd/abastecimentos/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { error } = await supabaseBackend.from("homedometro_abastecimento_jpd").delete().eq("id", id);
+      if (error) return res.status(500).json({ error: error.message });
+      res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -7142,11 +7268,9 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
   // GET /api/jpd/dashboard?company_id=&from=&to=
   app.get("/api/jpd/dashboard", async (req, res) => {
     try {
-      const company_id = jpdCompanyId(req);
-      if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
       const from = req.query.from as string | undefined;
       const to = req.query.to as string | undefined;
-      let q = supabaseBackend.from("jpd_fretes").select("*").eq("company_id", company_id);
+      let q = supabaseBackend.from("jpd_fretes").select("*");
       if (from) q = q.gte("data_da_carga", from);
       if (to) q = q.lte("data_da_carga", to);
       const { data: fretes, error } = await q;

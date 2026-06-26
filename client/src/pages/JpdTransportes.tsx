@@ -14,7 +14,7 @@ const JpdTransportes = () => {
 
   const tabs = [
     { path: '/jpd-transportes/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/jpd-transportes/fretes', icon: ClipboardList, label: 'Fretes' },
+    { path: '/jpd-transportes/fretes', icon: ClipboardList, label: 'Boletim de Viagem' },
     { path: '/jpd-transportes/veiculos', icon: Car, label: 'Veículos' },
   ];
 

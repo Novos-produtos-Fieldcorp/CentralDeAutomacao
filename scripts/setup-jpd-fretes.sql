@@ -6,8 +6,6 @@
 
 CREATE TABLE IF NOT EXISTS public.jpd_fretes (
   id                                  serial PRIMARY KEY,
-  company_id                          integer REFERENCES public.company(company_id),
-  document_id                         integer,                              -- link opcional ao documento de origem
 
   -- Colunas do CSV (na mesma ordem do arquivo)
   origem                              text,                                 -- ORIGEM
@@ -37,11 +35,19 @@ CREATE TABLE IF NOT EXISTS public.jpd_fretes (
   numero_do_cte                       text,                                 -- NÚMERO DO CTE
   situacao_do_bv                      text,                                 -- SITUAÇÃO DO BV
 
+  -- Custos de abastecimento (preenchidos manualmente ou via vínculo de lançamento)
+  fornecedor                          text,
+  combustivel                         text,
+  litros                              numeric,
+  valor_unitario                      numeric,
+  valor_bruto                         numeric,
+  desconto                            numeric,
+  arla                                numeric,
+
   created_at                          timestamp DEFAULT now(),
   updated_at                          timestamp DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS jpd_fretes_company_idx ON public.jpd_fretes(company_id);
 CREATE INDEX IF NOT EXISTS jpd_fretes_carga_idx   ON public.jpd_fretes(data_da_carga);
 
 -- IMPORTANTE: o acesso é feito pelas Netlify Functions via service role (padrão das

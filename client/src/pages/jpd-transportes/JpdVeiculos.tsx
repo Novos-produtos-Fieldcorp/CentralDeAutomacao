@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { useCurrentAccount } from '../../hooks/useCurrentAccount';
+import JpdConsumoCards, { Consumo } from './JpdConsumoCards';
+import JpdAbastecimentos from './JpdAbastecimentos';
 
 const fmtBRL = (n: any) => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const fmtNum = (n: any) => (Number(n) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
@@ -27,30 +28,38 @@ type EmAndamento = {
 const linkCls = 'text-blue-600 dark:text-blue-400 hover:underline font-medium';
 
 const JpdVeiculos = () => {
-  const { companyId } = useCurrentAccount();
   const [resumo, setResumo] = useState<Resumo[]>([]);
   const [emAndamento, setEmAndamento] = useState<EmAndamento[]>([]);
+  const [consumo, setConsumo] = useState<Consumo | null>(null);
   const [loading, setLoading] = useState(false);
+  const [aba, setAba] = useState<'resumo' | 'lancamentos'>('resumo');
 
   const load = useCallback(async () => {
-    if (!companyId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/jpd/veiculos?company_id=${companyId}`);
+      const res = await fetch(`/api/jpd/veiculos`);
       if (!res.ok) throw new Error('Falha ao carregar veículos');
       const json = await res.json();
       setResumo(json.resumo || []);
       setEmAndamento(json.em_andamento || []);
+      setConsumo(json.consumo || null);
     } catch (err: any) {
       toast.error(err.message || 'Erro ao carregar veículos');
     } finally {
       setLoading(false);
     }
-  }, [companyId]);
+  }, []);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const subTabCls = (active: boolean) =>
+    `px-3 py-1.5 rounded-md text-sm font-medium ${
+      active
+        ? 'bg-blue-600 text-white'
+        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200'
+    }`;
 
   return (
     <div className="space-y-6">
@@ -62,6 +71,21 @@ const JpdVeiculos = () => {
         </p>
       </div>
 
+      <JpdConsumoCards consumo={consumo} title="Consumo da frota" />
+
+      <div className="flex gap-2">
+        <button className={subTabCls(aba === 'resumo')} onClick={() => setAba('resumo')}>
+          Resumo
+        </button>
+        <button className={subTabCls(aba === 'lancamentos')} onClick={() => setAba('lancamentos')}>
+          Lançamentos
+        </button>
+      </div>
+
+      {aba === 'lancamentos' ? (
+        <JpdAbastecimentos />
+      ) : (
+      <>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
           Viagens em andamento
@@ -149,6 +173,8 @@ const JpdVeiculos = () => {
           </table>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

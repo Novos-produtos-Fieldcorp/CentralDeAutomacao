@@ -4,6 +4,7 @@ import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import JpdFreteForm from './JpdFreteForm';
+import JpdConsumoCards, { Consumo } from './JpdConsumoCards';
 
 type Frete = Record<string, any>;
 type Resumo = { placa: string; viagens: number; faturado: number; frete: number; km: number; combustivel: number };
@@ -23,25 +24,26 @@ const JpdVeiculoDetalhe = () => {
   const { companyId } = useCurrentAccount();
   const [resumo, setResumo] = useState<Resumo | null>(null);
   const [viagens, setViagens] = useState<Frete[]>([]);
+  const [consumo, setConsumo] = useState<Consumo | null>(null);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Frete | null>(null);
   const [showForm, setShowForm] = useState(false);
 
   const load = useCallback(async () => {
-    if (!companyId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/jpd/veiculos?company_id=${companyId}&placa=${encodeURIComponent(placa)}`);
+      const res = await fetch(`/api/jpd/veiculos?placa=${encodeURIComponent(placa)}`);
       if (!res.ok) throw new Error('Falha ao carregar viagens');
       const json = await res.json();
       setResumo(json.resumo || null);
       setViagens(json.viagens || []);
+      setConsumo(json.consumo || null);
     } catch (err: any) {
       toast.error(err.message || 'Erro ao carregar viagens');
     } finally {
       setLoading(false);
     }
-  }, [companyId, placa]);
+  }, [placa]);
 
   useEffect(() => {
     load();
@@ -87,6 +89,8 @@ const JpdVeiculoDetalhe = () => {
           <Kpi label="Combustível JPD" value={fmtBRL(resumo.combustivel)} />
         </div>
       )}
+
+      <JpdConsumoCards consumo={consumo} title="Consumo do veículo" />
 
       <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-md">
         <table className="min-w-full text-sm">
