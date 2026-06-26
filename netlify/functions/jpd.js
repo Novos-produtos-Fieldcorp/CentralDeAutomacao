@@ -119,7 +119,8 @@ exports.handler = async (event) => {
         if (qs.placa) q = q.eq("placa_do_carro", qs.placa);
         if (qs.situacao) q = q.eq("situacao_do_bv", qs.situacao);
         // BVs em aberto (para o seletor de vínculo de abastecimento)
-        if (qs.abertos) q = q.neq("situacao_do_bv", "pago");
+        // != 'pago' sozinho exclui NULL no Postgres; incluímos os sem situação definida.
+        if (qs.abertos) q = q.or("situacao_do_bv.is.null,situacao_do_bv.neq.pago");
         const { data, error } = await q;
         if (error) return json(500, { error: error.message });
         return json(200, data || []);

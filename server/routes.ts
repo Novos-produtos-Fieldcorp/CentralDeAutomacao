@@ -7050,7 +7050,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
       if (motorista) q = q.eq("motorista", motorista);
       if (placa) q = q.eq("placa_do_carro", placa);
       if (situacao) q = q.eq("situacao_do_bv", situacao);
-      if (abertos) q = q.neq("situacao_do_bv", "pago");
+      if (abertos) q = q.or("situacao_do_bv.is.null,situacao_do_bv.neq.pago");
       const { data, error } = await q;
       if (error) return res.status(500).json({ error: error.message });
       res.json(data || []);
