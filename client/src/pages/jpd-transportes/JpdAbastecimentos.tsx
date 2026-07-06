@@ -3,20 +3,9 @@ import { Plus, Pencil, Trash2, Save, X, Link2, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import JpdVincularBV from './JpdVincularBV';
 import JpdFiltros, { EMPTY_FILTROS, JpdFiltrosValue } from './JpdFiltros';
+import { ABAST_COLS as COLS } from './jpdAbastecimentoCols';
 
 type Abastecimento = Record<string, any>;
-
-const COLS: { key: string; label: string; type: 'text' | 'number' }[] = [
-  { key: 'hodometro', label: 'Hodômetro', type: 'number' },
-  { key: 'placa', label: 'Placa', type: 'text' },
-  { key: 'fornecedor', label: 'Fornecedor', type: 'text' },
-  { key: 'combustivel', label: 'Combustível', type: 'text' },
-  { key: 'litros', label: 'Litros', type: 'number' },
-  { key: 'valor_unitario', label: 'Valor Unitário', type: 'number' },
-  { key: 'valor_bruto', label: 'Valor Bruto', type: 'number' },
-  { key: 'desconto', label: 'Desconto', type: 'number' },
-  { key: 'arla', label: 'Arla', type: 'number' },
-];
 
 const inputCls =
   'border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 dark:text-white w-full';

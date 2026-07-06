@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import JpdConsumoCards, { Consumo } from './JpdConsumoCards';
 import JpdAbastecimentos from './JpdAbastecimentos';
+import JpdGerarLancamento from './JpdGerarLancamento';
 import JpdFiltros, { EMPTY_FILTROS, JpdFiltrosValue } from './JpdFiltros';
 import { fmtBRL, fmtNum, capitalizeNome } from './format';
 
@@ -32,6 +34,8 @@ const JpdVeiculos = () => {
   const [consumo, setConsumo] = useState<Consumo | null>(null);
   const [loading, setLoading] = useState(false);
   const [aba, setAba] = useState<'resumo' | 'lancamentos'>('resumo');
+  const [showGerar, setShowGerar] = useState(false);
+  const [lancKey, setLancKey] = useState(0);
   const [filtros, setFiltros] = useState<JpdFiltrosValue>(EMPTY_FILTROS);
 
   const resumoFiltrado = useMemo(() => {
@@ -97,17 +101,25 @@ const JpdVeiculos = () => {
 
       <JpdConsumoCards consumo={consumo} title="Consumo da frota" />
 
-      <div className="flex gap-2">
-        <button className={subTabCls(aba === 'resumo')} onClick={() => setAba('resumo')}>
-          Resumo
-        </button>
-        <button className={subTabCls(aba === 'lancamentos')} onClick={() => setAba('lancamentos')}>
-          Lançamentos
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-2">
+          <button className={subTabCls(aba === 'resumo')} onClick={() => setAba('resumo')}>
+            Resumo
+          </button>
+          <button className={subTabCls(aba === 'lancamentos')} onClick={() => setAba('lancamentos')}>
+            Lançamentos
+          </button>
+        </div>
+        <button
+          onClick={() => setShowGerar(true)}
+          className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-600 text-white rounded-md text-sm hover:bg-emerald-700"
+        >
+          <Upload className="w-4 h-4" /> Gerar lançamento
         </button>
       </div>
 
       {aba === 'lancamentos' ? (
-        <JpdAbastecimentos />
+        <JpdAbastecimentos key={lancKey} />
       ) : (
       <>
       <JpdFiltros value={filtros} onChange={setFiltros} campos={['placa', 'motorista', 'busca']} />
@@ -199,6 +211,17 @@ const JpdVeiculos = () => {
         </div>
       </div>
       </>
+      )}
+
+      {showGerar && (
+        <JpdGerarLancamento
+          onClose={() => setShowGerar(false)}
+          onSaved={() => {
+            setShowGerar(false);
+            load();
+            setLancKey((k) => k + 1); // força recarga da tabela de Lançamentos
+          }}
+        />
       )}
     </div>
   );

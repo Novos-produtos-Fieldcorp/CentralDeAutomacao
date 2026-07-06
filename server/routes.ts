@@ -7265,6 +7265,56 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     }
   });
 
+  // ---------- OCR (leitura automática via webhooks n8n) ----------
+  // Recebem { url } (link público no bucket Supabase jpd-uploads) e devolvem
+  // JSON com chaves = colunas do BV/lançamento.
+  const N8N_WEBHOOKS_JPD = {
+    bv: "https://n8nqp.wiseapp360.com/webhook/leitor-arquivos",
+    hodometro: "https://n8nqp.wiseapp360.com/webhook/leitorHodometro",
+    comprovante: "https://n8nqp.wiseapp360.com/webhook/leitor-comprovante",
+  };
+  const chamarWebhookN8nJpd = async (webhookUrl: string, fileUrl: string) => {
+    const r = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: fileUrl }),
+    });
+    if (!r.ok) {
+      const txt = await r.text().catch(() => "");
+      throw new Error(`Webhook respondeu ${r.status}${txt ? `: ${txt.slice(0, 200)}` : ""}`);
+    }
+    const data = await r.json().catch(() => ({}));
+    return Array.isArray(data) ? (data[0] || {}) : (data || {});
+  };
+
+  app.post("/api/jpd/ocr/bv", async (req, res) => {
+    try {
+      const url = req.body?.url;
+      if (!url) return res.status(400).json({ error: "url do arquivo obrigatória" });
+      const dados = await chamarWebhookN8nJpd(N8N_WEBHOOKS_JPD.bv, url);
+      res.json(dados);
+    } catch (err: any) {
+      res.status(502).json({ error: `Falha na leitura do arquivo: ${err.message}` });
+    }
+  });
+
+  app.post("/api/jpd/ocr/lancamento", async (req, res) => {
+    try {
+      const hodometroUrl = req.body?.hodometro_url;
+      const comprovanteUrl = req.body?.comprovante_url;
+      if (!hodometroUrl || !comprovanteUrl) {
+        return res.status(400).json({ error: "hodometro_url e comprovante_url obrigatórios" });
+      }
+      const [hodo, comp] = await Promise.all([
+        chamarWebhookN8nJpd(N8N_WEBHOOKS_JPD.hodometro, hodometroUrl),
+        chamarWebhookN8nJpd(N8N_WEBHOOKS_JPD.comprovante, comprovanteUrl),
+      ]);
+      res.json({ ...comp, ...hodo });
+    } catch (err: any) {
+      res.status(502).json({ error: `Falha na leitura das imagens: ${err.message}` });
+    }
+  });
+
   // GET /api/jpd/dashboard?company_id=&from=&to=
   app.get("/api/jpd/dashboard", async (req, res) => {
     try {

@@ -17,6 +17,30 @@ const CORS = {
 
 const json = (statusCode, body) => ({ statusCode, headers: CORS, body: JSON.stringify(body) });
 
+// Webhooks n8n de leitura automática (OCR). Recebem { url } (link público no
+// bucket Supabase jpd-uploads) e devolvem JSON com chaves = colunas do BV/lançamento.
+const N8N_WEBHOOKS = {
+  bv: "https://n8nqp.wiseapp360.com/webhook/leitor-arquivos",
+  hodometro: "https://n8nqp.wiseapp360.com/webhook/leitorHodometro",
+  comprovante: "https://n8nqp.wiseapp360.com/webhook/leitor-comprovante",
+};
+
+// Chama um webhook n8n com { url } e retorna o JSON extraído. Lança em falha.
+async function chamarWebhookN8n(webhookUrl, fileUrl) {
+  const res = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url: fileUrl }),
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`Webhook respondeu ${res.status}${txt ? `: ${txt.slice(0, 200)}` : ""}`);
+  }
+  const data = await res.json().catch(() => ({}));
+  // n8n às vezes devolve [{...}] em vez de {...}: normaliza para objeto.
+  return Array.isArray(data) ? (data[0] || {}) : (data || {});
+}
+
 // Placas são sempre normalizadas para minúsculas (sem espaços nas pontas),
 // garantindo unicidade em jpd_veiculos e casamento com a FK.
 const normalizePlaca = (v) => {
@@ -559,6 +583,40 @@ exports.handler = async (event) => {
         const { error } = await supabase.from("homedometro_abastecimento_jpd").delete().eq("id", id);
         if (error) return json(500, { error: error.message });
         return json(200, { success: true });
+      }
+    }
+
+    // ---------- OCR (leitura automática via n8n) ----------
+    if (segs[0] === "ocr") {
+      // POST /ocr/bv  body { url } -> dados de um Boletim de Viagem
+      if (segs[1] === "bv" && method === "POST") {
+        const url = body && body.url;
+        if (!url) return json(400, { error: "url do arquivo obrigatória" });
+        try {
+          const dados = await chamarWebhookN8n(N8N_WEBHOOKS.bv, url);
+          return json(200, dados);
+        } catch (e) {
+          return json(502, { error: `Falha na leitura do arquivo: ${e.message}` });
+        }
+      }
+
+      // POST /ocr/lancamento  body { hodometro_url, comprovante_url }
+      // Lê hodômetro e comprovante em paralelo e mescla (hodômetro tem prioridade).
+      if (segs[1] === "lancamento" && method === "POST") {
+        const hodometroUrl = body && body.hodometro_url;
+        const comprovanteUrl = body && body.comprovante_url;
+        if (!hodometroUrl || !comprovanteUrl) {
+          return json(400, { error: "hodometro_url e comprovante_url obrigatórios" });
+        }
+        try {
+          const [hodo, comp] = await Promise.all([
+            chamarWebhookN8n(N8N_WEBHOOKS.hodometro, hodometroUrl),
+            chamarWebhookN8n(N8N_WEBHOOKS.comprovante, comprovanteUrl),
+          ]);
+          return json(200, { ...comp, ...hodo });
+        } catch (e) {
+          return json(502, { error: `Falha na leitura das imagens: ${e.message}` });
+        }
       }
     }
 
