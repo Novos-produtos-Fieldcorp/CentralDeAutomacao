@@ -17,6 +17,41 @@ const CORS = {
 
 const json = (statusCode, body) => ({ statusCode, headers: CORS, body: JSON.stringify(body) });
 
+// Placas são sempre normalizadas para minúsculas (sem espaços nas pontas),
+// garantindo unicidade em jpd_veiculos e casamento com a FK.
+const normalizePlaca = (v) => {
+  if (v == null) return null;
+  const s = String(v).trim().toLowerCase();
+  return s === "" ? null : s;
+};
+
+// Garante que a placa exista na tabela mestra jpd_veiculos (cria se faltar),
+// evitando violação da FK ao salvar fretes/abastecimentos.
+async function ensureVeiculo(placa) {
+  const p = normalizePlaca(placa);
+  if (!p) return;
+  await supabase
+    .from("jpd_veiculos")
+    .upsert({ placa: p }, { onConflict: "placa", ignoreDuplicates: true });
+}
+
+// Nomes de motorista são normalizados para minúsculas (sem espaços duplicados
+// nem nas pontas). O frontend capitaliza só para exibição.
+const normalizeNome = (v) => {
+  if (v == null) return null;
+  const s = String(v).trim().toLowerCase().replace(/\s+/g, " ");
+  return s === "" ? null : s;
+};
+
+// Garante que o motorista exista na tabela mestra motoristas_jpd (cria se faltar).
+async function ensureMotorista(nome) {
+  const n = normalizeNome(nome);
+  if (!n) return;
+  await supabase
+    .from("motoristas_jpd")
+    .upsert({ nome: n }, { onConflict: "nome", ignoreDuplicates: true });
+}
+
 // ---- Colunas do CSV (espelham exemplo.csv / tabela jpd_fretes) ----
 const FRETE_COLS = [
   "origem", "destinatario", "motorista", "placa_do_carro", "numero_do_bv", "total_km",
@@ -46,6 +81,8 @@ function buildFreteRow(body) {
       const n = Number(v);
       v = Number.isFinite(n) ? n : null;
     }
+    if (col === "placa_do_carro") v = normalizePlaca(v);
+    if (col === "motorista") v = normalizeNome(v);
     row[col] = v;
   }
   return row;
@@ -59,8 +96,6 @@ const ABAST_COLS = [
 const ABAST_NUMERIC = new Set([
   "hodometro", "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
 ]);
-// Campos de custo copiados do lançamento para o BV ao vincular
-const CUSTO_COLS = ["fornecedor", "combustivel", "litros", "valor_unitario", "valor_bruto", "desconto", "arla"];
 
 function buildAbastecimentoRow(body) {
   const row = {};
@@ -72,6 +107,7 @@ function buildAbastecimentoRow(body) {
       const n = Number(v);
       v = Number.isFinite(n) ? n : null;
     }
+    if (col === "placa") v = normalizePlaca(v);
     row[col] = v;
   }
   return row;
@@ -123,11 +159,35 @@ exports.handler = async (event) => {
         if (qs.abertos) q = q.or("situacao_do_bv.is.null,situacao_do_bv.neq.pago");
         const { data, error } = await q;
         if (error) return json(500, { error: error.message });
-        return json(200, data || []);
+        const fretes = data || [];
+
+        // Anexa a soma dos abastecimentos vinculados (por frete_id) a cada BV.
+        const num = (v) => (v == null ? 0 : Number(v) || 0);
+        const { data: lancs } = await supabase
+          .from("homedometro_abastecimento_jpd")
+          .select("frete_id, litros, valor_bruto, desconto, arla")
+          .not("frete_id", "is", null);
+        const agg = {};
+        for (const l of lancs || []) {
+          const k = l.frete_id;
+          agg[k] = agg[k] || { abast_count: 0, abast_litros: 0, abast_valor_bruto: 0, abast_desconto: 0, abast_arla: 0 };
+          agg[k].abast_count += 1;
+          agg[k].abast_litros += num(l.litros);
+          agg[k].abast_valor_bruto += num(l.valor_bruto);
+          agg[k].abast_desconto += num(l.desconto);
+          agg[k].abast_arla += num(l.arla);
+        }
+        const withAgg = fretes.map((f) => ({
+          ...f,
+          ...(agg[f.id] || { abast_count: 0, abast_litros: 0, abast_valor_bruto: 0, abast_desconto: 0, abast_arla: 0 }),
+        }));
+        return json(200, withAgg);
       }
 
       if (method === "POST" && !id) {
         const row = buildFreteRow(body);
+        await ensureVeiculo(row.placa_do_carro);
+        await ensureMotorista(row.motorista);
         const { data, error } = await supabase.from("jpd_fretes").insert(row).select().single();
         if (error) return json(500, { error: error.message });
         return json(200, data);
@@ -135,6 +195,8 @@ exports.handler = async (event) => {
 
       if (method === "PUT" && id) {
         const row = { ...buildFreteRow(body), updated_at: new Date().toISOString() };
+        if ("placa_do_carro" in row) await ensureVeiculo(row.placa_do_carro);
+        if ("motorista" in row) await ensureMotorista(row.motorista);
         const { data, error } = await supabase.from("jpd_fretes").update(row).eq("id", id).select().single();
         if (error) return json(500, { error: error.message });
         return json(200, data);
@@ -334,7 +396,33 @@ exports.handler = async (event) => {
           data: r.data_da_carga || r.data_do_bv || "—",
         }));
 
-      return json(200, { resumo, em_andamento, consumo });
+      // Situação por datas do BV (hoje vem do cliente via ?hoje=YYYY-MM-DD).
+      const hoje = qs.hoje || "";
+      const mapBv = (r) => ({
+        id: r.id,
+        placa: r.placa_do_carro || "—",
+        motorista: r.motorista || "—",
+        origem: r.origem || "—",
+        destinatario: r.destinatario || "—",
+        numero_do_bv: r.numero_do_bv || "—",
+        situacao_do_bv: r.situacao_do_bv || "",
+        data_da_carga: r.data_da_carga || "",
+        data_da_descarga: r.data_da_descarga || "",
+      });
+      // Em viagem: tem data de carga (<= hoje) e ainda sem descarga
+      const em_viagem = rows
+        .filter((r) => r.data_da_carga && !r.data_da_descarga && (!hoje || String(r.data_da_carga) <= hoje))
+        .map(mapBv);
+      // A viajar: data de carga no futuro (> hoje) e sem descarga
+      const a_viajar = rows
+        .filter((r) => r.data_da_carga && !r.data_da_descarga && hoje && String(r.data_da_carga) > hoje)
+        .map(mapBv);
+      // Pendentes: situação 'pendente' ou sem situação definida
+      const pendentes = rows
+        .filter((r) => !r.situacao_do_bv || r.situacao_do_bv === "pendente")
+        .map(mapBv);
+
+      return json(200, { resumo, em_andamento, consumo, em_viagem, a_viajar, pendentes });
     }
 
     // ---------- DOCUMENTS ----------
@@ -388,6 +476,8 @@ exports.handler = async (event) => {
         if (dErr) return json(404, { error: dErr.message });
         const f = ext.fields || {};
         const freightRow = buildFreteRow(f);
+        await ensureVeiculo(freightRow.placa_do_carro);
+        await ensureMotorista(freightRow.motorista);
         const { error: fErr } = await supabase.from("jpd_fretes").insert(freightRow);
         if (fErr) return json(500, { error: fErr.message });
         await supabase.from("jpd_documents").update({ status: "approved", updated_at: new Date().toISOString() }).eq("id", doc.id);
@@ -408,8 +498,8 @@ exports.handler = async (event) => {
 
     // ---------- OPCOES (dropdowns de placa/motorista a partir das tabelas mestras) ----------
     if (segs[0] === "opcoes" && method === "GET") {
-      const { data: veics } = await supabase.from("veiculo").select("placa");
-      const { data: mots } = await supabase.from("motorista").select("nome");
+      const { data: veics } = await supabase.from("jpd_veiculos").select("placa").order("placa");
+      const { data: mots } = await supabase.from("motoristas_jpd").select("nome").order("nome");
       const uniqSorted = (arr) =>
         Array.from(new Set((arr || []).map((x) => x).filter((x) => x != null && String(x).trim() !== "")))
           .sort((a, b) => String(a).localeCompare(String(b)));
@@ -427,6 +517,9 @@ exports.handler = async (event) => {
         let q = supabase.from("homedometro_abastecimento_jpd").select("*")
           .order("created_at", { ascending: false });
         if (qs.placa) q = q.eq("placa", qs.placa);
+        if (qs.frete_id) q = q.eq("frete_id", Number(qs.frete_id));
+        if (qs.from) q = q.gte("created_at", qs.from);
+        if (qs.to) q = q.lte("created_at", qs.to);
         const { data, error } = await q;
         if (error) return json(500, { error: error.message });
         return json(200, data || []);
@@ -434,24 +527,19 @@ exports.handler = async (event) => {
 
       if (method === "POST" && !id) {
         const row = buildAbastecimentoRow(body);
+        await ensureVeiculo(row.placa);
         const { data, error } = await supabase.from("homedometro_abastecimento_jpd").insert(row).select().single();
         if (error) return json(500, { error: error.message });
         return json(200, data);
       }
 
       // POST /abastecimentos/:id/vincular  body { frete_id }
+      // Vários abastecimentos podem apontar para o mesmo BV: gravamos apenas
+      // frete_id no lançamento (sem copiar/sobrescrever custos no jpd_fretes).
+      // Os custos do BV passam a ser a SOMA dos lançamentos vinculados (ver GET /fretes).
       if (method === "POST" && id && segs[2] === "vincular") {
         const frete_id = Number(body && body.frete_id);
         if (!Number.isFinite(frete_id)) return json(400, { error: "frete_id obrigatorio" });
-        const { data: lanc, error: lErr } = await supabase.from("homedometro_abastecimento_jpd")
-          .select("*").eq("id", id).single();
-        if (lErr) return json(404, { error: lErr.message });
-        // Copia os campos de custo do lançamento para o BV
-        const custos = {};
-        for (const c of CUSTO_COLS) custos[c] = lanc[c];
-        const { error: fErr } = await supabase.from("jpd_fretes")
-          .update({ ...custos, updated_at: new Date().toISOString() }).eq("id", frete_id);
-        if (fErr) return json(500, { error: fErr.message });
         const { data, error } = await supabase.from("homedometro_abastecimento_jpd")
           .update({ frete_id, updated_at: new Date().toISOString() }).eq("id", id).select().single();
         if (error) return json(500, { error: error.message });
@@ -460,6 +548,7 @@ exports.handler = async (event) => {
 
       if (method === "PUT" && id) {
         const row = { ...buildAbastecimentoRow(body), updated_at: new Date().toISOString() };
+        if ("placa" in row) await ensureVeiculo(row.placa);
         const { data, error } = await supabase.from("homedometro_abastecimento_jpd")
           .update(row).eq("id", id).select().single();
         if (error) return json(500, { error: error.message });

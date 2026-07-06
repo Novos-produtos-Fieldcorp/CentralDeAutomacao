@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { fmtNum, capitalizeNome } from './format';
 
 export type FieldType = 'text' | 'number' | 'date' | 'select';
 
@@ -77,6 +78,7 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
   });
   const [saving, setSaving] = useState(false);
   const [opcoes, setOpcoes] = useState<{ veiculos: string[]; motoristas: string[] }>({ veiculos: [], motoristas: [] });
+  const [abastecimentos, setAbastecimentos] = useState<Frete[]>([]);
   const isEdit = !!initial?.id;
 
   useEffect(() => {
@@ -89,6 +91,30 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
       }
     })();
   }, []);
+
+  // Abastecimentos vinculados a este BV (somente leitura).
+  useEffect(() => {
+    if (!initial?.id) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/jpd/abastecimentos?frete_id=${initial.id}`);
+        if (res.ok) setAbastecimentos(await res.json());
+      } catch {
+        /* ignora */
+      }
+    })();
+  }, [initial?.id]);
+
+  const num = (v: any) => (Number(v) || 0);
+  const totais = abastecimentos.reduce(
+    (acc, a) => ({
+      litros: acc.litros + num(a.litros),
+      valor_bruto: acc.valor_bruto + num(a.valor_bruto),
+      desconto: acc.desconto + num(a.desconto),
+      arla: acc.arla + num(a.arla),
+    }),
+    { litros: 0, valor_bruto: 0, desconto: 0, arla: 0 },
+  );
 
   const set = (k: string, v: string) => setFields((f) => ({ ...f, [k]: v }));
 
@@ -133,7 +159,7 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
             <option value="">—</option>
             {opts.map((o) => (
               <option key={o} value={o}>
-                {o}
+                {f.dynamicOptions === 'motoristas' ? capitalizeNome(o) : o}
               </option>
             ))}
           </select>
@@ -172,6 +198,63 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {CUSTO_FIELDS.map(renderField)}
           </div>
+
+          {isEdit && (
+            <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+              <h4 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                Abastecimentos vinculados
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                  {abastecimentos.length}
+                </span>
+              </h4>
+              {abastecimentos.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Nenhum abastecimento vinculado a este BV. Vincule na aba Lançamentos.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                      <tr>
+                        <th className="px-3 py-2 text-left">ID</th>
+                        <th className="px-3 py-2 text-left">Hodômetro</th>
+                        <th className="px-3 py-2 text-left">Fornecedor</th>
+                        <th className="px-3 py-2 text-left">Combustível</th>
+                        <th className="px-3 py-2 text-right">Litros</th>
+                        <th className="px-3 py-2 text-right">Valor bruto</th>
+                        <th className="px-3 py-2 text-right">Desconto</th>
+                        <th className="px-3 py-2 text-right">Arla</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-gray-800 dark:text-gray-200">
+                      {abastecimentos.map((a) => (
+                        <tr key={a.id} className="border-t border-gray-100 dark:border-gray-700">
+                          <td className="px-3 py-2 font-mono text-xs">#{a.id}</td>
+                          <td className="px-3 py-2">{a.hodometro ?? '—'}</td>
+                          <td className="px-3 py-2">{a.fornecedor ?? '—'}</td>
+                          <td className="px-3 py-2">{a.combustivel ?? '—'}</td>
+                          <td className="px-3 py-2 text-right">{fmtNum(a.litros)}</td>
+                          <td className="px-3 py-2 text-right">{fmtNum(a.valor_bruto)}</td>
+                          <td className="px-3 py-2 text-right">{fmtNum(a.desconto)}</td>
+                          <td className="px-3 py-2 text-right">{fmtNum(a.arla)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="text-gray-800 dark:text-gray-100 font-semibold border-t-2 border-gray-200 dark:border-gray-600">
+                      <tr>
+                        <td className="px-3 py-2" colSpan={4}>Total</td>
+                        <td className="px-3 py-2 text-right">{fmtNum(totais.litros)}</td>
+                        <td className="px-3 py-2 text-right">{fmtNum(totais.valor_bruto)}</td>
+                        <td className="px-3 py-2 text-right">{fmtNum(totais.desconto)}</td>
+                        <td className="px-3 py-2 text-right">{fmtNum(totais.arla)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="mt-6 flex justify-end gap-3">
             <button
               type="button"

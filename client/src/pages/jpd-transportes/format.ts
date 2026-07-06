@@ -1,0 +1,25 @@
+// Helpers de formatação compartilhados pelo módulo JPD Transportes.
+
+export const fmtBRL = (n: any) =>
+  n == null || n === ''
+    ? '—'
+    : Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+export const fmtNum = (n: any) =>
+  (Number(n) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+
+// Capitaliza cada palavra para exibição (o backend guarda em minúsculas).
+// Ex.: "jose carlos da silva" -> "Jose Carlos Da Silva".
+export const capitalizeNome = (v: any) => {
+  if (v == null || v === '') return '';
+  return String(v)
+    .toLowerCase()
+    .replace(/\b\p{L}/gu, (c) => c.toUpperCase());
+};
+
+// Data de hoje no formato YYYY-MM-DD (fuso local), para enviar ao backend.
+export const hojeISO = () => {
+  const d = new Date();
+  const p = (x: number) => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};

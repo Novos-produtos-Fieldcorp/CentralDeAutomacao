@@ -1,11 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import JpdConsumoCards, { Consumo } from './JpdConsumoCards';
 import JpdAbastecimentos from './JpdAbastecimentos';
-
-const fmtBRL = (n: any) => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const fmtNum = (n: any) => (Number(n) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+import JpdFiltros, { EMPTY_FILTROS, JpdFiltrosValue } from './JpdFiltros';
+import { fmtBRL, fmtNum, capitalizeNome } from './format';
 
 type Resumo = {
   placa: string;
@@ -33,6 +32,31 @@ const JpdVeiculos = () => {
   const [consumo, setConsumo] = useState<Consumo | null>(null);
   const [loading, setLoading] = useState(false);
   const [aba, setAba] = useState<'resumo' | 'lancamentos'>('resumo');
+  const [filtros, setFiltros] = useState<JpdFiltrosValue>(EMPTY_FILTROS);
+
+  const resumoFiltrado = useMemo(() => {
+    const termo = filtros.busca.trim().toLowerCase();
+    return resumo.filter((v) => {
+      if (filtros.placa && v.placa !== filtros.placa) return false;
+      if (termo && !String(v.placa).toLowerCase().includes(termo)) return false;
+      return true;
+    });
+  }, [resumo, filtros.placa, filtros.busca]);
+
+  const emAndamentoFiltrado = useMemo(() => {
+    const termo = filtros.busca.trim().toLowerCase();
+    return emAndamento.filter((v) => {
+      if (filtros.placa && v.placa !== filtros.placa) return false;
+      if (filtros.motorista && v.motorista !== filtros.motorista) return false;
+      if (termo) {
+        const alvo = [v.placa, v.motorista, v.origem, v.destinatario]
+          .map((x) => (x == null ? '' : String(x).toLowerCase()))
+          .join(' ');
+        if (!alvo.includes(termo)) return false;
+      }
+      return true;
+    });
+  }, [emAndamento, filtros.placa, filtros.motorista, filtros.busca]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,11 +110,12 @@ const JpdVeiculos = () => {
         <JpdAbastecimentos />
       ) : (
       <>
+      <JpdFiltros value={filtros} onChange={setFiltros} campos={['placa', 'motorista', 'busca']} />
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
           Viagens em andamento
           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-            {emAndamento.length}
+            {emAndamentoFiltrado.length}
           </span>
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Viagens com BV mas sem data de descarga preenchida.</p>
@@ -106,21 +131,21 @@ const JpdVeiculos = () => {
               </tr>
             </thead>
             <tbody className="text-gray-800 dark:text-gray-200">
-              {emAndamento.length === 0 ? (
+              {emAndamentoFiltrado.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-3 py-4 text-center text-gray-500">
                     {loading ? 'Carregando...' : 'Nenhuma viagem em andamento.'}
                   </td>
                 </tr>
               ) : (
-                emAndamento.map((v) => (
+                emAndamentoFiltrado.map((v) => (
                   <tr key={v.id} className="border-t border-gray-100 dark:border-gray-700">
                     <td className="px-3 py-2">
                       <Link to={`/jpd-transportes/veiculos/${encodeURIComponent(v.placa)}`} className={linkCls}>
                         {v.placa}
                       </Link>
                     </td>
-                    <td className="px-3 py-2">{v.motorista}</td>
+                    <td className="px-3 py-2">{capitalizeNome(v.motorista)}</td>
                     <td className="px-3 py-2">{v.origem}</td>
                     <td className="px-3 py-2">{v.destinatario}</td>
                     <td className="px-3 py-2">{v.data}</td>
@@ -147,14 +172,14 @@ const JpdVeiculos = () => {
               </tr>
             </thead>
             <tbody className="text-gray-800 dark:text-gray-200">
-              {resumo.length === 0 ? (
+              {resumoFiltrado.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-3 py-4 text-center text-gray-500">
                     {loading ? 'Carregando...' : 'Nenhum veículo com fretes lançados.'}
                   </td>
                 </tr>
               ) : (
-                resumo.map((v) => (
+                resumoFiltrado.map((v) => (
                   <tr key={v.placa} className="border-t border-gray-100 dark:border-gray-700">
                     <td className="px-3 py-2">
                       <Link to={`/jpd-transportes/veiculos/${encodeURIComponent(v.placa)}`} className={linkCls}>

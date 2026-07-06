@@ -1,9 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Download, Truck, DollarSign, Receipt, TrendingDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
-
-const fmtBRL = (n: number) => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+import { fmtBRL, hojeISO, capitalizeNome } from './format';
 
 type DashboardData = {
   kpis: { total_viagens: number; total_frete: number; total_faturado: number; total_custos: number; total_km: number };
@@ -41,8 +40,59 @@ const JpdDashboard = () => {
   const [filters, setFilters] = useState({ de: '', ate: '' });
   const [data, setData] = useState<DashboardData>(EMPTY);
   const [loading, setLoading] = useState(false);
+  const [placas, setPlacas] = useState<string[]>([]);
+  const [placaSel, setPlacaSel] = useState('');
+  const [veiculo, setVeiculo] = useState<{ resumo: any; viagens: any[] } | null>(null);
 
   const set = (k: string, v: string) => setFilters((f) => ({ ...f, [k]: v }));
+  const hoje = hojeISO();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/jpd/opcoes');
+        if (res.ok) {
+          const j = await res.json();
+          setPlacas(j.veiculos || []);
+        }
+      } catch {
+        /* ignora */
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!placaSel) {
+      setVeiculo(null);
+      return;
+    }
+    (async () => {
+      try {
+        const url = new URL('/api/jpd/veiculos', window.location.origin);
+        url.searchParams.set('placa', placaSel);
+        const res = await fetch(url.toString());
+        if (res.ok) setVeiculo(await res.json());
+      } catch {
+        setVeiculo(null);
+      }
+    })();
+  }, [placaSel]);
+
+  // Situação do veículo selecionado, derivada das viagens (mesma regra do backend).
+  const situacaoVeiculo = useMemo(() => {
+    const viagens = veiculo?.viagens || [];
+    let em_viagem = 0;
+    let a_viajar = 0;
+    let pendente = 0;
+    for (const v of viagens) {
+      if (v.data_da_carga && !v.data_da_descarga) {
+        if (String(v.data_da_carga) > hoje) a_viajar += 1;
+        else em_viagem += 1;
+      }
+      if (!v.situacao_do_bv || v.situacao_do_bv === 'pendente') pendente += 1;
+    }
+    return { em_viagem, a_viajar, pendente, total: viagens.length };
+  }, [veiculo, hoje]);
 
   const load = useCallback(async () => {
     if (!companyId) return;
@@ -112,6 +162,17 @@ const JpdDashboard = () => {
           <span className="mb-1">Até</span>
           <input type="date" value={filters.ate} onChange={(e) => set('ate', e.target.value)} className={inputCls} />
         </label>
+        <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
+          <span className="mb-1">Situação por placa</span>
+          <select value={placaSel} onChange={(e) => setPlacaSel(e.target.value)} className={inputCls}>
+            <option value="">Selecione uma placa</option>
+            {placas.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </label>
         <button type="submit" className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700">
           Filtrar
         </button>
@@ -127,6 +188,61 @@ const JpdDashboard = () => {
         </button>
         {loading && <span className="text-xs text-gray-500">Carregando...</span>}
       </form>
+
+      {placaSel && veiculo && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
+            Situação do veículo <span className="font-mono">{placaSel}</span>
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="px-3 py-2 rounded-md bg-emerald-50 dark:bg-emerald-900/30">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Em viagem</p>
+              <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-300">{situacaoVeiculo.em_viagem}</p>
+            </div>
+            <div className="px-3 py-2 rounded-md bg-sky-50 dark:bg-sky-900/30">
+              <p className="text-xs text-gray-500 dark:text-gray-400">A viajar</p>
+              <p className="text-lg font-semibold text-sky-700 dark:text-sky-300">{situacaoVeiculo.a_viajar}</p>
+            </div>
+            <div className="px-3 py-2 rounded-md bg-amber-50 dark:bg-amber-900/30">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Pendentes</p>
+              <p className="text-lg font-semibold text-amber-700 dark:text-amber-300">{situacaoVeiculo.pendente}</p>
+            </div>
+            <div className="px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-700/50">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total de viagens</p>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">{situacaoVeiculo.total}</p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                <tr>
+                  <th className="px-3 py-2 text-left">BV</th>
+                  <th className="px-3 py-2 text-left">Data carga</th>
+                  <th className="px-3 py-2 text-left">Data descarga</th>
+                  <th className="px-3 py-2 text-left">Situação</th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-800 dark:text-gray-200">
+                {(veiculo.viagens || []).slice(0, 10).map((v: any) => (
+                  <tr key={v.id} className="border-t border-gray-100 dark:border-gray-700">
+                    <td className="px-3 py-2">{v.numero_do_bv || '—'}</td>
+                    <td className="px-3 py-2">{v.data_da_carga || '—'}</td>
+                    <td className="px-3 py-2">{v.data_da_descarga || '—'}</td>
+                    <td className="px-3 py-2">{v.situacao_do_bv || '—'}</td>
+                  </tr>
+                ))}
+                {(veiculo.viagens || []).length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-3 py-4 text-center text-gray-500">
+                      Nenhuma viagem para esta placa.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard icon={Truck} label="Viagens" value={data.kpis.total_viagens} color="bg-blue-500" />
@@ -190,7 +306,7 @@ const JpdDashboard = () => {
             <tbody className="text-gray-800 dark:text-gray-200">
               {data.por_motorista.slice(0, 10).map((m) => (
                 <tr key={m.motorista} className="border-t border-gray-100 dark:border-gray-700">
-                  <td className="py-2">{m.motorista}</td>
+                  <td className="py-2">{capitalizeNome(m.motorista)}</td>
                   <td className="py-2">{m.viagens}</td>
                   <td className="py-2">{fmtBRL(m.valor)}</td>
                 </tr>

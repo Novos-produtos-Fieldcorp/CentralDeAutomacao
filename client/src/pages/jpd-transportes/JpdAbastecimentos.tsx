@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus, Pencil, Trash2, Save, X, Link2, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import JpdVincularBV from './JpdVincularBV';
+import JpdFiltros, { EMPTY_FILTROS, JpdFiltrosValue } from './JpdFiltros';
 
 type Abastecimento = Record<string, any>;
 
@@ -29,11 +30,16 @@ const JpdAbastecimentos = () => {
   const [editId, setEditId] = useState<number | 'new' | null>(null);
   const [draft, setDraft] = useState<Abastecimento>({});
   const [vincularId, setVincularId] = useState<number | null>(null);
+  const [filtros, setFiltros] = useState<JpdFiltrosValue>(EMPTY_FILTROS);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/jpd/abastecimentos');
+      const url = new URL('/api/jpd/abastecimentos', window.location.origin);
+      if (filtros.placa) url.searchParams.set('placa', filtros.placa);
+      if (filtros.de) url.searchParams.set('from', filtros.de);
+      if (filtros.ate) url.searchParams.set('to', filtros.ate);
+      const res = await fetch(url.toString());
       if (!res.ok) throw new Error('Falha ao carregar lançamentos');
       setRows(await res.json());
     } catch (err: any) {
@@ -41,11 +47,22 @@ const JpdAbastecimentos = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filtros.placa, filtros.de, filtros.ate]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const filtrados = useMemo(() => {
+    const termo = filtros.busca.trim().toLowerCase();
+    if (!termo) return rows;
+    return rows.filter((r) =>
+      [r.id, r.placa, r.fornecedor, r.combustivel, r.hodometro, r.frete_id]
+        .map((v) => (v == null ? '' : String(v).toLowerCase()))
+        .join(' ')
+        .includes(termo),
+    );
+  }, [rows, filtros.busca]);
 
   const startEdit = (r: Abastecimento) => {
     const d: Abastecimento = {};
@@ -122,10 +139,20 @@ const JpdAbastecimentos = () => {
         </div>
       </div>
 
+      <div className="mb-3">
+        <JpdFiltros
+          value={filtros}
+          onChange={setFiltros}
+          campos={['placa', 'periodo', 'busca']}
+          periodoLabel="Lançamento"
+        />
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
             <tr>
+              <th className="px-3 py-2 text-left whitespace-nowrap">ID</th>
               {COLS.map((c) => (
                 <th key={c.key} className="px-3 py-2 text-left whitespace-nowrap">
                   {c.label}
@@ -138,6 +165,7 @@ const JpdAbastecimentos = () => {
           <tbody className="text-gray-800 dark:text-gray-200">
             {editId === 'new' && (
               <tr className="border-t border-gray-100 dark:border-gray-700 bg-blue-50/50 dark:bg-blue-900/10">
+                <td className="px-3 py-1 text-gray-400">novo</td>
                 {COLS.map((c) => (
                   <td key={c.key} className="px-2 py-1">
                     <input
@@ -163,20 +191,21 @@ const JpdAbastecimentos = () => {
 
             {loading ? (
               <tr>
-                <td colSpan={COLS.length + 2} className="px-3 py-6 text-center text-gray-500">
+                <td colSpan={COLS.length + 3} className="px-3 py-6 text-center text-gray-500">
                   Carregando...
                 </td>
               </tr>
-            ) : rows.length === 0 && editId !== 'new' ? (
+            ) : filtrados.length === 0 && editId !== 'new' ? (
               <tr>
-                <td colSpan={COLS.length + 2} className="px-3 py-6 text-center text-gray-500">
-                  Nenhum lançamento cadastrado.
+                <td colSpan={COLS.length + 3} className="px-3 py-6 text-center text-gray-500">
+                  Nenhum lançamento encontrado.
                 </td>
               </tr>
             ) : (
-              rows.map((r) =>
+              filtrados.map((r) =>
                 editId === r.id ? (
                   <tr key={r.id} className="border-t border-gray-100 dark:border-gray-700 bg-blue-50/50 dark:bg-blue-900/10">
+                    <td className="px-3 py-1 font-mono text-xs">#{r.id}</td>
                     {COLS.map((c) => (
                       <td key={c.key} className="px-2 py-1">
                         <input
@@ -204,6 +233,7 @@ const JpdAbastecimentos = () => {
                     className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer"
                     onClick={() => startEdit(r)}
                   >
+                    <td className="px-3 py-2 font-mono text-xs">#{r.id}</td>
                     {COLS.map((c) => (
                       <td key={c.key} className="px-3 py-2 whitespace-nowrap">
                         {fmt(r[c.key])}
