@@ -13,6 +13,10 @@ const CORS = {
     "Content-Type, Authorization, wiseapp-token, wiseapp-account-id, X-Requested-With, Accept, Origin, Cache-Control, Pragma, Expires, apikey, x-client-info, api_access_token",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD",
   "Content-Type": "application/json",
+  // Impede o navegador de servir dados velhos do cache (ex.: frete deletado
+  // reaparecendo na lista após o refetch). API sempre fresca.
+  "Cache-Control": "no-store, max-age=0",
+  Pragma: "no-cache",
 };
 
 const json = (statusCode, body) => ({ statusCode, headers: CORS, body: JSON.stringify(body) });
@@ -40,6 +44,62 @@ async function chamarWebhookN8n(webhookUrl, fileUrl) {
   // n8n às vezes devolve [{...}] em vez de {...}: normaliza para objeto.
   return Array.isArray(data) ? (data[0] || {}) : (data || {});
 }
+
+// Converte data "DD/MM/YYYY" (formato do webhook) para "YYYY-MM-DD" (input date).
+// Retorna null se não casar o formato esperado.
+const brToISO = (v) => {
+  if (v == null) return null;
+  const m = String(v).trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
+};
+
+// Traduz a resposta do webhook de leitura de BV para as chaves que o
+// formulário de frete espera (JpdFreteForm). O webhook aninha os dados em
+// `dados_limpos` e usa nomes diferentes; sem esta tradução nada preenche.
+const mapBvOcr = (raw) => {
+  const clean = (raw && raw.dados_limpos) || raw || {};
+  const out = {};
+  const set = (key, val) => {
+    if (val !== null && val !== undefined && val !== "") out[key] = val;
+  };
+  set("numero_do_bv", clean.numero_autorizacao);
+  set("data_do_bv", brToISO(clean.data));
+  set("motorista", normalizeNome(clean.motorista));
+  set("placa_do_carro", normalizePlaca(clean.placa_cavalo));
+  set("total_km", clean.km_total);
+  set("valor_do_frete", clean.valor_total_frete);
+  set("abastecimento_descontado_do_frete", clean.total_abastecimento);
+  set("arla", clean.total_arla);
+  set("combustivel", clean.produto);
+  // viagens: 1º bloco (perna vazia) define a origem; 2º bloco (perna cheia)
+  // define o destino do frete.
+  const viagens = Array.isArray(clean.viagens) ? clean.viagens : [];
+  if (viagens[0]) set("origem", viagens[0].origem);
+  if (viagens[1]) set("destinatario", viagens[1].destino);
+  return out;
+};
+
+// Traduz as respostas dos webhooks de hodômetro e comprovante para as chaves
+// que o form de lançamento (JpdGerarLancamento / ABAST_COLS) espera. Cada
+// webhook aninha os dados de forma diferente: hodômetro em `output`,
+// comprovante em `dados_limpos`.
+const mapLancamentoOcr = (hodo, comp) => {
+  const h = (hodo && hodo.output) || hodo || {};
+  const c = (comp && comp.dados_limpos) || comp || {};
+  const out = {};
+  const set = (key, val) => {
+    if (val !== null && val !== undefined && val !== "") out[key] = val;
+  };
+  set("hodometro", h.kilometragem);
+  set("fornecedor", c.fornecedor);
+  set("combustivel", c.combustivel);
+  set("litros", c.litros);
+  set("valor_unitario", c.valor_unitario);
+  set("valor_bruto", c.valor_bruto);
+  set("desconto", c.desconto);
+  set("arla", c.arla);
+  return out;
+};
 
 // Placas são sempre normalizadas para minúsculas (sem espaços nas pontas),
 // garantindo unicidade em jpd_veiculos e casamento com a FK.
@@ -227,6 +287,13 @@ exports.handler = async (event) => {
       }
 
       if (method === "DELETE" && id) {
+        // Desvincula abastecimentos ligados a este BV (frete_id -> null), senão a
+        // FK homedometro_abastecimento_jpd.frete_id bloqueia o delete. Os
+        // lançamentos de combustível são preservados, apenas soltos do frete.
+        await supabase
+          .from("homedometro_abastecimento_jpd")
+          .update({ frete_id: null })
+          .eq("frete_id", id);
         const { error } = await supabase.from("jpd_fretes").delete().eq("id", id);
         if (error) return json(500, { error: error.message });
         return json(200, { success: true });
@@ -594,7 +661,7 @@ exports.handler = async (event) => {
         if (!url) return json(400, { error: "url do arquivo obrigatória" });
         try {
           const dados = await chamarWebhookN8n(N8N_WEBHOOKS.bv, url);
-          return json(200, dados);
+          return json(200, mapBvOcr(dados));
         } catch (e) {
           return json(502, { error: `Falha na leitura do arquivo: ${e.message}` });
         }
@@ -613,7 +680,7 @@ exports.handler = async (event) => {
             chamarWebhookN8n(N8N_WEBHOOKS.hodometro, hodometroUrl),
             chamarWebhookN8n(N8N_WEBHOOKS.comprovante, comprovanteUrl),
           ]);
-          return json(200, { ...comp, ...hodo });
+          return json(200, mapLancamentoOcr(hodo, comp));
         } catch (e) {
           return json(502, { error: `Falha na leitura das imagens: ${e.message}` });
         }

@@ -68,7 +68,34 @@ interface Props {
 
 const toFormValue = (v: any) => (v === null || v === undefined ? '' : String(v));
 
+// Converte o texto de um campo numérico para forma canônica (ponto decimal,
+// sem separador de milhar) antes de enviar ao backend. Aceita tanto o formato
+// canônico do OCR ("26580.89") quanto o pt-BR digitado/localizado ("26.580,89").
+const toCanonicalNumber = (v: string): string => {
+  if (v == null) return '';
+  let s = String(v).trim();
+  if (s === '') return '';
+  // Remove tudo que não for dígito, separador ou sinal (ex.: "R$", espaços).
+  s = s.replace(/[^\d.,-]/g, '');
+  if (s === '') return '';
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+  if (hasComma && hasDot) {
+    // O separador que vem por último é o decimal; o outro é de milhar.
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+      s = s.replace(/\./g, '').replace(',', '.'); // pt-BR: 26.580,89
+    } else {
+      s = s.replace(/,/g, ''); // en-US: 26,580.89
+    }
+  } else if (hasComma) {
+    s = s.replace(',', '.'); // só vírgula = decimal
+  }
+  // só ponto (ou nenhum separador) já está em forma canônica.
+  return s;
+};
+
 const ALL_FIELDS = [...FRETE_FIELDS, ...CUSTO_FIELDS];
+const NUMERIC_KEYS = new Set(ALL_FIELDS.filter((f) => f.type === 'number').map((f) => f.key));
 
 const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
   const [fields, setFields] = useState<Frete>(() => {
@@ -131,10 +158,14 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
     try {
       const url = isEdit ? `/api/jpd/fretes/${initial!.id}` : '/api/jpd/fretes';
       const method = isEdit ? 'PUT' : 'POST';
+      const payload: Frete = {};
+      for (const k of Object.keys(fields)) {
+        payload[k] = NUMERIC_KEYS.has(k) ? toCanonicalNumber(fields[k]) : fields[k];
+      }
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(fields),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -150,7 +181,12 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
   };
 
   const renderField = (f: FieldDef) => {
-    const opts = optionsFor(f);
+    let opts = optionsFor(f);
+    // Placa/motorista vindos do OCR podem ainda não existir na tabela mestra.
+    // Inclui o valor atual como opção para exibir a seleção; ao salvar, o
+    // backend cria o registro que faltar (ensureVeiculo/ensureMotorista).
+    const cur = fields[f.key];
+    if (opts && cur && !opts.includes(cur)) opts = [...opts, cur];
     return (
       <label key={f.key} className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
         <span className="mb-1">{f.label}</span>
@@ -165,8 +201,8 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
           </select>
         ) : (
           <input
-            type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'}
-            step={f.type === 'number' ? 'any' : undefined}
+            type={f.type === 'date' ? 'date' : 'text'}
+            inputMode={f.type === 'number' ? 'decimal' : undefined}
             value={fields[f.key]}
             onChange={(e) => set(f.key, e.target.value)}
             className={inputCls}

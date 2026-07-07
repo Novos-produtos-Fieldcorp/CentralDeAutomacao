@@ -41,7 +41,7 @@ const JpdFretes = () => {
       if (filtros.motorista) url.searchParams.set('motorista', filtros.motorista);
       if (filtros.de) url.searchParams.set('from', filtros.de);
       if (filtros.ate) url.searchParams.set('to', filtros.ate);
-      const res = await fetch(url.toString());
+      const res = await fetch(url.toString(), { cache: 'no-store' });
       if (!res.ok) throw new Error('Falha ao carregar boletins');
       setFretes(await res.json());
     } catch (err: any) {

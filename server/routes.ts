@@ -7088,6 +7088,13 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
   app.delete("/api/jpd/fretes/:id", async (req, res) => {
     try {
       const id = Number(req.params.id);
+      // Desvincula abastecimentos ligados a este BV (frete_id -> null), senão a
+      // FK homedometro_abastecimento_jpd.frete_id bloqueia o delete. Os
+      // lançamentos de combustível são preservados, apenas soltos do frete.
+      await supabaseBackend
+        .from("homedometro_abastecimento_jpd")
+        .update({ frete_id: null })
+        .eq("frete_id", id);
       const { error } = await supabaseBackend.from("jpd_fretes").delete().eq("id", id);
       if (error) return res.status(500).json({ error: error.message });
       res.json({ success: true });
@@ -7287,12 +7294,70 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     return Array.isArray(data) ? (data[0] || {}) : (data || {});
   };
 
+  // Converte "DD/MM/YYYY" (formato do webhook) para "YYYY-MM-DD" (input date).
+  const brToISO = (v: any): string | null => {
+    if (v == null) return null;
+    const m = String(v).trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
+  };
+
+  // Traduz a resposta do webhook de BV para as chaves que o formulário
+  // (JpdFreteForm) espera. O webhook aninha em `dados_limpos` e usa nomes
+  // diferentes; sem esta tradução nada preenche.
+  const mapBvOcr = (raw: any) => {
+    const clean = (raw && raw.dados_limpos) || raw || {};
+    const out: Record<string, any> = {};
+    const set = (key: string, val: any) => {
+      if (val !== null && val !== undefined && val !== "") out[key] = val;
+    };
+    const lower = (v: any) => {
+      if (v == null) return null;
+      const s = String(v).trim().toLowerCase().replace(/\s+/g, " ");
+      return s === "" ? null : s;
+    };
+    set("numero_do_bv", clean.numero_autorizacao);
+    set("data_do_bv", brToISO(clean.data));
+    set("motorista", lower(clean.motorista));
+    set("placa_do_carro", lower(clean.placa_cavalo));
+    set("total_km", clean.km_total);
+    set("valor_do_frete", clean.valor_total_frete);
+    set("abastecimento_descontado_do_frete", clean.total_abastecimento);
+    set("arla", clean.total_arla);
+    set("combustivel", clean.produto);
+    // viagens: 1º bloco (perna vazia) define a origem; 2º bloco (perna cheia)
+    // define o destino do frete.
+    const viagens = Array.isArray(clean.viagens) ? clean.viagens : [];
+    if (viagens[0]) set("origem", viagens[0].origem);
+    if (viagens[1]) set("destinatario", viagens[1].destino);
+    return out;
+  };
+
+  // Traduz as respostas dos webhooks de hodômetro (dados em `output`) e
+  // comprovante (dados em `dados_limpos`) para as chaves do form de lançamento.
+  const mapLancamentoOcr = (hodo: any, comp: any) => {
+    const h = (hodo && hodo.output) || hodo || {};
+    const c = (comp && comp.dados_limpos) || comp || {};
+    const out: Record<string, any> = {};
+    const set = (key: string, val: any) => {
+      if (val !== null && val !== undefined && val !== "") out[key] = val;
+    };
+    set("hodometro", h.kilometragem);
+    set("fornecedor", c.fornecedor);
+    set("combustivel", c.combustivel);
+    set("litros", c.litros);
+    set("valor_unitario", c.valor_unitario);
+    set("valor_bruto", c.valor_bruto);
+    set("desconto", c.desconto);
+    set("arla", c.arla);
+    return out;
+  };
+
   app.post("/api/jpd/ocr/bv", async (req, res) => {
     try {
       const url = req.body?.url;
       if (!url) return res.status(400).json({ error: "url do arquivo obrigatória" });
       const dados = await chamarWebhookN8nJpd(N8N_WEBHOOKS_JPD.bv, url);
-      res.json(dados);
+      res.json(mapBvOcr(dados));
     } catch (err: any) {
       res.status(502).json({ error: `Falha na leitura do arquivo: ${err.message}` });
     }
@@ -7309,7 +7374,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
         chamarWebhookN8nJpd(N8N_WEBHOOKS_JPD.hodometro, hodometroUrl),
         chamarWebhookN8nJpd(N8N_WEBHOOKS_JPD.comprovante, comprovanteUrl),
       ]);
-      res.json({ ...comp, ...hodo });
+      res.json(mapLancamentoOcr(hodo, comp));
     } catch (err: any) {
       res.status(502).json({ error: `Falha na leitura das imagens: ${err.message}` });
     }
