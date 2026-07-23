@@ -62,10 +62,15 @@ const JpdVeiculos = () => {
     });
   }, [emAndamento, filtros.placa, filtros.motorista, filtros.busca]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (f: JpdFiltrosValue) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/jpd/veiculos`);
+      const p = new URLSearchParams();
+      if (f.placa) p.set('f_placa', f.placa);
+      if (f.motorista) p.set('f_motorista', f.motorista);
+      if (f.busca.trim()) p.set('f_busca', f.busca.trim());
+      const qs = p.toString();
+      const res = await fetch(`/api/jpd/veiculos${qs ? `?${qs}` : ''}`);
       if (!res.ok) throw new Error('Falha ao carregar veículos');
       const json = await res.json();
       setResumo(json.resumo || []);
@@ -79,8 +84,11 @@ const JpdVeiculos = () => {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    // Debounce (por causa do campo de texto Busca) e refetch quando os filtros mudam,
+    // para recalcular os cards de "Consumo da frota" no backend.
+    const t = setTimeout(() => load(filtros), 300);
+    return () => clearTimeout(t);
+  }, [load, filtros.placa, filtros.motorista, filtros.busca]);
 
   const subTabCls = (active: boolean) =>
     `px-3 py-1.5 rounded-md text-sm font-medium ${
@@ -218,7 +226,7 @@ const JpdVeiculos = () => {
           onClose={() => setShowGerar(false)}
           onSaved={() => {
             setShowGerar(false);
-            load();
+            load(filtros);
             setLancKey((k) => k + 1); // força recarga da tabela de Lançamentos
           }}
         />

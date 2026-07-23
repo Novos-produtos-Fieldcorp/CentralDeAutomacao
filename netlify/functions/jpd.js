@@ -472,8 +472,33 @@ exports.handler = async (event) => {
         })
         .sort((a, b) => b.faturado - a.faturado);
 
-      // Consumo global (todos os veículos)
-      const consumo = calcConsumo(rows, lancamentos);
+      // Consumo dos cards: recalcula sobre o conjunto filtrado (f_placa/f_motorista/f_busca)
+      // quando houver filtro na lista. Sem filtro, mantém o agregado global.
+      // Usa nomes f_* para não colidir com ?placa= (branch de detalhe acima).
+      const fPlaca = qs.f_placa || "";
+      const fMotorista = qs.f_motorista || "";
+      const fBusca = (qs.f_busca || "").trim().toLowerCase();
+      let consumoRows = rows;
+      let consumoLanc = lancamentos;
+      if (fPlaca || fMotorista || fBusca) {
+        const fretesFiltrados = rows.filter((r) => {
+          if (fPlaca && (r.placa_do_carro || "") !== fPlaca) return false;
+          if (fMotorista && (r.motorista || "") !== fMotorista) return false;
+          if (fBusca) {
+            const alvo = [r.placa_do_carro, r.motorista, r.origem, r.destinatario]
+              .map((x) => (x == null ? "" : String(x).toLowerCase()))
+              .join(" ");
+            if (!alvo.includes(fBusca)) return false;
+          }
+          return true;
+        });
+        const placasScope = new Set(fretesFiltrados.map((r) => r.placa_do_carro || "—"));
+        consumoRows = fretesFiltrados;
+        consumoLanc = lancamentos.filter((l) => placasScope.has(l.placa || "—"));
+      }
+
+      // Consumo (global sem filtro, ou filtrado por f_*)
+      const consumo = calcConsumo(consumoRows, consumoLanc);
 
       // Viagens "em andamento" = tem BV mas ainda sem data de descarga
       const em_andamento = rows
@@ -514,6 +539,96 @@ exports.handler = async (event) => {
         .map(mapBv);
 
       return json(200, { resumo, em_andamento, consumo, em_viagem, a_viajar, pendentes });
+    }
+
+    // ---------- HODOMETRO (leituras + resumo agregado) ----------
+    // Fonte: coluna `hodometro` de homedometro_abastecimento_jpd (por placa).
+    // KM rodado = soma das diferenças positivas entre leituras consecutivas.
+    if (segs[0] === "hodometro" && method === "GET") {
+      const from = qs.from || "";
+      const to = qs.to || "";
+      const { data: abasts, error } = await supabase
+        .from("homedometro_abastecimento_jpd")
+        .select("id, placa, hodometro, created_at, frete_id");
+      if (error) return json(500, { error: error.message });
+      const { data: fretes } = await supabase
+        .from("jpd_fretes")
+        .select("id, motorista, placa_do_carro, data_da_carga");
+
+      const motoristaByFrete = {};
+      const motoristaByPlaca = {};
+      const ultimaDataPlaca = {};
+      for (const f of fretes || []) {
+        if (f.id != null && f.motorista) motoristaByFrete[String(f.id)] = f.motorista;
+        const p = f.placa_do_carro || "";
+        const d = String(f.data_da_carga || "");
+        if (p && f.motorista && d >= (ultimaDataPlaca[p] || "")) {
+          motoristaByPlaca[p] = f.motorista;
+          ultimaDataPlaca[p] = d;
+        }
+      }
+
+      const dateOnly = (iso) => (iso ? String(iso).slice(0, 10) : "");
+      let leituras = (abasts || []).map((a) => {
+        const placa = a.placa || "";
+        const motorista =
+          (a.frete_id != null && motoristaByFrete[String(a.frete_id)]) ||
+          motoristaByPlaca[placa] ||
+          null;
+        return {
+          id: a.id,
+          placa,
+          hodometro: a.hodometro == null ? null : Number(a.hodometro),
+          data: a.created_at || null,
+          motorista,
+        };
+      });
+      if (from || to) {
+        leituras = leituras.filter((l) => {
+          const d = dateOnly(l.data);
+          if (from && d < from) return false;
+          if (to && d > to) return false;
+          return true;
+        });
+      }
+
+      const byPlaca = {};
+      for (const l of leituras) {
+        if (!l.placa || l.hodometro == null || l.hodometro <= 0) continue;
+        (byPlaca[l.placa] ||= []).push(l);
+      }
+      let total_km = 0;
+      const dailyKm = {};
+      const kmByPlaca = {};
+      for (const placa of Object.keys(byPlaca)) {
+        const arr = byPlaca[placa].sort((a, b) => String(a.data).localeCompare(String(b.data)));
+        for (let i = 1; i < arr.length; i++) {
+          const diff = arr[i].hodometro - arr[i - 1].hodometro;
+          if (diff <= 0) continue;
+          total_km += diff;
+          const dia = dateOnly(arr[i].data);
+          dailyKm[dia] = (dailyKm[dia] || 0) + diff;
+          kmByPlaca[placa] = (kmByPlaca[placa] || 0) + diff;
+        }
+      }
+      const por_dia = Object.entries(dailyKm)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([dia, km]) => ({ dia, km: Math.round(km) }));
+      const por_veiculo = Object.entries(kmByPlaca)
+        .map(([placa, km]) => ({ placa, km: Math.round(km) }))
+        .sort((a, b) => b.km - a.km);
+      const diasComKm = por_dia.filter((d) => d.km > 0).length;
+      const media_diaria = diasComKm > 0 ? total_km / diasComKm : 0;
+
+      return json(200, {
+        leituras,
+        resumo: {
+          total_km: Math.round(total_km),
+          media_diaria: Math.round(media_diaria),
+          por_dia,
+          por_veiculo,
+        },
+      });
     }
 
     // ---------- DOCUMENTS ----------

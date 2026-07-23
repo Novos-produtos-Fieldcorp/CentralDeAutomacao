@@ -7180,7 +7180,130 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
           destinatario: r.destinatario || "—",
           data: r.data_da_carga || r.data_do_bv || "—",
         }));
-      res.json({ resumo, em_andamento, consumo: calcConsumo(rows, lancamentos) });
+      // Consumo dos cards: recalcula sobre o conjunto filtrado (f_placa/f_motorista/f_busca)
+      // quando houver filtro na lista. Sem filtro, mantém o agregado global (comportamento atual).
+      // Usa nomes f_* para não colidir com ?placa= (branch de detalhe acima).
+      const fPlaca = (req.query.f_placa as string) || "";
+      const fMotorista = (req.query.f_motorista as string) || "";
+      const fBusca = ((req.query.f_busca as string) || "").trim().toLowerCase();
+      let consumoRows = rows;
+      let consumoLanc = lancamentos;
+      if (fPlaca || fMotorista || fBusca) {
+        const fretesFiltrados = rows.filter((r: any) => {
+          if (fPlaca && (r.placa_do_carro || "") !== fPlaca) return false;
+          if (fMotorista && (r.motorista || "") !== fMotorista) return false;
+          if (fBusca) {
+            const alvo = [r.placa_do_carro, r.motorista, r.origem, r.destinatario]
+              .map((x: any) => (x == null ? "" : String(x).toLowerCase()))
+              .join(" ");
+            if (!alvo.includes(fBusca)) return false;
+          }
+          return true;
+        });
+        const placasScope = new Set(fretesFiltrados.map((r: any) => r.placa_do_carro || "—"));
+        consumoRows = fretesFiltrados;
+        consumoLanc = lancamentos.filter((l: any) => placasScope.has(l.placa || "—"));
+      }
+
+      res.json({ resumo, em_andamento, consumo: calcConsumo(consumoRows, consumoLanc) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/jpd/hodometro?from=&to=  => leituras de hodômetro + resumo agregado.
+  // Fonte: coluna `hodometro` de homedometro_abastecimento_jpd (por placa).
+  // KM rodado = soma das diferenças positivas de hodômetro entre leituras
+  // consecutivas da mesma placa (decréscimos são ignorados). Cálculo no backend.
+  app.get("/api/jpd/hodometro", async (req, res) => {
+    try {
+      const from = (req.query.from as string) || "";
+      const to = (req.query.to as string) || "";
+      const { data: abasts, error } = await supabaseBackend
+        .from("homedometro_abastecimento_jpd")
+        .select("id, placa, hodometro, created_at, frete_id");
+      if (error) return res.status(500).json({ error: error.message });
+      const { data: fretes } = await supabaseBackend
+        .from("jpd_fretes")
+        .select("id, motorista, placa_do_carro, data_da_carga");
+
+      // Mapa frete_id -> motorista e mapa placa -> motorista (frete mais recente),
+      // apenas para exibir o motorista na aba Leituras.
+      const motoristaByFrete: Record<string, string> = {};
+      const motoristaByPlaca: Record<string, string> = {};
+      const ultimaDataPlaca: Record<string, string> = {};
+      for (const f of fretes || []) {
+        if (f.id != null && f.motorista) motoristaByFrete[String(f.id)] = f.motorista;
+        const p = f.placa_do_carro || "";
+        const d = String(f.data_da_carga || "");
+        if (p && f.motorista && d >= (ultimaDataPlaca[p] || "")) {
+          motoristaByPlaca[p] = f.motorista;
+          ultimaDataPlaca[p] = d;
+        }
+      }
+
+      const dateOnly = (iso: any) => (iso ? String(iso).slice(0, 10) : "");
+      let leituras = (abasts || []).map((a: any) => {
+        const placa = a.placa || "";
+        const motorista =
+          (a.frete_id != null && motoristaByFrete[String(a.frete_id)]) ||
+          motoristaByPlaca[placa] ||
+          null;
+        return {
+          id: a.id,
+          placa,
+          hodometro: a.hodometro == null ? null : Number(a.hodometro),
+          data: a.created_at || null,
+          motorista,
+        };
+      });
+      if (from || to) {
+        leituras = leituras.filter((l: any) => {
+          const d = dateOnly(l.data);
+          if (from && d < from) return false;
+          if (to && d > to) return false;
+          return true;
+        });
+      }
+
+      // Agrega KM por placa/dia a partir das leituras de hodômetro do período.
+      const byPlaca: Record<string, any[]> = {};
+      for (const l of leituras) {
+        if (!l.placa || l.hodometro == null || l.hodometro <= 0) continue;
+        (byPlaca[l.placa] ||= []).push(l);
+      }
+      let total_km = 0;
+      const dailyKm: Record<string, number> = {};
+      const kmByPlaca: Record<string, number> = {};
+      for (const placa of Object.keys(byPlaca)) {
+        const arr = byPlaca[placa].sort((a, b) => String(a.data).localeCompare(String(b.data)));
+        for (let i = 1; i < arr.length; i++) {
+          const diff = arr[i].hodometro - arr[i - 1].hodometro;
+          if (diff <= 0) continue; // ignora reset/decréscimo
+          total_km += diff;
+          const dia = dateOnly(arr[i].data);
+          dailyKm[dia] = (dailyKm[dia] || 0) + diff;
+          kmByPlaca[placa] = (kmByPlaca[placa] || 0) + diff;
+        }
+      }
+      const por_dia = Object.entries(dailyKm)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([dia, km]) => ({ dia, km: Math.round(km) }));
+      const por_veiculo = Object.entries(kmByPlaca)
+        .map(([placa, km]) => ({ placa, km: Math.round(km) }))
+        .sort((a, b) => b.km - a.km);
+      const diasComKm = por_dia.filter((d) => d.km > 0).length;
+      const media_diaria = diasComKm > 0 ? total_km / diasComKm : 0;
+
+      res.json({
+        leituras,
+        resumo: {
+          total_km: Math.round(total_km),
+          media_diaria: Math.round(media_diaria),
+          por_dia,
+          por_veiculo,
+        },
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

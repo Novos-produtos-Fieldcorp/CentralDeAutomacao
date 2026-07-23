@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link, useLocation, Routes, Route, Navigate } from 'react-router-dom';
-import { Truck, LayoutDashboard, Car, Lock, ClipboardList } from 'lucide-react';
+import { Truck, LayoutDashboard, Car, Lock, ClipboardList, Gauge } from 'lucide-react';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import LoadingSpinner from '../components/LoadingSpinner';
 import JpdDashboard from './jpd-transportes/JpdDashboard';
 import JpdFretes from './jpd-transportes/JpdFretes';
 import JpdVeiculos from './jpd-transportes/JpdVeiculos';
 import JpdVeiculoDetalhe from './jpd-transportes/JpdVeiculoDetalhe';
+import JpdHodometro from './jpd-transportes/JpdHodometro';
 
 const JpdTransportes = () => {
   const location = useLocation();
@@ -16,6 +17,7 @@ const JpdTransportes = () => {
     { path: '/jpd-transportes/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/jpd-transportes/fretes', icon: ClipboardList, label: 'Boletim de Viagem' },
     { path: '/jpd-transportes/veiculos', icon: Car, label: 'Veículos' },
+    { path: '/jpd-transportes/hodometro', icon: Gauge, label: 'Hodômetro' },
   ];
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
@@ -80,6 +82,7 @@ const JpdTransportes = () => {
             <Route path="/fretes" element={<JpdFretes />} />
             <Route path="/veiculos" element={<JpdVeiculos />} />
             <Route path="/veiculos/:placa" element={<JpdVeiculoDetalhe />} />
+            <Route path="/hodometro" element={<JpdHodometro />} />
           </Routes>
         </div>
       </div>
