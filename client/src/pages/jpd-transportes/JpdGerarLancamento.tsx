@@ -3,6 +3,7 @@ import { X, Upload, FileUp, Loader2, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadToJpdBucket } from './uploadJpd';
 import { ABAST_COLS } from './jpdAbastecimentoCols';
+import { useVeiculos } from './useVeiculos';
 
 interface Props {
   onClose: () => void;
@@ -20,6 +21,7 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
   const [comprovanteFile, setComprovanteFile] = useState<File | null>(null);
   const [processando, setProcessando] = useState(false);
   const [draft, setDraft] = useState<Record<string, any>>({});
+  const placas = useVeiculos();
 
   const enviar = async () => {
     if (!hodometroFile || !comprovanteFile) {
@@ -144,13 +146,28 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
                 {ABAST_COLS.map((c) => (
                   <label key={c.key} className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
                     <span className="mb-1">{c.label}</span>
-                    <input
-                      type={c.type === 'number' ? 'number' : 'text'}
-                      step={c.type === 'number' ? 'any' : undefined}
-                      value={draft[c.key] ?? ''}
-                      onChange={(e) => setField(c.key, e.target.value)}
-                      className={inputCls}
-                    />
+                    {c.key === 'placa' ? (
+                      <select
+                        value={draft[c.key] ?? ''}
+                        onChange={(e) => setField(c.key, e.target.value)}
+                        className={inputCls}
+                      >
+                        <option value="">Selecione</option>
+                        {placas.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={c.type === 'number' ? 'number' : 'text'}
+                        step={c.type === 'number' ? 'any' : undefined}
+                        value={draft[c.key] ?? ''}
+                        onChange={(e) => setField(c.key, e.target.value)}
+                        className={inputCls}
+                      />
+                    )}
                   </label>
                 ))}
               </div>

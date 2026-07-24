@@ -102,6 +102,13 @@ const JpdHodometro: React.FC = () => {
   );
   const veiculoData = resumo?.por_veiculo || [];
 
+  // Se há leituras no período mas nenhuma quilometragem calculada, é porque
+  // falta a 2ª leitura crescente da mesma placa (km = diferença entre leituras).
+  const kmEmptyMsg =
+    leituras.length > 0
+      ? 'É preciso ao menos 2 leituras da mesma placa no período (com hodômetro crescente) para calcular a quilometragem.'
+      : undefined;
+
   const leiturasOrdenadas = useMemo(
     () => [...leituras].sort((a, b) => String(b.data).localeCompare(String(a.data))),
     [leituras],
@@ -202,7 +209,7 @@ const JpdHodometro: React.FC = () => {
                 <h3 className="text-lg font-bold text-black dark:text-white">Quilometragem Diária</h3>
               </div>
               {dailyData.length === 0 ? (
-                <EmptyState icon={<BarChart2 className="w-12 h-12" />} />
+                <EmptyState icon={<BarChart2 className="w-12 h-12" />} msg={kmEmptyMsg} />
               ) : (
                 <div className="h-60">
                   <ResponsiveContainer width="100%" height="100%">
@@ -225,7 +232,7 @@ const JpdHodometro: React.FC = () => {
                 Quilometragem por Veículo
               </h3>
               {veiculoData.length === 0 ? (
-                <EmptyState icon={<Truck className="w-12 h-12" />} />
+                <EmptyState icon={<Truck className="w-12 h-12" />} msg={kmEmptyMsg} />
               ) : (
                 <div className="h-60">
                   <ResponsiveContainer width="100%" height="100%">

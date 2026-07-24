@@ -3,7 +3,8 @@ import { Plus, Pencil, Trash2, Save, X, Link2, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import JpdVincularBV from './JpdVincularBV';
 import JpdFiltros, { EMPTY_FILTROS, JpdFiltrosValue } from './JpdFiltros';
-import { ABAST_COLS as COLS } from './jpdAbastecimentoCols';
+import { ABAST_COLS as COLS, AbastCol } from './jpdAbastecimentoCols';
+import { useVeiculos } from './useVeiculos';
 
 type Abastecimento = Record<string, any>;
 
@@ -20,6 +21,7 @@ const JpdAbastecimentos = () => {
   const [draft, setDraft] = useState<Abastecimento>({});
   const [vincularId, setVincularId] = useState<number | null>(null);
   const [filtros, setFiltros] = useState<JpdFiltrosValue>(EMPTY_FILTROS);
+  const placas = useVeiculos();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,6 +109,30 @@ const JpdAbastecimentos = () => {
 
   const setField = (k: string, v: string) => setDraft((d) => ({ ...d, [k]: v }));
 
+  const renderCampo = (c: AbastCol) =>
+    c.key === 'placa' ? (
+      <select
+        value={draft[c.key] ?? ''}
+        onChange={(e) => setField(c.key, e.target.value)}
+        className={inputCls}
+      >
+        <option value="">Selecione</option>
+        {placas.map((p) => (
+          <option key={p} value={p}>
+            {p}
+          </option>
+        ))}
+      </select>
+    ) : (
+      <input
+        type={c.type === 'number' ? 'number' : 'text'}
+        step={c.type === 'number' ? 'any' : undefined}
+        value={draft[c.key] ?? ''}
+        onChange={(e) => setField(c.key, e.target.value)}
+        className={inputCls}
+      />
+    );
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
       <div className="flex items-center justify-between mb-3">
@@ -157,13 +183,7 @@ const JpdAbastecimentos = () => {
                 <td className="px-3 py-1 text-gray-400">novo</td>
                 {COLS.map((c) => (
                   <td key={c.key} className="px-2 py-1">
-                    <input
-                      type={c.type === 'number' ? 'number' : 'text'}
-                      step={c.type === 'number' ? 'any' : undefined}
-                      value={draft[c.key] ?? ''}
-                      onChange={(e) => setField(c.key, e.target.value)}
-                      className={inputCls}
-                    />
+                    {renderCampo(c)}
                   </td>
                 ))}
                 <td className="px-3 py-1 text-gray-400">—</td>
@@ -197,13 +217,7 @@ const JpdAbastecimentos = () => {
                     <td className="px-3 py-1 font-mono text-xs">#{r.id}</td>
                     {COLS.map((c) => (
                       <td key={c.key} className="px-2 py-1">
-                        <input
-                          type={c.type === 'number' ? 'number' : 'text'}
-                          step={c.type === 'number' ? 'any' : undefined}
-                          value={draft[c.key] ?? ''}
-                          onChange={(e) => setField(c.key, e.target.value)}
-                          className={inputCls}
-                        />
+                        {renderCampo(c)}
                       </td>
                     ))}
                     <td className="px-3 py-1">{r.frete_id ? `#${r.frete_id}` : '—'}</td>
