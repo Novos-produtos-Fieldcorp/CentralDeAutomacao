@@ -40,7 +40,19 @@ export const FRETE_FIELDS: FieldDef[] = [
   { key: 'data_do_faturamento', label: 'Data do faturamento', type: 'date' },
   { key: 'valor_faturado', label: 'Valor faturado', type: 'number' },
   { key: 'numero_do_cte', label: 'Número do CTE', type: 'text' },
-  { key: 'situacao_do_bv', label: 'Situação do BV', type: 'select', options: ['pago', 'pendente', 'em_analise'] },
+  {
+    key: 'situacao_do_bv',
+    label: 'Situação do BV',
+    type: 'select',
+    options: [
+      'A Carregar',
+      'Em viagem',
+      'Descarregado/Pendente faturamento',
+      'Faturado',
+      'Alterado',
+      'Cancelado',
+    ],
+  },
 ];
 
 // Campos de custo de abastecimento (preenchidos ao vincular um lançamento, ou manualmente)
