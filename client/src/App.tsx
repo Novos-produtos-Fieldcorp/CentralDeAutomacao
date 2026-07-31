@@ -34,6 +34,9 @@ const ComprovRota = lazy(() => import("./pages/ComprovRota"));
 const Operacoes = lazy(() => import("./pages/Operacoes"));
 const Logs = lazy(() => import("./pages/Logs"));
 const JpdTransportes = lazy(() => import("./pages/JpdTransportes"));
+const FormularioAbastecimentoPublico = lazy(
+  () => import("./pages/jpd-transportes/FormularioAbastecimentoPublico"),
+);
 const BlixxGrupos = lazy(() => import("./pages/BlixxGrupos"));
 const PainelControleBlixx = lazy(() => import("./pages/PainelControleBlixx"));
 
@@ -66,6 +69,14 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/admin" element={<Admin />} />
+      <Route
+        path="/formulario-abastecimento/:id"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <FormularioAbastecimentoPublico />
+          </Suspense>
+        }
+      />
       <Route
         path="/*"
         element={

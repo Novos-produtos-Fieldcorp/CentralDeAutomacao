@@ -27,6 +27,7 @@ const N8N_WEBHOOKS = {
   bv: "https://n8nqp.wiseapp360.com/webhook/leitor-arquivos",
   hodometro: "https://n8nqp.wiseapp360.com/webhook/leitorHodometro",
   comprovante: "https://n8nqp.wiseapp360.com/webhook/leitor-comprovante",
+  salvarFormulario: "https://n8nqp.wiseapp360.com/webhook/salvar-formulario",
 };
 
 // Chama um webhook n8n com { url } e retorna o JSON extraído. Lança em falha.
@@ -729,6 +730,51 @@ exports.handler = async (event) => {
         const { data, error } = await q;
         if (error) return json(500, { error: error.message });
         return json(200, data || []);
+      }
+
+      if (method === "GET" && id && !segs[2]) {
+        const { data, error } = await supabase
+          .from("homedometro_abastecimento_jpd")
+          .select("*")
+          .eq("id", id)
+          .single();
+        if (error) return json(404, { error: error.message });
+        return json(200, data);
+      }
+
+      // POST /abastecimentos/:id/enviar-formulario  body = objeto completo editado
+      // Usado pelo formulário público de revisão (link enviado pelo n8n): persiste
+      // a revisão na própria tabela e encaminha o payload editado ao n8n, no mesmo
+      // formato recebido (array com um objeto), para o fluxo continuar lá.
+      if (method === "POST" && id && segs[2] === "enviar-formulario") {
+        const row = {
+          ...buildAbastecimentoRow(body),
+          revised: body && "revised" in body ? body.revised : true,
+          updated_at: new Date().toISOString(),
+        };
+        if ("placa" in row) await ensureVeiculo(row.placa);
+        const { data, error } = await supabase
+          .from("homedometro_abastecimento_jpd")
+          .update(row)
+          .eq("id", id)
+          .select()
+          .single();
+        if (error) return json(500, { error: error.message });
+
+        try {
+          const res = await fetch(N8N_WEBHOOKS.salvarFormulario, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify([{ ...body, ...data }]),
+          });
+          if (!res.ok) {
+            const txt = await res.text().catch(() => "");
+            throw new Error(`Webhook respondeu ${res.status}${txt ? `: ${txt.slice(0, 200)}` : ""}`);
+          }
+        } catch (e) {
+          return json(502, { error: `Falha ao enviar ao n8n: ${e.message}` });
+        }
+        return json(200, { success: true });
       }
 
       if (method === "POST" && !id) {
