@@ -70,14 +70,6 @@ const AppRoutes = () => {
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/admin" element={<Admin />} />
       <Route
-        path="/formulario-abastecimento/:id"
-        element={
-          <Suspense fallback={<PageLoader />}>
-            <FormularioAbastecimentoPublico />
-          </Suspense>
-        }
-      />
-      <Route
         path="/*"
         element={
           <ProtectedRoute>
@@ -164,13 +156,30 @@ function App() {
       <ThemeProvider>
         <ChecklistProvider>
           <Router>
-            <AuthProvider>
-              <WiseAppAccessProvider>
-                <ChatProvider>
-                  <AppRoutes />
-                </ChatProvider>
-              </WiseAppAccessProvider>
-            </AuthProvider>
+            <Routes>
+              {/* Rota pública: sem AuthProvider/WiseAppAccessProvider, não deve
+                  exigir login nem e-mail do WiseApp — qualquer um com o link acessa. */}
+              <Route
+                path="/formulario-abastecimento/:id"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <FormularioAbastecimentoPublico />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/*"
+                element={
+                  <AuthProvider>
+                    <WiseAppAccessProvider>
+                      <ChatProvider>
+                        <AppRoutes />
+                      </ChatProvider>
+                    </WiseAppAccessProvider>
+                  </AuthProvider>
+                }
+              />
+            </Routes>
           </Router>
         </ChecklistProvider>
       </ThemeProvider>
