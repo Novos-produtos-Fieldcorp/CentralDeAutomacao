@@ -6,6 +6,7 @@ export type AbastCol = { key: string; label: string; type: 'text' | 'number' };
 export const ABAST_COLS: AbastCol[] = [
   { key: 'hodometro', label: 'Hodômetro', type: 'number' },
   { key: 'placa', label: 'Placa', type: 'text' },
+  { key: 'motorista', label: 'Motorista', type: 'text' },
   { key: 'fornecedor', label: 'Fornecedor', type: 'text' },
   { key: 'combustivel', label: 'Combustível', type: 'text' },
   { key: 'litros', label: 'Litros', type: 'number' },

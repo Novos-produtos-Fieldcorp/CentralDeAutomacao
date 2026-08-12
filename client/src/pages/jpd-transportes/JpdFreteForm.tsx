@@ -75,7 +75,7 @@ interface Props {
   companyId: number | null;
   initial?: Frete | null;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (saved: Frete) => void;
 }
 
 const toFormValue = (v: any) => (v === null || v === undefined ? '' : String(v));
@@ -183,8 +183,9 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Falha ao salvar');
       }
+      const saved = await res.json();
       toast.success(isEdit ? 'Boletim atualizado' : 'Boletim criado');
-      onSaved();
+      onSaved(saved);
     } catch (err: any) {
       toast.error(err.message || 'Erro ao salvar');
     } finally {

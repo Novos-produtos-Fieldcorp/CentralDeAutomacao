@@ -220,7 +220,7 @@ const JpdAbastecimentos = () => {
                         {renderCampo(c)}
                       </td>
                     ))}
-                    <td className="px-3 py-1">{r.frete_id ? `#${r.frete_id}` : '—'}</td>
+                    <td className="px-3 py-1">{r.frete_id ? (r.numero_do_bv || `#${r.frete_id}`) : '—'}</td>
                     <td className="px-3 py-1 text-right whitespace-nowrap">
                       <button onClick={save} className="inline-flex items-center gap-1 text-green-600 hover:underline mr-3">
                         <Save className="w-4 h-4" /> Salvar

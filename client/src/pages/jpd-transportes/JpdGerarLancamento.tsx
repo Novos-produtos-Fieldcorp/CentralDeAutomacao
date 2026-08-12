@@ -4,6 +4,9 @@ import toast from 'react-hot-toast';
 import { uploadToJpdBucket } from './uploadJpd';
 import { ABAST_COLS } from './jpdAbastecimentoCols';
 import { useVeiculos } from './useVeiculos';
+import { useMotoristas } from './useMotoristas';
+import JpdCreatableSelect from './JpdCreatableSelect';
+import { capitalizeNome } from './format';
 
 interface Props {
   onClose: () => void;
@@ -22,6 +25,7 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
   const [processando, setProcessando] = useState(false);
   const [draft, setDraft] = useState<Record<string, any>>({});
   const placas = useVeiculos();
+  const motoristas = useMotoristas();
 
   const enviar = async () => {
     if (!hodometroFile || !comprovanteFile) {
@@ -147,18 +151,24 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
                   <label key={c.key} className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
                     <span className="mb-1">{c.label}</span>
                     {c.key === 'placa' ? (
-                      <select
+                      <JpdCreatableSelect
                         value={draft[c.key] ?? ''}
-                        onChange={(e) => setField(c.key, e.target.value)}
+                        onChange={(v) => setField(c.key, v)}
+                        options={placas}
+                        createLabel="+ Criar nova placa"
+                        newPlaceholder="Digite a nova placa"
                         className={inputCls}
-                      >
-                        <option value="">Selecione</option>
-                        {placas.map((p) => (
-                          <option key={p} value={p}>
-                            {p}
-                          </option>
-                        ))}
-                      </select>
+                      />
+                    ) : c.key === 'motorista' ? (
+                      <JpdCreatableSelect
+                        value={draft[c.key] ?? ''}
+                        onChange={(v) => setField(c.key, v)}
+                        options={motoristas}
+                        createLabel="+ Criar novo motorista"
+                        newPlaceholder="Digite o nome do motorista"
+                        className={inputCls}
+                        formatOption={capitalizeNome}
+                      />
                     ) : (
                       <input
                         type={c.type === 'number' ? 'number' : 'text'}

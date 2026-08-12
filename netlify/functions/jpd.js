@@ -175,7 +175,7 @@ function buildFreteRow(body) {
 
 // ---- Colunas dos lançamentos de abastecimento (homedometro_abastecimento_jpd) ----
 const ABAST_COLS = [
-  "hodometro", "placa", "fornecedor", "combustivel", "litros",
+  "hodometro", "placa", "motorista", "fornecedor", "combustivel", "litros",
   "valor_unitario", "valor_bruto", "desconto", "arla",
 ];
 const ABAST_NUMERIC = new Set([
@@ -193,6 +193,7 @@ function buildAbastecimentoRow(body) {
       v = Number.isFinite(n) ? n : null;
     }
     if (col === "placa") v = normalizePlaca(v);
+    if (col === "motorista") v = normalizeNome(v);
     row[col] = v;
   }
   return row;
@@ -753,6 +754,7 @@ exports.handler = async (event) => {
           updated_at: new Date().toISOString(),
         };
         if ("placa" in row) await ensureVeiculo(row.placa);
+        if ("motorista" in row) await ensureMotorista(row.motorista);
         const { data, error } = await supabase
           .from("homedometro_abastecimento_jpd")
           .update(row)
@@ -780,6 +782,7 @@ exports.handler = async (event) => {
       if (method === "POST" && !id) {
         const row = buildAbastecimentoRow(body);
         await ensureVeiculo(row.placa);
+        await ensureMotorista(row.motorista);
         const { data, error } = await supabase.from("homedometro_abastecimento_jpd").insert(row).select().single();
         if (error) return json(500, { error: error.message });
         return json(200, data);
@@ -801,6 +804,7 @@ exports.handler = async (event) => {
       if (method === "PUT" && id) {
         const row = { ...buildAbastecimentoRow(body), updated_at: new Date().toISOString() };
         if ("placa" in row) await ensureVeiculo(row.placa);
+        if ("motorista" in row) await ensureMotorista(row.motorista);
         const { data, error } = await supabase.from("homedometro_abastecimento_jpd")
           .update(row).eq("id", id).select().single();
         if (error) return json(500, { error: error.message });

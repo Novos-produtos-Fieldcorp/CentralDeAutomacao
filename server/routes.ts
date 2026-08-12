@@ -7002,7 +7002,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
   ]);
   const JPD_ABAST_COLS = [
-    "hodometro", "placa", "fornecedor", "combustivel", "litros",
+    "hodometro", "placa", "motorista", "fornecedor", "combustivel", "litros",
     "valor_unitario", "valor_bruto", "desconto", "arla",
   ] as const;
   const JPD_ABAST_NUMERIC = new Set([
@@ -7332,9 +7332,17 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
       let q = supabaseBackend.from("homedometro_abastecimento_jpd").select("*")
         .order("created_at", { ascending: false });
       if (req.query.placa) q = q.eq("placa", req.query.placa as string);
+      if (req.query.frete_id) q = q.eq("frete_id", Number(req.query.frete_id));
       const { data, error } = await q;
       if (error) return res.status(500).json({ error: error.message });
-      res.json(data || []);
+      const rows = data || [];
+      const freteIds = Array.from(new Set(rows.map((r) => r.frete_id).filter((id) => id != null)));
+      let numeroByFrete: Record<string, string> = {};
+      if (freteIds.length) {
+        const { data: fretes } = await supabaseBackend.from("jpd_fretes").select("id, numero_do_bv").in("id", freteIds);
+        for (const f of fretes || []) numeroByFrete[String(f.id)] = f.numero_do_bv;
+      }
+      res.json(rows.map((r) => ({ ...r, numero_do_bv: r.frete_id != null ? numeroByFrete[String(r.frete_id)] ?? null : null })));
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

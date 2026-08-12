@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { X, Link2 } from 'lucide-react';
+import { X, Link2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import JpdFreteForm from './JpdFreteForm';
 
 type Frete = Record<string, any>;
 
@@ -14,6 +15,7 @@ const JpdVincularBV: React.FC<Props> = ({ abastecimentoId, onClose, onLinked }) 
   const [bvs, setBvs] = useState<Frete[]>([]);
   const [loading, setLoading] = useState(false);
   const [linkingId, setLinkingId] = useState<number | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -56,9 +58,17 @@ const JpdVincularBV: React.FC<Props> = ({ abastecimentoId, onClose, onLinked }) 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Vincular a um BV em aberto</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700"
+            >
+              <Plus className="w-3.5 h-3.5" /> Criar BV
+            </button>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         <div className="p-6">
           <div className="overflow-x-auto">
@@ -111,6 +121,17 @@ const JpdVincularBV: React.FC<Props> = ({ abastecimentoId, onClose, onLinked }) 
           </div>
         </div>
       </div>
+
+      {showCreateForm && (
+        <JpdFreteForm
+          companyId={null}
+          onClose={() => setShowCreateForm(false)}
+          onSaved={(saved) => {
+            setShowCreateForm(false);
+            vincular(saved.id);
+          }}
+        />
+      )}
     </div>
   );
 };
