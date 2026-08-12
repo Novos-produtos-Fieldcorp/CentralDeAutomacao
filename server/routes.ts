@@ -7002,11 +7002,11 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
   ]);
   const JPD_ABAST_COLS = [
-    "hodometro", "placa", "motorista", "fornecedor", "combustivel", "litros",
+    "hodometro", "placa", "motorista_id", "fornecedor", "combustivel", "litros",
     "valor_unitario", "valor_bruto", "desconto", "arla",
   ] as const;
   const JPD_ABAST_NUMERIC = new Set([
-    "hodometro", "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
+    "hodometro", "motorista_id", "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
   ]);
   const JPD_CUSTO_COLS = ["fornecedor", "combustivel", "litros", "valor_unitario", "valor_bruto", "desconto", "arla"];
   function buildAbastecimentoRow(body: any) {
@@ -7342,7 +7342,45 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
         const { data: fretes } = await supabaseBackend.from("jpd_fretes").select("id, numero_do_bv").in("id", freteIds);
         for (const f of fretes || []) numeroByFrete[String(f.id)] = f.numero_do_bv;
       }
-      res.json(rows.map((r) => ({ ...r, numero_do_bv: r.frete_id != null ? numeroByFrete[String(r.frete_id)] ?? null : null })));
+      const motoristaIds = Array.from(new Set(rows.map((r) => r.motorista_id).filter((id) => id != null)));
+      let nomeById: Record<string, string> = {};
+      if (motoristaIds.length) {
+        const { data: mots } = await supabaseBackend.from("motoristas_jpd").select("id, nome").in("id", motoristaIds);
+        for (const m of mots || []) nomeById[String(m.id)] = m.nome;
+      }
+      res.json(rows.map((r) => ({
+        ...r,
+        numero_do_bv: r.frete_id != null ? numeroByFrete[String(r.frete_id)] ?? null : null,
+        motorista_nome: r.motorista_id != null ? nomeById[String(r.motorista_id)] ?? null : null,
+      })));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/jpd/motoristas => [{ id, nome }]  (tabela mestra motoristas_jpd, com id)
+  app.get("/api/jpd/motoristas", async (_req, res) => {
+    try {
+      const { data, error } = await supabaseBackend.from("motoristas_jpd").select("id, nome").order("nome");
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/jpd/motoristas  body { nome } -> cria (ou reaproveita) e devolve { id, nome }
+  app.post("/api/jpd/motoristas", async (req, res) => {
+    try {
+      const nome = String(req.body?.nome || "").trim().toLowerCase().replace(/\s+/g, " ");
+      if (!nome) return res.status(400).json({ error: "nome obrigatório" });
+      const { data, error } = await supabaseBackend
+        .from("motoristas_jpd")
+        .upsert({ nome }, { onConflict: "nome" })
+        .select("id, nome")
+        .single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

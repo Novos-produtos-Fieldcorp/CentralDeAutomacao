@@ -5,6 +5,9 @@ import JpdVincularBV from './JpdVincularBV';
 import JpdFiltros, { EMPTY_FILTROS, JpdFiltrosValue } from './JpdFiltros';
 import { ABAST_COLS as COLS, AbastCol } from './jpdAbastecimentoCols';
 import { useVeiculos } from './useVeiculos';
+import { useMotoristas } from './useMotoristas';
+import JpdCreatableSelect, { Option } from './JpdCreatableSelect';
+import { capitalizeNome } from './format';
 
 type Abastecimento = Record<string, any>;
 
@@ -22,6 +25,22 @@ const JpdAbastecimentos = () => {
   const [vincularId, setVincularId] = useState<number | null>(null);
   const [filtros, setFiltros] = useState<JpdFiltrosValue>(EMPTY_FILTROS);
   const placas = useVeiculos();
+  const { motoristas, adicionar: adicionarMotorista } = useMotoristas();
+
+  const criarMotorista = async (nome: string): Promise<Option> => {
+    const res = await fetch('/api/jpd/motoristas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao criar motorista');
+    }
+    const criado = await res.json();
+    adicionarMotorista(criado);
+    return { value: String(criado.id), label: capitalizeNome(criado.nome) };
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -48,7 +67,7 @@ const JpdAbastecimentos = () => {
     const termo = filtros.busca.trim().toLowerCase();
     if (!termo) return rows;
     return rows.filter((r) =>
-      [r.id, r.placa, r.fornecedor, r.combustivel, r.hodometro, r.frete_id]
+      [r.id, r.placa, r.motorista_nome, r.fornecedor, r.combustivel, r.hodometro, r.frete_id]
         .map((v) => (v == null ? '' : String(v).toLowerCase()))
         .join(' ')
         .includes(termo),
@@ -111,18 +130,24 @@ const JpdAbastecimentos = () => {
 
   const renderCampo = (c: AbastCol) =>
     c.key === 'placa' ? (
-      <select
+      <JpdCreatableSelect
         value={draft[c.key] ?? ''}
-        onChange={(e) => setField(c.key, e.target.value)}
+        onChange={(v) => setField(c.key, v)}
+        options={placas}
+        createLabel="+ Criar nova placa"
+        newPlaceholder="Digite a nova placa"
         className={inputCls}
-      >
-        <option value="">Selecione</option>
-        {placas.map((p) => (
-          <option key={p} value={p}>
-            {p}
-          </option>
-        ))}
-      </select>
+      />
+    ) : c.key === 'motorista_id' ? (
+      <JpdCreatableSelect
+        value={draft[c.key] ?? ''}
+        onChange={(v) => setField(c.key, v)}
+        options={motoristas.map((m) => ({ value: String(m.id), label: capitalizeNome(m.nome) }))}
+        createLabel="+ Criar novo motorista"
+        newPlaceholder="Digite o nome do motorista"
+        className={inputCls}
+        onCreate={criarMotorista}
+      />
     ) : (
       <input
         type={c.type === 'number' ? 'number' : 'text'}
@@ -239,10 +264,10 @@ const JpdAbastecimentos = () => {
                     <td className="px-3 py-2 font-mono text-xs">#{r.id}</td>
                     {COLS.map((c) => (
                       <td key={c.key} className="px-3 py-2 whitespace-nowrap">
-                        {fmt(r[c.key])}
+                        {c.key === 'motorista_id' ? fmt(capitalizeNome(r.motorista_nome)) : fmt(r[c.key])}
                       </td>
                     ))}
-                    <td className="px-3 py-2">{r.frete_id ? `#${r.frete_id}` : '—'}</td>
+                    <td className="px-3 py-2">{r.frete_id ? (r.numero_do_bv || `#${r.frete_id}`) : '—'}</td>
                     <td className="px-3 py-2 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => startEdit(r)}

@@ -5,7 +5,7 @@ import { uploadToJpdBucket } from './uploadJpd';
 import { ABAST_COLS } from './jpdAbastecimentoCols';
 import { useVeiculos } from './useVeiculos';
 import { useMotoristas } from './useMotoristas';
-import JpdCreatableSelect from './JpdCreatableSelect';
+import JpdCreatableSelect, { Option } from './JpdCreatableSelect';
 import { capitalizeNome } from './format';
 
 interface Props {
@@ -25,7 +25,22 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
   const [processando, setProcessando] = useState(false);
   const [draft, setDraft] = useState<Record<string, any>>({});
   const placas = useVeiculos();
-  const motoristas = useMotoristas();
+  const { motoristas, adicionar: adicionarMotorista } = useMotoristas();
+
+  const criarMotorista = async (nome: string): Promise<Option> => {
+    const res = await fetch('/api/jpd/motoristas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao criar motorista');
+    }
+    const criado = await res.json();
+    adicionarMotorista(criado);
+    return { value: String(criado.id), label: capitalizeNome(criado.nome) };
+  };
 
   const enviar = async () => {
     if (!hodometroFile || !comprovanteFile) {
@@ -159,15 +174,15 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
                         newPlaceholder="Digite a nova placa"
                         className={inputCls}
                       />
-                    ) : c.key === 'motorista' ? (
+                    ) : c.key === 'motorista_id' ? (
                       <JpdCreatableSelect
                         value={draft[c.key] ?? ''}
                         onChange={(v) => setField(c.key, v)}
-                        options={motoristas}
+                        options={motoristas.map((m) => ({ value: String(m.id), label: capitalizeNome(m.nome) }))}
                         createLabel="+ Criar novo motorista"
                         newPlaceholder="Digite o nome do motorista"
                         className={inputCls}
-                        formatOption={capitalizeNome}
+                        onCreate={criarMotorista}
                       />
                     ) : (
                       <input

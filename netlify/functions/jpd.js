@@ -174,12 +174,15 @@ function buildFreteRow(body) {
 }
 
 // ---- Colunas dos lançamentos de abastecimento (homedometro_abastecimento_jpd) ----
+// motorista_id referencia motoristas_jpd(id) — diferente de jpd_fretes.motorista,
+// que referencia motoristas_jpd(nome). O id é resolvido no frontend (seleção ou
+// criação do motorista) antes de chegar aqui.
 const ABAST_COLS = [
-  "hodometro", "placa", "motorista", "fornecedor", "combustivel", "litros",
+  "hodometro", "placa", "motorista_id", "fornecedor", "combustivel", "litros",
   "valor_unitario", "valor_bruto", "desconto", "arla",
 ];
 const ABAST_NUMERIC = new Set([
-  "hodometro", "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
+  "hodometro", "motorista_id", "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
 ]);
 
 function buildAbastecimentoRow(body) {
@@ -193,7 +196,6 @@ function buildAbastecimentoRow(body) {
       v = Number.isFinite(n) ? n : null;
     }
     if (col === "placa") v = normalizePlaca(v);
-    if (col === "motorista") v = normalizeNome(v);
     row[col] = v;
   }
   return row;
@@ -717,6 +719,30 @@ exports.handler = async (event) => {
       });
     }
 
+    // ---------- MOTORISTAS (tabela mestra motoristas_jpd, com id) ----------
+    // Usada pelo campo motorista_id do lançamento de abastecimento — diferente
+    // de /opcoes (que devolve só nomes, para o campo texto motorista de jpd_fretes).
+    if (segs[0] === "motoristas") {
+      if (method === "GET") {
+        const { data, error } = await supabase.from("motoristas_jpd").select("id, nome").order("nome");
+        if (error) return json(500, { error: error.message });
+        return json(200, data || []);
+      }
+
+      // POST /motoristas  body { nome } -> cria (ou reaproveita) o motorista e devolve { id, nome }
+      if (method === "POST") {
+        const nome = normalizeNome(body && body.nome);
+        if (!nome) return json(400, { error: "nome obrigatório" });
+        const { data, error } = await supabase
+          .from("motoristas_jpd")
+          .upsert({ nome }, { onConflict: "nome" })
+          .select("id, nome")
+          .single();
+        if (error) return json(500, { error: error.message });
+        return json(200, data);
+      }
+    }
+
     // ---------- ABASTECIMENTOS (lançamentos de hodômetro/combustível) ----------
     if (segs[0] === "abastecimentos") {
       const id = segs[1] ? Number(segs[1]) : null;
@@ -730,7 +756,24 @@ exports.handler = async (event) => {
         if (qs.to) q = q.lte("created_at", qs.to);
         const { data, error } = await q;
         if (error) return json(500, { error: error.message });
-        return json(200, data || []);
+        const rows = data || [];
+        const motoristaIds = Array.from(new Set(rows.map((r) => r.motorista_id).filter((id2) => id2 != null)));
+        let nomeById = {};
+        if (motoristaIds.length) {
+          const { data: mots } = await supabase.from("motoristas_jpd").select("id, nome").in("id", motoristaIds);
+          for (const m of mots || []) nomeById[String(m.id)] = m.nome;
+        }
+        const freteIds = Array.from(new Set(rows.map((r) => r.frete_id).filter((id2) => id2 != null)));
+        let numeroByFrete = {};
+        if (freteIds.length) {
+          const { data: fretes } = await supabase.from("jpd_fretes").select("id, numero_do_bv").in("id", freteIds);
+          for (const f of fretes || []) numeroByFrete[String(f.id)] = f.numero_do_bv;
+        }
+        return json(200, rows.map((r) => ({
+          ...r,
+          motorista_nome: r.motorista_id != null ? (nomeById[String(r.motorista_id)] ?? null) : null,
+          numero_do_bv: r.frete_id != null ? (numeroByFrete[String(r.frete_id)] ?? null) : null,
+        })));
       }
 
       if (method === "GET" && id && !segs[2]) {
@@ -754,7 +797,6 @@ exports.handler = async (event) => {
           updated_at: new Date().toISOString(),
         };
         if ("placa" in row) await ensureVeiculo(row.placa);
-        if ("motorista" in row) await ensureMotorista(row.motorista);
         const { data, error } = await supabase
           .from("homedometro_abastecimento_jpd")
           .update(row)
@@ -782,7 +824,6 @@ exports.handler = async (event) => {
       if (method === "POST" && !id) {
         const row = buildAbastecimentoRow(body);
         await ensureVeiculo(row.placa);
-        await ensureMotorista(row.motorista);
         const { data, error } = await supabase.from("homedometro_abastecimento_jpd").insert(row).select().single();
         if (error) return json(500, { error: error.message });
         return json(200, data);
@@ -804,7 +845,6 @@ exports.handler = async (event) => {
       if (method === "PUT" && id) {
         const row = { ...buildAbastecimentoRow(body), updated_at: new Date().toISOString() };
         if ("placa" in row) await ensureVeiculo(row.placa);
-        if ("motorista" in row) await ensureMotorista(row.motorista);
         const { data, error } = await supabase.from("homedometro_abastecimento_jpd")
           .update(row).eq("id", id).select().single();
         if (error) return json(500, { error: error.message });

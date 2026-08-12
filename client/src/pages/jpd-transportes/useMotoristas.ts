@@ -1,21 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-// Carrega os motoristas cadastrados em motoristas_jpd via GET /api/jpd/opcoes.
-// Mesma fonte usada pelo dropdown de motoristas em JpdFreteForm.
-export function useMotoristas(): string[] {
-  const [motoristas, setMotoristas] = useState<string[]>([]);
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch('/api/jpd/opcoes');
-        if (res.ok) {
-          const data = await res.json();
-          setMotoristas(data.motoristas ?? []);
-        }
-      } catch {
-        /* opções vazias */
-      }
-    })();
+export type Motorista = { id: number; nome: string };
+
+// Carrega os motoristas cadastrados em motoristas_jpd (com id) via
+// GET /api/jpd/motoristas. Usado pelo campo motorista_id do lançamento de
+// abastecimento (homedometro_abastecimento_jpd), que referencia o id, e não
+// o nome (diferente de jpd_fretes.motorista, que é texto puro).
+export function useMotoristas() {
+  const [motoristas, setMotoristas] = useState<Motorista[]>([]);
+
+  const reload = useCallback(async () => {
+    try {
+      const res = await fetch('/api/jpd/motoristas');
+      if (res.ok) setMotoristas(await res.json());
+    } catch {
+      /* opções vazias */
+    }
   }, []);
-  return motoristas;
+
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  // Adiciona localmente um motorista recém-criado, sem precisar recarregar a lista inteira.
+  const adicionar = useCallback((m: Motorista) => {
+    setMotoristas((prev) => (prev.some((p) => p.id === m.id) ? prev : [...prev, m]));
+  }, []);
+
+  return { motoristas, adicionar };
 }
