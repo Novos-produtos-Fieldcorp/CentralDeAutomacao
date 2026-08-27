@@ -4,7 +4,7 @@ import DatePicker, { registerLocale } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ptBR } from 'date-fns/locale';
 registerLocale('pt-BR', ptBR);
-import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save, Gauge, Fuel, Maximize2, Car } from 'lucide-react';
+import { Search, Camera, X, Download, AlertCircle, Truck, ChevronUp, ChevronDown, BarChart2, Calendar, Clock, User, Edit, Loader2, Save, Gauge, Fuel, Maximize2, Car, Plus } from 'lucide-react';
 import ContextMenu from '../../components/ContextMenu';
 import { useCompanyData } from '../../hooks/useCompanyData';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
@@ -94,6 +94,12 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
   // Edit modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedReading, setSelectedReading] = useState<HodometroReading | null>(null);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('edit');
+  const [veiculos, setVeiculos] = useState<{ veiculo_id: number; placa: string; marca: string; tipo: string }[]>([]);
+  const [motoristas, setMotoristas] = useState<{ motorista_id: number; nome: string }[]>([]);
+  const [selectedVeiculoId, setSelectedVeiculoId] = useState('');
+  const [selectedMotoristaId, setSelectedMotoristaId] = useState('');
+  const [isElectric, setIsElectric] = useState(false);
   const [editFormData, setEditFormData] = useState({
     data: '',
     hora: '',
@@ -305,11 +311,64 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
     }
   };
 
+  const fetchVeiculosEMotoristas = async () => {
+    try {
+      const { data: veiculosData } = await supabase
+        .from('veiculo')
+        .select('veiculo_id, placa, marca, tipo')
+        .eq('company_id', companyId)
+        .order('placa');
+      if (veiculosData) setVeiculos(veiculosData);
+
+      const { data: motoristasData } = await supabase
+        .from('motorista')
+        .select('motorista_id, nome')
+        .eq('company_id', companyId)
+        .eq('ativo', true)
+        .order('nome');
+      if (motoristasData) setMotoristas(motoristasData);
+    } catch (error) {
+      console.error('Error fetching veiculos/motoristas:', error);
+      toast.error('Erro ao carregar veículos e motoristas');
+    }
+  };
+
+  const handleNewReading = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    setModalMode('create');
+    setSelectedReading(null);
+    setIsElectric(false);
+    setSelectedVeiculoId('');
+    setSelectedMotoristaId('');
+    setEditFormData({
+      data: new Date().toLocaleDateString('en-CA'),
+      hora: new Date().toTimeString().slice(0, 5),
+      hod_informado: '',
+      hod_lido: '',
+      trip_lida: '',
+      trip_informada: '',
+      km_rodado: '',
+      bateria: '',
+      preco_lido: '',
+      preco_informado: '',
+      litro_lido: '',
+      litro_informado: '',
+      foto_hodometro: '',
+      foto_bomba: ''
+    });
+
+    await fetchVeiculosEMotoristas();
+    setIsEditModalOpen(true);
+  };
+
   const handleEditReading = (reading: HodometroReading, e: React.MouseEvent) => {
     e.stopPropagation();
 
     // Set the selected reading and initialize form data
+    setModalMode('edit');
     setSelectedReading(reading);
+    setIsElectric(reading.bateria !== null && reading.bateria !== undefined);
     setEditFormData({
       data: reading.data,
       hora: reading.hora,
@@ -359,24 +418,30 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedReading) return;
-    
+
+    if (modalMode === 'edit' && !selectedReading) return;
+
+    if (modalMode === 'create' && (!selectedVeiculoId || !selectedMotoristaId)) {
+      toast.error('Selecione o veículo e o motorista');
+      return;
+    }
+
     try {
       setSubmitting(true);
-      
-      // Prepare the data for update
+
+      // Prepare the data for update/insert
       const updateData: any = {
         data: editFormData.data,
         hora: editFormData.hora,
         km_rodado: editFormData.km_rodado ? parseFloat(editFormData.km_rodado) : null,
         foto_hodometro: editFormData.foto_hodometro || null
       };
-      
+
       // Add vehicle-specific fields based on type
-      if (editFormData.bateria) {
+      const isElectricVehicle = modalMode === 'create' ? isElectric : !!editFormData.bateria;
+      if (isElectricVehicle) {
         // Electric vehicle
-        updateData.bateria = parseInt(editFormData.bateria);
+        updateData.bateria = editFormData.bateria ? parseInt(editFormData.bateria) : null;
         updateData.trip_lida = editFormData.trip_lida ? parseFloat(editFormData.trip_lida) : null;
         updateData.trip_informada = editFormData.trip_informada || null;
       } else {
@@ -386,30 +451,67 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
         updateData.trip_lida = editFormData.trip_lida ? parseFloat(editFormData.trip_lida) : null;
         updateData.trip_informada = editFormData.trip_informada || null;
       }
-      
-      // Update the record in the database
-      const { error } = await supabase
-        .from('hodometro')
-        .update(updateData)
-        .eq('id_hodometro', selectedReading.id_hodometro);
-        
-      if (error) throw error;
 
-      // Always update or insert bomba_gasolina data (even if empty, to allow clearing values)
-      const bombaData = {
-        hodometro_id: selectedReading.id_hodometro,
+      const bombaFieldsData = {
         preco_lido: editFormData.preco_lido || null,
         preco_informado: editFormData.preco_informado || null,
         litro_lido: editFormData.litro_lido || null,
         litro_informado: editFormData.litro_informado || null,
         foto_bomba: editFormData.foto_bomba || null
       };
+      const hasBombaData = !!(bombaFieldsData.preco_lido || bombaFieldsData.preco_informado ||
+        bombaFieldsData.litro_lido || bombaFieldsData.litro_informado || bombaFieldsData.foto_bomba);
+
+      if (modalMode === 'create') {
+        // Insert new hodometro record
+        const { data: newReading, error: insertError } = await supabase
+          .from('hodometro')
+          .insert({
+            ...updateData,
+            company_id: companyId,
+            veiculo_id: parseInt(selectedVeiculoId),
+            motorista_id: parseInt(selectedMotoristaId),
+            comparacao_leitura: false
+          })
+          .select('id_hodometro')
+          .single();
+
+        if (insertError) throw insertError;
+
+        if (hasBombaData) {
+          const { error: bombaError } = await supabase
+            .from('bomba_gasolina')
+            .insert({ hodometro_id: newReading.id_hodometro, ...bombaFieldsData });
+
+          if (bombaError) throw bombaError;
+        }
+
+        await fetchReadings();
+        toast.success('Leitura registrada com sucesso');
+        setIsEditModalOpen(false);
+        setSubmitting(false);
+        return;
+      }
+
+      // Update the record in the database
+      const { error } = await supabase
+        .from('hodometro')
+        .update(updateData)
+        .eq('id_hodometro', selectedReading!.id_hodometro);
+
+      if (error) throw error;
+
+      // Always update or insert bomba_gasolina data (even if empty, to allow clearing values)
+      const bombaData = {
+        hodometro_id: selectedReading!.id_hodometro,
+        ...bombaFieldsData
+      };
 
       // Check if bomba_gasolina record exists (using maybeSingle to handle 0 or 1 rows safely)
       const { data: existingBomba, error: checkError } = await supabase
         .from('bomba_gasolina')
         .select('id')
-        .eq('hodometro_id', selectedReading.id_hodometro)
+        .eq('hodometro_id', selectedReading!.id_hodometro)
         .maybeSingle();
 
       if (checkError && checkError.code !== 'PGRST116') {
@@ -422,27 +524,24 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
         const { error: bombaError } = await supabase
           .from('bomba_gasolina')
           .update(bombaData)
-          .eq('hodometro_id', selectedReading.id_hodometro);
-        
+          .eq('hodometro_id', selectedReading!.id_hodometro);
+
         if (bombaError) throw bombaError;
-      } else {
+      } else if (hasBombaData) {
         // Insert new record only if at least one field has a value
-        if (bombaData.preco_lido || bombaData.preco_informado || 
-            bombaData.litro_lido || bombaData.litro_informado || bombaData.foto_bomba) {
-          const { error: bombaError } = await supabase
-            .from('bomba_gasolina')
-            .insert(bombaData);
-          
-          if (bombaError) throw bombaError;
-        }
+        const { error: bombaError } = await supabase
+          .from('bomba_gasolina')
+          .insert(bombaData);
+
+        if (bombaError) throw bombaError;
       }
-      
+
       // Update the local state
-      setReadings(prevReadings => 
-        prevReadings.map(reading => 
-          reading.id_hodometro === selectedReading.id_hodometro
-            ? { 
-                ...reading, 
+      setReadings(prevReadings =>
+        prevReadings.map(reading =>
+          reading.id_hodometro === selectedReading!.id_hodometro
+            ? {
+                ...reading,
                 ...updateData,
                 // Ensure proper types for numeric fields
                 hod_informado: updateData.hod_informado !== undefined ? updateData.hod_informado : reading.hod_informado,
@@ -452,23 +551,17 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
                 bateria: updateData.bateria !== undefined ? updateData.bateria : reading.bateria,
                 foto_hodometro: editFormData.foto_hodometro || null,
                 // Always update bomba_gasolina data to reflect changes (including cleared values)
-                bomba_gasolina: {
-                  preco_lido: editFormData.preco_lido || null,
-                  preco_informado: editFormData.preco_informado || null,
-                  litro_lido: editFormData.litro_lido || null,
-                  litro_informado: editFormData.litro_informado || null,
-                  foto_bomba: editFormData.foto_bomba || null
-                }
+                bomba_gasolina: bombaFieldsData
               }
             : reading
         )
       );
-      
+
       toast.success('Leitura atualizada com sucesso');
       setIsEditModalOpen(false);
     } catch (error) {
-      console.error('Error updating reading:', error);
-      toast.error('Erro ao atualizar leitura');
+      console.error('Error saving reading:', error);
+      toast.error(modalMode === 'create' ? 'Erro ao registrar leitura' : 'Erro ao atualizar leitura');
     } finally {
       setSubmitting(false);
     }
@@ -831,6 +924,19 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
           )}
         </div>
 
+        {/* New Reading Button */}
+        <button
+          type="button"
+          onClick={handleNewReading}
+          className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700
+                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                   transition-colors flex items-center gap-2 h-9"
+          data-testid="button-subir-lancamento"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Subir Lançamento</span>
+        </button>
+
         {/* Export Button */}
         <div className="relative group">
           <button
@@ -1093,12 +1199,12 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
       )}
 
       {/* Edit Modal */}
-      {isEditModalOpen && selectedReading && createPortal(
+      {isEditModalOpen && (modalMode === 'create' || selectedReading) && createPortal(
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-[1000001] flex items-center justify-center p-2 sm:p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-5xl 2xl:max-w-6xl w-full max-h-[92vh] overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 flex flex-col">
             <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shrink-0 bg-white dark:bg-gray-800">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Editar Leitura de Hodômetro
+                {modalMode === 'create' ? 'Nova Leitura de Hodômetro' : 'Editar Leitura de Hodômetro'}
               </h2>
               <button
                 onClick={() => setIsEditModalOpen(false)}
@@ -1154,20 +1260,82 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 bg-white dark:bg-gray-700/50 rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2">
-                      <Truck className="w-5 h-5 text-gray-500 dark:text-gray-400 shrink-0" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 break-words">
-                        Veículo: {selectedReading.veiculo?.placa?.toUpperCase()} - {selectedReading.veiculo?.marca} {selectedReading.veiculo?.tipo}
-                      </span>
+                  {modalMode === 'edit' && selectedReading ? (
+                    <div className="flex flex-col gap-2 bg-white dark:bg-gray-700/50 rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-2">
+                        <Truck className="w-5 h-5 text-gray-500 dark:text-gray-400 shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 break-words">
+                          Veículo: {selectedReading.veiculo?.placa?.toUpperCase()} - {selectedReading.veiculo?.marca} {selectedReading.veiculo?.tipo}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <User className="w-5 h-5 text-gray-500 dark:text-gray-400 shrink-0" />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 break-words">
+                          Motorista: {selectedReading.motorista?.nome}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <User className="w-5 h-5 text-gray-500 dark:text-gray-400 shrink-0" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 break-words">
-                        Motorista: {selectedReading.motorista?.nome}
-                      </span>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white dark:bg-gray-700/50 rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Veículo
+                        </label>
+                        <select
+                          value={selectedVeiculoId}
+                          onChange={(e) => setSelectedVeiculoId(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          data-testid="select-veiculo-lancamento"
+                        >
+                          <option value="">Selecione um veículo</option>
+                          {veiculos.map((veiculo) => (
+                            <option key={veiculo.veiculo_id} value={veiculo.veiculo_id}>
+                              {veiculo.placa?.toUpperCase()} - {veiculo.marca} {veiculo.tipo}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Motorista
+                        </label>
+                        <select
+                          value={selectedMotoristaId}
+                          onChange={(e) => setSelectedMotoristaId(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          data-testid="select-motorista-lancamento"
+                        >
+                          <option value="">Selecione um motorista</option>
+                          {motoristas.map((motorista) => (
+                            <option key={motorista.motorista_id} value={motorista.motorista_id}>
+                              {motorista.nome}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="md:col-span-2 flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="isElectricCheckbox"
+                          checked={isElectric}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setIsElectric(checked);
+                            setEditFormData(prev => ({
+                              ...prev,
+                              bateria: checked ? prev.bateria : '',
+                              hod_informado: checked ? '' : prev.hod_informado,
+                              hod_lido: checked ? '' : prev.hod_lido
+                            }));
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                        />
+                        <label htmlFor="isElectricCheckbox" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Veículo elétrico?
+                        </label>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Leituras + Bomba lado a lado */}
@@ -1181,7 +1349,7 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
                     </h3>
                   </div>
 
-                  {selectedReading.bateria !== null && selectedReading.bateria !== undefined ? (
+                  {(modalMode === 'create' ? isElectric : selectedReading?.bateria !== null && selectedReading?.bateria !== undefined) ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1584,7 +1752,9 @@ const HodometrosRelatorio = ({ initialTab }: { initialTab?: 'leituras' } = { ini
               color: 'text-yellow-600 dark:text-yellow-400',
               onClick: () => {
                 const reading = contextMenu.reading;
+                setModalMode('edit');
                 setSelectedReading(reading);
+                setIsElectric(reading.bateria !== null && reading.bateria !== undefined);
                 setEditFormData({
                   data: reading.data,
                   hora: reading.hora,
