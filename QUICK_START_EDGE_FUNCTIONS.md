@@ -20,7 +20,7 @@ supabase login
 ./deploy-edge-functions.sh all
 
 # Opção B: Deploy manual
-supabase link --project-ref ohmoxsvwjvohmqqgxjhb
+supabase link --project-ref jnwocajxsgkgiixwyxkl
 supabase functions deploy validate-wiseapp-token
 ```
 
@@ -30,7 +30,7 @@ Teste a função com curl:
 
 ```bash
 curl -X POST \
-  https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token \
+  https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token \
   -H 'Content-Type: application/json' \
   -d '{"token":"GfvESPVDsmgQEjsZa3NGPuDa"}'
 ```

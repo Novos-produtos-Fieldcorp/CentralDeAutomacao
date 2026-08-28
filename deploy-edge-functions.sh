@@ -12,8 +12,8 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Configurações
-PROJECT_REF="ohmoxsvwjvohmqqgxjhb"
-SUPABASE_URL="https://ohmoxsvwjvohmqqgxjhb.supabase.co"
+PROJECT_REF="jnwocajxsgkgiixwyxkl"
+SUPABASE_URL="https://jnwocajxsgkgiixwyxkl.supabase.co"
 
 echo -e "${GREEN}🚀 Deploy de Edge Functions do Supabase${NC}"
 echo ""

@@ -29,7 +29,7 @@ O sistema está configurado para usar o backend Express que já está funcionand
 
 3. **Link do projeto**:
    ```bash
-   supabase link --project-ref ohmoxsvwjvohmqqgxjhb
+   supabase link --project-ref jnwocajxsgkgiixwyxkl
    ```
 
 4. **Deploy das funções**:
@@ -40,7 +40,7 @@ O sistema está configurado para usar o backend Express que já está funcionand
 
 ### Opção 2: Via Dashboard Supabase
 
-1. **Acesse**: https://supabase.com/dashboard/project/ohmoxsvwjvohmqqgxjhb
+1. **Acesse**: https://supabase.com/dashboard/project/jnwocajxsgkgiixwyxkl
 2. **Vá em**: Edge Functions
 3. **Clique em**: "Create a new function"
 4. **Configure**:
@@ -69,8 +69,8 @@ Quando as funções estiverem deployadas, você pode:
 
 ## URLs das Funções
 
-- **sync-all-motoristas**: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/sync-all-motoristas`
-- **sync-motoristas-bulk**: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/sync-motoristas-bulk`
+- **sync-all-motoristas**: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/sync-all-motoristas`
+- **sync-motoristas-bulk**: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/sync-motoristas-bulk`
 
 ## Configuração Atual
 

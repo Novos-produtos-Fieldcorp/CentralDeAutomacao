@@ -11,12 +11,12 @@ Localização: `supabase/functions/validate-wiseapp-token/index.ts`
 - Retorna dados do usuário validado
 - CORS configurado para aceitar chamadas do frontend
 
-**Endpoint**: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token`
+**Endpoint**: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token`
 
 **Teste rápido**:
 ```bash
 curl -X POST \
-  https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token \
+  https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token \
   -H 'Content-Type: application/json' \
   -d '{"token":"GfvESPVDsmgQEjsZa3NGPuDa"}'
 ```
@@ -115,7 +115,7 @@ npm install -g supabase
 supabase login
 
 # 3. Link com projeto
-supabase link --project-ref ohmoxsvwjvohmqqgxjhb
+supabase link --project-ref jnwocajxsgkgiixwyxkl
 
 # 4. Deploy
 supabase functions deploy validate-wiseapp-token
@@ -127,7 +127,7 @@ Após o deploy, teste:
 
 ```bash
 curl -X POST \
-  https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token \
+  https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token \
   -H 'Content-Type: application/json' \
   -d '{"token":"GfvESPVDsmgQEjsZa3NGPuDa"}'
 ```
@@ -202,7 +202,7 @@ curl -X POST \
 Acesse a aplicação com `?account_id=42` e tente autenticar com um token WiseApp.
 
 ### 4. Monitorar Performance
-- Dashboard: https://app.supabase.com/project/ohmoxsvwjvohmqqgxjhb/functions
+- Dashboard: https://app.supabase.com/project/jnwocajxsgkgiixwyxkl/functions
 - Logs: `./deploy-edge-functions.sh logs validate-wiseapp-token`
 
 ## 🐛 Troubleshooting
@@ -268,7 +268,7 @@ Sistema configurado para usar Edge Functions do Supabase!
 **Para testar**:
 ```bash
 curl -X POST \
-  https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token \
+  https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token \
   -H 'Content-Type: application/json' \
   -d '{"token":"seu_token"}'
 ```

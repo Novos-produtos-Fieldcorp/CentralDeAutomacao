@@ -97,7 +97,7 @@ supabase login
 ### Link com o Projeto
 
 ```bash
-supabase link --project-ref ohmoxsvwjvohmqqgxjhb
+supabase link --project-ref jnwocajxsgkgiixwyxkl
 ```
 
 ### Servir Localmente
@@ -160,7 +160,7 @@ export const corsHeaders = {
 ```bash
 # Produção
 curl -X POST \
-  https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token \
+  https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token \
   -H 'Content-Type: application/json' \
   -d '{"token":"GfvESPVDsmgQEjsZa3NGPuDa"}'
 
@@ -190,7 +190,7 @@ const mySecret = Deno.env.get('MY_SECRET')
 
 ### Métricas
 
-- Dashboard: [Supabase Dashboard](https://app.supabase.com/project/ohmoxsvwjvohmqqgxjhb/functions)
+- Dashboard: [Supabase Dashboard](https://app.supabase.com/project/jnwocajxsgkgiixwyxkl/functions)
 - Logs: `supabase functions logs <nome>`
 - Status: `supabase functions list`
 

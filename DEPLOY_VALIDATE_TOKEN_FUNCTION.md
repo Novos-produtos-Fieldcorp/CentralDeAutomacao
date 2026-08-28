@@ -5,7 +5,7 @@ Deploy da Supabase Edge Function que valida tokens WiseApp para resolver o probl
 
 ## 📦 Função Criada
 - **Localização**: `supabase/functions/validate-wiseapp-token/index.ts`
-- **Endpoint**: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token`
+- **Endpoint**: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token`
 - **Método**: POST
 - **Corpo**: `{ "token": "seu_token_aqui" }`
 
@@ -21,7 +21,7 @@ npm install -g supabase
 supabase login
 
 # 3. Linkar o projeto
-supabase link --project-ref ohmoxsvwjvohmqqgxjhb
+supabase link --project-ref jnwocajxsgkgiixwyxkl
 
 # 4. Deploy apenas da função validate-wiseapp-token
 supabase functions deploy validate-wiseapp-token
@@ -33,7 +33,7 @@ supabase functions deploy
 ### Opção 2: Via Dashboard do Supabase (Mais Simples)
 
 1. Acesse o Dashboard do Supabase:
-   - URL: https://supabase.com/dashboard/project/ohmoxsvwjvohmqqgxjhb
+   - URL: https://supabase.com/dashboard/project/jnwocajxsgkgiixwyxkl
    
 2. Vá para **Edge Functions** no menu lateral
 
@@ -53,7 +53,7 @@ Após o deploy, você pode testar com:
 
 ```bash
 curl -X POST \
-  https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token \
+  https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token \
   -H "Content-Type: application/json" \
   -d '{"token": "SEU_TOKEN_WISEAPP_AQUI"}'
 ```
@@ -80,7 +80,7 @@ Resposta esperada para token inválido:
 
 ## 🔍 Verificar se a Função Está Ativa
 
-1. Acesse: https://supabase.com/dashboard/project/ohmoxsvwjvohmqqgxjhb/functions
+1. Acesse: https://supabase.com/dashboard/project/jnwocajxsgkgiixwyxkl/functions
 2. Procure por `validate-wiseapp-token`
 3. Status deve estar como **"Active"**
 
@@ -102,7 +102,7 @@ Resposta esperada para token inválido:
 
 ### Se aparecer erro 404:
 - Verifique se a função foi deployada corretamente
-- Confirme que está usando a URL correta: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token`
+- Confirme que está usando a URL correta: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token`
 
 ### Se aparecer erro de autenticação:
 - Verifique se o token WiseApp é válido

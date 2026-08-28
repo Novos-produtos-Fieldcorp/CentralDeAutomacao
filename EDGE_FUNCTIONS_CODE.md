@@ -136,7 +136,7 @@ export const corsHeaders = {
 
 ```typescript
 const validateToken = async (token: string) => {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://jnwocajxsgkgiixwyxkl.supabase.co';
   const validationUrl = `${supabaseUrl}/functions/v1/validate-wiseapp-token`;
   
   const response = await fetch(validationUrl, {
@@ -214,19 +214,19 @@ try {
 ```bash
 # Teste com token válido
 curl -X POST \
-  https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token \
+  https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token \
   -H 'Content-Type: application/json' \
   -d '{"token":"seu_token_aqui"}'
 
 # Teste sem token (deve retornar erro 400)
 curl -X POST \
-  https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token \
+  https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token \
   -H 'Content-Type: application/json' \
   -d '{}'
 
 # Teste CORS preflight
 curl -X OPTIONS \
-  https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token \
+  https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token \
   -H 'Access-Control-Request-Method: POST' \
   -H 'Access-Control-Request-Headers: content-type'
 ```
@@ -271,7 +271,7 @@ Os logs incluem:
 
 ### Erro: "Failed to fetch"
 - Verifique se a edge function foi deployada: `supabase functions list`
-- Confirme a URL: deve ser `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token`
+- Confirme a URL: deve ser `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token`
 - Verifique CORS no navegador (Network tab)
 
 ### Erro: "Token inválido" mas o token está correto
@@ -300,7 +300,7 @@ nano supabase/functions/validate-wiseapp-token/index.ts
 supabase functions deploy validate-wiseapp-token
 
 # 3. Teste imediatamente
-curl -X POST https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token \
+curl -X POST https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token \
   -H 'Content-Type: application/json' \
   -d '{"token":"token_de_teste"}'
 ```

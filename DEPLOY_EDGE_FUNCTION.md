@@ -5,7 +5,7 @@ A validação de token funciona localmente mas retorna **404 em produção** por
 
 **Erro:**
 ```
-POST https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/wiseapp/validate-token 404 (Not Found)
+POST https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/api/wiseapp/validate-token 404 (Not Found)
 ```
 
 ---
@@ -20,18 +20,18 @@ Isso abrirá seu navegador para autorizar.
 
 ### Passo 2: Deploy da Edge Function
 ```bash
-npx supabase functions deploy api --project-ref ohmoxsvwjvohmqqgxjhb
+npx supabase functions deploy api --project-ref jnwocajxsgkgiixwyxkl
 ```
 
 ### Passo 3: Verificar Deploy
 ```bash
-npx supabase functions list --project-ref ohmoxsvwjvohmqqgxjhb
+npx supabase functions list --project-ref jnwocajxsgkgiixwyxkl
 ```
 
 Você deve ver a função `api` listada como **deployed**.
 
 ### Passo 4: Testar
-Acesse: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/health`
+Acesse: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/api/health`
 
 Deve retornar:
 ```json
@@ -50,7 +50,7 @@ Deve retornar:
 Se o método CLI não funcionar, você pode fazer **upload manual** pela interface:
 
 ### Passo 1: Acessar Edge Functions no Supabase
-1. Vá para: https://supabase.com/dashboard/project/ohmoxsvwjvohmqqgxjhb
+1. Vá para: https://supabase.com/dashboard/project/jnwocajxsgkgiixwyxkl
 2. Clique em **Edge Functions** no menu lateral
 3. Clique em **Create a new function**
 
@@ -60,14 +60,14 @@ Se o método CLI não funcionar, você pode fazer **upload manual** pela interfa
 
 ### Passo 3: Configurar Variáveis de Ambiente
 Certifique-se de que estas variáveis estão configuradas:
-- `SUPABASE_URL`: https://ohmoxsvwjvohmqqgxjhb.supabase.co
+- `SUPABASE_URL`: https://jnwocajxsgkgiixwyxkl.supabase.co
 - `SUPABASE_SERVICE_ROLE_KEY`: (sua chave de service role)
 
 ### Passo 4: Deploy
 Clique em **Deploy function**
 
 ### Passo 5: Verificar
-Teste o endpoint de health: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/api/health`
+Teste o endpoint de health: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/api/health`
 
 ---
 

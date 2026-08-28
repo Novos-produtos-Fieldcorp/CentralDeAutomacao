@@ -4,7 +4,7 @@ echo "🚀 Deploy da Edge Function 'api' para Supabase"
 echo "=============================================="
 echo ""
 
-PROJECT_REF="ohmoxsvwjvohmqqgxjhb"
+PROJECT_REF="jnwocajxsgkgiixwyxkl"
 
 # Verificar se Supabase CLI está instalado
 if ! command -v supabase &> /dev/null; then

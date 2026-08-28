@@ -18,7 +18,7 @@ Este documento explica como fazer o deploy das Edge Functions do Supabase necess
 
 3. **Linkar com o projeto Supabase**:
    ```bash
-   supabase link --project-ref ohmoxsvwjvohmqqgxjhb
+   supabase link --project-ref jnwocajxsgkgiixwyxkl
    ```
    - Você precisará confirmar o link quando solicitado
 
@@ -68,7 +68,7 @@ supabase functions logs validate-wiseapp-token
 ### validate-wiseapp-token
 **Descrição**: Valida tokens de acesso do WiseApp/Chatwoot  
 **Método**: POST  
-**Endpoint**: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token`  
+**Endpoint**: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token`  
 **Payload**:
 ```json
 {
@@ -90,32 +90,32 @@ supabase functions logs validate-wiseapp-token
 ### proxy-download
 **Descrição**: Proxy para download de arquivos do WiseApp contornando CORS  
 **Método**: POST  
-**Endpoint**: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/proxy-download`
+**Endpoint**: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/proxy-download`
 
 ### proxy-wiseapp
 **Descrição**: Proxy genérico para chamadas à API do WiseApp  
 **Método**: POST/GET  
-**Endpoint**: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/proxy-wiseapp`
+**Endpoint**: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/proxy-wiseapp`
 
 ### group-summary-cron
 **Descrição**: Função cron para envio automático de resumos de grupo  
 **Método**: POST  
-**Endpoint**: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/group-summary-cron`
+**Endpoint**: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/group-summary-cron`
 
 ### manual-summary-trigger
 **Descrição**: Dispara manualmente o envio de resumos  
 **Método**: POST  
-**Endpoint**: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/manual-summary-trigger`
+**Endpoint**: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/manual-summary-trigger`
 
 ### sync-all-motoristas
 **Descrição**: Sincroniza todos os motoristas com WiseApp  
 **Método**: POST  
-**Endpoint**: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/sync-all-motoristas`
+**Endpoint**: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/sync-all-motoristas`
 
 ### sync-motoristas-bulk
 **Descrição**: Sincroniza motoristas em lote com WiseApp  
 **Método**: POST  
-**Endpoint**: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/sync-motoristas-bulk`
+**Endpoint**: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/sync-motoristas-bulk`
 
 ## Variáveis de Ambiente (Secrets)
 
@@ -134,7 +134,7 @@ supabase secrets list
 ## Troubleshooting
 
 ### Erro: "Failed to link project"
-- Verifique se o project-ref está correto: `ohmoxsvwjvohmqqgxjhb`
+- Verifique se o project-ref está correto: `jnwocajxsgkgiixwyxkl`
 - Certifique-se de estar autenticado: `supabase login`
 
 ### Erro: "Permission denied"

@@ -46,15 +46,15 @@ functions.forEach(func => {
 console.log('\n📋 Instruções para deploy:');
 console.log('1. Instale o Supabase CLI: https://github.com/supabase/cli#install-the-cli');
 console.log('2. Faça login: supabase login');
-console.log('3. Link do projeto: supabase link --project-ref ohmoxsvwjvohmqqgxjhb');
+console.log('3. Link do projeto: supabase link --project-ref jnwocajxsgkgiixwyxkl');
 console.log('4. Deploy das funções: supabase functions deploy');
 console.log('\n🔗 Links úteis:');
 console.log('- Supabase CLI: https://github.com/supabase/cli');
 console.log('- Documentação: https://supabase.com/docs/guides/functions');
-console.log('- Seu projeto: https://ohmoxsvwjvohmqqgxjhb.supabase.co');
+console.log('- Seu projeto: https://jnwocajxsgkgiixwyxkl.supabase.co');
 
 console.log('\n🚀 Alternativa: Deploy via Dashboard');
-console.log('1. Acesse: https://supabase.com/dashboard/project/ohmoxsvwjvohmqqgxjhb');
+console.log('1. Acesse: https://supabase.com/dashboard/project/jnwocajxsgkgiixwyxkl');
 console.log('2. Vá em Edge Functions');
 console.log('3. Clique em "Create a new function"');
 console.log('4. Nome: sync-all-motoristas');

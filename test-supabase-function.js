@@ -1,7 +1,7 @@
 // Script para testar se a função Supabase está deployada
 const https = require('https');
 
-const SUPABASE_URL = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+const SUPABASE_URL = 'https://jnwocajxsgkgiixwyxkl.supabase.co';
 const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/sync-all-motoristas`;
 
 console.log('🔍 Testando se a função sync-all-motoristas está deployada...');

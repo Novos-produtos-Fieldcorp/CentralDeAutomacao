@@ -27,7 +27,7 @@ echo "Verificando link do projeto..."
 if [ ! -f ".supabase/config.toml" ]; then
     echo ""
     echo "🔗 Linkando projeto..."
-    npx supabase link --project-ref ohmoxsvwjvohmqqgxjhb
+    npx supabase link --project-ref jnwocajxsgkgiixwyxkl
     
     if [ $? -ne 0 ]; then
         echo ""
@@ -51,7 +51,7 @@ if [ $? -eq 0 ]; then
     echo "   npx supabase functions logs validate-wiseapp-token"
     echo ""
     echo "🌐 Ou acesse:"
-    echo "   https://supabase.com/dashboard/project/ohmoxsvwjvohmqqgxjhb/functions/validate-wiseapp-token/logs"
+    echo "   https://supabase.com/dashboard/project/jnwocajxsgkgiixwyxkl/functions/validate-wiseapp-token/logs"
     echo ""
 else
     echo ""
@@ -59,7 +59,7 @@ else
     echo ""
     echo "Tente manualmente:"
     echo "1. npx supabase login"
-    echo "2. npx supabase link --project-ref ohmoxsvwjvohmqqgxjhb"
+    echo "2. npx supabase link --project-ref jnwocajxsgkgiixwyxkl"
     echo "3. npx supabase functions deploy validate-wiseapp-token"
     exit 1
 fi

@@ -15,7 +15,7 @@ Após deploy no Netlify, a validação do token WiseApp retornava erro 404 porqu
 
 ### 2. **Ambiente de Produção (Netlify)**
 - ✅ Supabase Edge Function criada
-- ✅ Endpoint: `https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token`
+- ✅ Endpoint: `https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token`
 - ✅ Frontend detecta automaticamente o ambiente
 
 ## 📁 Arquivos Criados/Modificados
@@ -92,14 +92,14 @@ npm install -g supabase
 supabase login
 
 # Linkar projeto
-supabase link --project-ref ohmoxsvwjvohmqqgxjhb
+supabase link --project-ref jnwocajxsgkgiixwyxkl
 
 # Deploy
 supabase functions deploy validate-wiseapp-token
 ```
 
 **Opção B - Via Dashboard (Mais Simples):**
-1. Acesse: https://supabase.com/dashboard/project/ohmoxsvwjvohmqqgxjhb
+1. Acesse: https://supabase.com/dashboard/project/jnwocajxsgkgiixwyxkl
 2. Edge Functions → Create a new function
 3. Nome: `validate-wiseapp-token`
 4. Cole o código de `supabase/functions/validate-wiseapp-token/index.ts`
@@ -110,7 +110,7 @@ supabase functions deploy validate-wiseapp-token
 Teste com curl:
 ```bash
 curl -X POST \
-  https://ohmoxsvwjvohmqqgxjhb.supabase.co/functions/v1/validate-wiseapp-token \
+  https://jnwocajxsgkgiixwyxkl.supabase.co/functions/v1/validate-wiseapp-token \
   -H "Content-Type: application/json" \
   -d '{"token": "SEU_TOKEN_REAL"}'
 ```
@@ -130,7 +130,7 @@ Se não está conectado:
 Após o deploy, verifique:
 
 - [ ] Supabase Edge Function está ativa
-  - Dashboard: https://supabase.com/dashboard/project/ohmoxsvwjvohmqqgxjhb/functions
+  - Dashboard: https://supabase.com/dashboard/project/jnwocajxsgkgiixwyxkl/functions
   - Status: "Active"
 
 - [ ] Frontend carrega sem erros
@@ -174,7 +174,7 @@ Após o deploy, verifique:
 ### Erro: "Network request failed"
 **Causa**: URL da Supabase está incorreta
 **Solução**: Verifique se `VITE_SUPABASE_URL` está configurada corretamente no Netlify:
-- URL: `https://ohmoxsvwjvohmqqgxjhb.supabase.co`
+- URL: `https://jnwocajxsgkgiixwyxkl.supabase.co`
 
 ### Para ver logs da função:
 ```bash
