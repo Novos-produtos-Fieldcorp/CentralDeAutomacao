@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, FilePen, Building2 } from 'lucide-react';
+import { Search, Camera, X, Download, Calendar, Clock, User, Truck, AlertCircle, ChevronDown, FilePen, Building2, Plus } from 'lucide-react';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import toast from 'react-hot-toast';
 import { useDateRange } from '../../hooks/useDateRange';
@@ -50,6 +50,7 @@ const HodometrosRomaneio: React.FC = () => {
 
   // Edit modal
   const [showEditModal, setShowEditModal] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('edit');
   const [selectedRomaneio, setSelectedRomaneio] = useState<RomaneioWithRelations | null>(null);
   const [editFormData, setEditFormData] = useState({
     motorista_id: null as number | null,
@@ -295,7 +296,24 @@ const HodometrosRomaneio: React.FC = () => {
     }
   };
 
+  const handleNewRomaneio = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
+    setModalMode('create');
+    setSelectedRomaneio(null);
+    setEditFormData({
+      motorista_id: null,
+      veiculo_id: null,
+      filial_id: null,
+      foto_romaneio: null,
+    });
+    setShowEditModal(true);
+
+    await Promise.all([fetchMotoristas(), fetchVeiculos(null), fetchFiliais()]);
+  };
+
   const handleOpenEditModal = async (romaneio: RomaneioWithRelations) => {
+    setModalMode('edit');
     setSelectedRomaneio(romaneio);
     setEditFormData({
       motorista_id: romaneio.id_motorista || null,
@@ -398,29 +416,42 @@ const HodometrosRomaneio: React.FC = () => {
   };
 
   const handleSaveRomaneio = async () => {
-    if (!selectedRomaneio) return;
+    if (modalMode === 'edit' && !selectedRomaneio) return;
 
     try {
       setIsSaving(true);
 
-      const { error } = await supabase
-        .from('romaneio')
-        .update({
-          id_motorista: editFormData.motorista_id,
-          id_veiculo: editFormData.veiculo_id,
-          filial_id: editFormData.filial_id,
-          foto_romaneio: editFormData.foto_romaneio,
-        })
-        .eq('id', selectedRomaneio.id);
+      const romaneioData = {
+        id_motorista: editFormData.motorista_id,
+        id_veiculo: editFormData.veiculo_id,
+        filial_id: editFormData.filial_id,
+        foto_romaneio: editFormData.foto_romaneio,
+      };
 
-      if (error) throw error;
+      if (modalMode === 'create') {
+        const { error } = await supabase
+          .from('romaneio')
+          .insert({ ...romaneioData, id_company: companyId });
 
-      toast.success('Romaneio atualizado com sucesso!');
+        if (error) throw error;
+
+        toast.success('Romaneio registrado com sucesso!');
+      } else {
+        const { error } = await supabase
+          .from('romaneio')
+          .update(romaneioData)
+          .eq('id', selectedRomaneio!.id);
+
+        if (error) throw error;
+
+        toast.success('Romaneio atualizado com sucesso!');
+      }
+
       setShowEditModal(false);
       fetchRomaneios();
     } catch (err) {
-      console.error('Error updating romaneio:', err);
-      toast.error('Erro ao atualizar romaneio');
+      console.error('Error saving romaneio:', err);
+      toast.error(modalMode === 'create' ? 'Erro ao registrar romaneio' : 'Erro ao atualizar romaneio');
     } finally {
       setIsSaving(false);
     }
@@ -624,6 +655,18 @@ const HodometrosRomaneio: React.FC = () => {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleNewRomaneio}
+            className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700
+                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                     transition-colors flex items-center gap-2 h-9"
+            data-testid="button-subir-romaneio"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Subir Romaneio</span>
+          </button>
+
           <div className="relative group">
             <button
               onClick={exportRomaneiosToExcel}
@@ -840,7 +883,7 @@ const HodometrosRomaneio: React.FC = () => {
       )}
 
       {/* Edit Modal */}
-      {showEditModal && selectedRomaneio && (
+      {showEditModal && (modalMode === 'create' || selectedRomaneio) && (
         <div className="fixed inset-0 z-50 overflow-y-auto" data-testid="overlay-edit-modal">
           <div className="fixed inset-0 bg-black/50 dark:bg-black/70" onClick={() => setShowEditModal(false)} />
           <div className="flex items-center justify-center min-h-screen p-4">
@@ -849,7 +892,9 @@ const HodometrosRomaneio: React.FC = () => {
               data-testid="container-edit-modal"
             >
               <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Editar Romaneio</h3>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  {modalMode === 'create' ? 'Novo Romaneio' : 'Editar Romaneio'}
+                </h3>
                 <button
                   onClick={() => setShowEditModal(false)}
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"

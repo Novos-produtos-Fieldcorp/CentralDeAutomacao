@@ -303,6 +303,7 @@ const HodometrosMinuta: React.FC = () => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('edit');
   const [selectedMinuta, setSelectedMinuta] = useState<Minuta | null>(null);
   const [editFormData, setEditFormData] = useState({
     minuta_informada: '',
@@ -587,9 +588,29 @@ const HodometrosMinuta: React.FC = () => {
     }
   };
 
+  const handleNewMinuta = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
+    setModalMode('create');
+    setSelectedMinuta(null);
+    setEditFormData({
+      minuta_informada: '',
+      minuta_lida: '',
+      romaneios: [],
+      newRomaneio: '',
+      motorista_id: null,
+      veiculo_id: null,
+      foto_minuta: null
+    });
+    setShowEditModal(true);
+
+    await Promise.all([fetchMotoristas(), fetchVeiculos()]);
+  };
+
   const handleOpenEditModal = async (minuta: Minuta) => {
+    setModalMode('edit');
     setSelectedMinuta(minuta);
-    
+
     // Função auxiliar para separar romaneios por delimitadores (ponto e vírgula, vírgula, quebra de linha, espaço)
     const splitRomaneios = (str: string): string[] => {
       // Tentar separar por ponto e vírgula, depois vírgula, depois quebra de linha, depois espaço
@@ -725,31 +746,44 @@ const HodometrosMinuta: React.FC = () => {
   };
 
   const handleSaveMinuta = async () => {
-    if (!selectedMinuta) return;
+    if (modalMode === 'edit' && !selectedMinuta) return;
 
     try {
       setIsSaving(true);
 
-      const { error } = await supabase
-        .from('minuta')
-        .update({
-          minuta_informada: editFormData.minuta_informada || null,
-          minuta_lida: editFormData.minuta_lida || null,
-          romaneio: editFormData.romaneios.length > 0 ? editFormData.romaneios : null,
-          motorista_id: editFormData.motorista_id,
-          veiculo_id: editFormData.veiculo_id,
-          foto_minuta: editFormData.foto_minuta
-        })
-        .eq('id', selectedMinuta.id);
+      const minutaData = {
+        minuta_informada: editFormData.minuta_informada || null,
+        minuta_lida: editFormData.minuta_lida || null,
+        romaneio: editFormData.romaneios.length > 0 ? editFormData.romaneios : null,
+        motorista_id: editFormData.motorista_id,
+        veiculo_id: editFormData.veiculo_id,
+        foto_minuta: editFormData.foto_minuta
+      };
 
-      if (error) throw error;
+      if (modalMode === 'create') {
+        const { error } = await supabase
+          .from('minuta')
+          .insert({ ...minutaData, company_id: companyId });
 
-      toast.success('Minuta atualizada com sucesso!');
+        if (error) throw error;
+
+        toast.success('Minuta registrada com sucesso!');
+      } else {
+        const { error } = await supabase
+          .from('minuta')
+          .update(minutaData)
+          .eq('id', selectedMinuta!.id);
+
+        if (error) throw error;
+
+        toast.success('Minuta atualizada com sucesso!');
+      }
+
       setShowEditModal(false);
       fetchMinutas();
     } catch (err) {
-      console.error('Error updating minuta:', err);
-      toast.error('Erro ao atualizar minuta');
+      console.error('Error saving minuta:', err);
+      toast.error(modalMode === 'create' ? 'Erro ao registrar minuta' : 'Erro ao atualizar minuta');
     } finally {
       setIsSaving(false);
     }
@@ -957,7 +991,17 @@ const HodometrosMinuta: React.FC = () => {
 
         <div className="ml-auto flex items-center gap-2">
           <div className="flex items-center gap-2">
-            {/* create modal removed for testing */}
+            <button
+              type="button"
+              onClick={handleNewMinuta}
+              className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                       transition-colors flex items-center gap-2 h-9"
+              data-testid="button-subir-minuta"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Subir Minuta</span>
+            </button>
 
             <div className="relative group">
               <button
@@ -1220,7 +1264,7 @@ const HodometrosMinuta: React.FC = () => {
       )}
 
       {/* Edit Modal */}
-      {showEditModal && selectedMinuta && (
+      {showEditModal && (modalMode === 'create' || selectedMinuta) && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="fixed inset-0 bg-black/50 dark:bg-black/70" onClick={() => setShowEditModal(false)} />
           <div className="flex items-center justify-center min-h-screen p-2 sm:p-4">
@@ -1229,7 +1273,9 @@ const HodometrosMinuta: React.FC = () => {
             onClick={e => e.stopPropagation()}
           >
             <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-2xl">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Editar Minuta</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {modalMode === 'create' ? 'Nova Minuta' : 'Editar Minuta'}
+              </h2>
               <button
                 onClick={() => setShowEditModal(false)}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
