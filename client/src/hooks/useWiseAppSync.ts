@@ -83,7 +83,7 @@ const bulkSyncMutation = useMutation({
   mutationFn: async () => {
     if (!companyId) throw new Error('Company ID not found');        
     // Chamar Supabase Edge Function diretamente
-    const supabaseUrl = 'https://ohmoxsvwjvohmqqgxjhb.supabase.co';
+    const supabaseUrl = 'https://jnwocajxsgkgiixwyxkl.supabase.co';
 
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     

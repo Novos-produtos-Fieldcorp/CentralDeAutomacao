@@ -79,7 +79,7 @@ setInterval(cleanupOldJobs, 30 * 60 * 1000);
 // Initialize Supabase client with bypass RLS for backend operations
 // Use service role key for full access to wiseapp_acesso table
 const supabaseBackendUrl =
-  process.env.VITE_SUPABASE_URL || "https://ohmoxsvwjvohmqqgxjhb.supabase.co";
+  process.env.VITE_SUPABASE_URL || "https://jnwocajxsgkgiixwyxkl.supabase.co";
 
 // Prefer service role key for backend operations (bypasses RLS)
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -774,7 +774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Whitelisted hosts for security (prevent SSRF)
       const allowedHosts = [
         'chat.wiseapp360.com',
-        'ohmoxsvwjvohmqqgxjhb.supabase.co',
+        'jnwocajxsgkgiixwyxkl.supabase.co',
         'supabase.co'
       ];
 

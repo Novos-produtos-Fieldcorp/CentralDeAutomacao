@@ -387,7 +387,7 @@ export default function WiseAppTokenModal({
 
     <div className="w-full rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
       <img 
-        src="https://ohmoxsvwjvohmqqgxjhb.supabase.co/storage/v1/object/public/imagensdocs//Tutorial.gif" 
+        src="https://jnwocajxsgkgiixwyxkl.supabase.co/storage/v1/object/public/imagensdocs//Tutorial.gif"
         alt="Tutorial WiseApp" 
         className="w-full h-auto rounded-lg"
       />
