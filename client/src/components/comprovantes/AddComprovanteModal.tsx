@@ -99,12 +99,25 @@ const AddComprovanteModal = ({ isOpen, onClose, onSuccess }: AddComprovanteModal
   };
 
   const uploadImage = async (file: File): Promise<string> => {
-    const fileName = `comprovante-${Date.now()}-${file.name}`;
+    const safeName = file.name.replace(/[^\w.\-]+/g, '_');
+    const fileName = `comprovante-${Date.now()}-${safeName}`;
     const { data, error } = await supabase.storage
       .from('comprovante')
-      .upload(fileName, file);
+      .upload(fileName, file, {
+        contentType: file.type || 'application/octet-stream',
+        upsert: false,
+      });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erro ao fazer upload para comprovante:', {
+        bucket: 'comprovante',
+        fileName,
+        fileType: file.type,
+        fileSize: file.size,
+        error,
+      });
+      throw error;
+    }
 
     const { data: { publicUrl } } = supabase.storage
       .from('comprovante')

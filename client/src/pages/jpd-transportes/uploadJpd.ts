@@ -7,8 +7,20 @@ export async function uploadToJpdBucket(file: File, prefix: string): Promise<str
   const safeName = file.name.replace(/[^\w.\-]+/g, '_');
   const fileName = `${prefix}-${Date.now()}-${safeName}`;
 
-  const { error } = await supabase.storage.from('jpd-uploads').upload(fileName, file);
-  if (error) throw error;
+  const { error } = await supabase.storage.from('jpd-uploads').upload(fileName, file, {
+    contentType: file.type || 'application/octet-stream',
+    upsert: false,
+  });
+  if (error) {
+    console.error('Erro ao fazer upload para jpd-uploads:', {
+      bucket: 'jpd-uploads',
+      fileName,
+      fileType: file.type,
+      fileSize: file.size,
+      error,
+    });
+    throw error;
+  }
 
   const {
     data: { publicUrl },
