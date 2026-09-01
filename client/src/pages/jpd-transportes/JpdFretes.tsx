@@ -33,7 +33,6 @@ const JpdFretes = () => {
   const hoje = hojeISO();
 
   const load = useCallback(async () => {
-    if (!companyId) return;
     setLoading(true);
     try {
       const url = new URL('/api/jpd/fretes', window.location.origin);
@@ -49,7 +48,7 @@ const JpdFretes = () => {
     } finally {
       setLoading(false);
     }
-  }, [companyId, filtros.placa, filtros.motorista, filtros.de, filtros.ate]);
+  }, [filtros.placa, filtros.motorista, filtros.de, filtros.ate]);
 
   useEffect(() => {
     load();
