@@ -1,24 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Plus, Pencil, Trash2, RefreshCw, Truck, CalendarClock, AlertCircle, FileUp } from 'lucide-react';
+import { Plus, Pencil, Trash2, RefreshCw, FileUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import JpdFreteForm from './JpdFreteForm';
 import JpdImportarBV from './JpdImportarBV';
 import JpdFiltros, { EMPTY_FILTROS, JpdFiltrosValue } from './JpdFiltros';
-import { fmtBRL, hojeISO, capitalizeNome } from './format';
+import { fmtBRL, capitalizeNome } from './format';
+import { SITUACAO_BV_OPTIONS, SituacaoBv } from './jpdEnums';
 
 type Frete = Record<string, any>;
-
-type StatusVeiculo = 'em_viagem' | 'a_viajar' | 'pendente';
-
-// Situação derivada de um BV (mesma regra do backend em jpd.js GET /veiculos).
-const statusDoBv = (f: Frete, hoje: string): StatusVeiculo | null => {
-  if (f.data_da_carga && !f.data_da_descarga) {
-    return String(f.data_da_carga) > hoje ? 'a_viajar' : 'em_viagem';
-  }
-  return null;
-};
-const isPendente = (f: Frete) => !f.situacao_do_bv || f.situacao_do_bv === 'pendente';
 
 const JpdFretes = () => {
   const { companyId } = useCurrentAccount();
@@ -28,9 +18,7 @@ const JpdFretes = () => {
   const [showImport, setShowImport] = useState(false);
   const [editing, setEditing] = useState<Frete | null>(null);
   const [filtros, setFiltros] = useState<JpdFiltrosValue>(EMPTY_FILTROS);
-  const [statusFiltro, setStatusFiltro] = useState<StatusVeiculo | null>(null);
-
-  const hoje = hojeISO();
+  const [statusFiltro, setStatusFiltro] = useState<SituacaoBv | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -54,26 +42,21 @@ const JpdFretes = () => {
     load();
   }, [load]);
 
-  // Contagens de situação por veículo (sobre os BVs carregados).
+  // Contagens por situação real do BV (campo situacao_do_bv), sobre os BVs carregados.
   const contagens = useMemo(() => {
-    let em_viagem = 0;
-    let a_viajar = 0;
-    let pendente = 0;
+    const out: Record<string, number> = {};
+    for (const s of SITUACAO_BV_OPTIONS) out[s] = 0;
     for (const f of fretes) {
-      const s = statusDoBv(f, hoje);
-      if (s === 'em_viagem') em_viagem += 1;
-      else if (s === 'a_viajar') a_viajar += 1;
-      if (isPendente(f)) pendente += 1;
+      if (f.situacao_do_bv && out[f.situacao_do_bv] !== undefined) out[f.situacao_do_bv] += 1;
     }
-    return { em_viagem, a_viajar, pendente };
-  }, [fretes, hoje]);
+    return out;
+  }, [fretes]);
 
-  // Filtro final: status (bloco clicado) + busca livre client-side.
+  // Filtro final: situação (botão clicado) + busca livre client-side.
   const filtrados = useMemo(() => {
     const termo = filtros.busca.trim().toLowerCase();
     return fretes.filter((f) => {
-      if (statusFiltro === 'pendente' && !isPendente(f)) return false;
-      if (statusFiltro && statusFiltro !== 'pendente' && statusDoBv(f, hoje) !== statusFiltro) return false;
+      if (statusFiltro && f.situacao_do_bv !== statusFiltro) return false;
       if (termo) {
         const alvo = [
           f.numero_do_bv, f.origem, f.destinatario, f.motorista, f.placa_do_carro,
@@ -85,7 +68,7 @@ const JpdFretes = () => {
       }
       return true;
     });
-  }, [fretes, filtros.busca, statusFiltro, hoje]);
+  }, [fretes, filtros.busca, statusFiltro]);
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Excluir este frete?')) return;
@@ -108,11 +91,13 @@ const JpdFretes = () => {
     setShowForm(true);
   };
 
-  const toggleStatus = (s: StatusVeiculo) => setStatusFiltro((cur) => (cur === s ? null : s));
+  const toggleStatus = (s: SituacaoBv) => setStatusFiltro((cur) => (cur === s ? null : s));
 
-  const cardCls = (active: boolean, color: string) =>
-    `flex items-center gap-3 px-4 py-3 rounded-lg shadow-md text-left transition ring-2 ${
-      active ? `${color} ring-current` : 'bg-white dark:bg-gray-800 ring-transparent hover:ring-gray-300 dark:hover:ring-gray-600'
+  const statusBtnCls = (active: boolean) =>
+    `px-3 py-1.5 rounded-full text-sm font-medium border transition ${
+      active
+        ? 'bg-blue-600 border-blue-600 text-white'
+        : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-blue-400'
     }`;
 
   return (
@@ -147,38 +132,13 @@ const JpdFretes = () => {
         </div>
       </div>
 
-      {/* Situação dos veículos (clique para filtrar a lista) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <button
-          onClick={() => toggleStatus('em_viagem')}
-          className={cardCls(statusFiltro === 'em_viagem', 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300')}
-        >
-          <Truck className="w-6 h-6 text-emerald-500" />
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Veículos em viagem</p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white">{contagens.em_viagem}</p>
-          </div>
-        </button>
-        <button
-          onClick={() => toggleStatus('a_viajar')}
-          className={cardCls(statusFiltro === 'a_viajar', 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300')}
-        >
-          <CalendarClock className="w-6 h-6 text-sky-500" />
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Veículos a viajar</p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white">{contagens.a_viajar}</p>
-          </div>
-        </button>
-        <button
-          onClick={() => toggleStatus('pendente')}
-          className={cardCls(statusFiltro === 'pendente', 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300')}
-        >
-          <AlertCircle className="w-6 h-6 text-amber-500" />
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Veículos pendentes</p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white">{contagens.pendente}</p>
-          </div>
-        </button>
+      {/* Situação do BV (clique para filtrar a lista) */}
+      <div className="flex flex-wrap gap-2">
+        {SITUACAO_BV_OPTIONS.map((s) => (
+          <button key={s} onClick={() => toggleStatus(s)} className={statusBtnCls(statusFiltro === s)}>
+            {s} <span className="opacity-70">({contagens[s]})</span>
+          </button>
+        ))}
       </div>
 
       <JpdFiltros value={filtros} onChange={setFiltros} periodoLabel="Data da carga" />

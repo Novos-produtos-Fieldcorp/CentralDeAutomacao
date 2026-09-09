@@ -7002,11 +7002,11 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
   ]);
   const JPD_ABAST_COLS = [
-    "hodometro", "placa", "motorista_id", "fornecedor", "combustivel", "litros",
-    "valor_unitario", "valor_bruto", "desconto", "arla",
+    "hodometro", "placa", "motorista_id", "fornecedor", "cnpj", "combustivel", "litros",
+    "valor_unitario", "valor_bruto", "desconto", "arla", "operacao", "frete_id",
   ] as const;
   const JPD_ABAST_NUMERIC = new Set([
-    "hodometro", "motorista_id", "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
+    "hodometro", "motorista_id", "litros", "valor_unitario", "valor_bruto", "desconto", "arla", "frete_id",
   ]);
   const JPD_CUSTO_COLS = ["fornecedor", "combustivel", "litros", "valor_unitario", "valor_bruto", "desconto", "arla"];
   function buildAbastecimentoRow(body: any) {
@@ -7167,7 +7167,12 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
         .map(({ _ultima_data, ...rest }: any) => {
           const viagensPlaca = rows.filter((r: any) => (r.placa_do_carro || "—") === rest.placa);
           const lancPlaca = lancamentos.filter((l: any) => (l.placa || "") === rest.placa);
-          return { ...rest, ultimo_bv: rest.ultimo_bv || "(pendente)", consumo: calcConsumo(viagensPlaca, lancPlaca) };
+          return {
+            ...rest,
+            ultimo_bv: rest.ultimo_bv || "(pendente)",
+            consumo: calcConsumo(viagensPlaca, lancPlaca),
+            operacoes: Array.from(new Set(lancPlaca.map((l: any) => l.operacao).filter(Boolean))),
+          };
         })
         .sort((a: any, b: any) => b.faturado - a.faturado);
       const em_andamento = rows
@@ -7489,8 +7494,6 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     set("motorista", lower(clean.motorista));
     set("placa_do_carro", lower(clean.placa_cavalo));
     set("total_km", clean.km_total);
-    set("valor_do_frete", clean.valor_total_frete);
-    set("abastecimento_descontado_do_frete", clean.total_abastecimento);
     set("arla", clean.total_arla);
     set("combustivel", clean.produto);
     // viagens: 1º bloco (perna vazia) define a origem; 2º bloco (perna cheia)
@@ -7512,6 +7515,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     };
     set("hodometro", h.kilometragem);
     set("fornecedor", c.fornecedor);
+    set("cnpj", c.cnpj);
     set("combustivel", c.combustivel);
     set("litros", c.litros);
     set("valor_unitario", c.valor_unitario);

@@ -16,6 +16,7 @@ type Resumo = {
   km: number;
   combustivel: number;
   ultimo_bv: string;
+  operacoes: string[];
 };
 type EmAndamento = {
   id: number;
@@ -42,10 +43,11 @@ const JpdVeiculos = () => {
     const termo = filtros.busca.trim().toLowerCase();
     return resumo.filter((v) => {
       if (filtros.placa && v.placa !== filtros.placa) return false;
+      if (filtros.operacao && !(v.operacoes || []).includes(filtros.operacao)) return false;
       if (termo && !String(v.placa).toLowerCase().includes(termo)) return false;
       return true;
     });
-  }, [resumo, filtros.placa, filtros.busca]);
+  }, [resumo, filtros.placa, filtros.operacao, filtros.busca]);
 
   const emAndamentoFiltrado = useMemo(() => {
     const termo = filtros.busca.trim().toLowerCase();
@@ -130,7 +132,7 @@ const JpdVeiculos = () => {
         <JpdAbastecimentos key={lancKey} />
       ) : (
       <>
-      <JpdFiltros value={filtros} onChange={setFiltros} campos={['placa', 'motorista', 'busca']} />
+      <JpdFiltros value={filtros} onChange={setFiltros} campos={['placa', 'motorista', 'operacao', 'busca']} />
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
           Viagens em andamento

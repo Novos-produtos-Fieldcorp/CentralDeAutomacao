@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fmtNum, capitalizeNome } from './format';
+import { SITUACAO_BV_OPTIONS } from './jpdEnums';
 
 export type FieldType = 'text' | 'number' | 'date' | 'select';
 
@@ -44,14 +45,7 @@ export const FRETE_FIELDS: FieldDef[] = [
     key: 'situacao_do_bv',
     label: 'Situação do BV',
     type: 'select',
-    options: [
-      'A Carregar',
-      'Em viagem',
-      'Descarregado/Pendente faturamento',
-      'Faturado',
-      'Alterado',
-      'Cancelado',
-    ],
+    options: [...SITUACAO_BV_OPTIONS],
   },
 ];
 

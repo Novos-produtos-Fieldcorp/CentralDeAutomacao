@@ -68,8 +68,6 @@ const mapBvOcr = (raw) => {
   set("motorista", normalizeNome(clean.motorista));
   set("placa_do_carro", normalizePlaca(clean.placa_cavalo));
   set("total_km", clean.km_total);
-  set("valor_do_frete", clean.valor_total_frete);
-  set("abastecimento_descontado_do_frete", clean.total_abastecimento);
   set("arla", clean.total_arla);
   set("combustivel", clean.produto);
   // viagens: 1º bloco (perna vazia) define a origem; 2º bloco (perna cheia)
@@ -93,6 +91,7 @@ const mapLancamentoOcr = (hodo, comp) => {
   };
   set("hodometro", h.kilometragem);
   set("fornecedor", c.fornecedor);
+  set("cnpj", c.cnpj);
   set("combustivel", c.combustivel);
   set("litros", c.litros);
   set("valor_unitario", c.valor_unitario);
@@ -178,11 +177,11 @@ function buildFreteRow(body) {
 // que referencia motoristas_jpd(nome). O id é resolvido no frontend (seleção ou
 // criação do motorista) antes de chegar aqui.
 const ABAST_COLS = [
-  "hodometro", "placa", "motorista_id", "fornecedor", "combustivel", "litros",
-  "valor_unitario", "valor_bruto", "desconto", "arla",
+  "hodometro", "placa", "motorista_id", "fornecedor", "cnpj", "combustivel", "litros",
+  "valor_unitario", "valor_bruto", "desconto", "arla", "operacao", "frete_id",
 ];
 const ABAST_NUMERIC = new Set([
-  "hodometro", "motorista_id", "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
+  "hodometro", "motorista_id", "litros", "valor_unitario", "valor_bruto", "desconto", "arla", "frete_id",
 ]);
 
 function buildAbastecimentoRow(body) {
@@ -472,6 +471,9 @@ exports.handler = async (event) => {
             ...rest,
             ultimo_bv: rest.ultimo_bv || "(pendente)",
             consumo: calcConsumo(viagensPlaca, lancPlaca),
+            // Operações que já tiveram algum lançamento de abastecimento para esta placa
+            // (operacao é atributo do lançamento, não do veículo — ver filtro f_operacao).
+            operacoes: Array.from(new Set(lancPlaca.map((l) => l.operacao).filter(Boolean))),
           };
         })
         .sort((a, b) => b.faturado - a.faturado);

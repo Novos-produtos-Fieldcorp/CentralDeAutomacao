@@ -148,6 +148,15 @@ const JpdAbastecimentos = () => {
         className={inputCls}
         onCreate={criarMotorista}
       />
+    ) : c.type === 'select' ? (
+      <select value={draft[c.key] ?? ''} onChange={(e) => setField(c.key, e.target.value)} className={inputCls}>
+        <option value="">Selecione</option>
+        {(c.options || []).map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
     ) : (
       <input
         type={c.type === 'number' ? 'number' : 'text'}

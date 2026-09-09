@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { capitalizeNome } from './format';
+import { OPERACOES } from './jpdEnums';
 
 export type JpdFiltrosValue = {
   placa: string;
   motorista: string;
+  operacao: string;
   de: string;
   ate: string;
   busca: string;
 };
 
-export const EMPTY_FILTROS: JpdFiltrosValue = { placa: '', motorista: '', de: '', ate: '', busca: '' };
+export const EMPTY_FILTROS: JpdFiltrosValue = { placa: '', motorista: '', operacao: '', de: '', ate: '', busca: '' };
 
-type Campo = 'placa' | 'motorista' | 'periodo' | 'busca';
+type Campo = 'placa' | 'motorista' | 'operacao' | 'periodo' | 'busca';
 
 interface Props {
   value: JpdFiltrosValue;
@@ -81,6 +83,20 @@ const JpdFiltros: React.FC<Props> = ({
             {opcoes.motoristas.map((m) => (
               <option key={m} value={m}>
                 {capitalizeNome(m)}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {campos.includes('operacao') && (
+        <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
+          <span className="mb-1">Operação</span>
+          <select value={value.operacao} onChange={(e) => set('operacao', e.target.value)} className={inputCls}>
+            <option value="">Todas</option>
+            {OPERACOES.map((o) => (
+              <option key={o} value={o}>
+                {o}
               </option>
             ))}
           </select>

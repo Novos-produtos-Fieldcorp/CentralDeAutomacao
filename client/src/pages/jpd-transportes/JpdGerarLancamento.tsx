@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Upload, FileUp, Loader2, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadToJpdBucket } from './uploadJpd';
@@ -7,6 +7,8 @@ import { useVeiculos } from './useVeiculos';
 import { useMotoristas } from './useMotoristas';
 import JpdCreatableSelect, { Option } from './JpdCreatableSelect';
 import { capitalizeNome } from './format';
+
+type Frete = Record<string, any>;
 
 interface Props {
   onClose: () => void;
@@ -24,8 +26,21 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
   const [comprovanteFile, setComprovanteFile] = useState<File | null>(null);
   const [processando, setProcessando] = useState(false);
   const [draft, setDraft] = useState<Record<string, any>>({});
+  const [bvsAbertos, setBvsAbertos] = useState<Frete[]>([]);
   const placas = useVeiculos();
   const { motoristas, adicionar: adicionarMotorista } = useMotoristas();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/jpd/fretes?abertos=1');
+        if (!res.ok) throw new Error('Falha ao carregar BVs em aberto');
+        setBvsAbertos(await res.json());
+      } catch (err: any) {
+        toast.error(err.message || 'Erro ao carregar BVs em aberto');
+      }
+    })();
+  }, []);
 
   const criarMotorista = async (nome: string): Promise<Option> => {
     const res = await fetch('/api/jpd/motoristas', {
@@ -162,6 +177,21 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
           <>
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
+                  <span className="mb-1">BV</span>
+                  <select
+                    value={draft.frete_id ?? ''}
+                    onChange={(e) => setField('frete_id', e.target.value)}
+                    className={inputCls}
+                  >
+                    <option value="">Sem vínculo</option>
+                    {bvsAbertos.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.numero_do_bv || '(pendente)'} — {b.placa_do_carro || '—'} — {capitalizeNome(b.motorista) || '—'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 {ABAST_COLS.map((c) => (
                   <label key={c.key} className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
                     <span className="mb-1">{c.label}</span>
@@ -184,6 +214,19 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
                         className={inputCls}
                         onCreate={criarMotorista}
                       />
+                    ) : c.type === 'select' ? (
+                      <select
+                        value={draft[c.key] ?? ''}
+                        onChange={(e) => setField(c.key, e.target.value)}
+                        className={inputCls}
+                      >
+                        <option value="">Selecione</option>
+                        {(c.options || []).map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
                     ) : (
                       <input
                         type={c.type === 'number' ? 'number' : 'text'}
