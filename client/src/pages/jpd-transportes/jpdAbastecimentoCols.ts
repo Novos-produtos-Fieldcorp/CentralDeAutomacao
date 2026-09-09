@@ -11,7 +11,7 @@ export type AbastCol = {
 };
 
 export const ABAST_COLS: AbastCol[] = [
-  { key: 'data_lancamento', label: 'Data do lançamento', type: 'date' },
+  { key: 'data_lancamento', label: 'Data do abastecimento', type: 'date' },
   { key: 'hodometro', label: 'Hodômetro', type: 'number' },
   { key: 'placa', label: 'Placa', type: 'text' },
   { key: 'motorista_id', label: 'Motorista', type: 'text' },

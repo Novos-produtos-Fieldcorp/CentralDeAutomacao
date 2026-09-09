@@ -188,18 +188,9 @@ const JpdFretes = () => {
         </div>
       </div>
 
-      {/* Situação dos veículos (clique para filtrar a lista) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <button
-          onClick={() => toggleStatus('em_viagem')}
-          className={cardCls(statusFiltro === 'em_viagem', 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300')}
-        >
-          <Truck className="w-6 h-6 text-emerald-500" />
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Veículos em viagem</p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white">{contagensData.em_viagem}</p>
-          </div>
-        </button>
+      {/* Situação dos veículos por data (clique para filtrar a lista). "Em viagem" foi
+          removido daqui por ser redundante com o card de situação real "Em viagem" abaixo. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           onClick={() => toggleStatus('a_viajar')}
           className={cardCls(statusFiltro === 'a_viajar', 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300')}
