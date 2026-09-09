@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Link2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import JpdFreteForm from './JpdFreteForm';
+import { upperPlaca } from './format';
 
 type Frete = Record<string, any>;
 
@@ -102,7 +103,7 @@ const JpdVincularBV: React.FC<Props> = ({ abastecimentoId, onClose, onLinked }) 
                       <td className="px-3 py-2">{b.numero_do_bv || '(pendente)'}</td>
                       <td className="px-3 py-2">{b.data_da_carga || '—'}</td>
                       <td className="px-3 py-2">{b.motorista || '—'}</td>
-                      <td className="px-3 py-2">{b.placa_do_carro || '—'}</td>
+                      <td className="px-3 py-2">{upperPlaca(b.placa_do_carro) || '—'}</td>
                       <td className="px-3 py-2">{b.situacao_do_bv || '—'}</td>
                       <td className="px-3 py-2 text-right">
                         <button

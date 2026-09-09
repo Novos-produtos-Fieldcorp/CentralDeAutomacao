@@ -7003,7 +7003,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
   ]);
   const JPD_ABAST_COLS = [
     "hodometro", "placa", "motorista_id", "fornecedor", "cnpj", "combustivel", "litros",
-    "valor_unitario", "valor_bruto", "desconto", "arla", "operacao", "frete_id",
+    "valor_unitario", "valor_bruto", "desconto", "arla", "operacao", "frete_id", "data_lancamento",
   ] as const;
   const JPD_ABAST_NUMERIC = new Set([
     "hodometro", "motorista_id", "litros", "valor_unitario", "valor_bruto", "desconto", "arla", "frete_id",
@@ -7391,6 +7391,76 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     }
   });
 
+  // PUT /api/jpd/motoristas/:id  body { nome } -> renomeia (propaga para jpd_fretes via ON UPDATE CASCADE)
+  app.put("/api/jpd/motoristas/:id", async (req, res) => {
+    try {
+      const nome = String(req.body?.nome || "").trim().toLowerCase().replace(/\s+/g, " ");
+      if (!nome) return res.status(400).json({ error: "nome obrigatório" });
+      const { data, error } = await supabaseBackend
+        .from("motoristas_jpd")
+        .update({ nome })
+        .eq("id", Number(req.params.id))
+        .select("id, nome")
+        .single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // DELETE /api/jpd/motoristas/:id
+  app.delete("/api/jpd/motoristas/:id", async (req, res) => {
+    try {
+      const { error } = await supabaseBackend.from("motoristas_jpd").delete().eq("id", Number(req.params.id));
+      if (error) {
+        if ((error as any).code === "23503") {
+          return res.status(409).json({ error: "Motorista está em uso em boletins ou lançamentos; não é possível excluir." });
+        }
+        return res.status(500).json({ error: error.message });
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PUT /api/jpd/veiculos/:placa  body { placa } -> renomeia (propaga via ON UPDATE CASCADE)
+  app.put("/api/jpd/veiculos/:placa", async (req, res) => {
+    try {
+      const placaAtual = String(req.params.placa || "").trim().toLowerCase();
+      const novaPlaca = String(req.body?.placa || "").trim().toLowerCase();
+      if (!novaPlaca) return res.status(400).json({ error: "placa obrigatória" });
+      const { data, error } = await supabaseBackend
+        .from("jpd_veiculos")
+        .update({ placa: novaPlaca })
+        .eq("placa", placaAtual)
+        .select()
+        .single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // DELETE /api/jpd/veiculos/:placa
+  app.delete("/api/jpd/veiculos/:placa", async (req, res) => {
+    try {
+      const placaAtual = String(req.params.placa || "").trim().toLowerCase();
+      const { error } = await supabaseBackend.from("jpd_veiculos").delete().eq("placa", placaAtual);
+      if (error) {
+        if ((error as any).code === "23503") {
+          return res.status(409).json({ error: "Placa está em uso em boletins ou lançamentos; não é possível excluir." });
+        }
+        return res.status(500).json({ error: error.message });
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.post("/api/jpd/abastecimentos", async (req, res) => {
     try {
       const row = buildAbastecimentoRow(req.body);
@@ -7494,7 +7564,6 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     set("motorista", lower(clean.motorista));
     set("placa_do_carro", lower(clean.placa_cavalo));
     set("total_km", clean.km_total);
-    set("arla", clean.total_arla);
     set("combustivel", clean.produto);
     // viagens: 1º bloco (perna vazia) define a origem; 2º bloco (perna cheia)
     // define o destino do frete.

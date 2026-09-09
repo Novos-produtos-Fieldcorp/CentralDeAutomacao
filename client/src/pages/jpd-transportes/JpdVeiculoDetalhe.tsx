@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import JpdFreteForm from './JpdFreteForm';
 import JpdConsumoCards, { Consumo } from './JpdConsumoCards';
+import { upperPlaca } from './format';
 
 type Frete = Record<string, any>;
 type Resumo = { placa: string; viagens: number; faturado: number; frete: number; km: number; combustivel: number };
@@ -68,7 +69,7 @@ const JpdVeiculoDetalhe = () => {
           <p className="text-xs uppercase tracking-wider text-blue-600 dark:text-blue-400 font-semibold">
             Detalhe da frota
           </p>
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Veículo {placa}</h2>
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Veículo {upperPlaca(placa)}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {loading ? 'Carregando...' : `${viagens.length} viagem(ns) registrada(s).`}
           </p>

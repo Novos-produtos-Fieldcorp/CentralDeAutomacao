@@ -6,7 +6,7 @@ import { ABAST_COLS } from './jpdAbastecimentoCols';
 import { useVeiculos } from './useVeiculos';
 import { useMotoristas } from './useMotoristas';
 import JpdCreatableSelect, { Option } from './JpdCreatableSelect';
-import { capitalizeNome } from './format';
+import { capitalizeNome, hojeISO, upperPlaca } from './format';
 
 type Frete = Record<string, any>;
 
@@ -27,8 +27,61 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
   const [processando, setProcessando] = useState(false);
   const [draft, setDraft] = useState<Record<string, any>>({});
   const [bvsAbertos, setBvsAbertos] = useState<Frete[]>([]);
-  const placas = useVeiculos();
-  const { motoristas, adicionar: adicionarMotorista } = useMotoristas();
+  const { placas, renomear: renomearPlacaLocal, remover: removerPlacaLocal } = useVeiculos();
+  const {
+    motoristas,
+    adicionar: adicionarMotorista,
+    renomear: renomearMotoristaLocal,
+    remover: removerMotoristaLocal,
+  } = useMotoristas();
+
+  const renomearPlaca = async (atual: string, novoTexto: string): Promise<Option> => {
+    const res = await fetch(`/api/jpd/veiculos/${encodeURIComponent(atual)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placa: novoTexto }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao renomear placa');
+    }
+    const data = await res.json();
+    renomearPlacaLocal(atual, data.placa);
+    return { value: data.placa, label: data.placa };
+  };
+
+  const removerPlaca = async (atual: string) => {
+    const res = await fetch(`/api/jpd/veiculos/${encodeURIComponent(atual)}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao excluir placa');
+    }
+    removerPlacaLocal(atual);
+  };
+
+  const renomearMotorista = async (idStr: string, novoTexto: string): Promise<Option> => {
+    const res = await fetch(`/api/jpd/motoristas/${idStr}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: novoTexto }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao renomear motorista');
+    }
+    const data = await res.json();
+    renomearMotoristaLocal(Number(idStr), data.nome);
+    return { value: idStr, label: capitalizeNome(data.nome) };
+  };
+
+  const removerMotorista = async (idStr: string) => {
+    const res = await fetch(`/api/jpd/motoristas/${idStr}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao excluir motorista');
+    }
+    removerMotoristaLocal(Number(idStr));
+  };
 
   useEffect(() => {
     (async () => {
@@ -80,6 +133,7 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
       const dados = await res.json();
       const d: Record<string, any> = {};
       for (const c of ABAST_COLS) d[c.key] = toFormValue(dados?.[c.key]);
+      if (!d.data_lancamento) d.data_lancamento = hojeISO();
       setDraft(d);
       setEtapa('revisao');
       toast.success('Imagens lidas! Revise o lançamento.');
@@ -187,7 +241,7 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
                     <option value="">Sem vínculo</option>
                     {bvsAbertos.map((b) => (
                       <option key={b.id} value={b.id}>
-                        {b.numero_do_bv || '(pendente)'} — {b.placa_do_carro || '—'} — {capitalizeNome(b.motorista) || '—'}
+                        {b.numero_do_bv || '(pendente)'} — {upperPlaca(b.placa_do_carro) || '—'} — {capitalizeNome(b.motorista) || '—'}
                       </option>
                     ))}
                   </select>
@@ -203,6 +257,9 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
                         createLabel="+ Criar nova placa"
                         newPlaceholder="Digite a nova placa"
                         className={inputCls}
+                        uppercase
+                        onRename={renomearPlaca}
+                        onRemove={removerPlaca}
                       />
                     ) : c.key === 'motorista_id' ? (
                       <JpdCreatableSelect
@@ -213,6 +270,15 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
                         newPlaceholder="Digite o nome do motorista"
                         className={inputCls}
                         onCreate={criarMotorista}
+                        onRename={renomearMotorista}
+                        onRemove={removerMotorista}
+                      />
+                    ) : c.type === 'date' ? (
+                      <input
+                        type="date"
+                        value={draft[c.key] ?? ''}
+                        onChange={(e) => setField(c.key, e.target.value)}
+                        className={inputCls}
                       />
                     ) : c.type === 'select' ? (
                       <select

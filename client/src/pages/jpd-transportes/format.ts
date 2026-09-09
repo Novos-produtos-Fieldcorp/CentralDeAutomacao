@@ -17,6 +17,9 @@ export const capitalizeNome = (v: any) => {
     .replace(/\b\p{L}/gu, (c) => c.toUpperCase());
 };
 
+// Placas são guardadas em minúsculas internamente; exibição sempre em CAIXA ALTA.
+export const upperPlaca = (v: any) => (v == null || v === '' ? '' : String(v).toUpperCase());
+
 // Data de hoje no formato YYYY-MM-DD (fuso local), para enviar ao backend.
 export const hojeISO = () => {
   const d = new Date();

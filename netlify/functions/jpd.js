@@ -68,7 +68,6 @@ const mapBvOcr = (raw) => {
   set("motorista", normalizeNome(clean.motorista));
   set("placa_do_carro", normalizePlaca(clean.placa_cavalo));
   set("total_km", clean.km_total);
-  set("arla", clean.total_arla);
   set("combustivel", clean.produto);
   // viagens: 1º bloco (perna vazia) define a origem; 2º bloco (perna cheia)
   // define o destino do frete.
@@ -178,7 +177,7 @@ function buildFreteRow(body) {
 // criação do motorista) antes de chegar aqui.
 const ABAST_COLS = [
   "hodometro", "placa", "motorista_id", "fornecedor", "cnpj", "combustivel", "litros",
-  "valor_unitario", "valor_bruto", "desconto", "arla", "operacao", "frete_id",
+  "valor_unitario", "valor_bruto", "desconto", "arla", "operacao", "frete_id", "data_lancamento",
 ];
 const ABAST_NUMERIC = new Set([
   "hodometro", "motorista_id", "litros", "valor_unitario", "valor_bruto", "desconto", "arla", "frete_id",
@@ -399,6 +398,34 @@ exports.handler = async (event) => {
     }
 
     // ---------- VEICULOS (agregado por placa a partir de jpd_fretes) ----------
+    // PUT /veiculos/:placa  body { placa } -> renomeia (propaga via ON UPDATE CASCADE)
+    if (segs[0] === "veiculos" && segs[1] && method === "PUT") {
+      const placaAtual = normalizePlaca(decodeURIComponent(segs[1]));
+      const novaPlaca = normalizePlaca(body && body.placa);
+      if (!novaPlaca) return json(400, { error: "placa obrigatória" });
+      const { data, error } = await supabase
+        .from("jpd_veiculos")
+        .update({ placa: novaPlaca })
+        .eq("placa", placaAtual)
+        .select()
+        .single();
+      if (error) return json(500, { error: error.message });
+      return json(200, data);
+    }
+
+    // DELETE /veiculos/:placa
+    if (segs[0] === "veiculos" && segs[1] && method === "DELETE") {
+      const placaAtual = normalizePlaca(decodeURIComponent(segs[1]));
+      const { error } = await supabase.from("jpd_veiculos").delete().eq("placa", placaAtual);
+      if (error) {
+        if (error.code === "23503") {
+          return json(409, { error: "Placa está em uso em boletins ou lançamentos; não é possível excluir." });
+        }
+        return json(500, { error: error.message });
+      }
+      return json(200, { success: true });
+    }
+
     if (segs[0] === "veiculos" && method === "GET") {
       const { data: fretes, error } = await supabase.from("jpd_fretes").select("*");
       if (error) return json(500, { error: error.message });
@@ -725,14 +752,16 @@ exports.handler = async (event) => {
     // Usada pelo campo motorista_id do lançamento de abastecimento — diferente
     // de /opcoes (que devolve só nomes, para o campo texto motorista de jpd_fretes).
     if (segs[0] === "motoristas") {
-      if (method === "GET") {
+      const motoristaId = segs[1] ? Number(segs[1]) : null;
+
+      if (method === "GET" && !motoristaId) {
         const { data, error } = await supabase.from("motoristas_jpd").select("id, nome").order("nome");
         if (error) return json(500, { error: error.message });
         return json(200, data || []);
       }
 
       // POST /motoristas  body { nome } -> cria (ou reaproveita) o motorista e devolve { id, nome }
-      if (method === "POST") {
+      if (method === "POST" && !motoristaId) {
         const nome = normalizeNome(body && body.nome);
         if (!nome) return json(400, { error: "nome obrigatório" });
         const { data, error } = await supabase
@@ -742,6 +771,32 @@ exports.handler = async (event) => {
           .single();
         if (error) return json(500, { error: error.message });
         return json(200, data);
+      }
+
+      // PUT /motoristas/:id  body { nome } -> renomeia (propaga para jpd_fretes via ON UPDATE CASCADE)
+      if (method === "PUT" && motoristaId) {
+        const nome = normalizeNome(body && body.nome);
+        if (!nome) return json(400, { error: "nome obrigatório" });
+        const { data, error } = await supabase
+          .from("motoristas_jpd")
+          .update({ nome })
+          .eq("id", motoristaId)
+          .select("id, nome")
+          .single();
+        if (error) return json(500, { error: error.message });
+        return json(200, data);
+      }
+
+      // DELETE /motoristas/:id
+      if (method === "DELETE" && motoristaId) {
+        const { error } = await supabase.from("motoristas_jpd").delete().eq("id", motoristaId);
+        if (error) {
+          if (error.code === "23503") {
+            return json(409, { error: "Motorista está em uso em boletins ou lançamentos; não é possível excluir." });
+          }
+          return json(500, { error: error.message });
+        }
+        return json(200, { success: true });
       }
     }
 

@@ -3,9 +3,15 @@
 // automática (JpdGerarLancamento).
 import { OPERACOES } from './jpdEnums';
 
-export type AbastCol = { key: string; label: string; type: 'text' | 'number' | 'select'; options?: readonly string[] };
+export type AbastCol = {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'select' | 'date';
+  options?: readonly string[];
+};
 
 export const ABAST_COLS: AbastCol[] = [
+  { key: 'data_lancamento', label: 'Data do lançamento', type: 'date' },
   { key: 'hodometro', label: 'Hodômetro', type: 'number' },
   { key: 'placa', label: 'Placa', type: 'text' },
   { key: 'motorista_id', label: 'Motorista', type: 'text' },

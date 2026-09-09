@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// Select com opção "+ Criar novo(a) ..." no final da lista.
+// Select com opção "+ Criar novo(a) ..." no final da lista, além de lápis/lixeira
+// para renomear ou excluir o registro mestre selecionado (motorista/placa).
 //
 // Dois modos de criação:
 // - Sem `onCreate` (ex.: placa, que é salva como texto puro): o campo vira um
@@ -23,6 +24,16 @@ interface Props {
   newPlaceholder: string;
   className: string;
   onCreate?: (texto: string) => Promise<Option>;
+  /** Exibe o valor em CAIXA ALTA (ex.: placas), guardando/enviando sempre em minúsculas. */
+  uppercase?: boolean;
+  /** Renomeia o registro mestre selecionado (motorista/placa). Retorna a option atualizada. */
+  onRename?: (valorAtual: string, textoNovo: string) => Promise<Option>;
+  /** Chamado após renomear com sucesso, para o pai atualizar sua lista local. */
+  onRenamed?: (valorAtual: string, novo: Option) => void;
+  /** Exclui o registro mestre selecionado (motorista/placa). */
+  onRemove?: (valorAtual: string) => Promise<void>;
+  /** Chamado após excluir com sucesso, para o pai atualizar sua lista local. */
+  onRemoved?: (valorAtual: string) => void;
 }
 
 const toOptions = (options: Option[] | string[]): Option[] =>
@@ -36,13 +47,24 @@ const JpdCreatableSelect: React.FC<Props> = ({
   newPlaceholder,
   className,
   onCreate,
+  uppercase,
+  onRename,
+  onRenamed,
+  onRemove,
+  onRemoved,
 }) => {
   const [criandoNovo, setCriandoNovo] = useState(false);
   const [texto, setTexto] = useState('');
   const [salvando, setSalvando] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [textoEdit, setTextoEdit] = useState('');
+  const [salvandoEdit, setSalvandoEdit] = useState(false);
+  const [removendo, setRemovendo] = useState(false);
 
   const opts = toOptions(options);
   const atual = opts.find((o) => o.value === value);
+  const displayFmt = (s: string) => (uppercase ? s.toUpperCase() : s);
+  const parseInput = (s: string) => (uppercase ? s.toLowerCase() : s);
 
   // Placa (sem onCreate): campo de texto livre, ligado direto ao valor —
   // ao salvar/confirmar o lançamento, o backend cria o que faltar.
@@ -52,9 +74,9 @@ const JpdCreatableSelect: React.FC<Props> = ({
         <input
           autoFocus
           type="text"
-          value={value}
+          value={displayFmt(value)}
           placeholder={newPlaceholder}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(parseInput(e.target.value))}
           className={className}
         />
         <button
@@ -130,28 +152,123 @@ const JpdCreatableSelect: React.FC<Props> = ({
     );
   }
 
+  // Renomeando o registro mestre selecionado (motorista ou placa).
+  if (editando) {
+    const confirmarEdit = async () => {
+      const t = textoEdit.trim();
+      if (!t || !onRename) return;
+      setSalvandoEdit(true);
+      try {
+        const novo = await onRename(value, t);
+        onRenamed?.(value, novo);
+        onChange(novo.value);
+        setEditando(false);
+      } catch (err: any) {
+        toast.error(err.message || 'Erro ao renomear');
+      } finally {
+        setSalvandoEdit(false);
+      }
+    };
+    return (
+      <div className="flex items-center gap-1">
+        <input
+          autoFocus
+          type="text"
+          value={displayFmt(textoEdit)}
+          disabled={salvandoEdit}
+          onChange={(e) => setTextoEdit(parseInput(e.target.value))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              confirmarEdit();
+            }
+          }}
+          className={className}
+        />
+        <button
+          type="button"
+          onClick={confirmarEdit}
+          disabled={salvandoEdit || !textoEdit.trim()}
+          className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 shrink-0"
+        >
+          {salvandoEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Salvar'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditando(false)}
+          disabled={salvandoEdit}
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0"
+          title="Cancelar"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  const excluir = async () => {
+    if (!onRemove || !atual) return;
+    if (!window.confirm(`Excluir "${displayFmt(atual.label)}"? Isso remove o cadastro, não apenas este campo.`)) return;
+    setRemovendo(true);
+    try {
+      await onRemove(value);
+      onRemoved?.(value);
+      onChange('');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao excluir');
+    } finally {
+      setRemovendo(false);
+    }
+  };
+
   return (
-    <select
-      value={value}
-      onChange={(e) => {
-        if (e.target.value === NEW) {
-          setCriandoNovo(true);
-          setTexto('');
-        } else {
-          onChange(e.target.value);
-        }
-      }}
-      className={className}
-    >
-      <option value="">Selecione</option>
-      {!atual && value ? <option value={value}>{value}</option> : null}
-      {opts.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-      <option value={NEW}>{createLabel}</option>
-    </select>
+    <div className="flex items-center gap-1">
+      <select
+        value={value}
+        onChange={(e) => {
+          if (e.target.value === NEW) {
+            setCriandoNovo(true);
+            setTexto('');
+          } else {
+            onChange(e.target.value);
+          }
+        }}
+        className={className}
+      >
+        <option value="">Selecione</option>
+        {!atual && value ? <option value={value}>{displayFmt(value)}</option> : null}
+        {opts.map((o) => (
+          <option key={o.value} value={o.value}>
+            {displayFmt(o.label)}
+          </option>
+        ))}
+        <option value={NEW}>{createLabel}</option>
+      </select>
+      {atual && onRename && (
+        <button
+          type="button"
+          onClick={() => {
+            setTextoEdit(uppercase ? atual.label.toLowerCase() : atual.label);
+            setEditando(true);
+          }}
+          className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 shrink-0"
+          title="Editar"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+      )}
+      {atual && onRemove && (
+        <button
+          type="button"
+          onClick={excluir}
+          disabled={removendo}
+          className="text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 shrink-0 disabled:opacity-60"
+          title="Excluir"
+        >
+          {removendo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+        </button>
+      )}
+    </div>
   );
 };
 

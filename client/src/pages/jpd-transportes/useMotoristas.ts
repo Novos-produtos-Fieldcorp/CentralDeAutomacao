@@ -27,5 +27,15 @@ export function useMotoristas() {
     setMotoristas((prev) => (prev.some((p) => p.id === m.id) ? prev : [...prev, m]));
   }, []);
 
-  return { motoristas, adicionar };
+  // Atualiza localmente após renomear (PUT /api/jpd/motoristas/:id).
+  const renomear = useCallback((id: number, novoNome: string) => {
+    setMotoristas((prev) => prev.map((m) => (m.id === id ? { ...m, nome: novoNome } : m)));
+  }, []);
+
+  // Remove localmente após excluir (DELETE /api/jpd/motoristas/:id).
+  const remover = useCallback((id: number) => {
+    setMotoristas((prev) => prev.filter((m) => m.id !== id));
+  }, []);
+
+  return { motoristas, adicionar, renomear, remover };
 }

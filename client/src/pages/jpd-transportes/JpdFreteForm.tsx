@@ -3,6 +3,9 @@ import { X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fmtNum, capitalizeNome } from './format';
 import { SITUACAO_BV_OPTIONS } from './jpdEnums';
+import { useVeiculos } from './useVeiculos';
+import { useMotoristas } from './useMotoristas';
+import JpdCreatableSelect, { Option } from './JpdCreatableSelect';
 
 export type FieldType = 'text' | 'number' | 'date' | 'select';
 
@@ -11,15 +14,14 @@ export type FieldDef = {
   label: string;
   type: FieldType;
   options?: string[];
-  dynamicOptions?: 'veiculos' | 'motoristas';
 };
 
 // Os 26 campos do exemplo.csv (na mesma ordem do arquivo)
 export const FRETE_FIELDS: FieldDef[] = [
   { key: 'origem', label: 'Origem', type: 'text' },
   { key: 'destinatario', label: 'Destinatário', type: 'text' },
-  { key: 'motorista', label: 'Motorista', type: 'select', dynamicOptions: 'motoristas' },
-  { key: 'placa_do_carro', label: 'Placa do carro', type: 'select', dynamicOptions: 'veiculos' },
+  { key: 'motorista', label: 'Motorista', type: 'select' },
+  { key: 'placa_do_carro', label: 'Placa do carro', type: 'select' },
   { key: 'numero_do_bv', label: 'Número do BV', type: 'text' },
   { key: 'total_km', label: 'Total KM', type: 'number' },
   { key: 'data_do_bv', label: 'Data do BV', type: 'date' },
@@ -110,20 +112,62 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
     return init;
   });
   const [saving, setSaving] = useState(false);
-  const [opcoes, setOpcoes] = useState<{ veiculos: string[]; motoristas: string[] }>({ veiculos: [], motoristas: [] });
   const [abastecimentos, setAbastecimentos] = useState<Frete[]>([]);
   const isEdit = !!initial?.id;
+  const { placas, renomear: renomearPlacaLocal, remover: removerPlacaLocal } = useVeiculos();
+  const { motoristas, renomear: renomearMotoristaLocal, remover: removerMotoristaLocal } = useMotoristas();
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch('/api/jpd/opcoes');
-        if (res.ok) setOpcoes(await res.json());
-      } catch {
-        /* opções vazias = campos viram texto livre */
-      }
-    })();
-  }, []);
+  const renomearPlaca = async (atual: string, novoTexto: string): Promise<Option> => {
+    const res = await fetch(`/api/jpd/veiculos/${encodeURIComponent(atual)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placa: novoTexto }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao renomear placa');
+    }
+    const data = await res.json();
+    renomearPlacaLocal(atual, data.placa);
+    return { value: data.placa, label: data.placa };
+  };
+
+  const removerPlaca = async (atual: string) => {
+    const res = await fetch(`/api/jpd/veiculos/${encodeURIComponent(atual)}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao excluir placa');
+    }
+    removerPlacaLocal(atual);
+  };
+
+  const renomearMotorista = async (nomeAtual: string, novoTexto: string): Promise<Option> => {
+    const m = motoristas.find((x) => x.nome === nomeAtual);
+    if (!m) throw new Error('Motorista não encontrado');
+    const res = await fetch(`/api/jpd/motoristas/${m.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: novoTexto }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao renomear motorista');
+    }
+    const data = await res.json();
+    renomearMotoristaLocal(m.id, data.nome);
+    return { value: data.nome, label: capitalizeNome(data.nome) };
+  };
+
+  const removerMotorista = async (nomeAtual: string) => {
+    const m = motoristas.find((x) => x.nome === nomeAtual);
+    if (!m) throw new Error('Motorista não encontrado');
+    const res = await fetch(`/api/jpd/motoristas/${m.id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao excluir motorista');
+    }
+    removerMotoristaLocal(m.id);
+  };
 
   // Abastecimentos vinculados a este BV (somente leitura).
   useEffect(() => {
@@ -151,12 +195,7 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
 
   const set = (k: string, v: string) => setFields((f) => ({ ...f, [k]: v }));
 
-  const optionsFor = (f: FieldDef): string[] | null => {
-    if (f.dynamicOptions === 'veiculos') return opcoes.veiculos;
-    if (f.dynamicOptions === 'motoristas') return opcoes.motoristas;
-    if (f.options) return f.options;
-    return null;
-  };
+  const optionsFor = (f: FieldDef): string[] | null => f.options || null;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,10 +227,45 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
   };
 
   const renderField = (f: FieldDef) => {
+    // Placa e motorista têm cadastro rápido (+ Criar) e lápis/lixeira para
+    // editar/excluir o registro mestre, igual ao fluxo de Lançamentos.
+    if (f.key === 'placa_do_carro') {
+      return (
+        <label key={f.key} className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
+          <span className="mb-1">{f.label}</span>
+          <JpdCreatableSelect
+            value={fields[f.key]}
+            onChange={(v) => set(f.key, v)}
+            options={placas}
+            createLabel="+ Criar nova placa"
+            newPlaceholder="Digite a nova placa"
+            className={inputCls}
+            uppercase
+            onRename={renomearPlaca}
+            onRemove={removerPlaca}
+          />
+        </label>
+      );
+    }
+    if (f.key === 'motorista') {
+      return (
+        <label key={f.key} className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
+          <span className="mb-1">{f.label}</span>
+          <JpdCreatableSelect
+            value={fields[f.key]}
+            onChange={(v) => set(f.key, v)}
+            options={motoristas.map((m) => ({ value: m.nome, label: capitalizeNome(m.nome) }))}
+            createLabel="+ Criar novo motorista"
+            newPlaceholder="Digite o nome do motorista"
+            className={inputCls}
+            onRename={renomearMotorista}
+            onRemove={removerMotorista}
+          />
+        </label>
+      );
+    }
+
     let opts = optionsFor(f);
-    // Placa/motorista vindos do OCR podem ainda não existir na tabela mestra.
-    // Inclui o valor atual como opção para exibir a seleção; ao salvar, o
-    // backend cria o registro que faltar (ensureVeiculo/ensureMotorista).
     const cur = fields[f.key];
     if (opts && cur && !opts.includes(cur)) opts = [...opts, cur];
     return (
@@ -202,7 +276,7 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
             <option value="">—</option>
             {opts.map((o) => (
               <option key={o} value={o}>
-                {f.dynamicOptions === 'motoristas' ? capitalizeNome(o) : o}
+                {o}
               </option>
             ))}
           </select>

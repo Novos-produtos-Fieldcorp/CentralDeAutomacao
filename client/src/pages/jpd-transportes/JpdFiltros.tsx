@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Search, X } from 'lucide-react';
-import { capitalizeNome } from './format';
+import { capitalizeNome, upperPlaca } from './format';
 import { OPERACOES } from './jpdEnums';
 
 export type JpdFiltrosValue = {
@@ -68,7 +68,7 @@ const JpdFiltros: React.FC<Props> = ({
             <option value="">Todas</option>
             {opcoes.veiculos.map((p) => (
               <option key={p} value={p}>
-                {p}
+                {upperPlaca(p)}
               </option>
             ))}
           </select>

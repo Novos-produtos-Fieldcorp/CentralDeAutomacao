@@ -7,7 +7,7 @@ import { ABAST_COLS as COLS, AbastCol } from './jpdAbastecimentoCols';
 import { useVeiculos } from './useVeiculos';
 import { useMotoristas } from './useMotoristas';
 import JpdCreatableSelect, { Option } from './JpdCreatableSelect';
-import { capitalizeNome } from './format';
+import { capitalizeNome, upperPlaca, hojeISO } from './format';
 
 type Abastecimento = Record<string, any>;
 
@@ -24,8 +24,13 @@ const JpdAbastecimentos = () => {
   const [draft, setDraft] = useState<Abastecimento>({});
   const [vincularId, setVincularId] = useState<number | null>(null);
   const [filtros, setFiltros] = useState<JpdFiltrosValue>(EMPTY_FILTROS);
-  const placas = useVeiculos();
-  const { motoristas, adicionar: adicionarMotorista } = useMotoristas();
+  const { placas, renomear: renomearPlacaLocal, remover: removerPlacaLocal } = useVeiculos();
+  const {
+    motoristas,
+    adicionar: adicionarMotorista,
+    renomear: renomearMotoristaLocal,
+    remover: removerMotoristaLocal,
+  } = useMotoristas();
 
   const criarMotorista = async (nome: string): Promise<Option> => {
     const res = await fetch('/api/jpd/motoristas', {
@@ -40,6 +45,54 @@ const JpdAbastecimentos = () => {
     const criado = await res.json();
     adicionarMotorista(criado);
     return { value: String(criado.id), label: capitalizeNome(criado.nome) };
+  };
+
+  const renomearPlaca = async (atual: string, novoTexto: string): Promise<Option> => {
+    const res = await fetch(`/api/jpd/veiculos/${encodeURIComponent(atual)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placa: novoTexto }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao renomear placa');
+    }
+    const data = await res.json();
+    renomearPlacaLocal(atual, data.placa);
+    return { value: data.placa, label: data.placa };
+  };
+
+  const removerPlaca = async (atual: string) => {
+    const res = await fetch(`/api/jpd/veiculos/${encodeURIComponent(atual)}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao excluir placa');
+    }
+    removerPlacaLocal(atual);
+  };
+
+  const renomearMotorista = async (idStr: string, novoTexto: string): Promise<Option> => {
+    const res = await fetch(`/api/jpd/motoristas/${idStr}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: novoTexto }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao renomear motorista');
+    }
+    const data = await res.json();
+    renomearMotoristaLocal(Number(idStr), data.nome);
+    return { value: idStr, label: capitalizeNome(data.nome) };
+  };
+
+  const removerMotorista = async (idStr: string) => {
+    const res = await fetch(`/api/jpd/motoristas/${idStr}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Falha ao excluir motorista');
+    }
+    removerMotoristaLocal(Number(idStr));
   };
 
   const load = useCallback(async () => {
@@ -84,6 +137,7 @@ const JpdAbastecimentos = () => {
   const startNew = () => {
     const d: Abastecimento = {};
     for (const c of COLS) d[c.key] = '';
+    d.data_lancamento = hojeISO();
     setDraft(d);
     setEditId('new');
   };
@@ -137,6 +191,9 @@ const JpdAbastecimentos = () => {
         createLabel="+ Criar nova placa"
         newPlaceholder="Digite a nova placa"
         className={inputCls}
+        uppercase
+        onRename={renomearPlaca}
+        onRemove={removerPlaca}
       />
     ) : c.key === 'motorista_id' ? (
       <JpdCreatableSelect
@@ -147,6 +204,15 @@ const JpdAbastecimentos = () => {
         newPlaceholder="Digite o nome do motorista"
         className={inputCls}
         onCreate={criarMotorista}
+        onRename={renomearMotorista}
+        onRemove={removerMotorista}
+      />
+    ) : c.type === 'date' ? (
+      <input
+        type="date"
+        value={draft[c.key] ?? ''}
+        onChange={(e) => setField(c.key, e.target.value)}
+        className={inputCls}
       />
     ) : c.type === 'select' ? (
       <select value={draft[c.key] ?? ''} onChange={(e) => setField(c.key, e.target.value)} className={inputCls}>
@@ -273,7 +339,11 @@ const JpdAbastecimentos = () => {
                     <td className="px-3 py-2 font-mono text-xs">#{r.id}</td>
                     {COLS.map((c) => (
                       <td key={c.key} className="px-3 py-2 whitespace-nowrap">
-                        {c.key === 'motorista_id' ? fmt(capitalizeNome(r.motorista_nome)) : fmt(r[c.key])}
+                        {c.key === 'motorista_id'
+                          ? fmt(capitalizeNome(r.motorista_nome))
+                          : c.key === 'placa'
+                          ? fmt(upperPlaca(r[c.key]))
+                          : fmt(r[c.key])}
                       </td>
                     ))}
                     <td className="px-3 py-2">{r.frete_id ? (r.numero_do_bv || `#${r.frete_id}`) : '—'}</td>

@@ -6,7 +6,7 @@ import JpdConsumoCards, { Consumo } from './JpdConsumoCards';
 import JpdAbastecimentos from './JpdAbastecimentos';
 import JpdGerarLancamento from './JpdGerarLancamento';
 import JpdFiltros, { EMPTY_FILTROS, JpdFiltrosValue } from './JpdFiltros';
-import { fmtBRL, fmtNum, capitalizeNome } from './format';
+import { fmtBRL, fmtNum, capitalizeNome, upperPlaca } from './format';
 
 type Resumo = {
   placa: string;
@@ -164,7 +164,7 @@ const JpdVeiculos = () => {
                   <tr key={v.id} className="border-t border-gray-100 dark:border-gray-700">
                     <td className="px-3 py-2">
                       <Link to={`/jpd-transportes/veiculos/${encodeURIComponent(v.placa)}`} className={linkCls}>
-                        {v.placa}
+                        {upperPlaca(v.placa)}
                       </Link>
                     </td>
                     <td className="px-3 py-2">{capitalizeNome(v.motorista)}</td>
@@ -205,7 +205,7 @@ const JpdVeiculos = () => {
                   <tr key={v.placa} className="border-t border-gray-100 dark:border-gray-700">
                     <td className="px-3 py-2">
                       <Link to={`/jpd-transportes/veiculos/${encodeURIComponent(v.placa)}`} className={linkCls}>
-                        {v.placa}
+                        {upperPlaca(v.placa)}
                       </Link>
                     </td>
                     <td className="px-3 py-2">{v.viagens}</td>
