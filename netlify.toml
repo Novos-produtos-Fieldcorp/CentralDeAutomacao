@@ -18,6 +18,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/dionizio/*"
+  to = "/.netlify/functions/dionizio/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/validate-wiseapp-token"
   to = "/.netlify/functions/validate-wiseapp-token"
   status = 200

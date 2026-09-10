@@ -21,6 +21,7 @@ interface AccessControl {
   bau_access: boolean;
   operacoes_access: boolean;
   logs_access: boolean;
+  dionizio_transportes_access: boolean;
   st_company: boolean;
 }
 
@@ -99,10 +100,20 @@ const Admin = () => {
         (logsData || []).map((r: any) => [r.company_id, r.logs_access ?? false])
       );
 
+      // Try fetching dionizio_transportes_access separately — column só existe
+      // depois que o script scripts/setup-dionizio-transportes.sql for rodado.
+      const { data: dionizioData } = await supabase
+        .from('company')
+        .select('company_id, dionizio_transportes_access');
+      const dionizioMap = new Map<number, boolean>(
+        (dionizioData || []).map((r: any) => [r.company_id, r.dionizio_transportes_access ?? false])
+      );
+
       const normalized = (data || []).map((d: any) => ({
         ...d,
         minuta_access: d.hasOwnProperty('minuta_access') ? d.minuta_access : false,
-        logs_access: logsMap.get(d.company_id) ?? false
+        logs_access: logsMap.get(d.company_id) ?? false,
+        dionizio_transportes_access: dionizioMap.get(d.company_id) ?? false
       }));
 
       setAccessControls(normalized);
@@ -220,7 +231,8 @@ const Admin = () => {
             romaneio_access: control.romaneio_access,
             bau_access: control.bau_access,
             operacoes_access: control.operacoes_access,
-            logs_access: control.logs_access
+            logs_access: control.logs_access,
+            dionizio_transportes_access: control.dionizio_transportes_access
           })
           .eq('company_id', control.company_id);
 
@@ -459,6 +471,9 @@ const Admin = () => {
                       Logs
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Dionizio Transportes
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
                     </th>
                   </tr>
@@ -616,6 +631,19 @@ const Admin = () => {
                               : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                           }`}
                           data-testid={`button-toggle-logs-${index}`}
+                        >
+                          <CheckCircle size={20} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleToggleAccess(index, 'dionizio_transportes_access')}
+                          className={`p-2 rounded-full ${
+                            control.dionizio_transportes_access
+                              ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                          }`}
+                          data-testid={`button-toggle-dionizio-${index}`}
                         >
                           <CheckCircle size={20} />
                         </button>

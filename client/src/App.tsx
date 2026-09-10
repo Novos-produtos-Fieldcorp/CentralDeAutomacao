@@ -39,6 +39,7 @@ const FormularioAbastecimentoPublico = lazy(
 );
 const BlixxGrupos = lazy(() => import("./pages/BlixxGrupos"));
 const PainelControleBlixx = lazy(() => import("./pages/PainelControleBlixx"));
+const DionizioTransportes = lazy(() => import("./pages/DionizioTransportes"));
 
 // Componente de loading para lazy loading
 const PageLoader = () => (
@@ -136,6 +137,10 @@ const AppRoutes = () => {
                   <Route
                     path="/painel-controle-blixx/*"
                     element={<PainelControleBlixx />}
+                  />
+                  <Route
+                    path="/dionizio-transportes/*"
+                    element={<DionizioTransportes />}
                   />
                 </Routes>
               </Suspense>

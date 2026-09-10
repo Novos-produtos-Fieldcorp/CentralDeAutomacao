@@ -23,6 +23,7 @@ interface ModuleAccess {
   jpdTransportes: boolean;
   blixxGrupos: boolean;
   painelControleBlixx: boolean;
+  dionizioTransportes: boolean;
 }
 
 export const useModuleAccess = () => {
@@ -48,6 +49,7 @@ export const useModuleAccess = () => {
     jpdTransportes: false,
     blixxGrupos: false,
     painelControleBlixx: false,
+    dionizioTransportes: false,
   });
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export const useModuleAccess = () => {
         const { data: company, error: companyError } = await supabase
           .from("company")
           .select(
-            "checklist_access, motorista_access, hodometro_acsess, minuta_access, romaneio_access, resumo_access, tags_access, comprovante_access, comprov_rota_access, bomba_gasolina_access, calculo_um_por_dia, bau_access, operacoes_access, logs_access, jpd_transportes_access, blixx_grupos_access, painel_controle_blixx_access",
+            "checklist_access, motorista_access, hodometro_acsess, minuta_access, romaneio_access, resumo_access, tags_access, comprovante_access, comprov_rota_access, bomba_gasolina_access, calculo_um_por_dia, bau_access, operacoes_access, logs_access, jpd_transportes_access, blixx_grupos_access, painel_controle_blixx_access, dionizio_transportes_access",
           )
           .eq("company_id", companyId)
           .maybeSingle();
@@ -92,6 +94,7 @@ export const useModuleAccess = () => {
             jpdTransportes: false,
             blixxGrupos: false,
             painelControleBlixx: false,
+            dionizioTransportes: false,
           });
           return;
         }
@@ -117,6 +120,7 @@ export const useModuleAccess = () => {
             jpdTransportes: (company as any).jpd_transportes_access || false,
             blixxGrupos: (company as any).blixx_grupos_access || false,
             painelControleBlixx: (company as any).painel_controle_blixx_access || false,
+            dionizioTransportes: (company as any).dionizio_transportes_access || false,
           });
         } else {
           // Default to all modules enabled if company data doesn't exist
@@ -140,6 +144,7 @@ export const useModuleAccess = () => {
             jpdTransportes: false,
             blixxGrupos: false,
             painelControleBlixx: false,
+            dionizioTransportes: false,
           });
         }
       } catch (error) {
@@ -169,6 +174,7 @@ export const useModuleAccess = () => {
           jpdTransportes: false,
           blixxGrupos: false,
           painelControleBlixx: false,
+          dionizioTransportes: false,
         });
       } finally {
         setLoading(false);

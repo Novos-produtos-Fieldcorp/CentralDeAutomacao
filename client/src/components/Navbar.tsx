@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, MessageCircle, Tags, FileText, MapPin, FileUp, Route, ScrollText, SlidersHorizontal } from 'lucide-react';
+import { Home, Truck, Users, Gauge, ClipboardCheck, Store, Menu, X, PanelLeftDashed, PanelLeftOpen, MessageSquare, MessagesSquare, MessageCircle, Tags, FileText, MapPin, FileUp, Route, ScrollText, SlidersHorizontal, Warehouse } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { useModuleAccess } from '../hooks/useModuleAccess';
 import { useCompanyData } from '../hooks/useCompanyData';
@@ -126,6 +126,7 @@ const Navbar = ({ onToggle }: NavbarProps) => {
     { path: '/jpd-transportes', icon: Truck, label: 'JPD Transportes', needsAccess: true, enabled: moduleAccess.jpdTransportes },
     { path: '/blixx-grupos', icon: MessageCircle, label: 'Blixx Grupos', needsAccess: true, enabled: moduleAccess.blixxGrupos },
     { path: '/painel-controle-blixx', icon: SlidersHorizontal, label: 'Painel de Controle Blixx', needsAccess: true, enabled: moduleAccess.painelControleBlixx },
+    { path: '/dionizio-transportes', icon: Warehouse, label: 'Dionizio Transportes', needsAccess: true, enabled: moduleAccess.dionizioTransportes },
     { path: '/logs', icon: ScrollText, label: 'Logs de Auditoria', needsAccess: false, enabled: true },
   ];
 

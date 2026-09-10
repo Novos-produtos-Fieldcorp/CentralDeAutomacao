@@ -7735,6 +7735,648 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     }
   });
 
+  // =====================================================
+  // Dionizio Transportes — /api/dionizio/*
+  // Mesmo padrão do painel JPD Transportes (supabaseBackend, RLS
+  // desabilitada, cálculos feitos no backend na gravação).
+  // =====================================================
+
+  const dionizioCalcAbastecimento = async (
+    veiculoId: number,
+    kmAtual: number,
+    litros: number,
+    valorTotal: number,
+    excludeId?: number,
+  ) => {
+    const precoPorLitro = litros > 0 ? valorTotal / litros : null;
+    let mediaPorKm: number | null = null;
+    let q = supabaseBackend
+      .from("dionizio_abastecimentos")
+      .select("quilometragem_atual")
+      .eq("veiculo_id", veiculoId)
+      .lt("quilometragem_atual", kmAtual)
+      .order("quilometragem_atual", { ascending: false })
+      .limit(1);
+    if (excludeId) q = q.neq("id", excludeId);
+    const { data: anterior } = await q;
+    const kmAnterior = anterior?.[0]?.quilometragem_atual;
+    if (kmAnterior != null && litros > 0) {
+      const kmRodado = kmAtual - Number(kmAnterior);
+      if (kmRodado > 0) mediaPorKm = kmRodado / litros;
+    }
+    return { preco_por_litro: precoPorLitro, media_por_km: mediaPorKm };
+  };
+
+  const buildDionizioAbastecimentoBase = (body: any) => ({
+    veiculo_id: Number(body.veiculo_id),
+    data_abastecimento: body.data_abastecimento,
+    tipo_combustivel: body.tipo_combustivel || null,
+    quilometragem_atual: Number(body.quilometragem_atual),
+    litros: Number(body.litros),
+    valor_total: Number(body.valor_total),
+    local_abastecimento: body.local_abastecimento,
+    nota_fiscal_url: body.nota_fiscal_url || null,
+  });
+
+  app.get("/api/dionizio/abastecimentos", async (req, res) => {
+    try {
+      const { veiculo_id, from, to } = req.query as Record<string, string>;
+      let q = supabaseBackend.from("dionizio_abastecimentos").select("*, dionizio_veiculos(placa)").order("data_abastecimento", { ascending: false });
+      if (veiculo_id) q = q.eq("veiculo_id", Number(veiculo_id));
+      if (from) q = q.gte("data_abastecimento", from);
+      if (to) q = q.lte("data_abastecimento", to);
+      const { data, error } = await q;
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/dionizio/abastecimentos", async (req, res) => {
+    try {
+      const base = buildDionizioAbastecimentoBase(req.body);
+      const calc = await dionizioCalcAbastecimento(base.veiculo_id, base.quilometragem_atual, base.litros, base.valor_total);
+      const { data, error } = await supabaseBackend.from("dionizio_abastecimentos").insert({ ...base, ...calc }).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/dionizio/abastecimentos/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const base = buildDionizioAbastecimentoBase(req.body);
+      const calc = await dionizioCalcAbastecimento(base.veiculo_id, base.quilometragem_atual, base.litros, base.valor_total, id);
+      const { data, error } = await supabaseBackend
+        .from("dionizio_abastecimentos")
+        .update({ ...base, ...calc, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/dionizio/abastecimentos/:id", async (req, res) => {
+    try {
+      const { error } = await supabaseBackend.from("dionizio_abastecimentos").delete().eq("id", Number(req.params.id));
+      if (error) return res.status(500).json({ error: error.message });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- Hotéis ---
+
+  app.get("/api/dionizio/hoteis", async (req, res) => {
+    try {
+      const { veiculo_id, motorista_id, from, to } = req.query as Record<string, string>;
+      let q = supabaseBackend
+        .from("dionizio_hoteis")
+        .select("*, dionizio_veiculos(placa), dionizio_motoristas(nome)")
+        .order("data", { ascending: false });
+      if (veiculo_id) q = q.eq("veiculo_id", Number(veiculo_id));
+      if (motorista_id) q = q.eq("motorista_id", Number(motorista_id));
+      if (from) q = q.gte("data", from);
+      if (to) q = q.lte("data", to);
+      const { data, error } = await q;
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  const buildDionizioHotelRow = (body: any) => ({
+    data: body.data,
+    veiculo_id: Number(body.veiculo_id),
+    motorista_id: Number(body.motorista_id),
+    local: body.local,
+    nome_hotel: body.nome_hotel,
+    cnpj_hotel: body.cnpj_hotel || null,
+    quantidade_pessoas: Number(body.quantidade_pessoas) || 1,
+    nome_ajudante: body.nome_ajudante || null,
+    valor_hotel: Number(body.valor_hotel),
+    observacoes: body.observacoes || null,
+  });
+
+  app.post("/api/dionizio/hoteis", async (req, res) => {
+    try {
+      const { data, error } = await supabaseBackend.from("dionizio_hoteis").insert(buildDionizioHotelRow(req.body)).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/dionizio/hoteis/:id", async (req, res) => {
+    try {
+      const row = { ...buildDionizioHotelRow(req.body), updated_at: new Date().toISOString() };
+      const { data, error } = await supabaseBackend.from("dionizio_hoteis").update(row).eq("id", Number(req.params.id)).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/dionizio/hoteis/:id", async (req, res) => {
+    try {
+      const { error } = await supabaseBackend.from("dionizio_hoteis").delete().eq("id", Number(req.params.id));
+      if (error) return res.status(500).json({ error: error.message });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- Ocorrências / Eventos ---
+
+  app.get("/api/dionizio/ocorrencias", async (req, res) => {
+    try {
+      const { veiculo_id, status, gravidade } = req.query as Record<string, string>;
+      let q = supabaseBackend.from("dionizio_ocorrencias").select("*, dionizio_veiculos(placa)").order("data", { ascending: false });
+      if (veiculo_id) q = q.eq("veiculo_id", Number(veiculo_id));
+      if (status) q = q.eq("status", status);
+      if (gravidade) q = q.eq("gravidade", gravidade);
+      const { data, error } = await q;
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  const buildDionizioOcorrenciaRow = (body: any) => ({
+    tipo_evento: body.tipo_evento,
+    data: body.data,
+    veiculo_id: body.veiculo_id ? Number(body.veiculo_id) : null,
+    gravidade: body.gravidade || null,
+    status: body.status || "pendente",
+    descricao_detalhada: body.descricao_detalhada,
+    observacoes_gerais: body.observacoes_gerais || null,
+    fotos: Array.isArray(body.fotos) ? body.fotos : [],
+  });
+
+  app.post("/api/dionizio/ocorrencias", async (req, res) => {
+    try {
+      const { data, error } = await supabaseBackend.from("dionizio_ocorrencias").insert(buildDionizioOcorrenciaRow(req.body)).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/dionizio/ocorrencias/:id", async (req, res) => {
+    try {
+      const row = { ...buildDionizioOcorrenciaRow(req.body), updated_at: new Date().toISOString() };
+      const { data, error } = await supabaseBackend.from("dionizio_ocorrencias").update(row).eq("id", Number(req.params.id)).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/dionizio/ocorrencias/:id", async (req, res) => {
+    try {
+      const { error } = await supabaseBackend.from("dionizio_ocorrencias").delete().eq("id", Number(req.params.id));
+      if (error) return res.status(500).json({ error: error.message });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- Viagens ---
+
+  const buildDionizioViagemRow = (body: any) => {
+    const base_frete = Number(body.base_frete) || 0;
+    const custo_ajudante = Number(body.custo_ajudante) || 0;
+    const custo_pernoite = Number(body.custo_pernoite) || 0;
+    return {
+      referencia: body.referencia || null,
+      origem: body.origem,
+      destino: body.destino || null,
+      cliente_id: body.cliente_id ? Number(body.cliente_id) : null,
+      data_saida: body.data_saida,
+      data_retorno: body.data_retorno,
+      horario_saida: body.horario_saida || null,
+      horario_retorno: body.horario_retorno || null,
+      necessita_pernoite: !!body.necessita_pernoite,
+      veiculo_id: Number(body.veiculo_id),
+      motorista_id: Number(body.motorista_id),
+      km_inicial: body.km_inicial != null ? Number(body.km_inicial) : null,
+      km_final: body.km_final != null ? Number(body.km_final) : null,
+      km_total_estimado: body.km_total_estimado != null ? Number(body.km_total_estimado) : null,
+      necessita_ajudante: !!body.necessita_ajudante,
+      base_frete,
+      custo_ajudante,
+      custo_pernoite,
+      frete_total: base_frete + custo_ajudante + custo_pernoite,
+      numero_pessoas: Number(body.numero_pessoas) || 1,
+      entregas_estimadas: Number(body.entregas_estimadas) || 0,
+      entregas_realizadas: Number(body.entregas_realizadas) || 0,
+      observacoes: body.observacoes || null,
+      status: body.status || "planejada",
+      comprovante_canhoto_url: body.comprovante_canhoto_url || null,
+    };
+  };
+
+  app.get("/api/dionizio/viagens", async (req, res) => {
+    try {
+      const { veiculo_id, motorista_id, status, from, to } = req.query as Record<string, string>;
+      let q = supabaseBackend
+        .from("dionizio_viagens")
+        .select("*, dionizio_veiculos(placa), dionizio_motoristas(nome), dionizio_clientes(nome)")
+        .order("data_saida", { ascending: false });
+      if (veiculo_id) q = q.eq("veiculo_id", Number(veiculo_id));
+      if (motorista_id) q = q.eq("motorista_id", Number(motorista_id));
+      if (status) q = q.eq("status", status);
+      if (from) q = q.gte("data_saida", from);
+      if (to) q = q.lte("data_saida", to);
+      const { data, error } = await q;
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/dionizio/viagens/:id", async (req, res) => {
+    try {
+      const { data, error } = await supabaseBackend
+        .from("dionizio_viagens")
+        .select("*, dionizio_veiculos(placa), dionizio_motoristas(nome), dionizio_clientes(nome)")
+        .eq("id", Number(req.params.id))
+        .single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/dionizio/viagens", async (req, res) => {
+    try {
+      const { data, error } = await supabaseBackend.from("dionizio_viagens").insert(buildDionizioViagemRow(req.body)).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/dionizio/viagens/:id", async (req, res) => {
+    try {
+      const row = { ...buildDionizioViagemRow(req.body), updated_at: new Date().toISOString() };
+      const { data, error } = await supabaseBackend.from("dionizio_viagens").update(row).eq("id", Number(req.params.id)).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/dionizio/viagens/:id", async (req, res) => {
+    try {
+      const { error } = await supabaseBackend.from("dionizio_viagens").delete().eq("id", Number(req.params.id));
+      if (error) return res.status(500).json({ error: error.message });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- Descargas / Entregas (vinculadas a uma viagem) ---
+
+  const buildDionizioDescargaRow = (body: any) => ({
+    viagem_id: Number(body.viagem_id),
+    veiculo_id: body.veiculo_id ? Number(body.veiculo_id) : null,
+    data_descarga: body.data_descarga,
+    horario: body.horario || null,
+    local_descarga: body.local_descarga,
+    tipo_carga: body.tipo_carga,
+    numero_carga: body.numero_carga || null,
+    numero_nota: body.numero_nota || null,
+    tipo_pagamento: body.tipo_pagamento || null,
+    valor_descarga: Number(body.valor_descarga),
+    comprovante_pagamento_url: body.comprovante_pagamento_url || null,
+    recibo_nota_fiscal_url: body.recibo_nota_fiscal_url || null,
+    observacoes: body.observacoes || null,
+  });
+
+  app.get("/api/dionizio/descargas", async (req, res) => {
+    try {
+      const { viagem_id } = req.query as Record<string, string>;
+      let q = supabaseBackend
+        .from("dionizio_descargas")
+        .select("*, dionizio_viagens(referencia), dionizio_veiculos(placa)")
+        .order("data_descarga", { ascending: false });
+      if (viagem_id) q = q.eq("viagem_id", Number(viagem_id));
+      const { data, error } = await q;
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/dionizio/descargas", async (req, res) => {
+    try {
+      const { data, error } = await supabaseBackend.from("dionizio_descargas").insert(buildDionizioDescargaRow(req.body)).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      // Atualiza contador de entregas realizadas na viagem.
+      const { count } = await supabaseBackend
+        .from("dionizio_descargas")
+        .select("id", { count: "exact", head: true })
+        .eq("viagem_id", data.viagem_id);
+      await supabaseBackend.from("dionizio_viagens").update({ entregas_realizadas: count || 0 }).eq("id", data.viagem_id);
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/dionizio/descargas/:id", async (req, res) => {
+    try {
+      const row = { ...buildDionizioDescargaRow(req.body), updated_at: new Date().toISOString() };
+      const { data, error } = await supabaseBackend.from("dionizio_descargas").update(row).eq("id", Number(req.params.id)).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/dionizio/descargas/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { data: existente } = await supabaseBackend.from("dionizio_descargas").select("viagem_id").eq("id", id).single();
+      const { error } = await supabaseBackend.from("dionizio_descargas").delete().eq("id", id);
+      if (error) return res.status(500).json({ error: error.message });
+      if (existente?.viagem_id) {
+        const { count } = await supabaseBackend
+          .from("dionizio_descargas")
+          .select("id", { count: "exact", head: true })
+          .eq("viagem_id", existente.viagem_id);
+        await supabaseBackend.from("dionizio_viagens").update({ entregas_realizadas: count || 0 }).eq("id", existente.viagem_id);
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- Cadastros mestres: Motoristas, Veículos, Clientes ---
+
+  app.get("/api/dionizio/motoristas", async (_req, res) => {
+    try {
+      const { data, error } = await supabaseBackend.from("dionizio_motoristas").select("*").order("nome");
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  const buildDionizioMotoristaRow = (body: any) => ({
+    nome: String(body.nome || "").trim(),
+    cpf: body.cpf || null,
+    cnh: body.cnh || null,
+    cnh_validade: body.cnh_validade || null,
+    telefone: body.telefone || null,
+    status: body.status || "ativo",
+  });
+
+  app.post("/api/dionizio/motoristas", async (req, res) => {
+    try {
+      const row = buildDionizioMotoristaRow(req.body);
+      if (!row.nome) return res.status(400).json({ error: "nome obrigatório" });
+      const { data, error } = await supabaseBackend.from("dionizio_motoristas").insert(row).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/dionizio/motoristas/:id", async (req, res) => {
+    try {
+      const row = { ...buildDionizioMotoristaRow(req.body), updated_at: new Date().toISOString() };
+      const { data, error } = await supabaseBackend.from("dionizio_motoristas").update(row).eq("id", Number(req.params.id)).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/dionizio/motoristas/:id", async (req, res) => {
+    try {
+      const { error } = await supabaseBackend.from("dionizio_motoristas").delete().eq("id", Number(req.params.id));
+      if (error) {
+        if ((error as any).code === "23503") {
+          return res.status(409).json({ error: "Motorista está em uso em viagens ou hotéis; não é possível excluir." });
+        }
+        return res.status(500).json({ error: error.message });
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/dionizio/veiculos", async (_req, res) => {
+    try {
+      const { data, error } = await supabaseBackend.from("dionizio_veiculos").select("*").order("placa");
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  const buildDionizioVeiculoRow = (body: any) => ({
+    placa: String(body.placa || "").trim().toLowerCase(),
+    modelo: body.modelo || null,
+    ano: body.ano ? Number(body.ano) : null,
+    status: body.status || "ativo",
+  });
+
+  app.post("/api/dionizio/veiculos", async (req, res) => {
+    try {
+      const row = buildDionizioVeiculoRow(req.body);
+      if (!row.placa) return res.status(400).json({ error: "placa obrigatória" });
+      const { data, error } = await supabaseBackend.from("dionizio_veiculos").insert(row).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/dionizio/veiculos/:id", async (req, res) => {
+    try {
+      const row = { ...buildDionizioVeiculoRow(req.body), updated_at: new Date().toISOString() };
+      const { data, error } = await supabaseBackend.from("dionizio_veiculos").update(row).eq("id", Number(req.params.id)).select().single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/dionizio/veiculos/:id", async (req, res) => {
+    try {
+      const { error } = await supabaseBackend.from("dionizio_veiculos").delete().eq("id", Number(req.params.id));
+      if (error) {
+        if ((error as any).code === "23503") {
+          return res.status(409).json({ error: "Placa está em uso em viagens, abastecimentos ou hotéis; não é possível excluir." });
+        }
+        return res.status(500).json({ error: error.message });
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/dionizio/clientes", async (_req, res) => {
+    try {
+      const { data, error } = await supabaseBackend.from("dionizio_clientes").select("*").order("nome");
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/dionizio/clientes", async (req, res) => {
+    try {
+      const nome = String(req.body?.nome || "").trim();
+      if (!nome) return res.status(400).json({ error: "nome obrigatório" });
+      const { data, error } = await supabaseBackend
+        .from("dionizio_clientes")
+        .insert({ nome, cnpj: req.body?.cnpj || null })
+        .select()
+        .single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/dionizio/opcoes => { veiculos, motoristas, clientes } para popular os selects dos modais.
+  app.get("/api/dionizio/opcoes", async (_req, res) => {
+    try {
+      const [veiculos, motoristas, clientes] = await Promise.all([
+        supabaseBackend.from("dionizio_veiculos").select("id, placa").eq("status", "ativo").order("placa"),
+        supabaseBackend.from("dionizio_motoristas").select("id, nome").eq("status", "ativo").order("nome"),
+        supabaseBackend.from("dionizio_clientes").select("id, nome").order("nome"),
+      ]);
+      res.json({
+        veiculos: veiculos.data || [],
+        motoristas: motoristas.data || [],
+        clientes: clientes.data || [],
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/dionizio/dashboard?from=&to=  => visão executiva do painel
+  app.get("/api/dionizio/dashboard", async (req, res) => {
+    try {
+      const { from, to } = req.query as Record<string, string>;
+
+      let viagensQ = supabaseBackend.from("dionizio_viagens").select("*, dionizio_veiculos(placa), dionizio_motoristas(nome)");
+      if (from) viagensQ = viagensQ.gte("data_saida", from);
+      if (to) viagensQ = viagensQ.lte("data_saida", to);
+      const { data: viagens, error: viagensErr } = await viagensQ;
+      if (viagensErr) return res.status(500).json({ error: viagensErr.message });
+
+      let abastQ = supabaseBackend.from("dionizio_abastecimentos").select("valor_total, litros, data_abastecimento");
+      if (from) abastQ = abastQ.gte("data_abastecimento", from);
+      if (to) abastQ = abastQ.lte("data_abastecimento", to);
+      const { data: abastecimentos } = await abastQ;
+
+      let hoteisQ = supabaseBackend.from("dionizio_hoteis").select("valor_hotel, data");
+      if (from) hoteisQ = hoteisQ.gte("data", from);
+      if (to) hoteisQ = hoteisQ.lte("data", to);
+      const { data: hoteis } = await hoteisQ;
+
+      let descargasQ = supabaseBackend.from("dionizio_descargas").select("valor_descarga, data_descarga");
+      if (from) descargasQ = descargasQ.gte("data_descarga", from);
+      if (to) descargasQ = descargasQ.lte("data_descarga", to);
+      const { data: descargas } = await descargasQ;
+
+      const { data: ocorrenciasPendentes } = await supabaseBackend
+        .from("dionizio_ocorrencias")
+        .select("*, dionizio_veiculos(placa)")
+        .neq("status", "resolvido")
+        .order("data", { ascending: false })
+        .limit(10);
+
+      const sum = (arr: any[] | null, key: string) => (arr || []).reduce((acc, r) => acc + (Number(r[key]) || 0), 0);
+
+      const totalAbastecimento = sum(abastecimentos, "valor_total");
+      const totalHoteis = sum(hoteis, "valor_hotel");
+      const totalDescargas = sum(descargas, "valor_descarga");
+      const totalFrete = sum(viagens, "frete_total");
+      const totalKm = (viagens || []).reduce((acc, v: any) => {
+        if (v.km_inicial != null && v.km_final != null) return acc + (Number(v.km_final) - Number(v.km_inicial));
+        return acc + (Number(v.km_total_estimado) || 0);
+      }, 0);
+
+      const porVeiculo: Record<string, { placa: string; viagens: number; km: number; frete: number }> = {};
+      for (const v of viagens || []) {
+        const placa = (v as any).dionizio_veiculos?.placa || "—";
+        if (!porVeiculo[placa]) porVeiculo[placa] = { placa, viagens: 0, km: 0, frete: 0 };
+        porVeiculo[placa].viagens += 1;
+        porVeiculo[placa].km += v.km_inicial != null && v.km_final != null ? Number(v.km_final) - Number(v.km_inicial) : Number(v.km_total_estimado) || 0;
+        porVeiculo[placa].frete += Number(v.frete_total) || 0;
+      }
+
+      const porMotorista: Record<string, { motorista: string; viagens: number; frete: number }> = {};
+      for (const v of viagens || []) {
+        const motorista = (v as any).dionizio_motoristas?.nome || "—";
+        if (!porMotorista[motorista]) porMotorista[motorista] = { motorista, viagens: 0, frete: 0 };
+        porMotorista[motorista].viagens += 1;
+        porMotorista[motorista].frete += Number(v.frete_total) || 0;
+      }
+
+      res.json({
+        kpis: {
+          total_viagens: (viagens || []).length,
+          total_km: totalKm,
+          total_frete: totalFrete,
+          total_abastecimento: totalAbastecimento,
+          total_hoteis: totalHoteis,
+          total_descargas: totalDescargas,
+          total_gasto: totalAbastecimento + totalHoteis + totalDescargas,
+          ocorrencias_abertas: (ocorrenciasPendentes || []).length,
+        },
+        por_veiculo: Object.values(porVeiculo).sort((a, b) => b.viagens - a.viagens),
+        por_motorista: Object.values(porMotorista).sort((a, b) => b.viagens - a.viagens),
+        viagens_em_andamento: (viagens || []).filter((v: any) => v.status === "em_andamento"),
+        ocorrencias_pendentes: ocorrenciasPendentes || [],
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   const httpServer = createServer(app);
 
   startGroupSummaryCron();
