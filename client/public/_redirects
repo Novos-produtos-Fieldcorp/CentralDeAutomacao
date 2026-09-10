@@ -1,4 +1,5 @@
 /api/jpd/*             /.netlify/functions/jpd/:splat       200
+/api/dionizio/*        /.netlify/functions/dionizio/:splat  200
 /api/cpf/*             /.netlify/functions/cpf             200
 /api/vehicle-plate/*   /.netlify/functions/vehicle-plate   200
 /api/*                 /.netlify/functions/api/:splat       200
