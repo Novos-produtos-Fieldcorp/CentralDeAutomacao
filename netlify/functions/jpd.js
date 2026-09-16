@@ -234,9 +234,9 @@ exports.handler = async (event) => {
 
       if (method === "GET" && !id) {
         let q = supabase.from("jpd_fretes").select("*")
-          .order("data_da_carga", { ascending: false });
-        if (qs.from) q = q.gte("data_da_carga", qs.from);
-        if (qs.to) q = q.lte("data_da_carga", qs.to);
+          .order("data_do_bv", { ascending: false });
+        if (qs.from) q = q.gte("data_do_bv", qs.from);
+        if (qs.to) q = q.lte("data_do_bv", qs.to);
         if (qs.motorista) q = q.eq("motorista", qs.motorista);
         if (qs.placa) q = q.eq("placa_do_carro", qs.placa);
         if (qs.situacao) q = q.eq("situacao_do_bv", qs.situacao);
@@ -305,8 +305,10 @@ exports.handler = async (event) => {
     // ---------- DASHBOARD ----------
     if (segs[0] === "dashboard" && method === "GET") {
       let q = supabase.from("jpd_fretes").select("*");
-      if (qs.from) q = q.gte("data_da_carga", qs.from);
-      if (qs.to) q = q.lte("data_da_carga", qs.to);
+      if (qs.from) q = q.gte("data_do_bv", qs.from);
+      if (qs.to) q = q.lte("data_do_bv", qs.to);
+      if (qs.motorista) q = q.eq("motorista", qs.motorista);
+      if (qs.situacao) q = q.eq("situacao_do_bv", qs.situacao);
       const { data: fretes, error } = await q;
       if (error) return json(500, { error: error.message });
 
@@ -337,7 +339,7 @@ exports.handler = async (event) => {
         byMotorista[m].valor += num(r.valor_do_frete);
         byVeiculo[p] = byVeiculo[p] || { placa: p, viagens: 0, valor: 0 };
         byVeiculo[p].viagens += 1;
-        byVeiculo[p].valor += num(r.valor_faturado);
+        byVeiculo[p].valor += num(r.valor_do_frete);
       }
 
       return json(200, {
@@ -401,11 +403,16 @@ exports.handler = async (event) => {
     // PUT /veiculos/:placa  body { placa } -> renomeia (propaga via ON UPDATE CASCADE)
     if (segs[0] === "veiculos" && segs[1] && method === "PUT") {
       const placaAtual = normalizePlaca(decodeURIComponent(segs[1]));
-      const novaPlaca = normalizePlaca(body && body.placa);
-      if (!novaPlaca) return json(400, { error: "placa obrigatória" });
+      const update = {};
+      if (body && body.placa !== undefined) {
+        const novaPlaca = normalizePlaca(body.placa);
+        if (!novaPlaca) return json(400, { error: "placa obrigatória" });
+        update.placa = novaPlaca;
+      }
+      if (body && "operacao" in body) update.operacao = body.operacao || null;
       const { data, error } = await supabase
         .from("jpd_veiculos")
-        .update({ placa: novaPlaca })
+        .update(update)
         .eq("placa", placaAtual)
         .select()
         .single();
@@ -430,9 +437,12 @@ exports.handler = async (event) => {
       const { data: fretes, error } = await supabase.from("jpd_fretes").select("*");
       if (error) return json(500, { error: error.message });
       const { data: abasts } = await supabase.from("homedometro_abastecimento_jpd").select("*");
+      const { data: veiculosCad } = await supabase.from("jpd_veiculos").select("placa, operacao");
       const num = (v) => (v == null ? 0 : Number(v) || 0);
       const rows = fretes || [];
       const lancamentos = abasts || [];
+      const operacaoPorPlaca = {};
+      for (const v of veiculosCad || []) operacaoPorPlaca[v.placa] = v.operacao || null;
 
       // Calcula métricas de consumo para um conjunto de viagens + lançamentos
       const calcConsumo = (viagensArr, lancArr) => {
@@ -498,8 +508,10 @@ exports.handler = async (event) => {
             ...rest,
             ultimo_bv: rest.ultimo_bv || "(pendente)",
             consumo: calcConsumo(viagensPlaca, lancPlaca),
+            // Operação vinculada diretamente ao veículo (jpd_veiculos.operacao).
+            operacao: operacaoPorPlaca[rest.placa] || null,
             // Operações que já tiveram algum lançamento de abastecimento para esta placa
-            // (operacao é atributo do lançamento, não do veículo — ver filtro f_operacao).
+            // (derivado, mantido para referência histórica).
             operacoes: Array.from(new Set(lancPlaca.map((l) => l.operacao).filter(Boolean))),
           };
         })
@@ -533,16 +545,16 @@ exports.handler = async (event) => {
       // Consumo (global sem filtro, ou filtrado por f_*)
       const consumo = calcConsumo(consumoRows, consumoLanc);
 
-      // Viagens "em andamento" = tem BV mas ainda sem data de descarga
+      // Viagens "em andamento" = situação do BV é "Em viagem"
       const em_andamento = rows
-        .filter((r) => r.numero_do_bv && !r.data_da_descarga)
+        .filter((r) => r.situacao_do_bv === "Em viagem")
         .map((r) => ({
           id: r.id,
           placa: r.placa_do_carro || "—",
           motorista: r.motorista || "—",
           origem: r.origem || "—",
           destinatario: r.destinatario || "—",
-          data: r.data_da_carga || r.data_do_bv || "—",
+          data: r.data_da_carga || "—",
         }));
 
       // Situação por datas do BV (hoje vem do cliente via ?hoje=YYYY-MM-DD).

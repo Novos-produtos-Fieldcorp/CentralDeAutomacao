@@ -7,6 +7,7 @@ import JpdAbastecimentos from './JpdAbastecimentos';
 import JpdGerarLancamento from './JpdGerarLancamento';
 import JpdFiltros, { EMPTY_FILTROS, JpdFiltrosValue } from './JpdFiltros';
 import { fmtBRL, fmtNum, capitalizeNome, upperPlaca } from './format';
+import { OPERACOES } from './jpdEnums';
 
 type Resumo = {
   placa: string;
@@ -16,7 +17,9 @@ type Resumo = {
   km: number;
   combustivel: number;
   ultimo_bv: string;
+  operacao: string | null;
   operacoes: string[];
+  consumo: Consumo;
 };
 type EmAndamento = {
   id: number;
@@ -43,7 +46,7 @@ const JpdVeiculos = () => {
     const termo = filtros.busca.trim().toLowerCase();
     return resumo.filter((v) => {
       if (filtros.placa && v.placa !== filtros.placa) return false;
-      if (filtros.operacao && !(v.operacoes || []).includes(filtros.operacao)) return false;
+      if (filtros.operacao && v.operacao !== filtros.operacao) return false;
       if (termo && !String(v.placa).toLowerCase().includes(termo)) return false;
       return true;
     });
@@ -91,6 +94,20 @@ const JpdVeiculos = () => {
     const t = setTimeout(() => load(filtros), 300);
     return () => clearTimeout(t);
   }, [load, filtros.placa, filtros.motorista, filtros.busca]);
+
+  const handleOperacaoChange = async (placa: string, operacao: string) => {
+    try {
+      const res = await fetch(`/api/jpd/veiculos/${encodeURIComponent(placa)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operacao: operacao || null }),
+      });
+      if (!res.ok) throw new Error('Falha ao atualizar operação');
+      setResumo((cur) => cur.map((v) => (v.placa === placa ? { ...v, operacao: operacao || null } : v)));
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao atualizar operação');
+    }
+  };
 
   const subTabCls = (active: boolean) =>
     `px-3 py-1.5 rounded-md text-sm font-medium ${
@@ -186,17 +203,20 @@ const JpdVeiculos = () => {
             <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
               <tr>
                 <th className="px-3 py-2 text-left">Placa</th>
-                <th className="px-3 py-2 text-left">Viagens</th>
-                <th className="px-3 py-2 text-left">Valor faturado</th>
-                <th className="px-3 py-2 text-left">KM total</th>
-                <th className="px-3 py-2 text-left">Combustível JPD</th>
+                <th className="px-3 py-2 text-left">Operação</th>
+                <th className="px-3 py-2 text-left">Total de leituras</th>
+                <th className="px-3 py-2 text-left">Quantidade de litros</th>
+                <th className="px-3 py-2 text-left">KM Total</th>
+                <th className="px-3 py-2 text-left">km/L</th>
+                <th className="px-3 py-2 text-left">Custo médio por litro</th>
+                <th className="px-3 py-2 text-left">Custo com Arla</th>
                 <th className="px-3 py-2 text-left">Último BV</th>
               </tr>
             </thead>
             <tbody className="text-gray-800 dark:text-gray-200">
               {resumoFiltrado.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-4 text-center text-gray-500">
+                  <td colSpan={9} className="px-3 py-4 text-center text-gray-500">
                     {loading ? 'Carregando...' : 'Nenhum veículo com fretes lançados.'}
                   </td>
                 </tr>
@@ -208,10 +228,26 @@ const JpdVeiculos = () => {
                         {upperPlaca(v.placa)}
                       </Link>
                     </td>
-                    <td className="px-3 py-2">{v.viagens}</td>
-                    <td className="px-3 py-2">{fmtBRL(v.faturado)}</td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={v.operacao || ''}
+                        onChange={(e) => handleOperacaoChange(v.placa, e.target.value)}
+                        className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 text-xs bg-white dark:bg-gray-700 dark:text-white"
+                      >
+                        <option value="">—</option>
+                        {OPERACOES.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">{v.consumo?.total_leituras ?? 0}</td>
+                    <td className="px-3 py-2">{fmtNum(v.consumo?.litros_totais)} L</td>
                     <td className="px-3 py-2">{fmtNum(v.km)}</td>
-                    <td className="px-3 py-2">{fmtBRL(v.combustivel)}</td>
+                    <td className="px-3 py-2">{fmtNum(v.consumo?.km_por_litro)} km/L</td>
+                    <td className="px-3 py-2">{fmtBRL(v.consumo?.custo_medio_litro)}</td>
+                    <td className="px-3 py-2">{fmtBRL(v.consumo?.custo_extra_arla)}</td>
                     <td className="px-3 py-2">{v.ultimo_bv}</td>
                   </tr>
                 ))

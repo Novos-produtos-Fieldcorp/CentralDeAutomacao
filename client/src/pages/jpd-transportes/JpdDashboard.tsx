@@ -3,6 +3,7 @@ import { Download, Truck, DollarSign, Receipt, TrendingDown } from 'lucide-react
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import { fmtBRL, hojeISO, capitalizeNome } from './format';
+import { SITUACAO_BV_OPTIONS } from './jpdEnums';
 
 type DashboardData = {
   kpis: { total_viagens: number; total_frete: number; total_faturado: number; total_custos: number; total_km: number };
@@ -37,10 +38,11 @@ const inputCls =
 
 const JpdDashboard = () => {
   const { companyId } = useCurrentAccount();
-  const [filters, setFilters] = useState({ de: '', ate: '' });
+  const [filters, setFilters] = useState({ de: '', ate: '', motorista: '', situacao: '' });
   const [data, setData] = useState<DashboardData>(EMPTY);
   const [loading, setLoading] = useState(false);
   const [placas, setPlacas] = useState<string[]>([]);
+  const [motoristas, setMotoristas] = useState<string[]>([]);
   const [placaSel, setPlacaSel] = useState('');
   const [veiculo, setVeiculo] = useState<{ resumo: any; viagens: any[] } | null>(null);
 
@@ -54,6 +56,7 @@ const JpdDashboard = () => {
         if (res.ok) {
           const j = await res.json();
           setPlacas(j.veiculos || []);
+          setMotoristas(j.motoristas || []);
         }
       } catch {
         /* ignora */
@@ -83,15 +86,15 @@ const JpdDashboard = () => {
     const viagens = veiculo?.viagens || [];
     let em_viagem = 0;
     let a_viajar = 0;
-    let pendente = 0;
+    let total_frete = 0;
     for (const v of viagens) {
       if (v.data_da_carga && !v.data_da_descarga) {
         if (String(v.data_da_carga) > hoje) a_viajar += 1;
         else em_viagem += 1;
       }
-      if (!v.situacao_do_bv || v.situacao_do_bv === 'pendente') pendente += 1;
+      total_frete += Number(v.valor_do_frete) || 0;
     }
-    return { em_viagem, a_viajar, pendente, total: viagens.length };
+    return { em_viagem, a_viajar, total_frete, total: viagens.length };
   }, [veiculo, hoje]);
 
   const load = useCallback(async () => {
@@ -102,6 +105,8 @@ const JpdDashboard = () => {
       url.searchParams.set('company_id', String(companyId));
       if (filters.de) url.searchParams.set('from', filters.de);
       if (filters.ate) url.searchParams.set('to', filters.ate);
+      if (filters.motorista) url.searchParams.set('motorista', filters.motorista);
+      if (filters.situacao) url.searchParams.set('situacao', filters.situacao);
       const res = await fetch(url.toString());
       if (!res.ok) throw new Error('Falha ao carregar dashboard');
       const json = await res.json();
@@ -111,7 +116,7 @@ const JpdDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [companyId, filters.de, filters.ate]);
+  }, [companyId, filters.de, filters.ate, filters.motorista, filters.situacao]);
 
   useEffect(() => {
     load();
@@ -155,12 +160,34 @@ const JpdDashboard = () => {
         className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-wrap items-end gap-3"
       >
         <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
-          <span className="mb-1">De (data da carga)</span>
+          <span className="mb-1">De (Data do Bv)</span>
           <input type="date" value={filters.de} onChange={(e) => set('de', e.target.value)} className={inputCls} />
         </label>
         <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
           <span className="mb-1">Até</span>
           <input type="date" value={filters.ate} onChange={(e) => set('ate', e.target.value)} className={inputCls} />
+        </label>
+        <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
+          <span className="mb-1">Motorista</span>
+          <select value={filters.motorista} onChange={(e) => set('motorista', e.target.value)} className={inputCls}>
+            <option value="">Todos</option>
+            {motoristas.map((m) => (
+              <option key={m} value={m}>
+                {capitalizeNome(m)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
+          <span className="mb-1">Status da viagem</span>
+          <select value={filters.situacao} onChange={(e) => set('situacao', e.target.value)} className={inputCls}>
+            <option value="">Todos</option>
+            {SITUACAO_BV_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
           <span className="mb-1">Situação por placa</span>
@@ -179,7 +206,7 @@ const JpdDashboard = () => {
         <button
           type="button"
           onClick={() => {
-            setFilters({ de: '', ate: '' });
+            setFilters({ de: '', ate: '', motorista: '', situacao: '' });
             load();
           }}
           className="px-4 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md text-sm hover:bg-gray-200"
@@ -204,8 +231,8 @@ const JpdDashboard = () => {
               <p className="text-lg font-semibold text-sky-700 dark:text-sky-300">{situacaoVeiculo.a_viajar}</p>
             </div>
             <div className="px-3 py-2 rounded-md bg-amber-50 dark:bg-amber-900/30">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Pendentes</p>
-              <p className="text-lg font-semibold text-amber-700 dark:text-amber-300">{situacaoVeiculo.pendente}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Valor total do Frete</p>
+              <p className="text-lg font-semibold text-amber-700 dark:text-amber-300">{fmtBRL(situacaoVeiculo.total_frete)}</p>
             </div>
             <div className="px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-700/50">
               <p className="text-xs text-gray-500 dark:text-gray-400">Total de viagens</p>
@@ -217,8 +244,10 @@ const JpdDashboard = () => {
               <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                 <tr>
                   <th className="px-3 py-2 text-left">BV</th>
+                  <th className="px-3 py-2 text-left">Data do Bv</th>
                   <th className="px-3 py-2 text-left">Data carga</th>
                   <th className="px-3 py-2 text-left">Data descarga</th>
+                  <th className="px-3 py-2 text-left">Valor do frete</th>
                   <th className="px-3 py-2 text-left">Situação</th>
                 </tr>
               </thead>
@@ -226,14 +255,16 @@ const JpdDashboard = () => {
                 {(veiculo.viagens || []).slice(0, 10).map((v: any) => (
                   <tr key={v.id} className="border-t border-gray-100 dark:border-gray-700">
                     <td className="px-3 py-2">{v.numero_do_bv || '—'}</td>
+                    <td className="px-3 py-2">{v.data_do_bv || '—'}</td>
                     <td className="px-3 py-2">{v.data_da_carga || '—'}</td>
                     <td className="px-3 py-2">{v.data_da_descarga || '—'}</td>
+                    <td className="px-3 py-2">{fmtBRL(v.valor_do_frete)}</td>
                     <td className="px-3 py-2">{v.situacao_do_bv || '—'}</td>
                   </tr>
                 ))}
                 {(veiculo.viagens || []).length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-4 text-center text-gray-500">
+                    <td colSpan={6} className="px-3 py-4 text-center text-gray-500">
                       Nenhuma viagem para esta placa.
                     </td>
                   </tr>
@@ -321,7 +352,7 @@ const JpdDashboard = () => {
               <tr>
                 <th className="text-left py-2">Placa</th>
                 <th className="text-left py-2">Viagens</th>
-                <th className="text-left py-2">Valor faturado</th>
+                <th className="text-left py-2">Valor frete</th>
               </tr>
             </thead>
             <tbody className="text-gray-800 dark:text-gray-200">

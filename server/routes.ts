@@ -7044,9 +7044,9 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     try {
       const { from, to, motorista, placa, situacao, abertos } = req.query as Record<string, string>;
       let q = supabaseBackend.from("jpd_fretes").select("*")
-        .order("data_da_carga", { ascending: false });
-      if (from) q = q.gte("data_da_carga", from);
-      if (to) q = q.lte("data_da_carga", to);
+        .order("data_do_bv", { ascending: false });
+      if (from) q = q.gte("data_do_bv", from);
+      if (to) q = q.lte("data_do_bv", to);
       if (motorista) q = q.eq("motorista", motorista);
       if (placa) q = q.eq("placa_do_carro", placa);
       if (situacao) q = q.eq("situacao_do_bv", situacao);
@@ -7110,9 +7110,12 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
       const { data: fretes, error } = await supabaseBackend.from("jpd_fretes").select("*");
       if (error) return res.status(500).json({ error: error.message });
       const { data: abasts } = await supabaseBackend.from("homedometro_abastecimento_jpd").select("*");
+      const { data: veiculosCad } = await supabaseBackend.from("jpd_veiculos").select("placa, operacao");
       const num = (v: any) => (v == null ? 0 : Number(v) || 0);
       const rows = fretes || [];
       const lancamentos = abasts || [];
+      const operacaoPorPlaca: Record<string, string | null> = {};
+      for (const v of veiculosCad || []) operacaoPorPlaca[(v as any).placa] = (v as any).operacao || null;
 
       const calcConsumo = (viagensArr: any[], lancArr: any[]) => {
         const km = viagensArr.reduce((s: number, r: any) => s + num(r.total_km), 0);
@@ -7171,19 +7174,20 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
             ...rest,
             ultimo_bv: rest.ultimo_bv || "(pendente)",
             consumo: calcConsumo(viagensPlaca, lancPlaca),
+            operacao: operacaoPorPlaca[rest.placa] || null,
             operacoes: Array.from(new Set(lancPlaca.map((l: any) => l.operacao).filter(Boolean))),
           };
         })
         .sort((a: any, b: any) => b.faturado - a.faturado);
       const em_andamento = rows
-        .filter((r: any) => r.numero_do_bv && !r.data_da_descarga)
+        .filter((r: any) => r.situacao_do_bv === "Em viagem")
         .map((r: any) => ({
           id: r.id,
           placa: r.placa_do_carro || "—",
           motorista: r.motorista || "—",
           origem: r.origem || "—",
           destinatario: r.destinatario || "—",
-          data: r.data_da_carga || r.data_do_bv || "—",
+          data: r.data_da_carga || "—",
         }));
       // Consumo dos cards: recalcula sobre o conjunto filtrado (f_placa/f_motorista/f_busca)
       // quando houver filtro na lista. Sem filtro, mantém o agregado global (comportamento atual).
@@ -7429,11 +7433,16 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
   app.put("/api/jpd/veiculos/:placa", async (req, res) => {
     try {
       const placaAtual = String(req.params.placa || "").trim().toLowerCase();
-      const novaPlaca = String(req.body?.placa || "").trim().toLowerCase();
-      if (!novaPlaca) return res.status(400).json({ error: "placa obrigatória" });
+      const update: Record<string, any> = {};
+      if (req.body?.placa !== undefined) {
+        const novaPlaca = String(req.body.placa || "").trim().toLowerCase();
+        if (!novaPlaca) return res.status(400).json({ error: "placa obrigatória" });
+        update.placa = novaPlaca;
+      }
+      if (req.body && "operacao" in req.body) update.operacao = req.body.operacao || null;
       const { data, error } = await supabaseBackend
         .from("jpd_veiculos")
-        .update({ placa: novaPlaca })
+        .update(update)
         .eq("placa", placaAtual)
         .select()
         .single();
@@ -7627,9 +7636,13 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     try {
       const from = req.query.from as string | undefined;
       const to = req.query.to as string | undefined;
+      const motorista = req.query.motorista as string | undefined;
+      const situacao = req.query.situacao as string | undefined;
       let q = supabaseBackend.from("jpd_fretes").select("*");
-      if (from) q = q.gte("data_da_carga", from);
-      if (to) q = q.lte("data_da_carga", to);
+      if (from) q = q.gte("data_do_bv", from);
+      if (to) q = q.lte("data_do_bv", to);
+      if (motorista) q = q.eq("motorista", motorista);
+      if (situacao) q = q.eq("situacao_do_bv", situacao);
       const { data: fretes, error } = await q;
       if (error) return res.status(500).json({ error: error.message });
 
@@ -7661,7 +7674,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
         byMotorista[m].valor += num(r.valor_do_frete);
         byVeiculo[p] ??= { placa: p, viagens: 0, valor: 0 };
         byVeiculo[p].viagens += 1;
-        byVeiculo[p].valor += num(r.valor_faturado);
+        byVeiculo[p].valor += num(r.valor_do_frete);
       }
 
       res.json({

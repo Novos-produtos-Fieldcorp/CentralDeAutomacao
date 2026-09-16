@@ -129,3 +129,6 @@ env/
 *.egg
 .mypy_cache/
 .pytest_cache/
+
+# Exports de módulos (cópias fora do rastreamento do git)
+Dionizio-Transportes-Export.zip
