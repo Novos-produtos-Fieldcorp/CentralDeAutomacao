@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Plus, Pencil, Trash2, RefreshCw, Truck, CalendarClock, AlertCircle, FileUp,
-  Package, CheckCircle2, RefreshCcw, XCircle, DollarSign,
+  Package, CheckCircle2, RefreshCcw, XCircle, DollarSign, ArrowUp, ArrowDown, ArrowUpDown,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
@@ -42,6 +42,35 @@ const SITUACAO_CORES: Record<SituacaoBv, string> = {
   'Cancelado': 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
 };
 
+const ThOrdenavel = ({
+  label,
+  campo,
+  ordenacao,
+  onClick,
+}: {
+  label: string;
+  campo: string;
+  ordenacao: { campo: string; dir: 'asc' | 'desc' } | null;
+  onClick: (campo: string) => void;
+}) => {
+  const ativo = ordenacao?.campo === campo;
+  const Icone = ativo ? (ordenacao!.dir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+  return (
+    <th className="px-3 py-2 text-left">
+      <button
+        type="button"
+        onClick={() => onClick(campo)}
+        className={`inline-flex items-center gap-1 hover:text-gray-900 dark:hover:text-white ${
+          ativo ? 'text-gray-900 dark:text-white font-semibold' : ''
+        }`}
+      >
+        {label}
+        <Icone className={`w-3.5 h-3.5 ${ativo ? '' : 'opacity-40'}`} />
+      </button>
+    </th>
+  );
+};
+
 const JpdFretes = () => {
   const { companyId } = useCurrentAccount();
   const [fretes, setFretes] = useState<Frete[]>([]);
@@ -51,6 +80,7 @@ const JpdFretes = () => {
   const [editing, setEditing] = useState<Frete | null>(null);
   const [filtros, setFiltros] = useState<JpdFiltrosValue>(EMPTY_FILTROS);
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro | null>(null);
+  const [ordenacao, setOrdenacao] = useState<{ campo: string; dir: 'asc' | 'desc' } | null>(null);
 
   const hoje = hojeISO();
 
@@ -133,6 +163,33 @@ const JpdFretes = () => {
     () => filtrados.reduce((s, f) => s + (Number(f.valor_do_frete) || 0), 0),
     [filtrados],
   );
+
+  const COLUNAS_NUMERICAS = new Set(['valor_do_frete', 'valor_faturado']);
+
+  // Ordenação client-side, aplicada por cima dos filtros (clique no título da coluna).
+  const ordenados = useMemo(() => {
+    if (!ordenacao) return filtrados;
+    const { campo, dir } = ordenacao;
+    const numerica = COLUNAS_NUMERICAS.has(campo);
+    const sinal = dir === 'asc' ? 1 : -1;
+    return [...filtrados].sort((a, b) => {
+      const va = a[campo];
+      const vb = b[campo];
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (numerica) return (Number(va) - Number(vb)) * sinal;
+      return String(va).localeCompare(String(vb), 'pt-BR') * sinal;
+    });
+  }, [filtrados, ordenacao]);
+
+  const toggleOrdenacao = (campo: string) => {
+    setOrdenacao((cur) => {
+      if (!cur || cur.campo !== campo) return { campo, dir: 'asc' };
+      if (cur.dir === 'asc') return { campo, dir: 'desc' };
+      return null;
+    });
+  };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Excluir este frete?')) return;
@@ -248,17 +305,17 @@ const JpdFretes = () => {
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
             <tr>
-              <th className="px-3 py-2 text-left">BV</th>
-              <th className="px-3 py-2 text-left">Data do BV</th>
-              <th className="px-3 py-2 text-left">Data carga</th>
-              <th className="px-3 py-2 text-left">Data descarga</th>
-              <th className="px-3 py-2 text-left">Origem</th>
-              <th className="px-3 py-2 text-left">Destinatário</th>
-              <th className="px-3 py-2 text-left">Motorista</th>
-              <th className="px-3 py-2 text-left">Placa</th>
-              <th className="px-3 py-2 text-left">Valor frete</th>
-              <th className="px-3 py-2 text-left">Faturado</th>
-              <th className="px-3 py-2 text-left">Situação</th>
+              <ThOrdenavel label="BV" campo="numero_do_bv" ordenacao={ordenacao} onClick={toggleOrdenacao} />
+              <ThOrdenavel label="Data do BV" campo="data_do_bv" ordenacao={ordenacao} onClick={toggleOrdenacao} />
+              <ThOrdenavel label="Data carga" campo="data_da_carga" ordenacao={ordenacao} onClick={toggleOrdenacao} />
+              <ThOrdenavel label="Data descarga" campo="data_da_descarga" ordenacao={ordenacao} onClick={toggleOrdenacao} />
+              <ThOrdenavel label="Origem" campo="origem" ordenacao={ordenacao} onClick={toggleOrdenacao} />
+              <ThOrdenavel label="Destinatário" campo="destinatario" ordenacao={ordenacao} onClick={toggleOrdenacao} />
+              <ThOrdenavel label="Motorista" campo="motorista" ordenacao={ordenacao} onClick={toggleOrdenacao} />
+              <ThOrdenavel label="Placa" campo="placa_do_carro" ordenacao={ordenacao} onClick={toggleOrdenacao} />
+              <ThOrdenavel label="Valor frete" campo="valor_do_frete" ordenacao={ordenacao} onClick={toggleOrdenacao} />
+              <ThOrdenavel label="Faturado" campo="valor_faturado" ordenacao={ordenacao} onClick={toggleOrdenacao} />
+              <ThOrdenavel label="Situação" campo="situacao_do_bv" ordenacao={ordenacao} onClick={toggleOrdenacao} />
               <th className="px-3 py-2 text-right">Ações</th>
             </tr>
           </thead>
@@ -269,14 +326,14 @@ const JpdFretes = () => {
                   Carregando...
                 </td>
               </tr>
-            ) : filtrados.length === 0 ? (
+            ) : ordenados.length === 0 ? (
               <tr>
                 <td colSpan={12} className="px-3 py-6 text-center text-gray-500">
                   Nenhum boletim de viagem encontrado.
                 </td>
               </tr>
             ) : (
-              filtrados.map((f) => (
+              ordenados.map((f) => (
                 <tr key={f.id} className="border-t border-gray-100 dark:border-gray-700">
                   <td className="px-3 py-2">{f.numero_do_bv || '—'}</td>
                   <td className="px-3 py-2">{f.data_do_bv || '—'}</td>
