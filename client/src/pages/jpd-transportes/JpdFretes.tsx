@@ -8,7 +8,7 @@ import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import JpdFreteForm from './JpdFreteForm';
 import JpdImportarBV from './JpdImportarBV';
 import JpdFiltros, { EMPTY_FILTROS, JpdFiltrosValue } from './JpdFiltros';
-import { fmtBRL, capitalizeNome, upperPlaca, hojeISO } from './format';
+import { fmtBRL, capitalizeNome, upperPlaca, hojeISO, fmtDataBR } from './format';
 import { SITUACAO_BV_OPTIONS, SituacaoBv } from './jpdEnums';
 
 type Frete = Record<string, any>;
@@ -336,9 +336,9 @@ const JpdFretes = () => {
               ordenados.map((f) => (
                 <tr key={f.id} className="border-t border-gray-100 dark:border-gray-700">
                   <td className="px-3 py-2">{f.numero_do_bv || '—'}</td>
-                  <td className="px-3 py-2">{f.data_do_bv || '—'}</td>
-                  <td className="px-3 py-2">{f.data_da_carga || '—'}</td>
-                  <td className="px-3 py-2">{f.data_da_descarga || '—'}</td>
+                  <td className="px-3 py-2">{fmtDataBR(f.data_do_bv) || '—'}</td>
+                  <td className="px-3 py-2">{fmtDataBR(f.data_da_carga) || '—'}</td>
+                  <td className="px-3 py-2">{fmtDataBR(f.data_da_descarga) || '—'}</td>
                   <td className="px-3 py-2">{f.origem || '—'}</td>
                   <td className="px-3 py-2">{f.destinatario || '—'}</td>
                   <td className="px-3 py-2">{capitalizeNome(f.motorista) || '—'}</td>

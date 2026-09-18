@@ -20,6 +20,15 @@ export const capitalizeNome = (v: any) => {
 // Placas são guardadas em minúsculas internamente; exibição sempre em CAIXA ALTA.
 export const upperPlaca = (v: any) => (v == null || v === '' ? '' : String(v).toUpperCase());
 
+// Converte data ISO (YYYY-MM-DD, com ou sem horário) para exibição em DD/MM/AAAA.
+export const fmtDataBR = (v: any) => {
+  if (v == null || v === '') return '';
+  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return String(v);
+  const [, ano, mes, dia] = m;
+  return `${dia}/${mes}/${ano}`;
+};
+
 // Data de hoje no formato YYYY-MM-DD (fuso local), para enviar ao backend.
 export const hojeISO = () => {
   const d = new Date();
