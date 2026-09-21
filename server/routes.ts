@@ -6991,7 +6991,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     "abastecimento_pago_pela_jpd", "abastecimento_descontado_do_frete", "demais_despesas",
     "seguros", "aluguel", "pneus", "parcela_pneus", "plano_manutencao_ipva", "faltas_em_litros",
     "faltas_abonadas_rs", "faltas_cobradas_rs", "data_do_faturamento", "valor_faturado",
-    "numero_do_cte", "situacao_do_bv",
+    "numero_do_cte", "situacao_do_bv", "observacao",
     "fornecedor", "combustivel", "litros", "valor_unitario", "valor_bruto", "desconto", "arla",
   ] as const;
   const JPD_NUMERIC_COLS = new Set([

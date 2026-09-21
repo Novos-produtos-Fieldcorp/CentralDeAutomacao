@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS public.jpd_fretes (
   valor_faturado                      numeric,                              -- VALOR FATURADO
   numero_do_cte                       text,                                 -- NÚMERO DO CTE
   situacao_do_bv                      text,                                 -- SITUAÇÃO DO BV
+  observacao                          text,                                 -- OBSERVAÇÃO (comentário livre sobre o BV)
 
   -- Custos de abastecimento (preenchidos manualmente ou via vínculo de lançamento)
   fornecedor                          text,
@@ -47,6 +48,10 @@ CREATE TABLE IF NOT EXISTS public.jpd_fretes (
   created_at                          timestamp DEFAULT now(),
   updated_at                          timestamp DEFAULT now()
 );
+
+-- Caso a tabela já exista de uma execução anterior deste script, garante a
+-- coluna nova sem precisar recriar a tabela.
+ALTER TABLE public.jpd_fretes ADD COLUMN IF NOT EXISTS observacao text;
 
 CREATE INDEX IF NOT EXISTS jpd_fretes_carga_idx   ON public.jpd_fretes(data_da_carga);
 

@@ -109,6 +109,7 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
   const [fields, setFields] = useState<Frete>(() => {
     const init: Frete = {};
     for (const f of ALL_FIELDS) init[f.key] = toFormValue(initial?.[f.key]);
+    init.observacao = toFormValue(initial?.observacao);
     return init;
   });
   const [saving, setSaving] = useState(false);
@@ -371,6 +372,17 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
               )}
             </div>
           )}
+
+          <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h4 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">Observação</h4>
+            <textarea
+              value={fields.observacao}
+              onChange={(e) => set('observacao', e.target.value)}
+              placeholder="Adicionar observação..."
+              rows={3}
+              className={`${inputCls} resize-y`}
+            />
+          </div>
 
           <div className="mt-6 flex justify-end gap-3">
             <button
