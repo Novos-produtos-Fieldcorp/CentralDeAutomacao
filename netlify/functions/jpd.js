@@ -329,6 +329,7 @@ exports.handler = async (event) => {
       const bySituacao = {};
       const byMotorista = {};
       const byVeiculo = {};
+      const byVeiculoSituacao = {};
       for (const r of rows) {
         const s = (r.situacao_do_bv || "sem_status").toString();
         bySituacao[s] = (bySituacao[s] || 0) + 1;
@@ -340,6 +341,11 @@ exports.handler = async (event) => {
         byVeiculo[p] = byVeiculo[p] || { placa: p, viagens: 0, valor: 0 };
         byVeiculo[p].viagens += 1;
         byVeiculo[p].valor += num(r.valor_do_frete);
+        if (s === "A Carregar" || s === "Em viagem") {
+          byVeiculoSituacao[p] = byVeiculoSituacao[p] || { placa: p, a_carregar: 0, em_viagem: 0 };
+          if (s === "A Carregar") byVeiculoSituacao[p].a_carregar += 1;
+          else byVeiculoSituacao[p].em_viagem += 1;
+        }
       }
 
       return json(200, {
@@ -353,6 +359,9 @@ exports.handler = async (event) => {
         situacao_bvs: Object.entries(bySituacao).map(([label, value]) => ({ label, value })),
         por_motorista: Object.values(byMotorista).sort((a, b) => b.valor - a.valor),
         por_veiculo: Object.values(byVeiculo).sort((a, b) => b.valor - a.valor),
+        por_veiculo_situacao: Object.values(byVeiculoSituacao).sort(
+          (a, b) => b.a_carregar + b.em_viagem - (a.a_carregar + a.em_viagem)
+        ),
       });
     }
 

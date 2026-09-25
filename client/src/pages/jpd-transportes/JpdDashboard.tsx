@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Download, Truck, DollarSign, Receipt, TrendingDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
-import { fmtBRL, hojeISO, capitalizeNome } from './format';
+import { fmtBRL, hojeISO, capitalizeNome, upperPlaca } from './format';
 import { SITUACAO_BV_OPTIONS } from './jpdEnums';
 
 type DashboardData = {
@@ -11,6 +11,7 @@ type DashboardData = {
   situacao_bvs: { label: string; value: number }[];
   por_motorista: { motorista: string; viagens: number; valor: number }[];
   por_veiculo: { placa: string; viagens: number; valor: number }[];
+  por_veiculo_situacao: { placa: string; a_carregar: number; em_viagem: number }[];
 };
 
 const EMPTY: DashboardData = {
@@ -19,6 +20,7 @@ const EMPTY: DashboardData = {
   situacao_bvs: [],
   por_motorista: [],
   por_veiculo: [],
+  por_veiculo_situacao: [],
 };
 
 const KpiCard = ({ icon: Icon, label, value, color }: any) => (
@@ -280,6 +282,50 @@ const JpdDashboard = () => {
         <KpiCard icon={DollarSign} label="Valor do frete" value={fmtBRL(data.kpis.total_frete)} color="bg-emerald-500" />
         <KpiCard icon={Receipt} label="Valor faturado" value={fmtBRL(data.kpis.total_faturado)} color="bg-violet-500" />
         <KpiCard icon={TrendingDown} label="Custos" value={fmtBRL(data.kpis.total_custos)} color="bg-rose-500" />
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Monitoramento de BV por veículo</h3>
+        {data.por_veiculo_situacao.length === 0 ? (
+          <p className="text-sm text-gray-500">Sem dados.</p>
+        ) : (
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
+            <table className="min-w-full text-sm">
+              <thead className="text-gray-600 dark:text-gray-300 sticky top-0 bg-white dark:bg-gray-800">
+                <tr>
+                  <th className="text-left py-2">Placa</th>
+                  <th className="text-left py-2">A carregar</th>
+                  <th className="text-left py-2">Em viagem</th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-800 dark:text-gray-200">
+                {data.por_veiculo_situacao.map((v) => (
+                  <tr key={v.placa} className="border-t border-gray-100 dark:border-gray-700">
+                    <td className="py-2 font-mono">{upperPlaca(v.placa)}</td>
+                    <td className="py-2">
+                      {v.a_carregar > 0 ? (
+                        <span className="px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 font-medium">
+                          {v.a_carregar}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="py-2">
+                      {v.em_viagem > 0 ? (
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-medium">
+                          {v.em_viagem}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

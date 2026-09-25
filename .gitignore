@@ -23,6 +23,10 @@ build/
 *.db
 *.sqlite
 
+# Exports/backups grandes (não versionar - excedem limite do GitHub)
+*.storage.zip
+jnwocajxsgkgiixwyxkl.storage.zip
+
 # Logs
 logs/
 *.log
