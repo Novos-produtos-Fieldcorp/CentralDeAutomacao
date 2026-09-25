@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, Pencil, Trash2, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fmtNum, capitalizeNome, fmtDataHoraBR } from './format';
 import { SITUACAO_BV_OPTIONS } from './jpdEnums';
@@ -116,6 +116,9 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
   const [observacoes, setObservacoes] = useState<{ id: number; observacao: string; created_at: string }[]>([]);
   const [novaObservacao, setNovaObservacao] = useState('');
   const [salvandoObservacao, setSalvandoObservacao] = useState(false);
+  const [editandoObsId, setEditandoObsId] = useState<number | null>(null);
+  const [textoEdicaoObs, setTextoEdicaoObs] = useState('');
+  const [salvandoEdicaoObs, setSalvandoEdicaoObs] = useState(false);
   const isEdit = !!initial?.id;
   const { placas, renomear: renomearPlacaLocal, remover: removerPlacaLocal } = useVeiculos();
   const { motoristas, renomear: renomearMotoristaLocal, remover: removerMotoristaLocal } = useMotoristas();
@@ -220,6 +223,57 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
       toast.error(err.message || 'Erro ao salvar observação');
     } finally {
       setSalvandoObservacao(false);
+    }
+  };
+
+  const iniciarEdicaoObservacao = (obs: { id: number; observacao: string }) => {
+    setEditandoObsId(obs.id);
+    setTextoEdicaoObs(obs.observacao);
+  };
+
+  const cancelarEdicaoObservacao = () => {
+    setEditandoObsId(null);
+    setTextoEdicaoObs('');
+  };
+
+  const salvarEdicaoObservacao = async (obsId: number) => {
+    const texto = textoEdicaoObs.trim();
+    if (!texto || !initial?.id) return;
+    setSalvandoEdicaoObs(true);
+    try {
+      const res = await fetch(`/api/jpd/fretes/${initial.id}/observacoes/${obsId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ observacao: texto }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Falha ao editar observação');
+      }
+      const atualizada = await res.json();
+      setObservacoes((prev) => prev.map((o) => (o.id === obsId ? atualizada : o)));
+      cancelarEdicaoObservacao();
+      toast.success('Observação atualizada');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao editar observação');
+    } finally {
+      setSalvandoEdicaoObs(false);
+    }
+  };
+
+  const excluirObservacao = async (obsId: number) => {
+    if (!initial?.id) return;
+    if (!window.confirm('Excluir esta observação?')) return;
+    try {
+      const res = await fetch(`/api/jpd/fretes/${initial.id}/observacoes/${obsId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Falha ao excluir observação');
+      }
+      setObservacoes((prev) => prev.filter((o) => o.id !== obsId));
+      toast.success('Observação excluída');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao excluir observação');
     }
   };
 
@@ -448,8 +502,58 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
                         key={o.id}
                         className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm"
                       >
-                        <p className="text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{o.observacao}</p>
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{fmtDataHoraBR(o.created_at)}</p>
+                        {editandoObsId === o.id ? (
+                          <div>
+                            <textarea
+                              value={textoEdicaoObs}
+                              onChange={(e) => setTextoEdicaoObs(e.target.value)}
+                              rows={3}
+                              className={`${inputCls} resize-y`}
+                            />
+                            <div className="mt-2 flex justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={cancelarEdicaoObservacao}
+                                className="px-3 py-1 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md text-xs hover:bg-gray-200"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => salvarEdicaoObservacao(o.id)}
+                                disabled={salvandoEdicaoObs || !textoEdicaoObs.trim()}
+                                className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700 disabled:opacity-60"
+                              >
+                                <Check className="w-3.5 h-3.5" /> Salvar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{o.observacao}</p>
+                              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{fmtDataHoraBR(o.created_at)}</p>
+                            </div>
+                            <div className="flex gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => iniciarEdicaoObservacao(o)}
+                                title="Editar"
+                                className="p-1 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => excluirObservacao(o.id)}
+                                title="Excluir"
+                                className="p-1 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>

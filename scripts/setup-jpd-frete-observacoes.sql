@@ -27,3 +27,14 @@ DROP POLICY IF EXISTS "Enable insert for all users" ON public.jpd_frete_observac
 CREATE POLICY "Enable insert for all users"
   ON public.jpd_frete_observacoes FOR INSERT
   WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Enable update for all users" ON public.jpd_frete_observacoes;
+CREATE POLICY "Enable update for all users"
+  ON public.jpd_frete_observacoes FOR UPDATE
+  USING (true)
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Enable delete for all users" ON public.jpd_frete_observacoes;
+CREATE POLICY "Enable delete for all users"
+  ON public.jpd_frete_observacoes FOR DELETE
+  USING (true);

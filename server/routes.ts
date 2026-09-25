@@ -7558,6 +7558,35 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     }
   });
 
+  app.put("/api/jpd/fretes/:id/observacoes/:obsId", async (req, res) => {
+    try {
+      const obsId = Number(req.params.obsId);
+      const observacao = String(req.body?.observacao || "").trim();
+      if (!observacao) return res.status(400).json({ error: "observacao obrigatória" });
+      const { data, error } = await supabaseBackend
+        .from("jpd_frete_observacoes")
+        .update({ observacao })
+        .eq("id", obsId)
+        .select()
+        .single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/jpd/fretes/:id/observacoes/:obsId", async (req, res) => {
+    try {
+      const obsId = Number(req.params.obsId);
+      const { error } = await supabaseBackend.from("jpd_frete_observacoes").delete().eq("id", obsId);
+      if (error) return res.status(500).json({ error: error.message });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ---------- OCR (leitura automática via webhooks n8n) ----------
   // Recebem { url } (link público no bucket Supabase jpd-uploads) e devolvem
   // JSON com chaves = colunas do BV/lançamento.

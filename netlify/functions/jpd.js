@@ -323,6 +323,27 @@ exports.handler = async (event) => {
         if (error) return json(500, { error: error.message });
         return json(200, data);
       }
+
+      if (id && segs[2] === "observacoes" && segs[3] && method === "PUT") {
+        const obsId = Number(segs[3]);
+        const observacao = String(body?.observacao || "").trim();
+        if (!observacao) return json(400, { error: "observacao obrigatória" });
+        const { data, error } = await supabase
+          .from("jpd_frete_observacoes")
+          .update({ observacao })
+          .eq("id", obsId)
+          .select()
+          .single();
+        if (error) return json(500, { error: error.message });
+        return json(200, data);
+      }
+
+      if (id && segs[2] === "observacoes" && segs[3] && method === "DELETE") {
+        const obsId = Number(segs[3]);
+        const { error } = await supabase.from("jpd_frete_observacoes").delete().eq("id", obsId);
+        if (error) return json(500, { error: error.message });
+        return json(200, { success: true });
+      }
     }
 
     // ---------- DASHBOARD ----------
