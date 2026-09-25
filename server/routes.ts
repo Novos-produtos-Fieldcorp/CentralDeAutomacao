@@ -7525,6 +7525,39 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     }
   });
 
+  // ---------- Observações do BV (histórico empilhado) ----------
+  app.get("/api/jpd/fretes/:id/observacoes", async (req, res) => {
+    try {
+      const frete_id = Number(req.params.id);
+      const { data, error } = await supabaseBackend
+        .from("jpd_frete_observacoes")
+        .select("*")
+        .eq("frete_id", frete_id)
+        .order("created_at", { ascending: false });
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/jpd/fretes/:id/observacoes", async (req, res) => {
+    try {
+      const frete_id = Number(req.params.id);
+      const observacao = String(req.body?.observacao || "").trim();
+      if (!observacao) return res.status(400).json({ error: "observacao obrigatória" });
+      const { data, error } = await supabaseBackend
+        .from("jpd_frete_observacoes")
+        .insert({ frete_id, observacao })
+        .select()
+        .single();
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ---------- OCR (leitura automática via webhooks n8n) ----------
   // Recebem { url } (link público no bucket Supabase jpd-uploads) e devolvem
   // JSON com chaves = colunas do BV/lançamento.

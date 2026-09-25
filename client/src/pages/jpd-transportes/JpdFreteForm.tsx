@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { fmtNum, capitalizeNome } from './format';
+import { fmtNum, capitalizeNome, fmtDataHoraBR } from './format';
 import { SITUACAO_BV_OPTIONS } from './jpdEnums';
 import { useVeiculos } from './useVeiculos';
 import { useMotoristas } from './useMotoristas';
@@ -109,11 +109,13 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
   const [fields, setFields] = useState<Frete>(() => {
     const init: Frete = {};
     for (const f of ALL_FIELDS) init[f.key] = toFormValue(initial?.[f.key]);
-    init.observacao = toFormValue(initial?.observacao);
     return init;
   });
   const [saving, setSaving] = useState(false);
   const [abastecimentos, setAbastecimentos] = useState<Frete[]>([]);
+  const [observacoes, setObservacoes] = useState<{ id: number; observacao: string; created_at: string }[]>([]);
+  const [novaObservacao, setNovaObservacao] = useState('');
+  const [salvandoObservacao, setSalvandoObservacao] = useState(false);
   const isEdit = !!initial?.id;
   const { placas, renomear: renomearPlacaLocal, remover: removerPlacaLocal } = useVeiculos();
   const { motoristas, renomear: renomearMotoristaLocal, remover: removerMotoristaLocal } = useMotoristas();
@@ -182,6 +184,44 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
       }
     })();
   }, [initial?.id]);
+
+  // Histórico de observações deste BV, mais recente primeiro.
+  useEffect(() => {
+    if (!initial?.id) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/jpd/fretes/${initial.id}/observacoes`);
+        if (res.ok) setObservacoes(await res.json());
+      } catch {
+        /* ignora */
+      }
+    })();
+  }, [initial?.id]);
+
+  const salvarObservacao = async () => {
+    const texto = novaObservacao.trim();
+    if (!texto || !initial?.id) return;
+    setSalvandoObservacao(true);
+    try {
+      const res = await fetch(`/api/jpd/fretes/${initial.id}/observacoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ observacao: texto }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Falha ao salvar observação');
+      }
+      const criada = await res.json();
+      setObservacoes((prev) => [criada, ...prev]);
+      setNovaObservacao('');
+      toast.success('Observação salva');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao salvar observação');
+    } finally {
+      setSalvandoObservacao(false);
+    }
+  };
 
   const num = (v: any) => (Number(v) || 0);
   const totais = abastecimentos.reduce(
@@ -374,14 +414,52 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
           )}
 
           <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
-            <h4 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">Observação</h4>
-            <textarea
-              value={fields.observacao}
-              onChange={(e) => set('observacao', e.target.value)}
-              placeholder="Adicionar observação..."
-              rows={3}
-              className={`${inputCls} resize-y`}
-            />
+            <h4 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+              Observação
+              {observacoes.length > 0 && (
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                  {observacoes.length}
+                </span>
+              )}
+            </h4>
+            {isEdit ? (
+              <>
+                <textarea
+                  value={novaObservacao}
+                  onChange={(e) => setNovaObservacao(e.target.value)}
+                  placeholder="Adicionar observação..."
+                  rows={3}
+                  className={`${inputCls} resize-y`}
+                />
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={salvarObservacao}
+                    disabled={salvandoObservacao || !novaObservacao.trim()}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-60"
+                  >
+                    <Save className="w-4 h-4" /> {salvandoObservacao ? 'Salvando...' : 'Salvar'}
+                  </button>
+                </div>
+                {observacoes.length > 0 && (
+                  <ul className="mt-3 space-y-2 max-h-56 overflow-y-auto">
+                    {observacoes.map((o) => (
+                      <li
+                        key={o.id}
+                        className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-md text-sm"
+                      >
+                        <p className="text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{o.observacao}</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{fmtDataHoraBR(o.created_at)}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Salve o boletim primeiro para poder adicionar observações.
+              </p>
+            )}
           </div>
 
           <div className="mt-6 flex justify-end gap-3">

@@ -29,6 +29,15 @@ export const fmtDataBR = (v: any) => {
   return `${dia}/${mes}/${ano}`;
 };
 
+// Converte timestamp ISO (com hora) para exibição em DD/MM/AAAA HH:MM.
+export const fmtDataHoraBR = (v: any) => {
+  if (v == null || v === '') return '';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return String(v);
+  const p = (x: number) => String(x).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
 // Data de hoje no formato YYYY-MM-DD (fuso local), para enviar ao backend.
 export const hojeISO = () => {
   const d = new Date();

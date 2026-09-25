@@ -300,6 +300,29 @@ exports.handler = async (event) => {
         if (error) return json(500, { error: error.message });
         return json(200, { success: true });
       }
+
+      // ---------- Observações do BV (histórico empilhado) ----------
+      if (id && segs[2] === "observacoes" && method === "GET") {
+        const { data, error } = await supabase
+          .from("jpd_frete_observacoes")
+          .select("*")
+          .eq("frete_id", id)
+          .order("created_at", { ascending: false });
+        if (error) return json(500, { error: error.message });
+        return json(200, data || []);
+      }
+
+      if (id && segs[2] === "observacoes" && method === "POST") {
+        const observacao = String(body?.observacao || "").trim();
+        if (!observacao) return json(400, { error: "observacao obrigatória" });
+        const { data, error } = await supabase
+          .from("jpd_frete_observacoes")
+          .insert({ frete_id: id, observacao })
+          .select()
+          .single();
+        if (error) return json(500, { error: error.message });
+        return json(200, data);
+      }
     }
 
     // ---------- DASHBOARD ----------
