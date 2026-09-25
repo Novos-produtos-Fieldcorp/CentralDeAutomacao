@@ -283,8 +283,9 @@ exports.handler = async (event) => {
         const row = { ...buildFreteRow(body), updated_at: new Date().toISOString() };
         if ("placa_do_carro" in row) await ensureVeiculo(row.placa_do_carro);
         if ("motorista" in row) await ensureMotorista(row.motorista);
-        const { data, error } = await supabase.from("jpd_fretes").update(row).eq("id", id).select().single();
+        const { data, error } = await supabase.from("jpd_fretes").update(row).eq("id", id).select().maybeSingle();
         if (error) return json(500, { error: error.message });
+        if (!data) return json(404, { error: "Boletim não encontrado — pode já ter sido excluído. Atualize a lista." });
         return json(200, data);
       }
 
@@ -333,8 +334,9 @@ exports.handler = async (event) => {
           .update({ observacao })
           .eq("id", obsId)
           .select()
-          .single();
+          .maybeSingle();
         if (error) return json(500, { error: error.message });
+        if (!data) return json(404, { error: "Observação não encontrada — pode já ter sido excluída." });
         return json(200, data);
       }
 
@@ -959,8 +961,9 @@ exports.handler = async (event) => {
         const frete_id = Number(body && body.frete_id);
         if (!Number.isFinite(frete_id)) return json(400, { error: "frete_id obrigatorio" });
         const { data, error } = await supabase.from("homedometro_abastecimento_jpd")
-          .update({ frete_id, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+          .update({ frete_id, updated_at: new Date().toISOString() }).eq("id", id).select().maybeSingle();
         if (error) return json(500, { error: error.message });
+        if (!data) return json(404, { error: "Lançamento não encontrado — pode já ter sido excluído." });
         return json(200, data);
       }
 
@@ -968,8 +971,9 @@ exports.handler = async (event) => {
         const row = { ...buildAbastecimentoRow(body), updated_at: new Date().toISOString() };
         if ("placa" in row) await ensureVeiculo(row.placa);
         const { data, error } = await supabase.from("homedometro_abastecimento_jpd")
-          .update(row).eq("id", id).select().single();
+          .update(row).eq("id", id).select().maybeSingle();
         if (error) return json(500, { error: error.message });
+        if (!data) return json(404, { error: "Lançamento não encontrado — pode já ter sido excluído." });
         return json(200, data);
       }
 

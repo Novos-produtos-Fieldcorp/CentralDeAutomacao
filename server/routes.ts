@@ -7076,8 +7076,9 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     try {
       const id = Number(req.params.id);
       const row = { ...buildFreteRow(req.body), updated_at: new Date().toISOString() };
-      const { data, error } = await supabaseBackend.from("jpd_fretes").update(row).eq("id", id).select().single();
+      const { data, error } = await supabaseBackend.from("jpd_fretes").update(row).eq("id", id).select().maybeSingle();
       if (error) return res.status(500).json({ error: error.message });
+      if (!data) return res.status(404).json({ error: "Boletim não encontrado — pode já ter sido excluído. Atualize a lista." });
       res.json(data);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -7506,8 +7507,9 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     try {
       const id = Number(req.params.id);
       const row = { ...buildAbastecimentoRow(req.body), updated_at: new Date().toISOString() };
-      const { data, error } = await supabaseBackend.from("homedometro_abastecimento_jpd").update(row).eq("id", id).select().single();
+      const { data, error } = await supabaseBackend.from("homedometro_abastecimento_jpd").update(row).eq("id", id).select().maybeSingle();
       if (error) return res.status(500).json({ error: error.message });
+      if (!data) return res.status(404).json({ error: "Lançamento não encontrado — pode já ter sido excluído." });
       res.json(data);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -7568,8 +7570,9 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
         .update({ observacao })
         .eq("id", obsId)
         .select()
-        .single();
+        .maybeSingle();
       if (error) return res.status(500).json({ error: error.message });
+      if (!data) return res.status(404).json({ error: "Observação não encontrada — pode já ter sido excluída." });
       res.json(data);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
