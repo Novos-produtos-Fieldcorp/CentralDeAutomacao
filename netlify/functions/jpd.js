@@ -279,7 +279,7 @@ exports.handler = async (event) => {
         return json(200, data);
       }
 
-      if (method === "PUT" && id) {
+      if (method === "PUT" && id && !segs[2]) {
         const row = { ...buildFreteRow(body), updated_at: new Date().toISOString() };
         if ("placa_do_carro" in row) await ensureVeiculo(row.placa_do_carro);
         if ("motorista" in row) await ensureMotorista(row.motorista);
@@ -289,7 +289,7 @@ exports.handler = async (event) => {
         return json(200, data);
       }
 
-      if (method === "DELETE" && id) {
+      if (method === "DELETE" && id && !segs[2]) {
         // Desvincula abastecimentos ligados a este BV (frete_id -> null), senão a
         // FK homedometro_abastecimento_jpd.frete_id bloqueia o delete. Os
         // lançamentos de combustível são preservados, apenas soltos do frete.
