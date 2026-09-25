@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Plus, Pencil, Trash2, RefreshCw, Truck, CalendarClock, AlertCircle, FileUp,
-  Package, CheckCircle2, RefreshCcw, XCircle, DollarSign, ArrowUp, ArrowDown, ArrowUpDown,
+  Package, CheckCircle2, RefreshCcw, XCircle, DollarSign, ArrowUp, ArrowDown, ArrowUpDown, Trash,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import JpdFreteForm from './JpdFreteForm';
 import JpdImportarBV from './JpdImportarBV';
+import JpdLixeira from './JpdLixeira';
 import JpdFiltros, { EMPTY_FILTROS, JpdFiltrosValue } from './JpdFiltros';
 import { fmtBRL, capitalizeNome, upperPlaca, hojeISO, fmtDataBR } from './format';
 import { SITUACAO_BV_OPTIONS, SituacaoBv } from './jpdEnums';
@@ -77,6 +78,7 @@ const JpdFretes = () => {
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showLixeira, setShowLixeira] = useState(false);
   const [editing, setEditing] = useState<Frete | null>(null);
   const [filtros, setFiltros] = useState<JpdFiltrosValue>(EMPTY_FILTROS);
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro | null>(null);
@@ -237,6 +239,12 @@ const JpdFretes = () => {
             <RefreshCw className="w-4 h-4" /> Atualizar
           </button>
           <button
+            onClick={() => setShowLixeira(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md text-sm hover:bg-gray-200"
+          >
+            <Trash className="w-4 h-4" /> Lixeira
+          </button>
+          <button
             onClick={() => setShowImport(true)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md text-sm hover:bg-emerald-700"
           >
@@ -389,6 +397,10 @@ const JpdFretes = () => {
             setShowForm(true);
           }}
         />
+      )}
+
+      {showLixeira && (
+        <JpdLixeira onClose={() => setShowLixeira(false)} onRestored={load} />
       )}
     </div>
   );

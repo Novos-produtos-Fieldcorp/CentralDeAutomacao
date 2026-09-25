@@ -230,10 +230,36 @@ exports.handler = async (event) => {
   try {
     // ---------- FRETES (CRUD) ----------
     if (segs[0] === "fretes") {
-      const id = segs[1] ? Number(segs[1]) : null;
+      const id = segs[1] && segs[1] !== "lixeira" ? Number(segs[1]) : null;
+
+      // GET /fretes/lixeira — BVs excluídos nos últimos 30 dias (recuperáveis)
+      if (segs[1] === "lixeira" && method === "GET") {
+        const { data, error } = await supabase
+          .from("jpd_fretes")
+          .select("*")
+          .not("deleted_at", "is", null)
+          .order("deleted_at", { ascending: false });
+        if (error) return json(500, { error: error.message });
+        return json(200, data || []);
+      }
+
+      // POST /fretes/:id/restaurar — desfaz a exclusão (só funciona dentro dos 30 dias)
+      if (id && segs[2] === "restaurar" && method === "POST") {
+        const { data, error } = await supabase
+          .from("jpd_fretes")
+          .update({ deleted_at: null })
+          .eq("id", id)
+          .not("deleted_at", "is", null)
+          .select()
+          .maybeSingle();
+        if (error) return json(500, { error: error.message });
+        if (!data) return json(404, { error: "Boletim não está na lixeira (ou já foi purgado após 30 dias)." });
+        return json(200, data);
+      }
 
       if (method === "GET" && !id) {
         let q = supabase.from("jpd_fretes").select("*")
+          .is("deleted_at", null)
           .order("data_do_bv", { ascending: false });
         if (qs.from) q = q.gte("data_do_bv", qs.from);
         if (qs.to) q = q.lte("data_do_bv", qs.to);
@@ -283,22 +309,36 @@ exports.handler = async (event) => {
         const row = { ...buildFreteRow(body), updated_at: new Date().toISOString() };
         if ("placa_do_carro" in row) await ensureVeiculo(row.placa_do_carro);
         if ("motorista" in row) await ensureMotorista(row.motorista);
-        const { data, error } = await supabase.from("jpd_fretes").update(row).eq("id", id).select().maybeSingle();
+        const { data, error } = await supabase.from("jpd_fretes").update(row).eq("id", id).is("deleted_at", null).select().maybeSingle();
         if (error) return json(500, { error: error.message });
         if (!data) return json(404, { error: "Boletim não encontrado — pode já ter sido excluído. Atualize a lista." });
         return json(200, data);
       }
 
+      // Apaga definitivamente (e desvincula abastecimentos) os BVs marcados
+      // como excluídos há mais de 30 dias. Chamado de forma "preguiçosa" a
+      // cada DELETE, para não depender de um cron separado.
       if (method === "DELETE" && id && !segs[2]) {
-        // Desvincula abastecimentos ligados a este BV (frete_id -> null), senão a
-        // FK homedometro_abastecimento_jpd.frete_id bloqueia o delete. Os
-        // lançamentos de combustível são preservados, apenas soltos do frete.
-        await supabase
-          .from("homedometro_abastecimento_jpd")
-          .update({ frete_id: null })
-          .eq("frete_id", id);
-        const { error } = await supabase.from("jpd_fretes").delete().eq("id", id);
+        const RETENCAO_LIXEIRA_DIAS = 30;
+        const limite = new Date(Date.now() - RETENCAO_LIXEIRA_DIAS * 24 * 60 * 60 * 1000).toISOString();
+
+        const { data, error } = await supabase
+          .from("jpd_fretes")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", id)
+          .is("deleted_at", null)
+          .select()
+          .maybeSingle();
         if (error) return json(500, { error: error.message });
+        if (!data) return json(404, { error: "Boletim não encontrado — pode já ter sido excluído." });
+
+        const { data: antigos } = await supabase.from("jpd_fretes").select("id").lt("deleted_at", limite);
+        const idsAntigos = (antigos || []).map((r) => r.id);
+        if (idsAntigos.length) {
+          await supabase.from("homedometro_abastecimento_jpd").update({ frete_id: null }).in("frete_id", idsAntigos);
+          await supabase.from("jpd_fretes").delete().in("id", idsAntigos);
+        }
+
         return json(200, { success: true });
       }
 
@@ -350,7 +390,7 @@ exports.handler = async (event) => {
 
     // ---------- DASHBOARD ----------
     if (segs[0] === "dashboard" && method === "GET") {
-      let q = supabase.from("jpd_fretes").select("*");
+      let q = supabase.from("jpd_fretes").select("*").is("deleted_at", null);
       if (qs.from) q = q.gte("data_do_bv", qs.from);
       if (qs.to) q = q.lte("data_do_bv", qs.to);
       if (qs.motorista) q = q.eq("motorista", qs.motorista);
@@ -414,6 +454,7 @@ exports.handler = async (event) => {
     // ---------- EXPORT (CSV — abre no Excel) ----------
     if (segs[0] && segs[0].indexOf("export") === 0 && method === "GET") {
       let q = supabase.from("jpd_fretes").select("*")
+        .is("deleted_at", null)
         .order("data_da_carga", { ascending: true });
       if (qs.from) q = q.gte("data_da_carga", qs.from);
       if (qs.to) q = q.lte("data_da_carga", qs.to);

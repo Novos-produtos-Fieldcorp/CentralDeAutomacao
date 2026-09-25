@@ -7044,6 +7044,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     try {
       const { from, to, motorista, placa, situacao, abertos } = req.query as Record<string, string>;
       let q = supabaseBackend.from("jpd_fretes").select("*")
+        .is("deleted_at", null)
         .order("data_do_bv", { ascending: false });
       if (from) q = q.gte("data_do_bv", from);
       if (to) q = q.lte("data_do_bv", to);
@@ -7076,7 +7077,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     try {
       const id = Number(req.params.id);
       const row = { ...buildFreteRow(req.body), updated_at: new Date().toISOString() };
-      const { data, error } = await supabaseBackend.from("jpd_fretes").update(row).eq("id", id).select().maybeSingle();
+      const { data, error } = await supabaseBackend.from("jpd_fretes").update(row).eq("id", id).is("deleted_at", null).select().maybeSingle();
       if (error) return res.status(500).json({ error: error.message });
       if (!data) return res.status(404).json({ error: "Boletim não encontrado — pode já ter sido excluído. Atualize a lista." });
       res.json(data);
@@ -7085,20 +7086,71 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
     }
   });
 
-  // DELETE /api/jpd/fretes/:id
+  // Apaga definitivamente (e desvincula abastecimentos) os BVs marcados como
+  // excluídos há mais de 30 dias. Chamado de forma "preguiçosa" a cada DELETE.
+  const RETENCAO_LIXEIRA_DIAS = 30;
+  async function purgarFretesExcluidosAntigos() {
+    const limite = new Date(Date.now() - RETENCAO_LIXEIRA_DIAS * 24 * 60 * 60 * 1000).toISOString();
+    const { data: antigos } = await supabaseBackend
+      .from("jpd_fretes")
+      .select("id")
+      .lt("deleted_at", limite);
+    const ids = (antigos || []).map((r: any) => r.id);
+    if (!ids.length) return;
+    await supabaseBackend.from("homedometro_abastecimento_jpd").update({ frete_id: null }).in("frete_id", ids);
+    await supabaseBackend.from("jpd_fretes").delete().in("id", ids);
+  }
+
+  // DELETE /api/jpd/fretes/:id — soft delete: marca deleted_at em vez de
+  // apagar a linha na hora. Fica recuperável por até 30 dias.
   app.delete("/api/jpd/fretes/:id", async (req, res) => {
     try {
       const id = Number(req.params.id);
-      // Desvincula abastecimentos ligados a este BV (frete_id -> null), senão a
-      // FK homedometro_abastecimento_jpd.frete_id bloqueia o delete. Os
-      // lançamentos de combustível são preservados, apenas soltos do frete.
-      await supabaseBackend
-        .from("homedometro_abastecimento_jpd")
-        .update({ frete_id: null })
-        .eq("frete_id", id);
-      const { error } = await supabaseBackend.from("jpd_fretes").delete().eq("id", id);
+      const { data, error } = await supabaseBackend
+        .from("jpd_fretes")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id)
+        .is("deleted_at", null)
+        .select()
+        .maybeSingle();
       if (error) return res.status(500).json({ error: error.message });
+      if (!data) return res.status(404).json({ error: "Boletim não encontrado — pode já ter sido excluído." });
+      purgarFretesExcluidosAntigos().catch(() => {});
       res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/jpd/fretes/lixeira — BVs excluídos nos últimos 30 dias (recuperáveis)
+  app.get("/api/jpd/fretes/lixeira", async (req, res) => {
+    try {
+      const { data, error } = await supabaseBackend
+        .from("jpd_fretes")
+        .select("*")
+        .not("deleted_at", "is", null)
+        .order("deleted_at", { ascending: false });
+      if (error) return res.status(500).json({ error: error.message });
+      res.json(data || []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/jpd/fretes/:id/restaurar — desfaz a exclusão (só funciona dentro dos 30 dias)
+  app.post("/api/jpd/fretes/:id/restaurar", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { data, error } = await supabaseBackend
+        .from("jpd_fretes")
+        .update({ deleted_at: null })
+        .eq("id", id)
+        .not("deleted_at", "is", null)
+        .select()
+        .maybeSingle();
+      if (error) return res.status(500).json({ error: error.message });
+      if (!data) return res.status(404).json({ error: "Boletim não está na lixeira (ou já foi purgado após 30 dias)." });
+      res.json(data);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -7703,7 +7755,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
       const to = req.query.to as string | undefined;
       const motorista = req.query.motorista as string | undefined;
       const situacao = req.query.situacao as string | undefined;
-      let q = supabaseBackend.from("jpd_fretes").select("*");
+      let q = supabaseBackend.from("jpd_fretes").select("*").is("deleted_at", null);
       if (from) q = q.gte("data_do_bv", from);
       if (to) q = q.lte("data_do_bv", to);
       if (motorista) q = q.eq("motorista", motorista);
@@ -7775,7 +7827,7 @@ Retorne APENAS o array JSON no formato: [{"id_operacao": N, "qtd_mitsubishi": M}
       if (!company_id) return res.status(400).json({ error: "company_id obrigatorio" });
       const from = req.query.from as string | undefined;
       const to = req.query.to as string | undefined;
-      let q = supabaseBackend.from("jpd_fretes").select("*").eq("company_id", company_id).order("data_da_carga", { ascending: true });
+      let q = supabaseBackend.from("jpd_fretes").select("*").is("deleted_at", null).eq("company_id", company_id).order("data_da_carga", { ascending: true });
       if (from) q = q.gte("data_da_carga", from);
       if (to) q = q.lte("data_da_carga", to);
       const { data, error } = await q;
