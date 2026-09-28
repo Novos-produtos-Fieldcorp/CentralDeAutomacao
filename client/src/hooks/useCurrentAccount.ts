@@ -16,7 +16,7 @@ interface CurrentAccountData {
 // passam a enxergar os dados da account_id de destino (`targetAccountId`).
 // Ajuste/remova estas entradas aqui caso os valores reais sejam diferentes.
 const ACCOUNT_DATA_OVERRIDES: Record<string, { pathPrefix: string; targetAccountId: string }[]> = {
-  '01': [
+  '1': [
     { pathPrefix: '/motoristas', targetAccountId: '20' }, // automação de contratação
     { pathPrefix: '/hodometros', targetAccountId: '39' }, // automação de hodômetro
   ],
