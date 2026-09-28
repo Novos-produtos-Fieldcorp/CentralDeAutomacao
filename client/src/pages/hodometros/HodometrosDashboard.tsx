@@ -188,7 +188,7 @@ const HodometrosDashboard = () => {
   useEffect(() => {
     // Only fetch when date range actually changes
     // AND when user has access to the module
-    if (moduleAccess.hodometros) {
+    if (companyId && moduleAccess.hodometros) {
       console.log('🔄 Fetching data with date range:', dateRange.startDate, 'to', dateRange.endDate);
       fetchData();
       fetchTodayReadings();
@@ -215,7 +215,7 @@ const HodometrosDashboard = () => {
       // Fetch combined today stats
       fetchTodayBombaMinuta();
     }
-  }, [dateRange.startDate, dateRange.endDate, moduleAccess.hodometros, moduleAccess.minuta, moduleAccess.bomba, moduleAccess.calculoUmPorDia]);
+  }, [companyId, dateRange.startDate, dateRange.endDate, moduleAccess.hodometros, moduleAccess.minuta, moduleAccess.bomba, moduleAccess.calculoUmPorDia]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

@@ -508,9 +508,10 @@ const Contratados = () => {
   });
 
   useEffect(() => {
+    if (!companyId) return;
     fetchContratados();
     fetchClientes();
-  }, [dateFilter, customDateRange, currentPage, pageSize]);
+  }, [companyId, dateFilter, customDateRange, currentPage, pageSize]);
 
   useEffect(() => {
     // Close context menu when clicking anywhere
