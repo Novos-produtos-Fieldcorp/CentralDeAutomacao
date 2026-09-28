@@ -56,10 +56,12 @@ export const useCurrentAccount = (): CurrentAccountData => {
     ? wiseAppAccess.companyId
     : (wiseAppIsLoaded ? auth.companyId : null);
 
-  const targetOverrideAccountId = resolveOverrideTargetAccountId(
-    baseAccountId ?? null,
-    location.pathname
-  );
+  // O override é decidido pela account_id "real" do usuário (URL/localStorage,
+  // via AuthContext), não pela account_id do e-mail autenticado no WiseApp
+  // (que pode divergir). Verificamos as duas fontes por segurança.
+  const targetOverrideAccountId =
+    resolveOverrideTargetAccountId(auth.accountId ?? null, location.pathname) ??
+    resolveOverrideTargetAccountId(baseAccountId ?? null, location.pathname);
 
   const [overriddenCompanyId, setOverriddenCompanyId] = useState<number | null | undefined>(
     targetOverrideAccountId ? overriddenCompanyIdCache.get(targetOverrideAccountId) : undefined
@@ -86,6 +88,16 @@ export const useCurrentAccount = (): CurrentAccountData => {
       .then(({ data, error }) => {
         if (cancelled) return;
         const resolved = !error && data ? data.company_id : null;
+        if (error || !data) {
+          console.error(
+            `[useCurrentAccount] Override: não encontrei company para id_conta_wiseapp="${targetOverrideAccountId}"`,
+            error
+          );
+        } else {
+          console.log(
+            `[useCurrentAccount] Override: id_conta_wiseapp="${targetOverrideAccountId}" -> company_id=${resolved} (rota "${location.pathname}")`
+          );
+        }
         overriddenCompanyIdCache.set(targetOverrideAccountId, resolved);
         setOverriddenCompanyId(resolved);
       });
