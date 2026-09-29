@@ -593,11 +593,10 @@ const MotoristasLista = () => {
   });
 
   useEffect(() => {
-    if (!companyId) return;
     fetchMotoristas();
     fetchClientes();
     // Tags serão carregadas quando o usuário clicar no filtro
-  }, [companyId, dateFilter, customDateRange]);
+  }, [dateFilter, customDateRange]);
 
   // Carregar tags dos motoristas automaticamente quando a lista de motoristas mudar
   useEffect(() => {
