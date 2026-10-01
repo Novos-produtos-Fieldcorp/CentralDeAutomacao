@@ -636,6 +636,7 @@ exports.handler = async (event) => {
             .select(ABAST_VINCULO_COLS).eq("placa", placaAtual).order("created_at", { ascending: false });
           return json(409, {
             error: "Placa está em uso em boletins ou lançamentos.",
+            detalhe: error.message,
             vinculos: { fretes: fretes || [], abastecimentos: await comNumeroBv(abastecimentos) },
           });
         }
@@ -1048,6 +1049,7 @@ exports.handler = async (event) => {
               .select(ABAST_VINCULO_COLS).eq("motorista_id", motoristaId).order("created_at", { ascending: false });
             return json(409, {
               error: "Motorista está em uso em boletins ou lançamentos.",
+              detalhe: error.message,
               vinculos: { fretes: fretes || [], abastecimentos: await comNumeroBv(abastecimentos) },
             });
           }

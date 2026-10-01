@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Loader2, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fmtDataBR, fmtDataHoraBR, upperPlaca, capitalizeNome } from './format';
-import { AcaoExclusao, TipoCadastro, Vinculos } from './jpdCadastro';
+import { AcaoExclusao, TipoCadastro, Vinculos, VinculosError } from './jpdCadastro';
 
 export type DestinoOption = { value: string; label: string };
 
@@ -34,6 +34,7 @@ const JpdExcluirVinculos: React.FC<Props> = ({ tipo, rotulo, vinculos, apiId, de
   const [executando, setExecutando] = useState<'reatribuir' | 'excluir' | 'final' | null>(null);
   const [linhaDestino, setLinhaDestino] = useState<Record<string, string>>({});
   const [movendo, setMovendo] = useState<string | null>(null);
+  const [detalhe, setDetalhe] = useState('');
   const [lista, setLista] = useState<Destinos>({ placas: [], motoristas: [] });
   const nomeTipo = tipo === 'placa' ? 'placa' : 'motorista';
 
@@ -61,12 +62,24 @@ const JpdExcluirVinculos: React.FC<Props> = ({ tipo, rotulo, vinculos, apiId, de
     return m ? capitalizeNome(m.nome) : '—';
   };
 
+  // Falha ao excluir: se o servidor devolveu os vínculos atuais, atualiza as listas
+  // (o que sobrou) e mostra o motivo original do banco.
+  const tratarFalha = (err: any) => {
+    if (err instanceof VinculosError) {
+      setFretes(err.vinculos.fretes);
+      setAbasts(err.vinculos.abastecimentos);
+      setDetalhe(err.detalhe || err.message);
+    } else {
+      toast.error(err.message || 'Erro ao excluir');
+    }
+  };
+
   const executar = async (acao: AcaoExclusao) => {
     setExecutando(acao.acao);
     try {
       await onConfirmar(acao);
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao excluir');
+      tratarFalha(err);
     } finally {
       setExecutando(null);
     }
@@ -122,7 +135,7 @@ const JpdExcluirVinculos: React.FC<Props> = ({ tipo, rotulo, vinculos, apiId, de
     try {
       await onConfirmar();
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao excluir');
+      tratarFalha(err);
     } finally {
       setExecutando(null);
     }
@@ -184,6 +197,17 @@ const JpdExcluirVinculos: React.FC<Props> = ({ tipo, rotulo, vinculos, apiId, de
         </div>
 
         <div className="p-4 space-y-4 text-sm text-gray-800 dark:text-gray-200">
+          {detalhe && (
+            <div className="rounded-md border border-rose-300 bg-rose-50 dark:bg-rose-900/20 dark:border-rose-700 p-3 text-xs text-rose-700 dark:text-rose-300">
+              <p className="font-semibold mb-1">O banco ainda bloqueia a exclusão:</p>
+              <p className="break-words">{detalhe}</p>
+              {restantes === 0 && (
+                <p className="mt-1">
+                  Nenhum BV ou lançamento foi encontrado — outro cadastro ainda referencia este item (veja a restrição acima).
+                </p>
+              )}
+            </div>
+          )}
           {fretes.length > 0 && (
             <div>
               <p className="font-semibold mb-1">Boletins de viagem ({fretes.length})</p>
