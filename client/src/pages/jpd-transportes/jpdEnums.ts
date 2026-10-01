@@ -7,8 +7,6 @@ export const SITUACAO_BV_OPTIONS = [
   'Em viagem',
   'Descarregado/Pendente faturamento',
   'Faturado',
-  'Alterado',
-  'Cancelado',
 ] as const;
 
 export type SituacaoBv = (typeof SITUACAO_BV_OPTIONS)[number];

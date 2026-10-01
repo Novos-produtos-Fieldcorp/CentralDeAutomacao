@@ -6,6 +6,7 @@ import { SITUACAO_BV_OPTIONS } from './jpdEnums';
 import { useVeiculos } from './useVeiculos';
 import { useMotoristas } from './useMotoristas';
 import JpdCreatableSelect, { Option } from './JpdCreatableSelect';
+import { excluirCadastro, AcaoExclusao } from './jpdCadastro';
 
 export type FieldType = 'text' | 'number' | 'date' | 'select';
 
@@ -138,12 +139,8 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
     return { value: data.placa, label: data.placa };
   };
 
-  const removerPlaca = async (atual: string) => {
-    const res = await fetch(`/api/jpd/veiculos/${encodeURIComponent(atual)}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Falha ao excluir placa');
-    }
+  const removerPlaca = async (atual: string, acao?: AcaoExclusao) => {
+    await excluirCadastro('placa', atual, acao);
     removerPlacaLocal(atual);
   };
 
@@ -164,14 +161,17 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
     return { value: data.nome, label: capitalizeNome(data.nome) };
   };
 
-  const removerMotorista = async (nomeAtual: string) => {
+  const removerMotorista = async (nomeAtual: string, acao?: AcaoExclusao) => {
     const m = motoristas.find((x) => x.nome === nomeAtual);
     if (!m) throw new Error('Motorista não encontrado');
-    const res = await fetch(`/api/jpd/motoristas/${m.id}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Falha ao excluir motorista');
+    // As opções deste campo usam o nome como valor; o backend espera o id do destino.
+    let acaoApi = acao;
+    if (acao?.acao === 'reatribuir') {
+      const destino = motoristas.find((x) => x.nome === acao.para);
+      if (!destino) throw new Error('Motorista de destino não encontrado');
+      acaoApi = { acao: 'reatribuir', para: String(destino.id) };
     }
+    await excluirCadastro('motorista', String(m.id), acaoApi);
     removerMotoristaLocal(m.id);
   };
 
@@ -338,6 +338,7 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
             uppercase
             onRename={renomearPlaca}
             onRemove={removerPlaca}
+            tipo="placa"
           />
         </label>
       );
@@ -355,6 +356,7 @@ const JpdFreteForm: React.FC<Props> = ({ initial, onClose, onSaved }) => {
             className={inputCls}
             onRename={renomearMotorista}
             onRemove={removerMotorista}
+            tipo="motorista"
           />
         </label>
       );

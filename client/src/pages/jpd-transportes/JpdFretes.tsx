@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Plus, Pencil, Trash2, RefreshCw, Truck, CalendarClock, AlertCircle, FileUp,
-  Package, CheckCircle2, RefreshCcw, XCircle, DollarSign, ArrowUp, ArrowDown, ArrowUpDown, Trash,
+  Plus, Pencil, Trash2, RefreshCw, Truck, AlertCircle, FileUp, FileText,
+  Package, CheckCircle2, DollarSign, ArrowUp, ArrowDown, ArrowUpDown, Trash,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
@@ -9,38 +9,25 @@ import JpdFreteForm from './JpdFreteForm';
 import JpdImportarBV from './JpdImportarBV';
 import JpdLixeira from './JpdLixeira';
 import JpdFiltros, { EMPTY_FILTROS, JpdFiltrosValue } from './JpdFiltros';
-import { fmtBRL, capitalizeNome, upperPlaca, hojeISO, fmtDataBR } from './format';
+import { fmtBRL, capitalizeNome, upperPlaca, fmtDataBR } from './format';
+import { gerarRelatorioBvPdf } from './relatorioBvPdf';
 import { SITUACAO_BV_OPTIONS, SituacaoBv } from './jpdEnums';
 
 type Frete = Record<string, any>;
 
-type StatusData = 'em_viagem' | 'a_viajar' | 'pendente';
-type StatusFiltro = StatusData | SituacaoBv;
-
-// Situação derivada por data (mesma regra do backend em jpd.js GET /veiculos).
-const statusDoBv = (f: Frete, hoje: string): StatusData | null => {
-  if (f.data_da_carga && !f.data_da_descarga) {
-    return String(f.data_da_carga) > hoje ? 'a_viajar' : 'em_viagem';
-  }
-  return null;
-};
-const isPendente = (f: Frete) => !f.situacao_do_bv || f.situacao_do_bv === 'pendente';
+type StatusFiltro = SituacaoBv;
 
 const SITUACAO_ICONS: Record<SituacaoBv, React.ComponentType<{ className?: string }>> = {
   'A Carregar': Package,
   'Em viagem': Truck,
   'Descarregado/Pendente faturamento': AlertCircle,
   'Faturado': CheckCircle2,
-  'Alterado': RefreshCcw,
-  'Cancelado': XCircle,
 };
 const SITUACAO_CORES: Record<SituacaoBv, string> = {
   'A Carregar': 'bg-slate-50 text-slate-700 dark:bg-slate-800/40 dark:text-slate-300',
   'Em viagem': 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   'Descarregado/Pendente faturamento': 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
   'Faturado': 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  'Alterado': 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-  'Cancelado': 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
 };
 
 const ThOrdenavel = ({
@@ -84,7 +71,6 @@ const JpdFretes = () => {
   const [statusFiltro, setStatusFiltro] = useState<StatusFiltro | null>(null);
   const [ordenacao, setOrdenacao] = useState<{ campo: string; dir: 'asc' | 'desc' } | null>(null);
 
-  const hoje = hojeISO();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -108,20 +94,6 @@ const JpdFretes = () => {
     load();
   }, [load]);
 
-  // Contagens de situação por veículo, calculadas por data (cards originais).
-  const contagensData = useMemo(() => {
-    let em_viagem = 0;
-    let a_viajar = 0;
-    let pendente = 0;
-    for (const f of fretes) {
-      const s = statusDoBv(f, hoje);
-      if (s === 'em_viagem') em_viagem += 1;
-      else if (s === 'a_viajar') a_viajar += 1;
-      if (isPendente(f)) pendente += 1;
-    }
-    return { em_viagem, a_viajar, pendente };
-  }, [fretes, hoje]);
-
   // Contagens por situação real do BV (campo situacao_do_bv), sobre os BVs carregados.
   const contagensSituacao = useMemo(() => {
     const out: Record<string, number> = {};
@@ -132,21 +104,11 @@ const JpdFretes = () => {
     return out;
   }, [fretes]);
 
-  const isSituacao = (s: StatusFiltro): s is SituacaoBv => (SITUACAO_BV_OPTIONS as readonly string[]).includes(s);
-
   // Filtro final: status (bloco clicado) + busca livre client-side.
   const filtrados = useMemo(() => {
     const termo = filtros.busca.trim().toLowerCase();
     return fretes.filter((f) => {
-      if (statusFiltro) {
-        if (isSituacao(statusFiltro)) {
-          if (f.situacao_do_bv !== statusFiltro) return false;
-        } else if (statusFiltro === 'pendente') {
-          if (!isPendente(f)) return false;
-        } else if (statusDoBv(f, hoje) !== statusFiltro) {
-          return false;
-        }
-      }
+      if (statusFiltro && f.situacao_do_bv !== statusFiltro) return false;
       if (termo) {
         const alvo = [
           f.numero_do_bv, f.origem, f.destinatario, f.motorista, f.placa_do_carro,
@@ -158,7 +120,7 @@ const JpdFretes = () => {
       }
       return true;
     });
-  }, [fretes, filtros.busca, statusFiltro, hoje]);
+  }, [fretes, filtros.busca, statusFiltro]);
 
   // Valor total do frete sobre os boletins atualmente exibidos (respeita todos os filtros ativos).
   const valorTotalFrete = useMemo(
@@ -205,6 +167,18 @@ const JpdFretes = () => {
     }
   };
 
+  // Relatório da página em uso: respeita filtros, busca, card de situação e ordenação.
+  const handleGerarPdf = () => {
+    const partes: string[] = [];
+    if (filtros.placa) partes.push(`Placa: ${upperPlaca(filtros.placa)}`);
+    if (filtros.motorista) partes.push(`Motorista: ${capitalizeNome(filtros.motorista)}`);
+    if (filtros.de) partes.push(`De: ${fmtDataBR(filtros.de)}`);
+    if (filtros.ate) partes.push(`Até: ${fmtDataBR(filtros.ate)}`);
+    if (statusFiltro) partes.push(`Situação: ${statusFiltro}`);
+    if (filtros.busca.trim()) partes.push(`Busca: ${filtros.busca.trim()}`);
+    gerarRelatorioBvPdf(ordenados, valorTotalFrete, partes.join('  |  '));
+  };
+
   const openNew = () => {
     setEditing(null);
     setShowForm(true);
@@ -245,6 +219,13 @@ const JpdFretes = () => {
             <Trash className="w-4 h-4" /> Lixeira
           </button>
           <button
+            onClick={handleGerarPdf}
+            disabled={ordenados.length === 0}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-rose-600 text-white rounded-md text-sm hover:bg-rose-700 disabled:opacity-60"
+          >
+            <FileText className="w-4 h-4" /> Relatório PDF
+          </button>
+          <button
             onClick={() => setShowImport(true)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md text-sm hover:bg-emerald-700"
           >
@@ -259,29 +240,8 @@ const JpdFretes = () => {
         </div>
       </div>
 
-      {/* Situação dos veículos por data (clique para filtrar a lista). "Em viagem" foi
-          removido daqui por ser redundante com o card de situação real "Em viagem" abaixo. */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <button
-          onClick={() => toggleStatus('a_viajar')}
-          className={cardCls(statusFiltro === 'a_viajar', 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300')}
-        >
-          <CalendarClock className="w-6 h-6 text-sky-500" />
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Veículos a viajar</p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white">{contagensData.a_viajar}</p>
-          </div>
-        </button>
-        <button
-          onClick={() => toggleStatus('pendente')}
-          className={cardCls(statusFiltro === 'pendente', 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300')}
-        >
-          <AlertCircle className="w-6 h-6 text-amber-500" />
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Veículos pendentes</p>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white">{contagensData.pendente}</p>
-          </div>
-        </button>
+      {/* Valor total + situação do BV (campo situacao_do_bv — clique para filtrar a lista) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="flex items-center gap-3 px-4 py-3 rounded-lg shadow-md bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
           <DollarSign className="w-6 h-6 text-emerald-500" />
           <div>
@@ -289,10 +249,6 @@ const JpdFretes = () => {
             <p className="text-lg font-semibold text-gray-900 dark:text-white">{fmtBRL(valorTotalFrete)}</p>
           </div>
         </div>
-      </div>
-
-      {/* Situação do BV (campo situacao_do_bv — clique para filtrar a lista) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {SITUACAO_BV_OPTIONS.map((s) => {
           const Icone = SITUACAO_ICONS[s];
           return (

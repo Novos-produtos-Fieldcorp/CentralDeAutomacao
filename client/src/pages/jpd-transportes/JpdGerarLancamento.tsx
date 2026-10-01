@@ -6,6 +6,7 @@ import { ABAST_COLS } from './jpdAbastecimentoCols';
 import { useVeiculos } from './useVeiculos';
 import { useMotoristas } from './useMotoristas';
 import JpdCreatableSelect, { Option } from './JpdCreatableSelect';
+import { excluirCadastro, AcaoExclusao } from './jpdCadastro';
 import { capitalizeNome, hojeISO, upperPlaca } from './format';
 
 type Frete = Record<string, any>;
@@ -50,12 +51,8 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
     return { value: data.placa, label: data.placa };
   };
 
-  const removerPlaca = async (atual: string) => {
-    const res = await fetch(`/api/jpd/veiculos/${encodeURIComponent(atual)}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Falha ao excluir placa');
-    }
+  const removerPlaca = async (atual: string, acao?: AcaoExclusao) => {
+    await excluirCadastro('placa', atual, acao);
     removerPlacaLocal(atual);
   };
 
@@ -74,12 +71,8 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
     return { value: idStr, label: capitalizeNome(data.nome) };
   };
 
-  const removerMotorista = async (idStr: string) => {
-    const res = await fetch(`/api/jpd/motoristas/${idStr}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Falha ao excluir motorista');
-    }
+  const removerMotorista = async (idStr: string, acao?: AcaoExclusao) => {
+    await excluirCadastro('motorista', idStr, acao);
     removerMotoristaLocal(Number(idStr));
   };
 
@@ -260,6 +253,7 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
                         uppercase
                         onRename={renomearPlaca}
                         onRemove={removerPlaca}
+                        tipo="placa"
                       />
                     ) : c.key === 'motorista_id' ? (
                       <JpdCreatableSelect
@@ -272,6 +266,7 @@ const JpdGerarLancamento: React.FC<Props> = ({ onClose, onSaved }) => {
                         onCreate={criarMotorista}
                         onRename={renomearMotorista}
                         onRemove={removerMotorista}
+                        tipo="motorista"
                       />
                     ) : c.type === 'date' ? (
                       <input

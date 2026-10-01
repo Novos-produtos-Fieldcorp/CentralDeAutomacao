@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Search, X } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Search, X, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { capitalizeNome, upperPlaca } from './format';
 import { OPERACOES } from './jpdEnums';
+import JpdExcluirVinculos from './JpdExcluirVinculos';
+import { AcaoExclusao, TipoCadastro, Vinculos, VinculosError, excluirCadastro } from './jpdCadastro';
 
 export type JpdFiltrosValue = {
   placa: string;
@@ -39,19 +42,65 @@ const JpdFiltros: React.FC<Props> = ({
     motoristas: [],
   });
 
+  // Motoristas com id: a exclusão/reatribuição no backend é feita por id.
+  const [motoristasId, setMotoristasId] = useState<{ id: number; nome: string }[]>([]);
+  const [exclusao, setExclusao] = useState<{ tipo: TipoCadastro; valor: string; vinculos: Vinculos } | null>(null);
+
   const precisaOpcoes = campos.includes('placa') || campos.includes('motorista');
 
+  const carregarOpcoes = useCallback(async () => {
+    try {
+      const [resOpc, resMot] = await Promise.all([fetch('/api/jpd/opcoes'), fetch('/api/jpd/motoristas')]);
+      if (resOpc.ok) setOpcoes(await resOpc.json());
+      if (resMot.ok) setMotoristasId(await resMot.json());
+    } catch {
+      /* opções vazias */
+    }
+  }, []);
+
   useEffect(() => {
-    if (!precisaOpcoes) return;
-    (async () => {
-      try {
-        const res = await fetch('/api/jpd/opcoes');
-        if (res.ok) setOpcoes(await res.json());
-      } catch {
-        /* opções vazias */
-      }
-    })();
-  }, [precisaOpcoes]);
+    if (precisaOpcoes) carregarOpcoes();
+  }, [precisaOpcoes, carregarOpcoes]);
+
+  // Placa: o valor do filtro é a placa; motorista: o valor é o nome (a API usa o id).
+  const idDoCadastro = (tipo: TipoCadastro, valor: string) =>
+    tipo === 'placa' ? valor : String(motoristasId.find((m) => m.nome === valor)?.id ?? '');
+
+  const executarExclusao = async (tipo: TipoCadastro, valor: string, acao?: AcaoExclusao) => {
+    let acaoApi = acao;
+    if (acao?.acao === 'reatribuir' && tipo === 'motorista') {
+      acaoApi = { acao: 'reatribuir', para: idDoCadastro('motorista', acao.para) };
+    }
+    await excluirCadastro(tipo, idDoCadastro(tipo, valor), acaoApi);
+    setExclusao(null);
+    onChange({ ...value, [tipo]: '' });
+    carregarOpcoes();
+  };
+
+  const excluirSelecionado = async (tipo: TipoCadastro) => {
+    const valor = value[tipo];
+    const rotulo = tipo === 'placa' ? upperPlaca(valor) : capitalizeNome(valor);
+    if (!window.confirm(`Excluir "${rotulo}"? Isso remove o cadastro.`)) return;
+    try {
+      await executarExclusao(tipo, valor);
+      toast.success('Excluído');
+    } catch (err: any) {
+      if (err instanceof VinculosError) setExclusao({ tipo, valor, vinculos: err.vinculos });
+      else toast.error(err.message || 'Erro ao excluir');
+    }
+  };
+
+  const lixeiraBtn = (tipo: TipoCadastro) =>
+    value[tipo] ? (
+      <button
+        type="button"
+        onClick={() => excluirSelecionado(tipo)}
+        className="p-1.5 text-gray-400 hover:text-rose-600 dark:hover:text-rose-400"
+        title={tipo === 'placa' ? 'Excluir placa' : 'Excluir motorista'}
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    ) : null;
 
   const set = (k: keyof JpdFiltrosValue, v: string) => onChange({ ...value, [k]: v });
 
@@ -64,28 +113,34 @@ const JpdFiltros: React.FC<Props> = ({
       {campos.includes('placa') && (
         <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
           <span className="mb-1">Placa</span>
-          <select value={value.placa} onChange={(e) => set('placa', e.target.value)} className={inputCls}>
-            <option value="">Todas</option>
-            {opcoes.veiculos.map((p) => (
-              <option key={p} value={p}>
-                {upperPlaca(p)}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center">
+            <select value={value.placa} onChange={(e) => set('placa', e.target.value)} className={inputCls}>
+              <option value="">Todas</option>
+              {opcoes.veiculos.map((p) => (
+                <option key={p} value={p}>
+                  {upperPlaca(p)}
+                </option>
+              ))}
+            </select>
+            {lixeiraBtn('placa')}
+          </div>
         </label>
       )}
 
       {campos.includes('motorista') && (
         <label className="flex flex-col text-xs text-gray-600 dark:text-gray-300">
           <span className="mb-1">Motorista</span>
-          <select value={value.motorista} onChange={(e) => set('motorista', e.target.value)} className={inputCls}>
-            <option value="">Todos</option>
-            {opcoes.motoristas.map((m) => (
-              <option key={m} value={m}>
-                {capitalizeNome(m)}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center">
+            <select value={value.motorista} onChange={(e) => set('motorista', e.target.value)} className={inputCls}>
+              <option value="">Todos</option>
+              {opcoes.motoristas.map((m) => (
+                <option key={m} value={m}>
+                  {capitalizeNome(m)}
+                </option>
+              ))}
+            </select>
+            {lixeiraBtn('motorista')}
+          </div>
         </label>
       )}
 
@@ -130,6 +185,19 @@ const JpdFiltros: React.FC<Props> = ({
             />
           </div>
         </label>
+      )}
+
+      {exclusao && (
+        <JpdExcluirVinculos
+          tipo={exclusao.tipo}
+          rotulo={exclusao.tipo === 'placa' ? upperPlaca(exclusao.valor) : capitalizeNome(exclusao.valor)}
+          vinculos={exclusao.vinculos}
+          destinos={(exclusao.tipo === 'placa' ? opcoes.veiculos : opcoes.motoristas)
+            .filter((x) => x !== exclusao.valor)
+            .map((x) => ({ value: x, label: exclusao.tipo === 'placa' ? upperPlaca(x) : capitalizeNome(x) }))}
+          onConfirmar={(acao) => executarExclusao(exclusao.tipo, exclusao.valor, acao)}
+          onClose={() => setExclusao(null)}
+        />
       )}
 
       {temFiltro && (

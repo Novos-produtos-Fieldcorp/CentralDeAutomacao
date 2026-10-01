@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, Loader2, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import JpdExcluirVinculos from './JpdExcluirVinculos';
+import { AcaoExclusao, TipoCadastro, Vinculos, VinculosError } from './jpdCadastro';
 
 // Select com opção "+ Criar novo(a) ..." no final da lista, além de lápis/lixeira
 // para renomear ou excluir o registro mestre selecionado (motorista/placa).
@@ -30,8 +32,11 @@ interface Props {
   onRename?: (valorAtual: string, textoNovo: string) => Promise<Option>;
   /** Chamado após renomear com sucesso, para o pai atualizar sua lista local. */
   onRenamed?: (valorAtual: string, novo: Option) => void;
-  /** Exclui o registro mestre selecionado (motorista/placa). */
-  onRemove?: (valorAtual: string) => Promise<void>;
+  /** Exclui o registro mestre selecionado (motorista/placa). Se houver vínculos, deve propagar
+   *  o VinculosError de `excluirCadastro`; o modal então chama de novo com `acao`. */
+  onRemove?: (valorAtual: string, acao?: AcaoExclusao) => Promise<void>;
+  /** Tipo do cadastro, usado nos textos do modal de vínculos. */
+  tipo?: TipoCadastro;
   /** Chamado após excluir com sucesso, para o pai atualizar sua lista local. */
   onRemoved?: (valorAtual: string) => void;
 }
@@ -51,6 +56,7 @@ const JpdCreatableSelect: React.FC<Props> = ({
   onRename,
   onRenamed,
   onRemove,
+  tipo = 'placa',
   onRemoved,
 }) => {
   const [criandoNovo, setCriandoNovo] = useState(false);
@@ -60,6 +66,7 @@ const JpdCreatableSelect: React.FC<Props> = ({
   const [textoEdit, setTextoEdit] = useState('');
   const [salvandoEdit, setSalvandoEdit] = useState(false);
   const [removendo, setRemovendo] = useState(false);
+  const [vinculos, setVinculos] = useState<Vinculos | null>(null);
 
   const opts = toOptions(options);
   const atual = opts.find((o) => o.value === value);
@@ -215,14 +222,33 @@ const JpdCreatableSelect: React.FC<Props> = ({
       onRemoved?.(value);
       onChange('');
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao excluir');
+      if (err instanceof VinculosError) setVinculos(err.vinculos);
+      else toast.error(err.message || 'Erro ao excluir');
     } finally {
       setRemovendo(false);
     }
   };
 
+  const excluirComVinculos = async (acao: AcaoExclusao) => {
+    if (!onRemove) return;
+    await onRemove(value, acao);
+    onRemoved?.(value);
+    onChange('');
+    setVinculos(null);
+  };
+
   return (
     <div className="flex items-center gap-1">
+      {vinculos && atual && (
+        <JpdExcluirVinculos
+          tipo={tipo}
+          rotulo={displayFmt(atual.label)}
+          vinculos={vinculos}
+          destinos={opts.filter((o) => o.value !== value).map((o) => ({ value: o.value, label: displayFmt(o.label) }))}
+          onConfirmar={excluirComVinculos}
+          onClose={() => setVinculos(null)}
+        />
+      )}
       <select
         value={value}
         onChange={(e) => {

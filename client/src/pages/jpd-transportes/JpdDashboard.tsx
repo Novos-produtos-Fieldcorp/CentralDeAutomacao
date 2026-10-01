@@ -11,7 +11,13 @@ type DashboardData = {
   situacao_bvs: { label: string; value: number }[];
   por_motorista: { motorista: string; viagens: number; valor: number }[];
   por_veiculo: { placa: string; viagens: number; valor: number }[];
-  por_veiculo_situacao: { placa: string; a_carregar: number; em_viagem: number }[];
+  por_veiculo_situacao: {
+    placa: string;
+    motorista: string;
+    a_carregar: number;
+    em_viagem: number;
+    aguardando_programacao: boolean;
+  }[];
 };
 
 const EMPTY: DashboardData = {
@@ -301,7 +307,18 @@ const JpdDashboard = () => {
               <tbody className="text-gray-800 dark:text-gray-200">
                 {data.por_veiculo_situacao.map((v) => (
                   <tr key={v.placa} className="border-t border-gray-100 dark:border-gray-700">
-                    <td className="py-2 font-mono">{upperPlaca(v.placa)}</td>
+                    <td className="py-2">
+                      <span className="font-mono">{upperPlaca(v.placa)}</span>
+                      {v.motorista && (
+                        <span className="ml-2 text-gray-500 dark:text-gray-400">{capitalizeNome(v.motorista)}</span>
+                      )}
+                    </td>
+                    {v.aguardando_programacao ? (
+                      <td colSpan={2} className="py-2 text-amber-700 dark:text-amber-300 font-medium">
+                        (aguardando programação)
+                      </td>
+                    ) : (
+                      <>
                     <td className="py-2">
                       {v.a_carregar > 0 ? (
                         <span className="px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 font-medium">
@@ -320,6 +337,8 @@ const JpdDashboard = () => {
                         <span className="text-gray-400">—</span>
                       )}
                     </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>

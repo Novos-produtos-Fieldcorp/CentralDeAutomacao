@@ -7,6 +7,7 @@ import { ABAST_COLS as COLS, AbastCol } from './jpdAbastecimentoCols';
 import { useVeiculos } from './useVeiculos';
 import { useMotoristas } from './useMotoristas';
 import JpdCreatableSelect, { Option } from './JpdCreatableSelect';
+import { excluirCadastro, AcaoExclusao } from './jpdCadastro';
 import { capitalizeNome, upperPlaca, hojeISO } from './format';
 
 type Abastecimento = Record<string, any>;
@@ -62,12 +63,8 @@ const JpdAbastecimentos = () => {
     return { value: data.placa, label: data.placa };
   };
 
-  const removerPlaca = async (atual: string) => {
-    const res = await fetch(`/api/jpd/veiculos/${encodeURIComponent(atual)}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Falha ao excluir placa');
-    }
+  const removerPlaca = async (atual: string, acao?: AcaoExclusao) => {
+    await excluirCadastro('placa', atual, acao);
     removerPlacaLocal(atual);
   };
 
@@ -86,12 +83,8 @@ const JpdAbastecimentos = () => {
     return { value: idStr, label: capitalizeNome(data.nome) };
   };
 
-  const removerMotorista = async (idStr: string) => {
-    const res = await fetch(`/api/jpd/motoristas/${idStr}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Falha ao excluir motorista');
-    }
+  const removerMotorista = async (idStr: string, acao?: AcaoExclusao) => {
+    await excluirCadastro('motorista', idStr, acao);
     removerMotoristaLocal(Number(idStr));
   };
 
@@ -194,6 +187,7 @@ const JpdAbastecimentos = () => {
         uppercase
         onRename={renomearPlaca}
         onRemove={removerPlaca}
+        tipo="placa"
       />
     ) : c.key === 'motorista_id' ? (
       <JpdCreatableSelect
@@ -206,6 +200,7 @@ const JpdAbastecimentos = () => {
         onCreate={criarMotorista}
         onRename={renomearMotorista}
         onRemove={removerMotorista}
+        tipo="motorista"
       />
     ) : c.type === 'date' ? (
       <input

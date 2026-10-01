@@ -135,6 +135,40 @@ async function ensureMotorista(nome) {
     .upsert({ nome: n }, { onConflict: "nome", ignoreDuplicates: true });
 }
 
+// ---- Exclusão de placa/motorista com vínculos ----
+// Nunca em cascata silenciosa: o DELETE sem `acao` responde 409 com os vínculos e o
+// usuário escolhe entre reatribuir a outro cadastro ou excluir os itens vinculados.
+const FRETE_VINCULO_COLS = "id, numero_do_bv, data_do_bv, motorista, placa_do_carro, situacao_do_bv, deleted_at";
+const ABAST_VINCULO_COLS = "id, created_at, placa, motorista_id, fornecedor, litros, frete_id";
+
+// Apaga definitivamente BVs (inclusive os da lixeira, que ainda seguram a FK) e
+// desvincula qualquer abastecimento que apontava para eles.
+async function apagarFretes(ids) {
+  if (!ids.length) return null;
+  const r1 = await supabase.from("homedometro_abastecimento_jpd").update({ frete_id: null }).in("frete_id", ids);
+  if (r1.error) return r1.error;
+  const r2 = await supabase.from("jpd_fretes").delete().in("id", ids);
+  return r2.error || null;
+}
+
+// Resolve o que fazer com os vínculos antes de apagar o cadastro mestre.
+// `cfg`: { fretesQuery, abastQuery, reatribuirFretes(novo), reatribuirAbast(novo) }
+async function resolverVinculos(acao, cfg) {
+  if (acao === "reatribuir") {
+    const e1 = await cfg.reatribuirFretes();
+    if (e1) return e1;
+    return await cfg.reatribuirAbast();
+  }
+  if (acao === "excluir") {
+    const { data: fr, error: ef } = await cfg.fretesQuery();
+    if (ef) return ef;
+    const ea = await cfg.apagarAbast();
+    if (ea) return ea;
+    return await apagarFretes((fr || []).map((f) => f.id));
+  }
+  return null;
+}
+
 // ---- Colunas do CSV (espelham exemplo.csv / tabela jpd_fretes) ----
 const FRETE_COLS = [
   "origem", "destinatario", "motorista", "placa_do_carro", "numero_do_bv", "total_km",
@@ -428,11 +462,46 @@ exports.handler = async (event) => {
         byVeiculo[p].viagens += 1;
         byVeiculo[p].valor += num(r.valor_do_frete);
         if (s === "A Carregar" || s === "Em viagem") {
-          byVeiculoSituacao[p] = byVeiculoSituacao[p] || { placa: p, a_carregar: 0, em_viagem: 0 };
+          byVeiculoSituacao[p] = byVeiculoSituacao[p] || { placa: p, motorista: "", a_carregar: 0, em_viagem: 0 };
           if (s === "A Carregar") byVeiculoSituacao[p].a_carregar += 1;
           else byVeiculoSituacao[p].em_viagem += 1;
         }
       }
+
+      // Monitoramento por veículo: lista TODOS os veículos cadastrados, com ou sem
+      // status. Quem não tem BV "A Carregar"/"Em viagem" fica como aguardando programação.
+      // O motorista exibido é o do BV ativo mais recente (ou, na falta, do último BV).
+      const { data: veicsCad } = await supabase.from("jpd_veiculos").select("placa");
+      const { data: todosFretes } = await supabase
+        .from("jpd_fretes")
+        .select("id, placa_do_carro, motorista, data_do_bv, situacao_do_bv")
+        .is("deleted_at", null);
+      const ativo = (r) => r.situacao_do_bv === "A Carregar" || r.situacao_do_bv === "Em viagem";
+      const motoristaPorPlaca = {};
+      const rankPlaca = {};
+      for (const r of todosFretes || []) {
+        if (!r.placa_do_carro || !r.motorista) continue;
+        // Ativo tem prioridade; dentro do grupo, o mais recente (data do BV, depois id).
+        const rank = `${ativo(r) ? 1 : 0}|${String(r.data_do_bv || "")}|${String(r.id).padStart(12, "0")}`;
+        if (rank > (rankPlaca[r.placa_do_carro] || "")) {
+          rankPlaca[r.placa_do_carro] = rank;
+          motoristaPorPlaca[r.placa_do_carro] = r.motorista;
+        }
+      }
+      for (const v of veicsCad || []) {
+        byVeiculoSituacao[v.placa] = byVeiculoSituacao[v.placa] || { placa: v.placa, motorista: "", a_carregar: 0, em_viagem: 0 };
+      }
+      const por_veiculo_situacao = Object.values(byVeiculoSituacao)
+        .map((v) => ({
+          ...v,
+          motorista: motoristaPorPlaca[v.placa] || "",
+          aguardando_programacao: v.a_carregar + v.em_viagem === 0,
+        }))
+        .sort(
+          (a, b) =>
+            b.a_carregar + b.em_viagem - (a.a_carregar + a.em_viagem) ||
+            String(a.placa).localeCompare(String(b.placa))
+        );
 
       return json(200, {
         kpis: { total_viagens, total_frete, total_faturado, total_custos, total_km },
@@ -445,9 +514,7 @@ exports.handler = async (event) => {
         situacao_bvs: Object.entries(bySituacao).map(([label, value]) => ({ label, value })),
         por_motorista: Object.values(byMotorista).sort((a, b) => b.valor - a.valor),
         por_veiculo: Object.values(byVeiculo).sort((a, b) => b.valor - a.valor),
-        por_veiculo_situacao: Object.values(byVeiculoSituacao).sort(
-          (a, b) => b.a_carregar + b.em_viagem - (a.a_carregar + a.em_viagem)
-        ),
+        por_veiculo_situacao,
       });
     }
 
@@ -516,13 +583,37 @@ exports.handler = async (event) => {
       return json(200, data);
     }
 
-    // DELETE /veiculos/:placa
+    // DELETE /veiculos/:placa[?acao=reatribuir&para=<placa>|excluir]
+    // Sem `acao`, só exclui se não houver vínculo (409 caso contrário).
     if (segs[0] === "veiculos" && segs[1] && method === "DELETE") {
       const placaAtual = normalizePlaca(decodeURIComponent(segs[1]));
+      const acao = qs.acao || "";
+      if (acao === "reatribuir") {
+        const nova = normalizePlaca(qs.para);
+        if (!nova || nova === placaAtual) return json(400, { error: "Escolha outra placa para vincular." });
+        await ensureVeiculo(nova);
+      }
+      const errVinc = await resolverVinculos(acao, {
+        fretesQuery: () => supabase.from("jpd_fretes").select("id").eq("placa_do_carro", placaAtual),
+        apagarAbast: async () =>
+          (await supabase.from("homedometro_abastecimento_jpd").delete().eq("placa", placaAtual)).error,
+        reatribuirFretes: async () =>
+          (await supabase.from("jpd_fretes").update({ placa_do_carro: normalizePlaca(qs.para) }).eq("placa_do_carro", placaAtual)).error,
+        reatribuirAbast: async () =>
+          (await supabase.from("homedometro_abastecimento_jpd").update({ placa: normalizePlaca(qs.para) }).eq("placa", placaAtual)).error,
+      });
+      if (errVinc) return json(500, { error: errVinc.message });
       const { error } = await supabase.from("jpd_veiculos").delete().eq("placa", placaAtual);
       if (error) {
         if (error.code === "23503") {
-          return json(409, { error: "Placa está em uso em boletins ou lançamentos; não é possível excluir." });
+          const { data: fretes } = await supabase.from("jpd_fretes").select(FRETE_VINCULO_COLS)
+            .eq("placa_do_carro", placaAtual).order("data_do_bv", { ascending: false });
+          const { data: abastecimentos } = await supabase.from("homedometro_abastecimento_jpd")
+            .select(ABAST_VINCULO_COLS).eq("placa", placaAtual).order("created_at", { ascending: false });
+          return json(409, {
+            error: "Placa está em uso em boletins ou lançamentos.",
+            vinculos: { fretes: fretes || [], abastecimentos: abastecimentos || [] },
+          });
         }
         return json(500, { error: error.message });
       }
@@ -895,12 +986,43 @@ exports.handler = async (event) => {
         return json(200, data);
       }
 
-      // DELETE /motoristas/:id
+      // DELETE /motoristas/:id[?acao=reatribuir&para=<id>|excluir]
       if (method === "DELETE" && motoristaId) {
+        const acao = qs.acao || "";
+        const { data: atual } = await supabase.from("motoristas_jpd").select("id, nome").eq("id", motoristaId).maybeSingle();
+        let novo = null;
+        if (acao === "reatribuir") {
+          const paraId = Number(qs.para);
+          if (!Number.isFinite(paraId) || paraId === motoristaId) {
+            return json(400, { error: "Escolha outro motorista para vincular." });
+          }
+          const { data } = await supabase.from("motoristas_jpd").select("id, nome").eq("id", paraId).maybeSingle();
+          if (!data) return json(404, { error: "Motorista de destino não encontrado." });
+          novo = data;
+        }
+        if (acao && atual) {
+          const errVinc = await resolverVinculos(acao, {
+            fretesQuery: () => supabase.from("jpd_fretes").select("id").eq("motorista", atual.nome),
+            apagarAbast: async () =>
+              (await supabase.from("homedometro_abastecimento_jpd").delete().eq("motorista_id", motoristaId)).error,
+            reatribuirFretes: async () =>
+              (await supabase.from("jpd_fretes").update({ motorista: novo.nome }).eq("motorista", atual.nome)).error,
+            reatribuirAbast: async () =>
+              (await supabase.from("homedometro_abastecimento_jpd").update({ motorista_id: novo.id }).eq("motorista_id", motoristaId)).error,
+          });
+          if (errVinc) return json(500, { error: errVinc.message });
+        }
         const { error } = await supabase.from("motoristas_jpd").delete().eq("id", motoristaId);
         if (error) {
           if (error.code === "23503") {
-            return json(409, { error: "Motorista está em uso em boletins ou lançamentos; não é possível excluir." });
+            const { data: fretes } = await supabase.from("jpd_fretes").select(FRETE_VINCULO_COLS)
+              .eq("motorista", atual ? atual.nome : "").order("data_do_bv", { ascending: false });
+            const { data: abastecimentos } = await supabase.from("homedometro_abastecimento_jpd")
+              .select(ABAST_VINCULO_COLS).eq("motorista_id", motoristaId).order("created_at", { ascending: false });
+            return json(409, {
+              error: "Motorista está em uso em boletins ou lançamentos.",
+              vinculos: { fretes: fretes || [], abastecimentos: abastecimentos || [] },
+            });
           }
           return json(500, { error: error.message });
         }
