@@ -481,15 +481,17 @@ exports.handler = async (event) => {
       // Monitoramento por veículo: lista TODOS os veículos cadastrados, com ou sem
       // status. Quem não tem BV "A Carregar"/"Em viagem" fica como aguardando programação.
       // O motorista exibido é o do BV ativo mais recente (ou, na falta, do último BV).
-      // `motorista` (padrão do veículo) só existe após rodar setup-jpd-veiculos-motorista-padrao.sql;
-      // se a coluna ainda não existir, cai para a lista só com placas.
+      // Motorista padrão do veículo = jpd_veiculos.motorista_id (FK para motoristas_jpd.id).
       let veicsCad = null;
       {
-        const r = await supabase.from("jpd_veiculos").select("placa, motorista");
+        const r = await supabase.from("jpd_veiculos").select("placa, motorista_id");
         veicsCad = r.error ? (await supabase.from("jpd_veiculos").select("placa")).data : r.data;
       }
+      const { data: motsCad } = await supabase.from("motoristas_jpd").select("id, nome");
+      const nomePorMotId = {};
+      for (const m of motsCad || []) nomePorMotId[m.id] = m.nome;
       const motoristaPadrao = {};
-      for (const v of veicsCad || []) if (v.motorista) motoristaPadrao[v.placa] = v.motorista;
+      for (const v of veicsCad || []) if (v.motorista_id != null && nomePorMotId[v.motorista_id]) motoristaPadrao[v.placa] = nomePorMotId[v.motorista_id];
       const { data: todosFretes } = await supabase
         .from("jpd_fretes")
         .select("id, placa_do_carro, motorista, data_do_bv, situacao_do_bv")
@@ -594,8 +596,12 @@ exports.handler = async (event) => {
       if (body && "motorista" in body) {
         // Motorista padrão do veículo (vazio limpa o vínculo).
         const nomeMot = normalizeNome(body.motorista);
-        if (nomeMot) await ensureMotorista(nomeMot);
-        update.motorista = nomeMot;
+        update.motorista_id = null;
+        if (nomeMot) {
+          await ensureMotorista(nomeMot);
+          const { data: mot } = await supabase.from("motoristas_jpd").select("id").eq("nome", nomeMot).maybeSingle();
+          update.motorista_id = mot ? mot.id : null;
+        }
       }
       const { data, error } = await supabase
         .from("jpd_veiculos")
@@ -1025,16 +1031,27 @@ exports.handler = async (event) => {
           if (!data) return json(404, { error: "Motorista de destino não encontrado." });
           novo = data;
         }
+        // Veículos que têm este motorista como padrão (jpd_veiculos.motorista_id): é só um
+        // rótulo, então migra junto na reatribuição e é limpo na exclusão (inclusive quando
+        // não há BV/lançamento, senão a FK impediria apagar o motorista).
+        if (atual) {
+          let limparVeiculos = acao === "excluir";
+          if (acao === "reatribuir") {
+            await supabase.from("jpd_veiculos").update({ motorista_id: novo.id }).eq("motorista_id", motoristaId);
+          } else if (!acao) {
+            const { count: nFretes } = await supabase.from("jpd_fretes").select("id", { count: "exact", head: true }).eq("motorista", atual.nome);
+            const { count: nAbast } = await supabase.from("homedometro_abastecimento_jpd").select("id", { count: "exact", head: true }).eq("motorista_id", motoristaId);
+            limparVeiculos = !nFretes && !nAbast;
+          }
+          if (limparVeiculos) await supabase.from("jpd_veiculos").update({ motorista_id: null }).eq("motorista_id", motoristaId);
+        }
         if (acao && atual) {
           const errVinc = await resolverVinculos(acao, {
             fretesQuery: () => supabase.from("jpd_fretes").select("id").eq("motorista", atual.nome),
             apagarAbast: async () =>
               (await supabase.from("homedometro_abastecimento_jpd").delete().eq("motorista_id", motoristaId)).error,
-            reatribuirFretes: async () => {
-              // Motorista padrão dos veículos também migra (coluna opcional: erro ignorado se não existir).
-              await supabase.from("jpd_veiculos").update({ motorista: novo.nome }).eq("motorista", atual.nome);
-              return (await supabase.from("jpd_fretes").update({ motorista: novo.nome }).eq("motorista", atual.nome)).error;
-            },
+            reatribuirFretes: async () =>
+              (await supabase.from("jpd_fretes").update({ motorista: novo.nome }).eq("motorista", atual.nome)).error,
             reatribuirAbast: async () =>
               (await supabase.from("homedometro_abastecimento_jpd").update({ motorista_id: novo.id }).eq("motorista_id", motoristaId)).error,
           });
