@@ -10,9 +10,14 @@ export type TipoCadastro = 'placa' | 'motorista';
 
 export class VinculosError extends Error {
   vinculos: Vinculos;
-  constructor(message: string, vinculos: Vinculos) {
+  tipo: TipoCadastro;
+  /** Identificador usado na API: a placa (minúscula) ou o id do motorista. */
+  id: string;
+  constructor(message: string, vinculos: Vinculos, tipo: TipoCadastro, id: string) {
     super(message);
     this.vinculos = vinculos;
+    this.tipo = tipo;
+    this.id = id;
   }
 }
 
@@ -28,6 +33,6 @@ export async function excluirCadastro(tipo: TipoCadastro, id: string, acao?: Aca
   const res = await fetch(qs ? `${base}?${qs}` : base, { method: 'DELETE' });
   if (res.ok) return;
   const err = await res.json().catch(() => ({}));
-  if (res.status === 409 && err.vinculos) throw new VinculosError(err.error, err.vinculos);
+  if (res.status === 409 && err.vinculos) throw new VinculosError(err.error, err.vinculos, tipo, id);
   throw new Error(err.error || `Falha ao excluir ${tipo === 'placa' ? 'placa' : 'motorista'}`);
 }

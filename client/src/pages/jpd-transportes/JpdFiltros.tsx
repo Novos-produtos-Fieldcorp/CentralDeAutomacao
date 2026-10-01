@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { capitalizeNome, upperPlaca } from './format';
 import { OPERACOES } from './jpdEnums';
 import JpdExcluirVinculos from './JpdExcluirVinculos';
-import { AcaoExclusao, TipoCadastro, Vinculos, VinculosError, excluirCadastro } from './jpdCadastro';
+import { AcaoExclusao, TipoCadastro, VinculosError, excluirCadastro } from './jpdCadastro';
 
 export type JpdFiltrosValue = {
   placa: string;
@@ -44,7 +44,7 @@ const JpdFiltros: React.FC<Props> = ({
 
   // Motoristas com id: a exclusão/reatribuição no backend é feita por id.
   const [motoristasId, setMotoristasId] = useState<{ id: number; nome: string }[]>([]);
-  const [exclusao, setExclusao] = useState<{ tipo: TipoCadastro; valor: string; vinculos: Vinculos } | null>(null);
+  const [exclusao, setExclusao] = useState<{ tipo: TipoCadastro; valor: string; erro: VinculosError } | null>(null);
 
   const precisaOpcoes = campos.includes('placa') || campos.includes('motorista');
 
@@ -85,7 +85,7 @@ const JpdFiltros: React.FC<Props> = ({
       await executarExclusao(tipo, valor);
       toast.success('Excluído');
     } catch (err: any) {
-      if (err instanceof VinculosError) setExclusao({ tipo, valor, vinculos: err.vinculos });
+      if (err instanceof VinculosError) setExclusao({ tipo, valor, erro: err });
       else toast.error(err.message || 'Erro ao excluir');
     }
   };
@@ -191,7 +191,8 @@ const JpdFiltros: React.FC<Props> = ({
         <JpdExcluirVinculos
           tipo={exclusao.tipo}
           rotulo={exclusao.tipo === 'placa' ? upperPlaca(exclusao.valor) : capitalizeNome(exclusao.valor)}
-          vinculos={exclusao.vinculos}
+          vinculos={exclusao.erro.vinculos}
+          apiId={exclusao.erro.id}
           destinos={(exclusao.tipo === 'placa' ? opcoes.veiculos : opcoes.motoristas)
             .filter((x) => x !== exclusao.valor)
             .map((x) => ({ value: x, label: exclusao.tipo === 'placa' ? upperPlaca(x) : capitalizeNome(x) }))}

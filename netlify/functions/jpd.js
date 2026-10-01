@@ -141,6 +141,16 @@ async function ensureMotorista(nome) {
 const FRETE_VINCULO_COLS = "id, numero_do_bv, data_do_bv, motorista, placa_do_carro, situacao_do_bv, deleted_at";
 const ABAST_VINCULO_COLS = "id, created_at, placa, motorista_id, fornecedor, litros, frete_id";
 
+// Anexa numero_do_bv aos lançamentos que apontam para um BV, para exibir no modal de vínculos.
+async function comNumeroBv(abastecimentos) {
+  const ids = Array.from(new Set((abastecimentos || []).map((a) => a.frete_id).filter((x) => x != null)));
+  if (!ids.length) return abastecimentos || [];
+  const { data } = await supabase.from("jpd_fretes").select("id, numero_do_bv").in("id", ids);
+  const num = {};
+  for (const f of data || []) num[f.id] = f.numero_do_bv;
+  return abastecimentos.map((a) => ({ ...a, numero_do_bv: a.frete_id != null ? num[a.frete_id] || null : null }));
+}
+
 // Apaga definitivamente BVs (inclusive os da lixeira, que ainda seguram a FK) e
 // desvincula qualquer abastecimento que apontava para eles.
 async function apagarFretes(ids) {
@@ -471,7 +481,15 @@ exports.handler = async (event) => {
       // Monitoramento por veículo: lista TODOS os veículos cadastrados, com ou sem
       // status. Quem não tem BV "A Carregar"/"Em viagem" fica como aguardando programação.
       // O motorista exibido é o do BV ativo mais recente (ou, na falta, do último BV).
-      const { data: veicsCad } = await supabase.from("jpd_veiculos").select("placa");
+      // `motorista` (padrão do veículo) só existe após rodar setup-jpd-veiculos-motorista-padrao.sql;
+      // se a coluna ainda não existir, cai para a lista só com placas.
+      let veicsCad = null;
+      {
+        const r = await supabase.from("jpd_veiculos").select("placa, motorista");
+        veicsCad = r.error ? (await supabase.from("jpd_veiculos").select("placa")).data : r.data;
+      }
+      const motoristaPadrao = {};
+      for (const v of veicsCad || []) if (v.motorista) motoristaPadrao[v.placa] = v.motorista;
       const { data: todosFretes } = await supabase
         .from("jpd_fretes")
         .select("id, placa_do_carro, motorista, data_do_bv, situacao_do_bv")
@@ -494,7 +512,7 @@ exports.handler = async (event) => {
       const por_veiculo_situacao = Object.values(byVeiculoSituacao)
         .map((v) => ({
           ...v,
-          motorista: motoristaPorPlaca[v.placa] || "",
+          motorista: motoristaPorPlaca[v.placa] || motoristaPadrao[v.placa] || "",
           aguardando_programacao: v.a_carregar + v.em_viagem === 0,
         }))
         .sort(
@@ -573,6 +591,12 @@ exports.handler = async (event) => {
         update.placa = novaPlaca;
       }
       if (body && "operacao" in body) update.operacao = body.operacao || null;
+      if (body && "motorista" in body) {
+        // Motorista padrão do veículo (vazio limpa o vínculo).
+        const nomeMot = normalizeNome(body.motorista);
+        if (nomeMot) await ensureMotorista(nomeMot);
+        update.motorista = nomeMot;
+      }
       const { data, error } = await supabase
         .from("jpd_veiculos")
         .update(update)
@@ -612,7 +636,7 @@ exports.handler = async (event) => {
             .select(ABAST_VINCULO_COLS).eq("placa", placaAtual).order("created_at", { ascending: false });
           return json(409, {
             error: "Placa está em uso em boletins ou lançamentos.",
-            vinculos: { fretes: fretes || [], abastecimentos: abastecimentos || [] },
+            vinculos: { fretes: fretes || [], abastecimentos: await comNumeroBv(abastecimentos) },
           });
         }
         return json(500, { error: error.message });
@@ -1005,8 +1029,11 @@ exports.handler = async (event) => {
             fretesQuery: () => supabase.from("jpd_fretes").select("id").eq("motorista", atual.nome),
             apagarAbast: async () =>
               (await supabase.from("homedometro_abastecimento_jpd").delete().eq("motorista_id", motoristaId)).error,
-            reatribuirFretes: async () =>
-              (await supabase.from("jpd_fretes").update({ motorista: novo.nome }).eq("motorista", atual.nome)).error,
+            reatribuirFretes: async () => {
+              // Motorista padrão dos veículos também migra (coluna opcional: erro ignorado se não existir).
+              await supabase.from("jpd_veiculos").update({ motorista: novo.nome }).eq("motorista", atual.nome);
+              return (await supabase.from("jpd_fretes").update({ motorista: novo.nome }).eq("motorista", atual.nome)).error;
+            },
             reatribuirAbast: async () =>
               (await supabase.from("homedometro_abastecimento_jpd").update({ motorista_id: novo.id }).eq("motorista_id", motoristaId)).error,
           });
@@ -1021,7 +1048,7 @@ exports.handler = async (event) => {
               .select(ABAST_VINCULO_COLS).eq("motorista_id", motoristaId).order("created_at", { ascending: false });
             return json(409, {
               error: "Motorista está em uso em boletins ou lançamentos.",
-              vinculos: { fretes: fretes || [], abastecimentos: abastecimentos || [] },
+              vinculos: { fretes: fretes || [], abastecimentos: await comNumeroBv(abastecimentos) },
             });
           }
           return json(500, { error: error.message });

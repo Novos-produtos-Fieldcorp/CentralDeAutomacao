@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Truck, DollarSign, Receipt, TrendingDown } from 'lucide-react';
+import { Download, Truck, DollarSign, Receipt, TrendingDown, UserPlus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCurrentAccount } from '../../hooks/useCurrentAccount';
 import { fmtBRL, hojeISO, capitalizeNome, upperPlaca } from './format';
@@ -53,6 +53,10 @@ const JpdDashboard = () => {
   const [motoristas, setMotoristas] = useState<string[]>([]);
   const [placaSel, setPlacaSel] = useState('');
   const [veiculo, setVeiculo] = useState<{ resumo: any; viagens: any[] } | null>(null);
+  // Vínculo de motorista padrão a uma placa sem motorista (monitoramento por veículo).
+  const [vinculandoPlaca, setVinculandoPlaca] = useState<string | null>(null);
+  const [motoristaVinculo, setMotoristaVinculo] = useState('');
+  const [salvandoVinculo, setSalvandoVinculo] = useState(false);
 
   const set = (k: string, v: string) => setFilters((f) => ({ ...f, [k]: v }));
   const hoje = hojeISO();
@@ -130,6 +134,35 @@ const JpdDashboard = () => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
+
+  const salvarMotoristaPadrao = async (placa: string) => {
+    if (!motoristaVinculo) return;
+    setSalvandoVinculo(true);
+    try {
+      const res = await fetch(`/api/jpd/veiculos/${encodeURIComponent(placa)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motorista: motoristaVinculo }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Falha ao vincular motorista');
+      }
+      setData((d) => ({
+        ...d,
+        por_veiculo_situacao: d.por_veiculo_situacao.map((v) =>
+          v.placa === placa ? { ...v, motorista: motoristaVinculo } : v,
+        ),
+      }));
+      setVinculandoPlaca(null);
+      setMotoristaVinculo('');
+      toast.success('Motorista vinculado');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao vincular motorista');
+    } finally {
+      setSalvandoVinculo(false);
+    }
+  };
 
   const handleExport = () => {
     if (!companyId) return;
@@ -309,8 +342,51 @@ const JpdDashboard = () => {
                   <tr key={v.placa} className="border-t border-gray-100 dark:border-gray-700">
                     <td className="py-2">
                       <span className="font-mono">{upperPlaca(v.placa)}</span>
-                      {v.motorista && (
+                      {v.motorista ? (
                         <span className="ml-2 text-gray-500 dark:text-gray-400">{capitalizeNome(v.motorista)}</span>
+                      ) : vinculandoPlaca === v.placa ? (
+                        <span className="ml-2 inline-flex items-center gap-1">
+                          <select
+                            value={motoristaVinculo}
+                            onChange={(e) => setMotoristaVinculo(e.target.value)}
+                            disabled={salvandoVinculo}
+                            className={`${inputCls} py-0.5 text-xs`}
+                          >
+                            <option value="">Selecione o motorista</option>
+                            {motoristas.map((m) => (
+                              <option key={m} value={m}>
+                                {capitalizeNome(m)}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => salvarMotoristaPadrao(v.placa)}
+                            disabled={!motoristaVinculo || salvandoVinculo}
+                            className="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                          >
+                            Salvar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setVinculandoPlaca(null)}
+                            className="text-gray-400 hover:text-gray-600"
+                            title="Cancelar"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVinculandoPlaca(v.placa);
+                            setMotoristaVinculo('');
+                          }}
+                          className="ml-2 inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" /> Vincular motorista
+                        </button>
                       )}
                     </td>
                     {v.aguardando_programacao ? (
