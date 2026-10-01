@@ -24,10 +24,10 @@ const SITUACAO_ICONS: Record<SituacaoBv, React.ComponentType<{ className?: strin
   'Faturado': CheckCircle2,
 };
 const SITUACAO_CORES: Record<SituacaoBv, string> = {
-  'A Carregar': 'bg-slate-50 text-slate-700 dark:bg-slate-800/40 dark:text-slate-300',
-  'Em viagem': 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  'Descarregado/Pendente faturamento': 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  'Faturado': 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  'A Carregar': 'bg-sky-50 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
+  'Em viagem': 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+  'Descarregado/Pendente faturamento': 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  'Faturado': 'bg-violet-50 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
 };
 
 const ThOrdenavel = ({
@@ -190,9 +190,10 @@ const JpdFretes = () => {
 
   const toggleStatus = (s: StatusFiltro) => setStatusFiltro((cur) => (cur === s ? null : s));
 
+  // Cada situação mantém sua cor sempre; o card selecionado ganha o anel de destaque.
   const cardCls = (active: boolean, color: string) =>
-    `flex items-center gap-3 px-4 py-3 rounded-lg shadow-md text-left transition ring-2 ${
-      active ? `${color} ring-current` : 'bg-white dark:bg-gray-800 ring-transparent hover:ring-gray-300 dark:hover:ring-gray-600'
+    `flex items-center gap-3 px-4 py-3 rounded-lg shadow-md text-left transition ring-2 ${color} ${
+      active ? 'ring-current' : 'ring-transparent hover:ring-gray-300 dark:hover:ring-gray-600'
     }`;
 
   return (
